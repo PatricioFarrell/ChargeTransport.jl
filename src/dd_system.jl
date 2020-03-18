@@ -149,7 +149,7 @@ For example, the right-hand side for the electrostatic potential is implemented 
 
 assuming a bipolar semiconductor. In general, for some charge number `z_i`
 
-    f[ipsi] =  -1/α *  q * sum_i { z_i * (c_i - C_i) }.
+    f[ipsi] =  -1/α *  q * sum_i { z_i * (c_i - N_i) }.
 
 The boundary conditions for the charge carrier are set in the main file. Hence,
 
@@ -191,7 +191,7 @@ $(SIGNATURES)
 Sets up the right-hand sides. Assuming a bipolar semiconductor
 the right-hand side for the electrostatic potential becomes
 
-    f[ipsi]  = - q * ((p - N_a) - (n - N_d) )
+    f[ipsi]  = - q * ((p - N_a) - (n - N_d) ) = - q * sum { z_i * (c_i - N_i) }
 
 and the right-hand sides for the charge carriers yields
 
@@ -228,9 +228,8 @@ function reaction!(f,u,node,data)
         f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                          # subtract doping
         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F(eta)   # add charge carrier
 
+        ## add different recombination kernels r(n,p)
         for ireg = 1:data.numberOfRegions
-
-            ## add different recombination kernels r(n,p)
 
             # radiative recombination
             f[icc] = data.recombinationRadiative[ireg]           
@@ -424,25 +423,89 @@ function Sedan!(f, u, edge, data)
 end
 
 """
-$(SIGNATURES)
-
-Plot electrostatic potential, the electron and hole quasi Fermi potential as well as the IV curve.
-
+Compute the electro-neutral solution, assuming the Boltzmann approximation. It is obtained by setting the left-hand side in 
+the Poisson equation equal to zero and solving for \\psi.
 """
-function plot_solution(sys, U0)
-    dddata = VoronoiFVM.data(sys)
+function electroNeutralSolutionBoltzmann(grid::VoronoiFVM.AbstractGrid,data::DDFermiData)
 
-    PyPlot.clf()
-    @views begin
-        PyPlot.subplot(211)
-        PyPlot.plot(sys.grid.coord[1,:], U0[3,:], label = "electrostatic potential", color="g", marker="o")
-        PyPlot.plot(sys.grid.coord[1,:], U0[1,:], label = "quasi Fermi electron", color="b", marker="o", linestyle = "dashed")
-        PyPlot.plot(sys.grid.coord[1,:], U0[2,:], label = "quasi Fermi hole", color="r", marker="o", linestyle = "dashdot")
-        PyPlot.grid()
-        PyPlot.xlabel("space [m]")
-        PyPlot.ylabel("potential [V]")
-        PyPlot.legend(loc="upper left")
-        PyPlot.gcf()
+    if data.numberOfSpecies-1 != 2
+        error("The electroneutral solution is only implemented for two species!")
     end
 
+    # region independent parameters
+    iphin = 1; 
+    iphip = 2;
+    UT    = (kB * data.temperature ) / q
+    
+    # initialise zero vector
+    psi0 = zeros(length(grid.coord))
+    
+    # boundary values
+    for i=1:length(grid.bfacenodes)
+
+        # boundary index
+        ibreg = grid.bfaceregions[i]
+
+        # boundary region specific data
+        Ec = data.bBandEdgeEnergy[ibreg,iphin]   
+        Ev = data.bBandEdgeEnergy[ibreg,iphip] 
+        Nc = data.bDensityOfStates[ibreg,iphin]  
+        Nv = data.bDensityOfStates[ibreg,iphip]
+        Ni = sqrt( Nc*Nv*exp(-(Ec-Ev)/(kB*data.temperature)) )
+        C  = -data.chargeNumbers[iphin] * data.bDoping[ibreg,iphin] -data.chargeNumbers[iphip] * data.bDoping[ibreg,iphip]
+
+        # set boundary values for electroneutral potential
+        psi0[grid.bfacenodes[i]] = (Ec+Ev)/(2q) - 0.5*UT*log(Nc/Nv) + UT*asinh(C/(2*Ni))
+
+        # println(C)
+        # println(-data.chargeNumbers[iphin] * data.bDoping[ibreg,iphin])
+        # println(data.chargeNumbers[iphip] * data.bDoping[ibreg,iphip])
+        # println(psi0[grid.bfacenodes[i]] )
+
+    end
+
+    # interior values
+    for i=1:length(grid.coord) - length(grid.bfacenodes)
+
+        # interior index
+        ireg = grid.bfaceregions[i]
+
+        # interior region specific data
+        Ec = data.bBandEdgeEnergy[ireg,iphin]   
+        Ev = data.bBandEdgeEnergy[ireg,iphip] 
+        Nc = data.bDensityOfStates[ireg,iphin]  
+        Nv = data.bDensityOfStates[ireg,iphip]
+        Ni = sqrt( Nc*Nv*exp(-(Ec-Ev)/(kB*data.temperature)) )
+        C  = -data.chargeNumbers[iphin] * data.bDoping[ireg,iphin] -data.chargeNumbers[iphip] * data.bDoping[ireg,iphip]
+
+        # set interior values for electroneutral potential
+        psi0[grid.bfacenodes[i]] = (Ec+Ev)/(2q) - 0.5*UT*log(Nc/Nv) + UT*asinh(C/(2*Ni))
+
+        # println(C)
+        # println(-data.chargeNumbers[iphin] * data.bDoping[ibreg,iphin])
+        # println(data.chargeNumbers[iphip] * data.bDoping[ibreg,iphip])
+        # println(psi0[grid.bfacenodes[i]] )
+
+    end
+
+    println(psi0)
 end
+
+
+    # for icc = 1:data.numberOfSpecies - 1 
+    #     for i in 1:length(g.cellregions)
+
+    #         # determine doping value in cell and number of cell nodes
+    #         cellValue            = data.doping[g.cellregions[i],icc] 
+    #         numberLocalCellNodes = length(g.cellnodes[:,i])
+
+    #         # patch together cells
+    #         PyPlot.plot(g.coord[g.cellnodes[:,i]], 
+    #                     repeat(cellValue:cellValue,numberLocalCellNodes), 
+    #                     color=colors[icc],
+    #                     linewidth=3);
+    #     end
+
+    #     # legend
+    #     PyPlot.plot(NaN,NaN,color=colors[icc],linewidth=3,label="icc="*string(icc))
+    # end
