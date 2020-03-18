@@ -12,4 +12,4 @@ VoronoiFVM = "82b139dc-5afc-11e9-35da-9b9bdfd336f3"
 
 [compat]
 PyPlot = "~2.8"
-VoronoiFVM = "~0.4"
+VoronoiFVM = "~0.7"
