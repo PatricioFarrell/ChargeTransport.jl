@@ -42,7 +42,7 @@ mutable struct DDFermiData <: VoronoiFVM.AbstractData
     recombinationAuger          ::  Array{Real,2}
 
     # number of regions 
-    intrinsicDoping             ::  Array{Real,1}
+    # intrinsicDoping             ::  Array{Real,1}
     dopingClassical             ::  Array{Real,1}
     dielectricConstant          ::  Array{Real,1}
     recombinationRadiative      ::  Array{Real,1}
@@ -106,7 +106,7 @@ function DDFermiData(numberOfRegions=3::Int64, numberOfBoundaryRegions=2::Int64,
         Array{Real,2}(undef,numberOfRegions,numberOfSpecies-1),         # recombinationAuger      
 
         # number of regions
-        zeros(Float64,      numberOfRegions),                           # intrinsicDoping
+        # zeros(Float64,      numberOfRegions),                           # intrinsicDoping
         Array{Real,1}(undef,numberOfRegions),                           # dopingClassical 
         Array{Real,1}(undef,numberOfRegions),                           # dielectricConstant      
         Array{Real,1}(undef,numberOfRegions),                           # recombinationRadiative  
@@ -132,11 +132,42 @@ end
 
 $(SIGNATURES)
 
-The argument of the distribution function (currently not used).
+The argument of the distribution function for interior nodes:
+
+    z / UT  * ( (phi - psi) + E / q ).
 
 """
-function etaF(z,UT,phi,psi,E)
-    z / UT  * ( (phi - psi) + E / DDFermi.q )
+function etaFunction(u,node::VoronoiFVM.Node{Float64,Int32},data,icc,ipsi)
+    UT = (kB * data.temperature ) / q 
+    data.chargeNumbers[icc] / UT * ( (u[icc] - u[ipsi]) + data.bandEdgeEnergy[node.region,icc] / q )
+end
+
+"""
+
+$(SIGNATURES)
+
+The argument of the distribution function for boundary nodes:
+
+    z / UT  * ( (phi_at_boundary - psi) + E / q ).
+
+"""
+function etaFunction(u,bnode::VoronoiFVM.BNode{Float64,Int32},data,icc,ipsi)
+    UT = (kB * data.temperature ) / q 
+    data.chargeNumbers[icc] / UT * ( (data.contactVoltage[bnode.region]- u[ipsi]) + data.bandEdgeEnergy[bnode.region,icc] / q )
+end
+
+"""
+
+$(SIGNATURES)
+
+The argument of the distribution function for edges:
+
+    z / UT  * ( (phi_at_boundary - psi) + E / q ).
+
+"""
+function etaFunction(u,edge::VoronoiFVM.Edge{Float64,Int32},data,icc,ipsi)
+    UT = (kB * data.temperature ) / q 
+    data.chargeNumbers[icc] / UT * ( (u[icc] - u[ipsi]) + data.bandEdgeEnergy[edge.region,icc] / q )
 end
 
 """
@@ -167,8 +198,8 @@ function breaction!(f,u,bnode,data)
 
     for icc = 1:data.numberOfSpecies - 1 
 
-        eta = data.chargeNumbers[icc] / UT  * ( (data.contactVoltage[bnode.region] - u[ipsi]) + data.bandEdgeEnergy[bnode.region,icc] / q )
-        # eta = etaF(data.chargeNumbers[icc], UT, data.contactVoltage[bnode.region], u[ipsi],  data.bandEdgeEnergy[bnode.region,icc])
+        # eta = data.chargeNumbers[icc] / UT  * ( (data.contactVoltage[bnode.region] - u[ipsi]) + data.bandEdgeEnergy[bnode.region,icc] / q )
+        eta = etaFunction(u,bnode,data,icc,ipsi)
         
         f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.bDoping[bnode.region,icc]                            # subtract doping
         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F(eta)     # add charge carrier
@@ -219,11 +250,12 @@ function reaction!(f,u,node,data)
     ipsi = data.numberOfSpecies             # final index for electrostatic potential
 
     # set intrinsic doping outside of charge carrier loop
-    f[ipsi] = data.intrinsicDoping[node.region]
+    # f[ipsi] = data.intrinsicDoping[node.region]
 
     for icc = 1:data.numberOfSpecies - 1 
         
-        eta = data.chargeNumbers[icc] / UT * ( (u[icc] - u[ipsi]) + data.bandEdgeEnergy[node.region,icc]/q )
+        eta = etaFunction(u,node,data,icc,ipsi)
+        # eta = data.chargeNumbers[icc] / UT * ( (u[icc] - u[ipsi]) + data.bandEdgeEnergy[node.region,icc]/q )
 
         f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                          # subtract doping
         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F(eta)   # add charge carrier
@@ -258,91 +290,91 @@ function reaction!(f,u,node,data)
 end
 
 
-"""
-$(SIGNATURES)
+# """
+# $(SIGNATURES)
 
-Like `breaction!` but with classical regionwise doping.
+# Like `breaction!` but with classical regionwise doping.
 
-"""
-function breaction_classicalRegionwiseDoping!(f,u,bnode,data)
+# """
+# function breaction_classicalRegionwiseDoping!(f,u,bnode,data)
 
-    # tiny penalty value
-    α = 1.0/VoronoiFVM.Dirichlet     
+#     # tiny penalty value
+#     α = 1.0/VoronoiFVM.Dirichlet     
 
-    # doping and values for psi at Dirichlet boundary interfaces
-    bDopingVector   = data.bDopingClassical   # [p-doped, n-doped]
-    contactVoltages = data.contactVoltage     # [p-doped, n-doped]
+#     # doping and values for psi at Dirichlet boundary interfaces
+#     bDopingVector   = data.bDopingClassical   # [p-doped, n-doped]
+#     contactVoltages = data.contactVoltage     # [p-doped, n-doped]
 
-    # final index for electrostatic potential
-    ipsi = data.numberOfSpecies
+#     # final index for electrostatic potential
+#     ipsi = data.numberOfSpecies
     
-    # set up boundary conditions via penalty method
-    f[ipsi] = doping(bnode.region, bDopingVector)
+#     # set up boundary conditions via penalty method
+#     f[ipsi] = doping(bnode.region, bDopingVector)
 
-    for icc = 1:data.numberOfSpecies - 1 
-        eta = data.chargeNumbers[icc] * (q * (contactVoltages[bnode.region] - u[ipsi]) + data.bandEdgeEnergy[bnode.region,icc] )/ (kB * data.temperature)
+#     for icc = 1:data.numberOfSpecies - 1 
+#         eta = data.chargeNumbers[icc] * (q * (contactVoltages[bnode.region] - u[ipsi]) + data.bandEdgeEnergy[bnode.region,icc] )/ (kB * data.temperature)
 
-        f[icc]  = 0.0
-        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F(eta)
-    end
+#         f[icc]  = 0.0
+#         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F(eta)
+#     end
 
-    f[ipsi] = -1/α * q * f[ipsi]
+#     f[ipsi] = -1/α * q * f[ipsi]
 
-end 
-
-
-"""
-$(SIGNATURES)
-
-Like `reaction!` but with classical regionwise doping.
-
-"""
-function reaction_classicalRegionwiseDoping!(f,u,node,data)
-
-    # final index for electrostatic potential
-    ipsi = data.numberOfSpecies
-
-    # extract doping from data
-    dopingVector   = data.dopingClassical
-
-    # set up right-hand sides
-    f[ipsi] = doping(node.region, dopingVector)
+# end 
 
 
-    for icc = 1:data.numberOfSpecies - 1 
+# """
+# $(SIGNATURES)
+
+# Like `reaction!` but with classical regionwise doping.
+
+# """
+# function reaction_classicalRegionwiseDoping!(f,u,node,data)
+
+#     # final index for electrostatic potential
+#     ipsi = data.numberOfSpecies
+
+#     # extract doping from data
+#     dopingVector   = data.dopingClassical
+
+#     # set up right-hand sides
+#     f[ipsi] = doping(node.region, dopingVector)
+
+
+#     for icc = 1:data.numberOfSpecies - 1 
         
-        eta = data.chargeNumbers[icc] * (q * (u[icc] - u[ipsi]) + data.bandEdgeEnergy[node.region,icc] )/ (kB * data.temperature)
+#         eta = data.chargeNumbers[icc] * (q * (u[icc] - u[ipsi]) + data.bandEdgeEnergy[node.region,icc] )/ (kB * data.temperature)
 
-        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F(eta)
+#         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F(eta)
 
-        for ireg = 1:data.numberOfRegions
+#         for ireg = 1:data.numberOfRegions
 
-            ## add different recombination kernels r(n,p)
+#             ## add different recombination kernels r(n,p)
 
-            # radiative recombination
-            f[icc] = data.recombinationRadiative[ireg]           
+#             # radiative recombination
+#             f[icc] = data.recombinationRadiative[ireg]           
             
-            # Auger recombination
-            f[icc] = f[icc] + sum(data.recombinationAuger[ireg,:] .* u[1:end-1])        
+#             # Auger recombination
+#             f[icc] = f[icc] + sum(data.recombinationAuger[ireg,:] .* u[1:end-1])        
 
-            # SRH recombination
-            f[icc] = f[icc] + 1 / ( sum(data.recombinationSRHTrapDensity[ireg,end:-1:1] .* (u[1:end-1] .+ data.recombinationSRHLifetime[ireg,1:end] ) ) )
+#             # SRH recombination
+#             f[icc] = f[icc] + 1 / ( sum(data.recombinationSRHTrapDensity[ireg,end:-1:1] .* (u[1:end-1] .+ data.recombinationSRHLifetime[ireg,1:end] ) ) )
 
-        end
+#         end
         
-        # full recombination
-        # note: typeof(vec .* vec) is Array so we compute (vec .* vec)[1]
-        f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * prod(u[1:end-1]) * ( 1 - prod( exp( (-data.chargeNumbers .* u[1:end-1])[1] ) ) )
+#         # full recombination
+#         # note: typeof(vec .* vec) is Array so we compute (vec .* vec)[1]
+#         f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * prod(u[1:end-1]) * ( 1 - prod( exp( (-data.chargeNumbers .* u[1:end-1])[1] ) ) )
         
-    end
+#     end
 
-    f[ipsi] = - q * f[ipsi]
+#     f[ipsi] = - q * f[ipsi]
 
-end
+# end
 
-function doping(ireg,dopingVector)
-    dopingVector[ireg]
-end
+# function doping(ireg,dopingVector)
+#     dopingVector[ireg]
+# end
 
 
 ###########################################################################################################################
@@ -359,29 +391,30 @@ function ScharfetterGummel!(f, u, edge, data)
     ul  = viewL(edge, u)
 
     ipsi = data.numberOfSpecies
+    ireg = edge.region
 
     UT   = (kB * data.temperature ) / q
     dpsi = ul[ipsi]- uk[ipsi]
 
-    for ireg = 1:data.numberOfRegions
-        for icc = 1:data.numberOfSpecies-1
-            
-            j0   = data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * UT * data.densityOfStates[ireg,icc]
+    for icc = 1:data.numberOfSpecies-1
+        
+        j0   = data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * UT * data.densityOfStates[ireg,icc]
 
-            f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
+        f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
 
-            etak = data.chargeNumbers[icc] / UT * ( uk[icc]-uk[ipsi] + data.bandEdgeEnergy[ireg,icc] / q)
-            etal = data.chargeNumbers[icc] / UT * ( ul[icc]-ul[ipsi] + data.bandEdgeEnergy[ireg,icc] / q)
+        # etak = data.chargeNumbers[icc] / UT * ( uk[icc]-uk[ipsi] + data.bandEdgeEnergy[ireg,icc] / q)
+        # etal = data.chargeNumbers[icc] / UT * ( ul[icc]-ul[ipsi] + data.bandEdgeEnergy[ireg,icc] / q)
+        etak = etaFunction(uk,edge,data,icc,ipsi) 
+        etal = etaFunction(ul,edge,data,icc,ipsi) 
 
-            bp, bm = fbernoulli_pm( data.chargeNumbers[icc] * dpsi / UT)
+        bp, bm = fbernoulli_pm( data.chargeNumbers[icc] * dpsi / UT)
 
-            f[icc] = data.chargeNumbers[icc] * j0 * ( bp * data.F(etak) - bm * data.F(etal) )
+        f[icc] = data.chargeNumbers[icc] * j0 * ( bp * data.F(etak) - bm * data.F(etal) )
 
-            # general implementation of the two equations:
-            #       f[iphin] = - j0N * ( bp * data.F(etaNl) - bm * data.F(etaNk) )
-            #       f[iphip] =   j0P * ( bp * data.F(etaPk) - bm * data.F(etaPl) )
+        # general implementation of the two equations:
+        #       f[iphin] = - j0N * ( bp * data.F(etaNl) - bm * data.F(etaNk) )
+        #       f[iphip] =   j0P * ( bp * data.F(etaPk) - bm * data.F(etaPl) )
 
-        end
     end
 
 end
@@ -397,27 +430,28 @@ function Sedan!(f, u, edge, data)
     ul  = viewL(edge, u)
 
     ipsi = data.numberOfSpecies
+    ireg = edge.region
 
     UT   = (kB * data.temperature ) / q
     dpsi = ul[ipsi]- uk[ipsi]
 
-    for ireg = 1:data.numberOfRegions
-        for icc = 1:data.numberOfSpecies-1
+    for icc = 1:data.numberOfSpecies-1
 
-            j0   = data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * UT * data.densityOfStates[ireg,icc]
+        j0   = data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * UT * data.densityOfStates[ireg,icc]
 
-            f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
+        f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
 
-            etak = data.chargeNumbers[icc] / UT * ( uk[icc]-uk[ipsi] + data.bandEdgeEnergy[ireg,icc] / q)
-            etal = data.chargeNumbers[icc] / UT * ( ul[icc]-ul[ipsi] + data.bandEdgeEnergy[ireg,icc] / q)
+        # etak = data.chargeNumbers[icc] / UT * ( uk[icc]-uk[ipsi] + data.bandEdgeEnergy[ireg,icc] / q)
+        # etal = data.chargeNumbers[icc] / UT * ( ul[icc]-ul[ipsi] + data.bandEdgeEnergy[ireg,icc] / q)
+        etak = etaFunction(uk,edge,data,icc,ipsi) 
+        etal = etaFunction(ul,edge,data,icc,ipsi) 
 
-            Q = data.chargeNumbers[icc] / UT * dpsi + (etal - etak) - log( data.F(etal) ) + log( data.F(etak))
+        Q = data.chargeNumbers[icc] / UT * dpsi + (etal - etak) - log( data.F(etal) ) + log( data.F(etak))
 
-            bp, bm = fbernoulli_pm( Q )
+        bp, bm = fbernoulli_pm( Q )
 
-            f[icc] = data.chargeNumbers[icc] * j0 * ( bp * data.F(etak) - bm * data.F(etal) )
+        f[icc] = data.chargeNumbers[icc] * j0 * ( bp * data.F(etak) - bm * data.F(etal) )
 
-        end
     end
 
 end
@@ -437,7 +471,7 @@ function electroNeutralSolutionBoltzmann(grid::VoronoiFVM.AbstractGrid,data::DDF
     iphip = 2;
     UT    = (kB * data.temperature ) / q
     
-    # initialise zero vector
+    # initialize zero vector
     psi0 = zeros(length(grid.coord))
     
     # boundary values
@@ -457,55 +491,28 @@ function electroNeutralSolutionBoltzmann(grid::VoronoiFVM.AbstractGrid,data::DDF
         # set boundary values for electroneutral potential
         psi0[grid.bfacenodes[i]] = (Ec+Ev)/(2q) - 0.5*UT*log(Nc/Nv) + UT*asinh(C/(2*Ni))
 
-        # println(C)
-        # println(-data.chargeNumbers[iphin] * data.bDoping[ibreg,iphin])
-        # println(data.chargeNumbers[iphip] * data.bDoping[ibreg,iphip])
-        # println(psi0[grid.bfacenodes[i]] )
-
     end
 
     # interior values
-    for i=1:length(grid.coord) - length(grid.bfacenodes)
+    for i=1:length(grid.cellregions)-1
 
         # interior index
-        ireg = grid.bfaceregions[i]
+        ireg      = grid.cellregions[i]
+        ireg_next = grid.cellregions[i+1]
 
         # interior region specific data
-        Ec = data.bBandEdgeEnergy[ireg,iphin]   
-        Ev = data.bBandEdgeEnergy[ireg,iphip] 
-        Nc = data.bDensityOfStates[ireg,iphin]  
-        Nv = data.bDensityOfStates[ireg,iphip]
+        Ec = (data.bandEdgeEnergy[ireg,iphin]  + data.bandEdgeEnergy[ireg_next,iphin] ) / 2
+        Ev = (data.bandEdgeEnergy[ireg,iphip]  + data.bandEdgeEnergy[ireg_next,iphip] ) / 2 
+        Nc = (data.densityOfStates[ireg,iphin] + data.densityOfStates[ireg_next,iphin]) / 2
+        Nv = (data.densityOfStates[ireg,iphip] + data.densityOfStates[ireg_next,iphip]) / 2
         Ni = sqrt( Nc*Nv*exp(-(Ec-Ev)/(kB*data.temperature)) )
-        C  = -data.chargeNumbers[iphin] * data.bDoping[ireg,iphin] -data.chargeNumbers[iphip] * data.bDoping[ireg,iphip]
+        C  = -data.chargeNumbers[iphin] * (data.doping[ireg,iphin]+data.doping[ireg_next,iphin])/2 -
+              data.chargeNumbers[iphip] * (data.doping[ireg,iphip]+data.doping[ireg_next,iphip])/2
 
         # set interior values for electroneutral potential
-        psi0[grid.bfacenodes[i]] = (Ec+Ev)/(2q) - 0.5*UT*log(Nc/Nv) + UT*asinh(C/(2*Ni))
-
-        # println(C)
-        # println(-data.chargeNumbers[iphin] * data.bDoping[ibreg,iphin])
-        # println(data.chargeNumbers[iphip] * data.bDoping[ibreg,iphip])
-        # println(psi0[grid.bfacenodes[i]] )
+        psi0[i+1] = (Ec+Ev)/(2q) - 0.5*UT*log(Nc/Nv) + UT*asinh(C/(2*Ni))
 
     end
 
-    println(psi0)
+    psi0
 end
-
-
-    # for icc = 1:data.numberOfSpecies - 1 
-    #     for i in 1:length(g.cellregions)
-
-    #         # determine doping value in cell and number of cell nodes
-    #         cellValue            = data.doping[g.cellregions[i],icc] 
-    #         numberLocalCellNodes = length(g.cellnodes[:,i])
-
-    #         # patch together cells
-    #         PyPlot.plot(g.coord[g.cellnodes[:,i]], 
-    #                     repeat(cellValue:cellValue,numberLocalCellNodes), 
-    #                     color=colors[icc],
-    #                     linewidth=3);
-    #     end
-
-    #     # legend
-    #     PyPlot.plot(NaN,NaN,color=colors[icc],linewidth=3,label="icc="*string(icc))
-    # end
