@@ -14,6 +14,7 @@ function plotDoping(g::VoronoiFVM.AbstractGrid, data::DDFermiData)
     rcParams["font.sans-serif"] = "Arial"
 
     colors = ["green", "red", "blue", "yellow"]
+    styles = ["-", "--", "-.", ":"]
 
     # plot different doping values in interior
     for icc = 1:data.numberOfSpecies - 1 
@@ -24,14 +25,15 @@ function plotDoping(g::VoronoiFVM.AbstractGrid, data::DDFermiData)
             numberLocalCellNodes = length(g.cellnodes[:,i])
 
             # patch together cells
-            PyPlot.plot(g.coord[g.cellnodes[:,i]], 
+            PyPlot.semilogy(g.coord[g.cellnodes[:,i]], 
                         repeat(cellValue:cellValue,numberLocalCellNodes), 
                         color=colors[icc],
-                        linewidth=3);
+                        linewidth=3,
+                        linestyle=styles[icc]);
         end
 
         # legend
-        PyPlot.plot(NaN,NaN,color=colors[icc],linewidth=3,label="icc="*string(icc))
+        PyPlot.semilogy(NaN,NaN,color=colors[icc],linewidth=3,label="icc="*string(icc))
     end
 
     # plot different doping values on boundary
@@ -43,7 +45,7 @@ function plotDoping(g::VoronoiFVM.AbstractGrid, data::DDFermiData)
             numberLocalCellNodes = length(g.bfacenodes[:,i])
 
             # patch together cells
-            PyPlot.plot(g.coord[g.bfacenodes[:,i]], 
+            PyPlot.semilogy(g.coord[g.bfacenodes[:,i]], 
                         marker="x",
                         markersize=10,
                         repeat(cellValue:cellValue,numberLocalCellNodes), 
@@ -61,16 +63,28 @@ function plotDoping(g::VoronoiFVM.AbstractGrid, data::DDFermiData)
     PyPlot.figure()
 end
 
+"""
+$(SIGNATURES)
 
+Plot electroneutral potential.
+"""
+function plotElectroNeutralSolutionBoltzmann(grid, psi0)
+        PyPlot.plot(grid.coord[:],psi0, label = "electroneutral potential (Boltzmann)", color="g", marker="o")
+        PyPlot.xlabel("space [m]")
+        PyPlot.ylabel("potential [V]")
+        PyPlot.legend(loc="upper left")
+        PyPlot.show()
+        PyPlot.figure()
+end
 
 
 """
 $(SIGNATURES)
 
-Plot electrostatic potential, the electron and hole quasi Fermi potential as well as the IV curve.
+Plot electrostatic potential as well as the electron and hole quasi Fermi potentials.
 
 """
-function plot_solution(sys, U0)
+function plotSolution(sys, U0)
     dddata = VoronoiFVM.data(sys)
 
     PyPlot.clf()
@@ -86,4 +100,19 @@ function plot_solution(sys, U0)
         PyPlot.gcf()
     end
 
+end
+
+"""
+$(SIGNATURES)
+
+Plot the IV curve.
+
+"""
+function plotIV(biasValues,IV)
+    PyPlot.subplot(212)
+    PyPlot.plot(biasValues[1:length(IV)], IV) 
+    PyPlot.grid()
+    PyPlot.xlabel("bias [V]")
+    PyPlot.ylabel("total current [A]")
+    PyPlot.pause(1.0e-5)
 end
