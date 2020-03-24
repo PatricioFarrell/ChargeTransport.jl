@@ -377,8 +377,12 @@ function Sedan!(f, u, edge, data)
 end
 
 """
+
+$(SIGNATURES)
+
 Compute the electro-neutral solution, assuming the Boltzmann approximation. It is obtained by setting the left-hand side in 
 the Poisson equation equal to zero and solving for \\psi.
+
 """
 function electroNeutralSolutionBoltzmann(grid::VoronoiFVM.AbstractGrid,data::DDFermiData)
 
@@ -435,4 +439,68 @@ function electroNeutralSolutionBoltzmann(grid::VoronoiFVM.AbstractGrid,data::DDF
     end
 
     psi0
+end
+
+
+"""
+
+$(SIGNATURES)
+
+Find the equilibrium solution for the electrostatic potential
+    
+"""
+function solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
+
+    if !(data.F == DDFermi.Boltzmann) # if F != Boltzmann, find equilibrium solution for Boltzmann
+
+        species  = 1:data.numberOfSpecies
+        regions  = 1:grid.num_cellregions
+        bregions = 1:grid.num_bfaceregions
+
+        # save and set new values (careful with aliasing of arrays!)
+        saveDistribution    = data.F
+        saveContactVoltage  = copy(data.contactVoltage)             # copy() avoids aliasing
+        data.F              = Boltzmann
+        data.contactVoltage = zeros(size(data.contactVoltage)) * V
+
+        # initializing physics environment with the Boltzmann approximation as distribution function
+        physicsBoltzmann = VoronoiFVM.Physics(
+            data        = data,
+            num_species = data.numberOfSpecies,
+            flux        = DDFermi.ScharfetterGummel!,
+            reaction    = DDFermi.reaction!,  
+            breaction   = DDFermi.breaction!  
+        )
+
+        if dense
+            sysBoltzmann = VoronoiFVM.System(grid, physicsBoltzmann, unknown_storage = :dense)
+        else
+            sysBoltzmann = VoronoiFVM.System(grid, physicsBoltzmann, unknown_storage = :sparse)
+        end
+
+        # enable all species in all regions
+        for ispecies in species
+            enable_species!(sysBoltzmann, ispecies, regions)
+        end
+
+        for icc in species[1:end-1]
+            for bregion in bregions
+                sysBoltzmann.boundary_values[icc,  bregion] = data.contactVoltage[bregion]
+                sysBoltzmann.boundary_factors[icc, bregion] = VoronoiFVM.Dirichlet
+            end
+        end
+
+        solve!(solution, initialGuess, sysBoltzmann, control = control, tstep = Inf)
+        initialGuess .= solution
+
+        # switch back to the original data values
+        data.F              = saveDistribution
+        data.contactVoltage = saveContactVoltage
+
+    else # if F = Boltzmann, don't do anything
+
+        prinln("*** We compute with Boltzmann statistics anyway. ")
+
+    end
+
 end
