@@ -22,7 +22,7 @@ mutable struct DDFermiData <: VoronoiFVM.AbstractData
     
     # number of boundary regions 
     contactVoltage              ::  Array{Real,1}
-    bDopingClassical            ::  Array{Real,1}
+    # bDopingClassical            ::  Array{Real,1}
 
     # number of carriers
     chargeNumbers               ::  Array{Real,1}
@@ -58,7 +58,7 @@ mutable struct DDFermiData <: VoronoiFVM.AbstractData
 
 end
 
-function nofunc()
+function emptyFunction()
 end
 
 """
@@ -79,14 +79,14 @@ function DDFermiData(numberOfRegions=3::Int64, numberOfBoundaryRegions=2::Int64,
         numberOfSpecies,
 
         # functions
-        nofunc,                                                         # distribution
+        emptyFunction,                                                         # distribution
 
         # real numbers
         300 * K,                                                        # temperature 
 
         # number of boundary regions
         Array{Real,1}(undef,numberOfBoundaryRegions),                   # contactVoltage
-        Array{Real,1}(undef,numberOfBoundaryRegions),                   # bDopingClassical
+        # Array{Real,1}(undef,numberOfBoundaryRegions),                   # bDopingClassical
 
         # number of charge carriers = number of species - 1
         Array{Real,1}(undef,numberOfSpecies-1),                         # chargeNumbers
