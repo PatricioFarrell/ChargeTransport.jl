@@ -10,6 +10,7 @@ $(TYPEDFIELDS)
 mutable struct DDFermiData <: VoronoiFVM.AbstractData
     
     # integer numbers
+    numberOfNodes               ::  Int64
     numberOfRegions             ::  Int64
     numberOfBoundaryRegions     ::  Int64
     numberOfSpecies             ::  Int64
@@ -22,7 +23,6 @@ mutable struct DDFermiData <: VoronoiFVM.AbstractData
     
     # number of boundary regions 
     contactVoltage              ::  Array{Real,1}
-    # bDopingClassical            ::  Array{Real,1}
 
     # number of carriers
     chargeNumbers               ::  Array{Real,1}
@@ -42,8 +42,6 @@ mutable struct DDFermiData <: VoronoiFVM.AbstractData
     recombinationAuger          ::  Array{Real,2}
 
     # number of regions 
-    # intrinsicDoping             ::  Array{Real,1}
-    dopingClassical             ::  Array{Real,1}
     dielectricConstant          ::  Array{Real,1}
     recombinationRadiative      ::  Array{Real,1}
     electronSpinRelaxationTime  ::  Array{Real,1}
@@ -52,6 +50,11 @@ mutable struct DDFermiData <: VoronoiFVM.AbstractData
     generationEmittedLight      ::  Array{Real,1}
     generationPrefactor         ::  Array{Real,1}
     generationAbsorption        ::  Array{Real,1}
+
+    # number of nodes x number of carriers
+    dopingNode                  ::  Array{Real,2}
+    densityOfStatesNode         ::  Array{Real,2}   # still needs to be implemented
+    bandEdgeEnergyNode          ::  Array{Real,2}   # still needs to be implemented
 
     # standard constructor
     # DDFermiData(... all args ...) = new(... all args ...)
@@ -70,23 +73,23 @@ number of regions, number of boundary regions and the number
 of charge carriers as input.
 
 """
-function DDFermiData(numberOfRegions=3::Int64, numberOfBoundaryRegions=2::Int64, numberOfSpecies=3::Int64)
+function DDFermiData(numberOfNodes::Int64, numberOfRegions=3::Int64, numberOfBoundaryRegions=2::Int64, numberOfSpecies=3::Int64)
     DDFermiData(
 
         # integer numbers
+        numberOfNodes,
         numberOfRegions,
         numberOfBoundaryRegions,
         numberOfSpecies,
 
         # functions
-        emptyFunction,                                                         # distribution
+        emptyFunction,                                                  # distribution
 
         # real numbers
         300 * K,                                                        # temperature 
 
         # number of boundary regions
         Array{Real,1}(undef,numberOfBoundaryRegions),                   # contactVoltage
-        # Array{Real,1}(undef,numberOfBoundaryRegions),                   # bDopingClassical
 
         # number of charge carriers = number of species - 1
         Array{Real,1}(undef,numberOfSpecies-1),                         # chargeNumbers
@@ -106,8 +109,6 @@ function DDFermiData(numberOfRegions=3::Int64, numberOfBoundaryRegions=2::Int64,
         Array{Real,2}(undef,numberOfRegions,numberOfSpecies-1),         # recombinationAuger      
 
         # number of regions
-        # zeros(Float64,      numberOfRegions),                           # intrinsicDoping
-        Array{Real,1}(undef,numberOfRegions),                           # dopingClassical 
         Array{Real,1}(undef,numberOfRegions),                           # dielectricConstant      
         Array{Real,1}(undef,numberOfRegions),                           # recombinationRadiative  
         Array{Real,1}(undef,numberOfRegions),                           # electronSpinRelaxationTime
@@ -116,6 +117,11 @@ function DDFermiData(numberOfRegions=3::Int64, numberOfBoundaryRegions=2::Int64,
         Array{Real,1}(undef,numberOfRegions),                           # generationEmittedLight  
         Array{Real,1}(undef,numberOfRegions),                           # generationPrefactor     
         Array{Real,1}(undef,numberOfRegions),                           # generationAbsorption  
+
+        # # number of nodes x number of carriers
+        spzeros(Float64,numberOfNodes,numberOfSpecies-1),               # dopingNode         
+        spzeros(Float64,numberOfNodes,numberOfSpecies-1),               # densityOfStatesNode
+        spzeros(Float64,numberOfNodes,numberOfSpecies-1)                # bandEdgeEnergyNode 
         
     )
 
@@ -137,9 +143,10 @@ The argument of the distribution function for interior nodes:
     z / UT  * ( (phi - psi) + E / q ).
 
 """
-function etaFunction(u,node::VoronoiFVM.Node{Float64,Int32},data,icc,ipsi)
+function etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
     UT = (kB * data.temperature ) / q 
-    data.chargeNumbers[icc] / UT * ( (u[icc] - u[ipsi]) + data.bandEdgeEnergy[node.region,icc] / q )
+    E  = data.bandEdgeEnergy[node.region,icc] + data.bandEdgeEnergyNode[node.index,icc]
+    data.chargeNumbers[icc] / UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 
 """
@@ -151,9 +158,10 @@ The argument of the distribution function for boundary nodes:
     z / UT  * ( (phi_at_boundary - psi) + E / q ).
 
 """
-function etaFunction(u,bnode::VoronoiFVM.BNode{Float64,Int32},data,icc,ipsi)
+function etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
     UT = (kB * data.temperature ) / q 
-    data.chargeNumbers[icc] / UT * ( (data.contactVoltage[bnode.region]- u[ipsi]) + data.bandEdgeEnergy[bnode.region,icc] / q )
+    E  = data.bandEdgeEnergy[bnode.region,icc] + data.bandEdgeEnergyNode[bnode.index,icc]
+    data.chargeNumbers[icc] / UT * ( (data.contactVoltage[bnode.region]- u[ipsi]) + E / q )
 end
 
 """
@@ -165,9 +173,10 @@ The argument of the distribution function for edges:
     z / UT  * ( (phi_at_boundary - psi) + E / q ).
 
 """
-function etaFunction(u,edge::VoronoiFVM.Edge{Float64,Int32},data,icc,ipsi)
+function etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
     UT = (kB * data.temperature ) / q 
-    data.chargeNumbers[icc] / UT * ( (u[icc] - u[ipsi]) + data.bandEdgeEnergy[edge.region,icc] / q )
+    E  = data.bandEdgeEnergy[edge.region,icc] + data.bandEdgeEnergyNode[edge.icell,icc]
+    data.chargeNumbers[icc] / UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 
 """
@@ -249,9 +258,6 @@ function reaction!(f,u,node,data)
     UT   = (kB * data.temperature ) / q     # thermal voltage
     ipsi = data.numberOfSpecies             # final index for electrostatic potential
 
-    # set intrinsic doping outside of charge carrier loop
-    # f[ipsi] = data.intrinsicDoping[node.region]
-
     for icc = 1:data.numberOfSpecies - 1 
         
         eta = etaFunction(u,node,data,icc,ipsi)
@@ -290,96 +296,6 @@ function reaction!(f,u,node,data)
 end
 
 
-# """
-# $(SIGNATURES)
-
-# Like `breaction!` but with classical regionwise doping.
-
-# """
-# function breaction_classicalRegionwiseDoping!(f,u,bnode,data)
-
-#     # tiny penalty value
-#     α = 1.0/VoronoiFVM.Dirichlet     
-
-#     # doping and values for psi at Dirichlet boundary interfaces
-#     bDopingVector   = data.bDopingClassical   # [p-doped, n-doped]
-#     contactVoltages = data.contactVoltage     # [p-doped, n-doped]
-
-#     # final index for electrostatic potential
-#     ipsi = data.numberOfSpecies
-    
-#     # set up boundary conditions via penalty method
-#     f[ipsi] = doping(bnode.region, bDopingVector)
-
-#     for icc = 1:data.numberOfSpecies - 1 
-#         eta = data.chargeNumbers[icc] * (q * (contactVoltages[bnode.region] - u[ipsi]) + data.bandEdgeEnergy[bnode.region,icc] )/ (kB * data.temperature)
-
-#         f[icc]  = 0.0
-#         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F(eta)
-#     end
-
-#     f[ipsi] = -1/α * q * f[ipsi]
-
-# end 
-
-
-# """
-# $(SIGNATURES)
-
-# Like `reaction!` but with classical regionwise doping.
-
-# """
-# function reaction_classicalRegionwiseDoping!(f,u,node,data)
-
-#     # final index for electrostatic potential
-#     ipsi = data.numberOfSpecies
-
-#     # extract doping from data
-#     dopingVector   = data.dopingClassical
-
-#     # set up right-hand sides
-#     f[ipsi] = doping(node.region, dopingVector)
-
-
-#     for icc = 1:data.numberOfSpecies - 1 
-        
-#         eta = data.chargeNumbers[icc] * (q * (u[icc] - u[ipsi]) + data.bandEdgeEnergy[node.region,icc] )/ (kB * data.temperature)
-
-#         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F(eta)
-
-#         for ireg = 1:data.numberOfRegions
-
-#             ## add different recombination kernels r(n,p)
-
-#             # radiative recombination
-#             f[icc] = data.recombinationRadiative[ireg]           
-            
-#             # Auger recombination
-#             f[icc] = f[icc] + sum(data.recombinationAuger[ireg,:] .* u[1:end-1])        
-
-#             # SRH recombination
-#             f[icc] = f[icc] + 1 / ( sum(data.recombinationSRHTrapDensity[ireg,end:-1:1] .* (u[1:end-1] .+ data.recombinationSRHLifetime[ireg,1:end] ) ) )
-
-#         end
-        
-#         # full recombination
-#         # note: typeof(vec .* vec) is Array so we compute (vec .* vec)[1]
-#         f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * prod(u[1:end-1]) * ( 1 - prod( exp( (-data.chargeNumbers .* u[1:end-1])[1] ) ) )
-        
-#     end
-
-#     f[ipsi] = - q * f[ipsi]
-
-# end
-
-# function doping(ireg,dopingVector)
-#     dopingVector[ireg]
-# end
-
-
-###########################################################################################################################
-########                                       DIFFERENT FLUX DISCRETIZATIONS                                      ########
-###########################################################################################################################
 """
 $(SIGNATURES)
 
@@ -406,8 +322,12 @@ function ScharfetterGummel!(f, u, edge, data)
         # etal = data.chargeNumbers[icc] / UT * ( ul[icc]-ul[ipsi] + data.bandEdgeEnergy[ireg,icc] / q)
         etak = etaFunction(uk,edge,data,icc,ipsi) 
         etal = etaFunction(ul,edge,data,icc,ipsi) 
+        nodel = edge.node[2]
+        nodek = edge.node[1]
 
-        bp, bm = fbernoulli_pm( data.chargeNumbers[icc] * dpsi / UT)
+        # FRAGE: edge.node[2] = xL und edge.node[1] = xK?
+        bandEdgeDifference = data.bandEdgeEnergyNode[nodel, icc] - data.bandEdgeEnergyNode[nodek, icc]
+        bp, bm = fbernoulli_pm( data.chargeNumbers[icc] * (dpsi - bandEdgeDifference)/ UT)
 
         f[icc] = data.chargeNumbers[icc] * j0 * ( bp * data.F(etak) - bm * data.F(etal) )
 
@@ -501,8 +421,8 @@ function electroNeutralSolutionBoltzmann(grid::VoronoiFVM.AbstractGrid,data::DDF
         ireg_next = grid.cellregions[i+1]
 
         # interior region specific data
-        Ec = (data.bandEdgeEnergy[ireg,iphin]  + data.bandEdgeEnergy[ireg_next,iphin] ) / 2
-        Ev = (data.bandEdgeEnergy[ireg,iphip]  + data.bandEdgeEnergy[ireg_next,iphip] ) / 2 
+        Ec = (data.bandEdgeEnergy[ireg,iphin]  + data.bandEdgeEnergy[ireg_next,iphin] ) / 2 + data.bandEdgeEnergyNode[i,iphin]
+        Ev = (data.bandEdgeEnergy[ireg,iphip]  + data.bandEdgeEnergy[ireg_next,iphip] ) / 2 + data.bandEdgeEnergyNode[i,iphip]
         Nc = (data.densityOfStates[ireg,iphin] + data.densityOfStates[ireg_next,iphin]) / 2
         Nv = (data.densityOfStates[ireg,iphip] + data.densityOfStates[ireg_next,iphip]) / 2
         Ni = sqrt( Nc*Nv*exp(-(Ec-Ev)/(kB*data.temperature)) )

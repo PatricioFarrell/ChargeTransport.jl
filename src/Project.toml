@@ -1,10 +1,11 @@
 name = "DDFermi"
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 authors = ["Patricio Farrell <patricio.farrell@wias-berlin.de>"]
-version = "0.0.1"
+version = "0.0.2"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 VoronoiFVM = "82b139dc-5afc-11e9-35da-9b9bdfd336f3"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
