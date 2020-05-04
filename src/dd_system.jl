@@ -478,7 +478,7 @@
     The Koprucki-Gärtner scheme. This scheme is calculated by solving a fixed point equation which arises when considering the generalized Scharfetter-Gummel scheme in case of Blakemore statistics.
 
     """
-    # todo_da: is not working yet!!
+    # todo_da: is not working yet!! (solved problem!)
     function kopruckigaertner!(f, u, edge, data)
         gamma = 0.27        # from Blakemore distribution
         max_iteration = 200 # for Newton solver
@@ -540,7 +540,10 @@
     the Poisson equation equal to zero and solving for \\psi.
 
     """
-    function electroNeutralSolutionBoltzmann(grid::VoronoiFVM.AbstractGrid,data::DDFermiData)
+    #todo_da: Here: Need a grid from ExtendableGrids.jl
+    #function electroNeutralSolutionBoltzmann(grid::VoronoiFVM.AbstractGrid,data::DDFermiData)
+    # need to specify grid
+    function electroNeutralSolutionBoltzmann(grid,data::DDFermiData)
 
         if data.numberOfSpecies-1 != 2
             error("The electroneutral solution is only implemented for two species!")
@@ -552,14 +555,20 @@
         UT    = (kB * data.temperature ) / q
 
         # initialize zero vector
-        psi0 = zeros(length(grid.coord))
+    #todo_da:
+    #    psi0 = zeros(length(grid.coord))
+    coord        = grid[Coordinates]
+    bfacenodes   = grid[BFaceNodes]
+    bfaceregions = grid[BFaceRegions]
+    psi0         = zeros(length(coord))
 
         # boundary values
-        for i=1:length(grid.bfacenodes)
-
+        #todo_da:
+    #    for i=1:length(grid.bfacenodes)
+        for i=1:length(bfacenodes)
             # boundary index
-            ibreg = grid.bfaceregions[i]
-
+            # from old code: ibreg = grid.bfaceregions[i]
+            ibreg = bfaceregions[i]
             # boundary region specific data
             Ec = data.bBandEdgeEnergy[ibreg,iphin]
             Ev = data.bBandEdgeEnergy[ibreg,iphip]
@@ -570,15 +579,19 @@
     #todo_da: Vorschlag: das minus aus doping nach vorne ziehen, damit klarer wird, dass es insgesamt subtrahiert wird (?)
 
             # set boundary values for electroneutral potential
-            psi0[grid.bfacenodes[i]] = (Ec+Ev)/(2q) - 0.5*UT*log(Nc/Nv) + UT*asinh(C/(2*Ni))
+psi0[bfacenodes[i]] = (Ec+Ev)/(2q) - 0.5*UT*log(Nc/Nv) + UT*asinh(C/(2*Ni))
+            #todo_da: old code: psi0[grid.bfacenodes[i]] = (Ec+Ev)/(2q) - 0.5*UT*log(Nc/Nv) + UT*asinh(C/(2*Ni))
         end
 
         # interior values
-        for i=1:length(grid.cellregions)-1
+        #todo_da
+        cellregions = grid[CellRegions]
+        #for i=1:length(grid.cellregions)-1
+        for i=1:length(cellregions)-1
 
             # interior index
-            ireg      = grid.cellregions[i]
-            ireg_next = grid.cellregions[i+1]
+            ireg      = cellregions[i]
+            ireg_next = cellregions[i+1]
     #todo_da: Das ist mir nicht ganz klar. Vermutung: Muss aufgteilt werden wegen Grenzschichten wahrscheinlich, weil da möglicherweise unterschiedliche Werte für physikalische Parameter. Aber warum das arithmetische Mittel dann von beiden? (Im Handbook steht nichts dazu)
 
             # interior region specific data
@@ -609,10 +622,12 @@
     function solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
 
         if !(data.F == DDFermi.Boltzmann) # if F != Boltzmann, find equilibrium solution for Boltzmann
-
+#todo_da: add
+num_cellregions = grid[NumCellRegions]
+num_bfaceregions = grid[NumBFaceRegions]
             species  = 1:data.numberOfSpecies
-            regions  = 1:grid.num_cellregions
-            bregions = 1:grid.num_bfaceregions
+            regions  = 1:num_cellregions
+            bregions = 1:num_bfaceregions
 
             # save and set new values (careful with aliasing of arrays!)
             saveDistribution    = data.F
@@ -652,7 +667,7 @@
             data.contactVoltage = saveContactVoltage
 
         else # if F = Boltzmann, don't do anything
-    # todo_da: change in println and not prinln
+        # todo_da: change in println and not prinln
             println("*** We compute with Boltzmann statistics anyway. ")
 
         end

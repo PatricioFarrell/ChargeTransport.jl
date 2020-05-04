@@ -1,6 +1,7 @@
 module DDFermi
 
 using VoronoiFVM
+using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf
 using DocStringExtensions
