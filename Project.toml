@@ -9,7 +9,9 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 VoronoiFVM = "82b139dc-5afc-11e9-35da-9b9bdfd336f3"
+ExtendableGrids = "cfc395e8-590f-11e8-1f13-43a2532b2fa8"
 
 [compat]
 PyPlot = "~2.8"
-VoronoiFVM = "~0.7"
+VoronoiFVM = ">=0.7"
+ExtendableGrids = "^0.2.2"
