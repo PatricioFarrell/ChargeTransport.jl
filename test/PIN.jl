@@ -192,7 +192,7 @@ ENodes[:,1].= [-0.424*cos.(2*pi/(6*μm) * coord) *  eV...]
 
 
     ################################################################################
-    println("Define Physics and System")
+    println("Define physics and system")
     ################################################################################
 
     ## initializing physics environment ##
