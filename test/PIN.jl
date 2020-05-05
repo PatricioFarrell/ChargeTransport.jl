@@ -297,11 +297,11 @@ control.max_iterations    = 30
 
         # get IV curve
         factory = VoronoiFVM.TestFunctionFactory(sys)
-        #todo_da: corrected I-V curves
-        #tf1     = testfunction(factory, [2], [1])
-        tf     = testfunction(factory, [2], [1])
-        #I1      = integrate(sys, tf1, solution)
+
+        # testfunction zero in bregionAcceptor and one in bregionDonor
+        tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])    
         I      = integrate(sys, tf, solution)
+        
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 
         # plot solution and IV curve
