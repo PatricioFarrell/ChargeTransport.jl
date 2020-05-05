@@ -301,12 +301,11 @@ control.max_iterations    = 30
         # testfunction zero in bregionAcceptor and one in bregionDonor
         tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])    
         I      = integrate(sys, tf, solution)
-        
+
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 
         # plot solution and IV curve
         if pyplot
-            #todo_da:added grid in dependency
             DDFermi.plotSolution(grid, sys, solution)
             DDFermi.plotIV(biasValues, IV)
         end
