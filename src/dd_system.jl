@@ -9,6 +9,7 @@
     """
     mutable struct DDFermiData <: VoronoiFVM.AbstractData
     # todo_da: U_T hier ebenfalls data abhängig machen und in main file definieren, um nicht ständig auszurechen?
+    # pf: okay!
 
         # integer numbers
         numberOfNodes               ::  Int64
@@ -32,8 +33,6 @@
         bBandEdgeEnergy             ::  Array{Real,2}
         bDensityOfStates            ::  Array{Real,2}
         bDoping                     ::  Array{Real,2}
-    #todo_da: warum brauchen wir zusätzliche Werte für boundary?
-    # In welchen Fällen gilt bBandEdgeEnergy[ibreg,iphin] != bandEdgeEnergy[ireg,iphin]?
 
         # number of regions x number of carriers
         doping                      ::  Array{Real,2}
@@ -91,7 +90,6 @@
 
             # real numbers
             300 * K,                                                        # temperature
-            # todo_da: können einfach nur 'temperature schreiben'. Da Temperatur in data als real bereits deklariert und in Anwendungsfile übergeben wird.
 
             # number of boundary regions
             Array{Real,1}(undef,numberOfBoundaryRegions),                   # contactVoltage
