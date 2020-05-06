@@ -1,6 +1,76 @@
 """
 $(SIGNATURES)
 
+Plot band-edge energies.
+"""
+
+function plotEnergies(grid, data::DDFermiData)
+    coord       = grid[Coordinates]
+    cellregions = grid[CellRegions]
+    cellnodes   = grid[CellNodes]
+
+    #if length(coord[1]) != 1
+if length(coord[1]) != 1
+        println("plotEnergies is so far only implemented in 1D")
+end
+
+    rcParams = PyPlot.PyDict(PyPlot.matplotlib."rcParams")
+    rcParams["font.size"] = 12
+    rcParams["font.sans-serif"] = "Arial"
+
+    colors = ["green", "red", "blue", "yellow"]
+    styles = ["-", ":", "--", "-."]
+
+    # plot different band-edge energies values in interior
+    for icc = 1:data.numberOfSpecies - 1
+        for i in 1:length(cellregions)
+            # determine band-edge energy value in cell and number of cell nodes
+            cellValue            = ( data.bandEdgeEnergy[cellregions[i],icc] + data.bandEdgeEnergyNode[cellnodes[icc,i],icc] )/q
+            numberLocalCellNodes = length(cellnodes[:,i])
+            # patch together cells
+            PyPlot.plot(coord[cellnodes[:,i]],
+                        repeat(cellValue:cellValue,numberLocalCellNodes),
+                        marker="x",
+                        color=colors[icc],
+                        linewidth=3,
+                        linestyle=styles[icc]);
+        end
+
+        # legend
+        PyPlot.plot(NaN,NaN,color=colors[icc],linewidth=3,label="icc="*string(icc))
+    end
+
+    # plot different band-edge energy values on boundary
+    bfaceregions = grid[BFaceRegions]
+    bfacenodes = grid[BFaceNodes]
+    for icc = 1: data.numberOfSpecies - 1
+        for i in 1:length(bfaceregions)
+
+            # determine doping value in cell and number of cell nodes
+            cellValue            = (data.bBandEdgeEnergy[bfaceregions[i],icc] + data.bandEdgeEnergyNode[bfacenodes[i],icc])/q
+            numberLocalCellNodes = length(bfacenodes[:,i])
+            # patch together cells
+            PyPlot.plot(coord[bfacenodes[:,i]],
+                        marker="x",
+                        markersize=10,
+                        repeat(cellValue:cellValue,numberLocalCellNodes),
+                        color=colors[icc]);
+        end
+
+    end
+
+    PyPlot.xlabel("\$x\$")
+    PyPlot.title("band-edge Energies")
+    PyPlot.legend()
+    PyPlot.show();
+    PyPlot.figure()
+
+end
+
+
+"""
+$(SIGNATURES)
+
 Visualize doping and bDoping (x) to make sure they agree.
 """
 #todo_da: changed grid.
@@ -19,7 +89,7 @@ if length(coord[1]) != 1
     rcParams["font.sans-serif"] = "Arial"
 
     colors = ["green", "red", "blue", "yellow"]
-    styles = ["-", "--", "-.", ":"]
+    styles = ["-",":", "--", "-."]
 
     # plot different doping values in interior
     #todo_da: add following line and delete dependency of cellregions from g
