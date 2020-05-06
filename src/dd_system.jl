@@ -104,7 +104,6 @@
 
             # number of regions x number of charge carriers
             zeros(Float64,      numberOfRegions,numberOfSpecies-1),         # doping
-    #todo_da: zusätzlicher Kommentar: Doping mit zeros und nicht undef Array, damit automatisch mit 0en "aufgestockt" wird in Anwendungscode. z.B pin: C = [Nd  0.0; ni   ni; 0.0  Na] (ggf. für docs)
 
             Array{Real,2}(undef,numberOfRegions,numberOfSpecies-1),         # densityOfStates
             Array{Real,2}(undef,numberOfRegions,numberOfSpecies-1),         # bandEdgeEnergy
@@ -128,26 +127,6 @@
             spzeros(Float64,numberOfNodes,numberOfSpecies-1),               # densityOfStatesNode
             spzeros(Float64,numberOfNodes,numberOfSpecies-1)                # bandEdgeEnergyNode
         )
-
-
-    #####
-
-    #function etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
-    #    UT = (kB * data.temperature ) / q
-    #    E  = data.bandEdgeEnergy[node.region,icc] + data.bandEdgeEnergyNode[node.index,icc]
-    #    data.chargeNumbers[icc] / UT * ( (u[icc] - u[ipsi]) + E / q )
-    # end
-
-    # todo_da: Idee gemeinsam besprechen.
-    #          - Zur Sprache: bandEdgeEnergyNode beeinhalt knotenabhängige Bandkantenenergien (und nicht die zugehörigen Knoten ...)?
-    #            (Falls ja, Begriffe könnten für Verwirrung sorgen)
-    #          - Gilt entweder bandEdgeEnergy ODER bandEdgeEnergyNode vs. Möglich beides zu haben?
-    #            Falls entweder/oder, dann:
-    #            Muss nicht zeros(Float64, numberOfRegions,numberOfSpecies-1) für bandEdgeEnergy, falls Wahl auf knotenabhängige Variante fällt?
-    #          - (Falls Idee richtig verstanden, muss auch für dopingNode/densityOfStatesNode im Folgecode Summe gebildetet werden wie
-    #           E  = data.bandEdgeEnergy[node.region,icc] + data.bandEdgeEnergyNode[node.index,icc])
-
-    #####
 
     end
 
@@ -194,7 +173,7 @@
 
     The argument of the distribution function for edges:
 
-        z / UT  * ( (phi_at_boundary - psi) + E / q ).
+        z / UT  * ( (phi - psi) + E / q ).
 
     """
     # todo_da: phi_at_boundary in obigem kommentar muss geändert werden in phi_edge?
