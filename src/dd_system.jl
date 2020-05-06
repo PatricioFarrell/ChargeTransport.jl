@@ -186,6 +186,7 @@
         UT = (kB * data.temperature ) / q
         E  = data.bandEdgeEnergy[bnode.region,icc] + data.bandEdgeEnergyNode[bnode.index,icc]
         data.chargeNumbers[icc] / UT * ( (data.contactVoltage[bnode.region]- u[ipsi]) + E / q )
+    #todo_da: muss hier nicht bBandEdgeEnergy[bnode.region, icc]?
     end
 
     """
