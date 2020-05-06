@@ -174,10 +174,9 @@
 
     The argument of the distribution function for edges:
 
-        z / UT  * ( (phi - psi) + E / q ).
+        z / UT  * ( (phi_at_edge - psi) + E / q ).
 
     """
-    # todo_da: phi_at_boundary in obigem kommentar muss geändert werden in phi_edge?
 
     function etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
         UT = (kB * data.temperature ) / q
@@ -219,9 +218,6 @@
 
             f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.bDoping[bnode.region,icc]                            # subtract doping
             f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F(eta)     # add charge carrier
-
-    # todo_da: warum getrennt aufgeschrieben und nicht zusammen?
-    # Also: f[ipsi] = f[ipsi] +  data.chargeNumbers[icc] * (data.bDensityOfStates[bnode.region,icc] * data.F(eta) - data.bDoping[bnode.region,icc]  )
 
             # boundary conditions for charge carriers are set in main program
             f[icc]  = 0.0
