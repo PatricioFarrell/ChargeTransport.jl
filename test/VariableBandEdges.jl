@@ -10,7 +10,7 @@ using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf
 
-function main(;n = 1, pyplot = false, verbose = false, dense = true)
+function main(;n = 2, pyplot = false, verbose = false, dense = true)
 
     # close all windows
     PyPlot.close("all")
@@ -102,8 +102,9 @@ function main(;n = 1, pyplot = false, verbose = false, dense = true)
     data      = DDFermi.DDFermiData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
-    data.F                    = Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
+    data.F                    = Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
     data.temperature          = T
+    data.UT                   = (kB * data.temperature) / q
     data.contactVoltage       = [voltageDonor, voltageAcceptor]
     data.chargeNumbers[iphin] = -1
     data.chargeNumbers[iphip] =  1
@@ -150,8 +151,7 @@ function main(;n = 1, pyplot = false, verbose = false, dense = true)
 
     # nodal data
     idiscontinuity = floor(Int, numberOfNodes/2)
-    println(idiscontinuity)
-    data.bandEdgeEnergyNode[idiscontinuity, iphin] = -Ec
+    data.bandEdgeEnergyNode[idiscontinuity, iphin] = -0.1 * Ec
 
     # print data
     println(data)
@@ -180,7 +180,7 @@ function main(;n = 1, pyplot = false, verbose = false, dense = true)
     physics = VoronoiFVM.Physics(
     data        = data,
     num_species = numberOfSpecies,
-    flux        = DDFermi.Sedan!, #Sedan!, ScharfetterGummel!, diffusionenhanced!, kopruckigartner!
+    flux        = DDFermi.ScharfetterGummel!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
     reaction    = DDFermi.reaction!,
     breaction   = DDFermi.breaction!
     )
@@ -214,10 +214,10 @@ function main(;n = 1, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     control = VoronoiFVM.NewtonControl()
-    control.verbose        = verbose
-    control.damp_initial   = 0.001
-    control.damp_growth    = 1.21
-    control.max_iterations = 250
+    control.verbose           = verbose
+    control.damp_initial      = 0.001
+    control.damp_growth       = 1.21
+    control.max_iterations    = 250
     control.tol_absolute      = 1.0e-14
     control.tol_relative      = 1.0e-14
     control.handle_exceptions = true
@@ -250,9 +250,9 @@ function main(;n = 1, pyplot = false, verbose = false, dense = true)
     w_device = 0.5 * μm             # width of device
     z_device = 1.0e-4 * cm          # depth of device
 
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.2
-    control.max_iterations    = 30
+    #control.damp_initial      = 0.5
+    #control.damp_growth       = 1.2
+    #control.max_iterations    = 30
 
     for Δu in biasValues
         data.contactVoltage[bregionAcceptor] = Δu

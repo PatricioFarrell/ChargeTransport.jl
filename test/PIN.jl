@@ -33,7 +33,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     bregions        = [bregionDonor, bregionAcceptor]
 
     # grid
-#todo_da: mit diesem grid sehen wir Übereinstimmung mit meinem Code aus MA.
+    #todo_da: mit diesem grid sehen wir Übereinstimmung mit meinem Code aus MA.
     refinementfactor = 2^(n-1)
     coord_pdoping    = collect(range(0, stop = 2 * μm, length = 3 * refinementfactor))
     coord_intrinsic  = collect(range(2* μm, stop = 4* μm, length = 3 * refinementfactor))
@@ -43,12 +43,12 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     coord            = vcat(coord_pdoping, coord_intrinsic)
     coord            = vcat(coord, coord_ndoping)
     grid          = VoronoiFVM.Grid(coord)
-# Patricio:
-#    h             =  0.5 * μm                                   #  h = (2 / ( 3* 2^n - 1) ) * μm
-#    grid          = VoronoiFVM.Grid(collect(0.0 * μm:h:6 * μm))
-#todo_da: grid.coord is false (see Documentary in VoronoiFVM)
-#    numberOfNodes = length(grid.coord)
-numberOfNodes = length(coord)
+    # Patricio:
+    #    h             =  0.5 * μm                                   #  h = (2 / ( 3* 2^n - 1) ) * μm
+    #    grid          = VoronoiFVM.Grid(collect(0.0 * μm:h:6 * μm))
+    #todo_da: grid.coord is false (see Documentary in VoronoiFVM)
+    #    numberOfNodes = length(grid.coord)
+    numberOfNodes = length(coord)
 
     # set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm], [2.0 * μm], regionDonor)        # n-doped region = 1
@@ -83,10 +83,6 @@ numberOfNodes = length(coord)
     εr   = 12.9                 *  1.0              # relative dielectric permittivity of GAs
     T    = 300.0                *  K
 
-    ENodes = zeros(Float64,numberOfNodes,numberOfSpecies-1)
-#todo_da
-    #ENodes[:,1].= [-0.424*cos.(2*pi/(6*μm) * grid.coord) *  eV...]
-ENodes[:,1].= [-0.424*cos.(2*pi/(6*μm) * coord) *  eV...]
 
     # recombination parameters
     Auger           = 1.0e-29   * cm^6 / s          # 1.0e-41
@@ -120,6 +116,7 @@ ENodes[:,1].= [-0.424*cos.(2*pi/(6*μm) * coord) *  eV...]
     # region independent data
     data.F                    = Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
     data.temperature          = T
+    data.UT                   = (kB * data.temperature) / q
     data.contactVoltage       = [voltageDonor, voltageAcceptor]
     data.chargeNumbers[iphin] = -1
     data.chargeNumbers[iphip] =  1
@@ -168,9 +165,6 @@ ENodes[:,1].= [-0.424*cos.(2*pi/(6*μm) * coord) *  eV...]
     data.bDoping[bregionDonor,iphin]    = Nd        # data.bDoping  = [Nd  0.0;
     data.bDoping[bregionAcceptor,iphip] = Na        #                  0.0  Na]
 
-    # nodal data
-    # data.bandEdgeEnergyNode = ENodes
-
     # print data
     println(data)
 
@@ -178,15 +172,16 @@ ENodes[:,1].= [-0.424*cos.(2*pi/(6*μm) * coord) *  eV...]
 
 
     if pyplot
-    ################################################################################
-    println("Plot electroneutral potential and doping")
-    ################################################################################
+        ################################################################################
+        println("Plot electroneutral potential and doping")
+        ################################################################################
 
         psi0 = DDFermi.electroNeutralSolutionBoltzmann(grid, data)
+        DDFermi.plotEnergies(grid, data)
         DDFermi.plotDoping(grid, data)
         DDFermi.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
-    println("*** done\n")
+        println("*** done\n")
     end
 
 
@@ -197,11 +192,11 @@ ENodes[:,1].= [-0.424*cos.(2*pi/(6*μm) * coord) *  eV...]
 
     ## initializing physics environment ##
     physics = VoronoiFVM.Physics(
-        data        = data,
-        num_species = numberOfSpecies,
-        flux        = DDFermi.kopruckigaertner!, #Sedan!, ScharfetterGummel!, diffusionenhanced!, kopruckigartner!
-        reaction    = DDFermi.reaction!,
-        breaction   = DDFermi.breaction!
+    data        = data,
+    num_species = numberOfSpecies,
+    flux        = DDFermi.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
+    reaction    = DDFermi.reaction!,
+    breaction   = DDFermi.breaction!
     )
 
     if dense
@@ -240,9 +235,6 @@ ENodes[:,1].= [-0.424*cos.(2*pi/(6*μm) * coord) *  eV...]
     control.damp_initial   = 0.001
     control.damp_growth    = 1.21
     control.max_iterations = 250
-    #Patricio:
-    #control.tol_absolute   = 1.0e-10
-    #todo_da:
     control.tol_absolute      = 1.0e-14
     control.tol_relative      = 1.0e-14
     control.handle_exceptions = true
@@ -280,10 +272,11 @@ ENodes[:,1].= [-0.424*cos.(2*pi/(6*μm) * coord) *  eV...]
     w_device = 0.5 * μm# width of device
     z_device = 1.0e-4 * cm  # depth of device
 
-#todo_da:
-control.damp_initial      = 0.5
-control.damp_growth       = 1.2
-control.max_iterations    = 30
+
+    # put the below values in comments, if using Boltzmann statistics.
+    control.damp_initial      = 0.5
+    control.damp_growth       = 1.2
+    control.max_iterations    = 30
 
     for Δu in biasValues
         data.contactVoltage[bregionAcceptor] = Δu
@@ -299,7 +292,7 @@ control.max_iterations    = 30
         factory = VoronoiFVM.TestFunctionFactory(sys)
 
         # testfunction zero in bregionAcceptor and one in bregionDonor
-        tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])    
+        tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])
         I      = integrate(sys, tf, solution)
 
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
@@ -312,7 +305,7 @@ control.max_iterations    = 30
 
     end # bias loop
 
-# return IV
+    # return IV
     println("*** done\n")
 
 end #  main

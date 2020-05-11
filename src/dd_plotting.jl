@@ -4,15 +4,15 @@ $(SIGNATURES)
 Plot band-edge energies.
 """
 
-function plotEnergies(grid, data::DDFermiData)
+function plotEnergies(grid::ExtendableGrid, data::DDFermiData)
     coord       = grid[Coordinates]
     cellregions = grid[CellRegions]
     cellnodes   = grid[CellNodes]
 
     #if length(coord[1]) != 1
-if length(coord[1]) != 1
+    if length(coord[1]) != 1
         println("plotEnergies is so far only implemented in 1D")
-end
+    end
 
     rcParams = PyPlot.PyDict(PyPlot.matplotlib."rcParams")
     rcParams["font.size"] = 12
@@ -29,11 +29,11 @@ end
             numberLocalCellNodes = length(cellnodes[:,i])
             # patch together cells
             PyPlot.plot(coord[cellnodes[:,i]],
-                        repeat(cellValue:cellValue,numberLocalCellNodes),
-                        marker="x",
-                        color=colors[icc],
-                        linewidth=3,
-                        linestyle=styles[icc]);
+            repeat(cellValue:cellValue,numberLocalCellNodes),
+            marker="x",
+            color=colors[icc],
+            linewidth=3,
+            linestyle=styles[icc]);
         end
 
         # legend
@@ -51,10 +51,10 @@ end
             numberLocalCellNodes = length(bfacenodes[:,i])
             # patch together cells
             PyPlot.plot(coord[bfacenodes[:,i]],
-                        marker="x",
-                        markersize=10,
-                        repeat(cellValue:cellValue,numberLocalCellNodes),
-                        color=colors[icc]);
+            marker="x",
+            markersize=10,
+            repeat(cellValue:cellValue,numberLocalCellNodes),
+            color=colors[icc]);
         end
 
     end
@@ -73,14 +73,11 @@ $(SIGNATURES)
 
 Visualize doping and bDoping (x) to make sure they agree.
 """
-#todo_da: changed grid.
-#function plotDoping(g::VoronoiFVM.AbstractGrid, data::DDFermiData)
-# need to specify g!
-function plotDoping(g, data::DDFermiData)
+function plotDoping(g::ExtendableGrid, data::DDFermiData)
     #todo_da: add following line
-coord  = g[Coordinates]
+    coord  = g[Coordinates]
     #if length(g.coord[1]) != 1
-if length(coord[1]) != 1
+    if length(coord[1]) != 1
         println("plotDoping is so far only implemented in 1D")
     end
 
@@ -106,10 +103,10 @@ if length(coord[1]) != 1
 
             # patch together cells
             PyPlot.semilogy(coord[cellnodes[:,i]],
-                        repeat(cellValue:cellValue,numberLocalCellNodes),
-                        color=colors[icc],
-                        linewidth=3,
-                        linestyle=styles[icc]);
+            repeat(cellValue:cellValue,numberLocalCellNodes),
+            color=colors[icc],
+            linewidth=3,
+            linestyle=styles[icc]);
         end
 
         # legend
@@ -129,10 +126,10 @@ if length(coord[1]) != 1
 
             # patch together cells
             PyPlot.semilogy(coord[bfacenodes[:,i]],
-                        marker="x",
-                        markersize=10,
-                        repeat(cellValue:cellValue,numberLocalCellNodes),
-                        color=colors[icc]);
+            marker="x",
+            markersize=10,
+            repeat(cellValue:cellValue,numberLocalCellNodes),
+            color=colors[icc]);
         end
 
     end
@@ -154,12 +151,12 @@ Plot electroneutral potential.
 function plotElectroNeutralSolutionBoltzmann(grid, psi0)
     #todo_da: add following line
     coord = grid[Coordinates]
-        PyPlot.plot(coord[:],psi0, label = "electroneutral potential (Boltzmann)", color="g", marker="o")
-        PyPlot.xlabel("space [m]")
-        PyPlot.ylabel("potential [V]")
-        PyPlot.legend(loc="upper left")
-        PyPlot.show()
-        PyPlot.figure()
+    PyPlot.plot(coord[:],psi0, label = "electroneutral potential (Boltzmann)", color="g", marker="o")
+    PyPlot.xlabel("space [m]")
+    PyPlot.ylabel("potential [V]")
+    PyPlot.legend(loc="upper left")
+    PyPlot.show()
+    PyPlot.figure()
 end
 
 
