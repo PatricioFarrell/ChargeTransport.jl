@@ -1,6 +1,5 @@
 """
 $(SIGNATURES)
-
 Plot band-edge energies.
 """
 
@@ -25,7 +24,7 @@ function plotEnergies(grid::ExtendableGrid, data::DDFermiData)
     for icc = 1:data.numberOfSpecies - 1
         for i in 1:length(cellregions)
             # determine band-edge energy value in cell and number of cell nodes
-            cellValue            = ( data.bandEdgeEnergy[cellregions[i],icc] + data.bandEdgeEnergyNode[cellnodes[icc,i],icc] )/q
+            cellValue            = ( data.bandEdgeEnergy[cellregions[i],icc] + data.bandEdgeEnergyNode[i,icc] )/q
             numberLocalCellNodes = length(cellnodes[:,i])
             # patch together cells
             PyPlot.plot(coord[cellnodes[:,i]],
@@ -70,7 +69,6 @@ end
 
 """
 $(SIGNATURES)
-
 Visualize doping and bDoping (x) to make sure they agree.
 """
 function plotDoping(g::ExtendableGrid, data::DDFermiData)
@@ -145,7 +143,6 @@ end
 
 """
 $(SIGNATURES)
-
 Plot electroneutral potential.
 """
 function plotElectroNeutralSolutionBoltzmann(grid, psi0)
@@ -162,9 +159,7 @@ end
 
 """
 $(SIGNATURES)
-
 Plot electrostatic potential as well as the electron and hole quasi Fermi potentials.
-
 """
 #todo_da:add dependency on grid
 function plotSolution(grid, sys, U0)
@@ -189,9 +184,7 @@ end
 
 """
 $(SIGNATURES)
-
 Plot the IV curve.
-
 """
 function plotIV(biasValues,IV)
     PyPlot.subplot(212)
