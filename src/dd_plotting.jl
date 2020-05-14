@@ -1,5 +1,130 @@
 """
 $(SIGNATURES)
+
+Plot densities of system.
+"""
+function plotDensities(grid, sys, U0, Δu )
+
+    dddata        = data(sys)
+    ipsi          = dddata.numberOfSpecies
+
+    coord         = grid[Coordinates]
+    bfaceregions  = grid[BFaceRegions]
+    bfacenodes    = grid[BFaceNodes]
+    cellregions   = grid[CellRegions]
+    cellnodes     = grid[CellNodes]
+    numberOfCoord = length(coord)
+
+    #if length(coord[1]) != 1
+    if length(coord[1]) != 1
+        println("plotEnergies is so far only implemented in 1D")
+    end
+
+    densities = Array{Real,2}(undef, dddata.numberOfSpecies-1, length(coord))
+
+    for icc = 1:dddata.numberOfSpecies-1
+        E = dddata.bBandEdgeEnergy[bfaceregions[1],icc] + dddata.bandEdgeEnergyNode[bfacenodes[1],icc]
+        eta = dddata.chargeNumbers[icc] / dddata.UT * ( (dddata.contactVoltage[1]- U0[ipsi, 1]) + E / q )
+        densities[icc, 1] = dddata.bDensityOfStates[1, icc] * dddata.F(eta)
+
+        for i = 2:numberOfCoord-1
+            # frage: wie am besten etaF() benutzen? -> etaF() hat als Eingeparameter etwas vom Typ VoronoiFVM.Node
+            E   = dddata.bandEdgeEnergy[cellregions[i], icc] + dddata.bandEdgeEnergyNode[i, icc]
+            eta = dddata.chargeNumbers[icc] / dddata.UT * ( (U0[icc, i]- U0[ipsi, i]) + E / q )
+            densities[icc, i] = dddata.densityOfStates[cellregions[i], icc] * dddata.F(eta)
+
+        end
+        E = dddata.bBandEdgeEnergy[bfaceregions[2],icc] + dddata.bandEdgeEnergyNode[bfacenodes[2],icc]
+        eta = dddata.chargeNumbers[icc] / dddata.UT * ( (dddata.contactVoltage[2]- U0[ipsi, numberOfCoord]) + E / q )
+        densities[icc, numberOfCoord] = dddata.bDensityOfStates[2, icc] * dddata.F(eta)
+
+    end
+
+
+    PyPlot.clf()
+    for icc = 1:dddata.numberOfSpecies-1
+        PyPlot.plot(coord[1,:], densities[icc,:], label = " density of icc= $icc", linestyle = "dashed")
+    end
+    PyPlot.grid()
+    PyPlot.xlabel("space [m]")
+    PyPlot.ylabel("density [\$\\frac{1}{m^3}\$]")
+    PyPlot.legend(loc = "lower right")
+    PyPlot.title("densities for an applied voltage \$\\delta U\$ = $Δu")
+    PyPlot.pause(1.0e-0)
+
+end
+
+"""
+$(SIGNATURES)
+
+Plot energies of system (physical variant).
+"""
+function plotEnergies(grid, sys, U0, Δu)
+
+    dddata        = data(sys)
+    ipsi          = dddata.numberOfSpecies
+
+    coord         = grid[Coordinates]
+    bfaceregions  = grid[BFaceRegions]
+    bfacenodes    = grid[BFaceNodes]
+    cellregions   = grid[CellRegions]
+    cellnodes     = grid[CellNodes]
+    numberOfCoord = length(coord)
+
+    #if length(coord[1]) != 1
+    if length(coord[1]) != 1
+        println("plotEnergies is so far only implemented in 1D")
+    end
+
+    energies   = Array{Real,2}(undef, dddata.numberOfSpecies-1, length(coord))
+    fermiLevel = Array{Real,2}(undef, dddata.numberOfSpecies-1, length(coord))
+
+    colors = ["green", "red", "blue", "yellow"]
+    linestyles = ["-", ":", "--", "-."]
+# warum das - bei den Fermi level?
+    for icc = 1:dddata.numberOfSpecies-1
+        E = dddata.bBandEdgeEnergy[bfaceregions[1],icc] + dddata.bandEdgeEnergyNode[bfacenodes[1],icc]
+        energies[icc, 1] = E - q * U0[ipsi, 1]
+        fermiLevel[icc, 1] = - q * U0[icc, 1]
+
+        for i = 2:numberOfCoord-1
+            # frage: wie am besten etaF() benutzen? -> etaF() hat als Eingeparameter etwas vom Typ VoronoiFVM.Node
+            E   = dddata.bandEdgeEnergy[cellregions[i], icc] + dddata.bandEdgeEnergyNode[i, icc]
+            energies[icc, i] = E - q *U0[ipsi, i]
+            fermiLevel[icc, i] = -q* U0[icc, i]
+
+        end
+        E = dddata.bBandEdgeEnergy[bfaceregions[2],icc] + dddata.bandEdgeEnergyNode[bfacenodes[2],icc]
+        energies[icc, numberOfCoord] = E - q*U0[ipsi, numberOfCoord]
+        fermiLevel[icc, numberOfCoord] =- q* U0[icc, numberOfCoord]
+    end
+
+
+    PyPlot.clf()
+    for icc = 1:dddata.numberOfSpecies-1
+        PyPlot.plot(coord[1,:], energies[icc,:],
+                    label = "band-edge energy of icc= $icc",
+                    color = colors[icc],
+                    linestyle = linestyles[1])
+        PyPlot.plot(coord[1,:], fermiLevel[icc,:],
+                    label = "Fermi level of icc= $icc",
+                    color = colors[icc],
+                    linestyle = linestyles[2])
+    end
+
+    PyPlot.grid()
+    PyPlot.xlabel("space [m]")
+    PyPlot.ylabel("Energy[\$eV\$]")
+    PyPlot.legend(loc = "lower right")
+    PyPlot.title("band-edge energies (\$E_i-\\psi\$) and Fermi levels (\$ q \\varphi_i\$) for an applied voltage \$\\delta U\$ = $Δu")
+    PyPlot.pause(1.0e-0)
+
+end
+
+
+
+"""
+$(SIGNATURES)
 Plot band-edge energies.
 """
 
@@ -156,41 +281,66 @@ function plotElectroNeutralSolutionBoltzmann(grid, psi0)
     PyPlot.figure()
 end
 
-
 """
 $(SIGNATURES)
-Plot electrostatic potential as well as the electron and hole quasi Fermi potentials.
-"""
-#todo_da:add dependency on grid
-function plotSolution(grid, sys, U0)
-    dddata = VoronoiFVM.data(sys)
-    coord = grid[Coordinates]
+Plot electrostatic potential as well as the electron and hole quasi-Fermi
+potentials for fixed time and fixed boundary values.
+    """
 
-    PyPlot.clf()
-    @views begin
-        PyPlot.subplot(211)
-        #todo_da changed sys.grid.coord into coord
-        PyPlot.plot(coord[1,:], U0[3,:], label = "electrostatic potential", color="g", marker="o")
-        PyPlot.plot(coord[1,:], U0[1,:], label = "quasi Fermi electron", color="b", marker="o", linestyle = "dashed")
-        PyPlot.plot(coord[1,:], U0[2,:], label = "quasi Fermi hole", color="r", marker="o", linestyle = "dashdot")
-        PyPlot.grid()
-        PyPlot.xlabel("space [m]")
-        PyPlot.ylabel("potential [V]")
-        PyPlot.legend(loc="upper left")
-        PyPlot.gcf()
+    function plotSolution(grid, sys, U0, Δu, time)
+        dddata = VoronoiFVM.data(sys)
+        coord  = grid[Coordinates]
+
+        PyPlot.clf()
+        @views begin
+            PyPlot.plot(coord[1,:], U0[3,:], label = "electrostatic potential", color="g", marker="o")
+            PyPlot.plot(coord[1,:], U0[1,:], label = "quasi-Fermi electron", color="b", marker="o", linestyle = "dashed")
+            PyPlot.plot(coord[1,:], U0[2,:], label = "quasi-Fermi hole", color="r", marker="o", linestyle = "dashdot")
+            PyPlot.grid()
+            PyPlot.xlabel("space [m]")
+            PyPlot.ylabel("potential [V]")
+            PyPlot.legend(loc="upper left")
+            PyPlot.title("applied bias = $Δu [V] and time = $time [s]")
+            PyPlot.gcf()
+        end
+
     end
 
-end
 
-"""
-$(SIGNATURES)
-Plot the IV curve.
-"""
-function plotIV(biasValues,IV)
-    PyPlot.subplot(212)
-    PyPlot.plot(biasValues[1:length(IV)], IV)
-    PyPlot.grid()
-    PyPlot.xlabel("bias [V]")
-    PyPlot.ylabel("total current [A]")
-    PyPlot.pause(1.0e-5)
-end
+    """
+    $(SIGNATURES)
+    Plot electrostatic potential as well as the electron and hole quasi-Fermi potentials in stationary case.
+    """
+    #todo_da:add dependency on grid
+    function plotSolution(grid, sys, U0)
+        dddata = VoronoiFVM.data(sys)
+        coord = grid[Coordinates]
+
+        PyPlot.clf()
+        @views begin
+            PyPlot.subplot(211)
+            #todo_da changed sys.grid.coord into coord
+            PyPlot.plot(coord[1,:], U0[3,:], label = "electrostatic potential", color="g", marker="o")
+            PyPlot.plot(coord[1,:], U0[1,:], label = "quasi-Fermi electron", color="b", marker="o", linestyle = "dashed")
+            PyPlot.plot(coord[1,:], U0[2,:], label = "quasi-Fermi hole", color="r", marker="o", linestyle = "dashdot")
+            PyPlot.grid()
+            PyPlot.xlabel("space [m]")
+            PyPlot.ylabel("potential [V]")
+            PyPlot.legend(loc="upper left")
+            PyPlot.gcf()
+        end
+
+    end
+
+    """
+    $(SIGNATURES)
+    Plot the IV curve.
+    """
+    function plotIV(biasValues,IV)
+        #PyPlot.subplot(212)
+        PyPlot.plot(biasValues[1:length(IV)], IV)
+        PyPlot.grid()
+        PyPlot.xlabel("bias [V]")
+        PyPlot.ylabel("total current [A]")
+        PyPlot.pause(1.0e-5)
+    end
