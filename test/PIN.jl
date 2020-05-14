@@ -177,9 +177,9 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         ################################################################################
 
         psi0 = DDFermi.electroNeutralSolutionBoltzmann(grid, data)
-        DDFermi.plotEnergies(grid, data)
-        DDFermi.plotDoping(grid, data)
-        DDFermi.plotElectroNeutralSolutionBoltzmann(grid, psi0)
+        #DDFermi.plotEnergies(grid, data)
+        #DDFermi.plotDoping(grid, data)
+        #DDFermi.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
         println("*** done\n")
     end
@@ -299,8 +299,10 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
         # plot solution and IV curve
         if pyplot
-            DDFermi.plotSolution(grid, sys, solution)
-            DDFermi.plotIV(biasValues, IV)
+            #DDFermi.plotDensities(grid, sys, solution, Δu)
+            #PyPlot.figure()
+            DDFermi.plotEnergies(grid, sys, solution , Δu)
+            #DDFermi.plotIV(biasValues,IV)
         end
 
     end # bias loop
