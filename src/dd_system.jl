@@ -45,6 +45,7 @@ mutable struct DDFermiData <: VoronoiFVM.AbstractData
 
     # number of regions
     dielectricConstant          ::  Array{Real,1}
+#da: warum recombination Radiative nur ein dimensional? -> Rekombinationen anschauen.
     recombinationRadiative      ::  Array{Real,1}
     electronSpinRelaxationTime  ::  Array{Real,1}
     holeSpinRelaxationTime      ::  Array{Real,1}
@@ -226,13 +227,13 @@ $(SIGNATURES)
 Sets up the right-hand sides. Assuming a bipolar semiconductor
 the right-hand side for the electrostatic potential becomes
 
-    f[ipsi]  = - q * ((p - N_a) - (n - N_d) ) = - q * sum { z_i * (c_i - N_i) }
+  ``f[ψ]  = - q ((p - N_a) - (n - N_d) ) = - q  \\sum  z_i  (c_i - N_i) ``
 
 and the right-hand sides for the charge carriers yields
 
-    f[icc] =  z_i * q * R
+``f[c_i] =  z_i  q  R ``
 
-for a charge number `z_i` and all charge carriers `icc`.
+for a charge number ``z_i`` and all charge carriers ``c_i``.
 The recombination includes radiative, Auger and Shockley-Read-Hall
 recombination.
 
@@ -286,6 +287,25 @@ function reaction!(f,u,node,data)
 
     f[ipsi] = - q * f[ipsi]
 end
+
+"""
+$(SIGNATURES)
+
+The storage term for time-dependent problems.
+Currently, for the time-dependent current densities the implicit Euler scheme is used.
+Hence, we have ``f[c_i] =  z_i  q ∂_t c_i`` and for the electrostatic potential ``f[ψ] = 0``.
+"""
+
+function storage!(f, u, node, data)
+    ipsi = data.numberOfSpecies
+
+    for icc = 1:data.numberOfSpecies - 1
+        eta = etaFunction(u,node,data,icc,ipsi) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
+        f[icc] = data.chargeNumbers[icc] * data.densityOfStates[node.region, icc] * data.F(eta)
+    end
+    f[ipsi] = 0.0
+end
+
 
 """
 $(SIGNATURES)
