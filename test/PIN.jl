@@ -6,13 +6,27 @@ module PIN
 
 using VoronoiFVM
 using DDFermi
-#todo_da: added ExtendableGrids
 using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf
 
+# function for initializing the grid for a possble extension to other
+# p-i-n devices.
+function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
+    # without filter! we would have 2.0e-6 and 4.0e-6 twice
+    #  -> yields to singularexception
+    coord_ndoping    = collect(range(0, stop = h_ndoping, length = 3 * refinementfactor))
+    coord_intrinsic  = collect(range(h_ndoping, stop = (h_ndoping + h_intrinsic), length = 3 * refinementfactor))
+    coord_intrinsic  = filter!(x->x≠h_pdoping, coord_intrinsic)
+    coord_pdoping    = collect(range((h_ndoping + h_intrinsic), stop = (h_ndoping + h_intrinsic + h_pdoping), length = 3 * refinementfactor))
+    coord_pdoping    = filter!(x->x≠(h_ndoping+h_intrinsic), coord_pdoping)
+    coord            = vcat(coord_ndoping, coord_intrinsic)
+    coord            = vcat(coord, coord_pdoping)
+    return coord
+end
 
-function main(;n = 3, pyplot = false, verbose = false, dense = true)
+
+function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     # close all windows
     PyPlot.close("all")
@@ -33,30 +47,24 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     bregions        = [bregionDonor, bregionAcceptor]
 
     # grid
-    #todo_da: mit diesem grid sehen wir Übereinstimmung mit meinem Code aus MA.
     refinementfactor = 2^(n-1)
-    coord_pdoping    = collect(range(0, stop = 2 * μm, length = 3 * refinementfactor))
-    coord_intrinsic  = collect(range(2* μm, stop = 4* μm, length = 3 * refinementfactor))
-    coord_intrinsic  = filter!(x->x≠2.0e-6, coord_intrinsic)
-    coord_ndoping    = collect(range(4* μm, stop = 6* μm, length = 3 * refinementfactor))
-    coord_ndoping    = filter!(x->x≠4.0e-6, coord_ndoping)
-    coord            = vcat(coord_pdoping, coord_intrinsic)
-    coord            = vcat(coord, coord_ndoping)
-    grid          = VoronoiFVM.Grid(coord)
-    # Patricio:
-    #    h             =  0.5 * μm                                   #  h = (2 / ( 3* 2^n - 1) ) * μm
-    #    grid          = VoronoiFVM.Grid(collect(0.0 * μm:h:6 * μm))
-    #todo_da: grid.coord is false (see Documentary in VoronoiFVM)
-    #    numberOfNodes = length(grid.coord)
-    numberOfNodes = length(coord)
+    h_ndoping        = 2 * μm
+    h_intrinsic      = 2 * μm
+    h_pdoping        = 2 * μm
+    coord            = initialize_pin_grid(refinementfactor,
+                       h_ndoping,
+                       h_intrinsic,
+                       h_pdoping)
 
+    grid             = VoronoiFVM.Grid(coord)
+    numberOfNodes    = length(coord)
     # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm], [2.0 * μm], regionDonor)        # n-doped region = 1
-    cellmask!(grid, [2.0 * μm], [4.0 * μm], regionIntrinsic)    # intrinsic region = 2
-    cellmask!(grid, [4.0 * μm], [6.0 * μm], regionAcceptor)     # p-doped region = 3
+    cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)        # n-doped region = 1
+    cellmask!(grid, [h_ndoping], [h_ndoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
+    cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)     # p-doped region = 3
 
+    #ExtendableGrids.plot(VoronoiFVM.Grid(coord, collect(0.0:0.25 * μm:0.5 * μm)), Plotter = PyPlot, p = PyPlot.plot()) # Plot grid
     println("*** done\n")
-
 
     ################################################################################
     println("Define physical parameters and model")
@@ -170,21 +178,17 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
     println("*** done\n")
 
-
+    psi0 = DDFermi.electroNeutralSolutionBoltzmann(grid, data)
     if pyplot
         ################################################################################
         println("Plot electroneutral potential and doping")
         ################################################################################
-
-        psi0 = DDFermi.electroNeutralSolutionBoltzmann(grid, data)
         #DDFermi.plotEnergies(grid, data)
-        #DDFermi.plotDoping(grid, data)
+        DDFermi.plotDoping(grid, data)
         #DDFermi.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
         println("*** done\n")
     end
-
-
 
     ################################################################################
     println("Define physics and system")
@@ -231,10 +235,10 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     control = VoronoiFVM.NewtonControl()
-    control.verbose        = verbose
-    control.damp_initial   = 0.001
-    control.damp_growth    = 1.21
-    control.max_iterations = 250
+    control.verbose           = verbose
+    control.damp_initial      = 0.001
+    control.damp_growth       = 1.21
+    control.max_iterations    = 250
     control.tol_absolute      = 1.0e-14
     control.tol_relative      = 1.0e-14
     control.handle_exceptions = true
@@ -244,7 +248,6 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
     println("*** done\n")
 
-
     ################################################################################
     println("Compute solution in thermodynamic equilibrium for Boltzmann")
     ################################################################################
@@ -252,7 +255,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     # initialize solution and starting vectors
     initialGuess                   = unknowns(sys)
     solution                       = unknowns(sys)
-    @views initialGuess[ipsi,  :] .= 0.0
+    @views initialGuess[ipsi,  :] .= psi0 #0.0
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
 
@@ -263,13 +266,17 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     ################################################################################
     println("Bias loop")
     ################################################################################
+    if !(data.F == DDFermi.Boltzmann) # adjust control, when not using Boltzmann
+        control.damp_initial      = 0.5
+        control.damp_growth       = 1.2
+        control.max_iterations    = 30
+    end
 
     maxBias    = data.contactVoltage[bregionAcceptor]
-    #todo_da: changed biasValues length from 31 to 41.
     biasValues = range(0, stop = maxBias, length = 41)
     IV         = zeros(0)
-    #todo_da: need them for comparison with c++ code
-    w_device = 0.5 * μm# width of device
+
+    w_device = 0.5 * μm     # width of device
     z_device = 1.0e-4 * cm  # depth of device
 
 
@@ -301,7 +308,10 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         if pyplot
             #DDFermi.plotDensities(grid, sys, solution, Δu)
             #PyPlot.figure()
-            DDFermi.plotEnergies(grid, sys, solution , Δu)
+            DDFermi.plotDensities(grid, sys, solution , Δu)
+            if Δu == 0.0 || Δu == 1.5 Δu == 3
+                savefig("pin-densities-nref-$n-deltaU-$Δu.eps")
+            end
             #DDFermi.plotIV(biasValues,IV)
         end
 
