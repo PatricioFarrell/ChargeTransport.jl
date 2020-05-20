@@ -28,34 +28,16 @@ function plotDensities(grid, sys, U0, Δu )
     end
 
     densities = Array{Real,2}(undef, dddata.numberOfSpecies-1, length(coord))
+    densities = calculateDensities(grid, sys, U0)
 
+    PyPlot.clf() # semilog plot!
     for icc = 1:dddata.numberOfSpecies-1
-
-        E = dddata.bBandEdgeEnergy[bfaceregions[1],icc] + dddata.bandEdgeEnergyNode[bfacenodes[1],icc]
-        eta = dddata.chargeNumbers[icc] / dddata.UT * ( (dddata.contactVoltage[1]- U0[ipsi, 1]) + E / q )
-        densities[icc, 1] = dddata.bDensityOfStates[1, icc] * dddata.F(eta)
-
-        for i = 2:numberOfCoord-1
-            # frage: wie am besten etaF() benutzen? -> etaF() hat als Eingeparameter etwas vom Typ VoronoiFVM.Node
-            E   = dddata.bandEdgeEnergy[cellregions[i], icc] + dddata.bandEdgeEnergyNode[i, icc]
-            eta = dddata.chargeNumbers[icc] / dddata.UT * ( (U0[icc, i]- U0[ipsi, i]) + E / q )
-            densities[icc, i] = dddata.densityOfStates[cellregions[i], icc] * dddata.F(eta)
-
-        end
-        E = dddata.bBandEdgeEnergy[bfaceregions[2],icc] + dddata.bandEdgeEnergyNode[bfacenodes[2],icc]
-        eta = dddata.chargeNumbers[icc] / dddata.UT * ( (dddata.contactVoltage[2]- U0[ipsi, numberOfCoord]) + E / q )
-        densities[icc, numberOfCoord] = dddata.bDensityOfStates[2, icc] * dddata.F(eta)
-
-    end
-
-
-    PyPlot.clf()
-    for icc = 1:dddata.numberOfSpecies-1
-        PyPlot.plot(coord[1,:]./μm, densities[icc,:], label = " density (icc = $icc)", color = colors[icc], linewidth = 3, linestyle = "dashed")
+        PyPlot.semilogy(coord[1,:]./μm, densities[icc,:], label = " density (icc = $icc)", color = colors[icc], linewidth = 3, linestyle = "dashed")
     end
     PyPlot.grid()
     PyPlot.xlabel("space [\$\\mu m \$]")
     PyPlot.ylabel("density [\$\\frac{1}{m^3}\$]")
+    PyPlot.ylim([10e12, 10e25])
     PyPlot.legend(fancybox = true, loc = "best")
     PyPlot.title("bias \$\\delta U\$ = $Δu")
     PyPlot.pause(1.0e-0)
@@ -89,7 +71,7 @@ function plotEnergies(grid, sys, U0, Δu)
 
     colors = ["green", "red", "blue", "yellow"]
     linestyles = ["-", ":", "--", "-."]
-# warum das - bei den Fermi level?
+    # warum das - bei den Fermi level?
     for icc = 1:dddata.numberOfSpecies-1
         E = dddata.bBandEdgeEnergy[bfaceregions[1],icc] + dddata.bandEdgeEnergyNode[bfacenodes[1],icc]
         energies[icc, 1]   = E - q * U0[ipsi, 1]
@@ -110,13 +92,13 @@ function plotEnergies(grid, sys, U0, Δu)
 
     PyPlot.clf()
     for icc = 1:dddata.numberOfSpecies-1
-        PyPlot.plot(coord[1,:]./μm, energies[icc,:],
+        PyPlot.plot(coord[1,:]./μm, energies[icc,:]./q,
                     label = "\$E_i-\\psi\$ (icc = $icc)",
                     linewidth = 3,
                     color = colors[icc],
                     linestyle = linestyles[1])
-        PyPlot.plot(coord[1,:]./μm, fermiLevel[icc,:],
-                    label = "\$ q \\varphi_i\$ (icc = $icc)",
+        PyPlot.plot(coord[1,:]./μm, fermiLevel[icc,:]./q,
+                    label = "\$ - q \\varphi_i\$ (icc = $icc)",
                     linewidth = 3,
                     color = colors[icc],
                     linestyle = linestyles[2])
@@ -124,7 +106,7 @@ function plotEnergies(grid, sys, U0, Δu)
 
     PyPlot.grid()
     PyPlot.xlabel("space [\$\\mu m\$]")
-    PyPlot.ylabel("Energy[\$eV\$]")
+    PyPlot.ylabel("energies [\$eV\$]")
     PyPlot.legend(fancybox = true, loc = "best")
     PyPlot.title("bias \$\\delta U\$ = $Δu")
     PyPlot.pause(1.0e-0)
