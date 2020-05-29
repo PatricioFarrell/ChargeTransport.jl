@@ -13,20 +13,16 @@ using Printf
 # function for initializing the grid for a possble extension to other
 # p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
-    # without filter! we would have 2.0e-6 and 4.0e-6 twice
-    #  -> yields to singularexception
-    coord_ndoping    = collect(range(0, stop = h_ndoping, length = 3 * refinementfactor))
+    coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 3 * refinementfactor))
     coord_intrinsic  = collect(range(h_ndoping, stop = (h_ndoping + h_intrinsic), length = 3 * refinementfactor))
-    coord_intrinsic  = filter!(x->x≠h_pdoping, coord_intrinsic)
     coord_pdoping    = collect(range((h_ndoping + h_intrinsic), stop = (h_ndoping + h_intrinsic + h_pdoping), length = 3 * refinementfactor))
-    coord_pdoping    = filter!(x->x≠(h_ndoping+h_intrinsic), coord_pdoping)
-    coord            = vcat(coord_ndoping, coord_intrinsic)
-    coord            = vcat(coord, coord_pdoping)
+    coord = glue(coord_ndoping, coord_intrinsic)
+    coord = glue(coord, coord_pdoping)
     return coord
 end
 
 
-function main(;n = 4, pyplot = false, verbose = false, dense = true)
+function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
     # close all windows
     PyPlot.close("all")
@@ -63,7 +59,6 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     cellmask!(grid, [h_ndoping], [h_ndoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
     cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)     # p-doped region = 3
 
-    #ExtendableGrids.plot(VoronoiFVM.Grid(coord, collect(0.0:0.25 * μm:0.5 * μm)), Plotter = PyPlot, p = PyPlot.plot()) # Plot grid
     println("*** done\n")
 
     ################################################################################
@@ -279,12 +274,6 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     w_device = 0.5 * μm     # width of device
     z_device = 1.0e-4 * cm  # depth of device
 
-
-    # put the below values in comments, if using Boltzmann statistics.
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.2
-    control.max_iterations    = 30
-
     for Δu in biasValues
         data.contactVoltage[bregionAcceptor] = Δu
 
@@ -306,12 +295,12 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
         # plot solution and IV curve
         if pyplot
-            #DDFermi.plotDensities(grid, sys, solution, Δu)
+            DDFermi.plotEnergies(grid, sys, solution, Δu)
             #PyPlot.figure()
             DDFermi.plotDensities(grid, sys, solution , Δu)
-            if Δu == 0.0 || Δu == 1.5 Δu == 3
-                savefig("pin-densities-nref-$n-deltaU-$Δu.eps")
-            end
+            #if Δu == 0.0 || Δu == 1.5 Δu == 3
+            #    savefig("pin-densities-nref-$n-deltaU-$Δu.eps")
+            #end
             #DDFermi.plotIV(biasValues,IV)
         end
 
