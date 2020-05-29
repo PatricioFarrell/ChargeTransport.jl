@@ -32,32 +32,32 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     # region numbers
-    regionDonor     = 1                           # n doped region
+    regionAcceptor  = 1                           # p doped region
     regionIntrinsic = 2
-    regionAcceptor  = 3                           # p doped region
-    regions         = [regionDonor, regionIntrinsic, regionAcceptor]
+    regionDonor     = 3                           # n doped region
+    regions         = [regionAcceptor, regionIntrinsic, regionDonor]
 
     # boundary region numbers
-    bregionDonor    = 1
-    bregionAcceptor = 2
-    bregions        = [bregionDonor, bregionAcceptor]
+    bregionAcceptor = 1
+    bregionDonor    = 2
+    bregions        = [bregionAcceptor, bregionDonor]
 
     # grid
     refinementfactor = 2^(n-1)
-    h_ndoping        = 2 * μm
-    h_intrinsic      = 2 * μm
     h_pdoping        = 2 * μm
+    h_intrinsic      = 2 * μm
+    h_ndoping        = 2 * μm
     coord            = initialize_pin_grid(refinementfactor,
-                       h_ndoping,
+                       h_pdoping,
                        h_intrinsic,
-                       h_pdoping)
+                       h_ndoping)
 
     grid             = VoronoiFVM.Grid(coord)
     numberOfNodes    = length(coord)
     # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)        # n-doped region = 1
-    cellmask!(grid, [h_ndoping], [h_ndoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
-    cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)     # p-doped region = 3
+    cellmask!(grid, [0.0 * μm], [h_pdoping], regionAcceptor)        # p-doped region = 1
+    cellmask!(grid, [h_pdoping], [h_pdoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
+    cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
 
     println("*** done\n")
 
@@ -103,8 +103,8 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     ni             =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) / (cm^3)
 
     # contact voltages
-    voltageDonor     = 0.0 * V
-    voltageAcceptor  = 3.0 * V
+    voltageAcceptor     = 3.0 * V
+    voltageDonor        = 0.0 * V
 
     println("*** done\n")
 
@@ -120,7 +120,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     data.F                    = Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
     data.temperature          = T
     data.UT                   = (kB * data.temperature) / q
-    data.contactVoltage       = [voltageDonor, voltageAcceptor]
+    data.contactVoltage       = [voltageAcceptor, voltageDonor]
     data.chargeNumbers[iphin] = -1
     data.chargeNumbers[iphip] =  1
 
@@ -159,14 +159,14 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     end
 
     # interior doping
-    data.doping[regionDonor,iphin]      = Nd        # data.doping   = [Nd  0.0;
+    data.doping[regionDonor,iphin]      = Nd        # data.doping   = [0.0  Na;
     data.doping[regionIntrinsic,iphin]  = ni        #                  ni   ni;
-    data.doping[regionIntrinsic,iphip]  = ni        #                  0.0  Na]
+    data.doping[regionIntrinsic,iphip]  = ni        #                  Nd  0.0]
     data.doping[regionAcceptor,iphip]   = Na
 
     # boundary doping
-    data.bDoping[bregionDonor,iphin]    = Nd        # data.bDoping  = [Nd  0.0;
-    data.bDoping[bregionAcceptor,iphip] = Na        #                  0.0  Na]
+    data.bDoping[bregionDonor,iphin]    = Nd        # data.bDoping  = [0.0  Na;
+    data.bDoping[bregionAcceptor,iphip] = Na        #                  Nd  0.0]
 
     # print data
     println(data)
@@ -179,7 +179,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         println("Plot electroneutral potential and doping")
         ################################################################################
         #DDFermi.plotEnergies(grid, data)
-        DDFermi.plotDoping(grid, data)
+        #DDFermi.plotDoping(grid, data)
         #DDFermi.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
         println("*** done\n")
@@ -250,7 +250,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     # initialize solution and starting vectors
     initialGuess                   = unknowns(sys)
     solution                       = unknowns(sys)
-    @views initialGuess[ipsi,  :] .= psi0 #0.0
+    @views initialGuess[ipsi,  :] .= psi0
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
 
@@ -268,7 +268,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     end
 
     maxBias    = data.contactVoltage[bregionAcceptor]
-    biasValues = range(0, stop = maxBias, length = 41)
+    biasValues = range(0, stop = maxBias, length = 31)
     IV         = zeros(0)
 
     w_device = 0.5 * μm     # width of device
@@ -295,18 +295,14 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
         # plot solution and IV curve
         if pyplot
-            DDFermi.plotEnergies(grid, sys, solution, Δu)
-            #PyPlot.figure()
-            DDFermi.plotDensities(grid, sys, solution , Δu)
-            #if Δu == 0.0 || Δu == 1.5 Δu == 3
-            #    savefig("pin-densities-nref-$n-deltaU-$Δu.eps")
-            #end
+            #DDFermi.plotEnergies(grid, sys, solution, Δu)
+            #DDFermi.plotSolution(grid, sys, solution)
+            DDFermi.plotDensities(grid, sys, solution, Δu)
             #DDFermi.plotIV(biasValues,IV)
         end
 
     end # bias loop
 
-    # return IV
     println("*** done\n")
 
 end #  main
