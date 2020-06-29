@@ -10,22 +10,6 @@ using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf
 
-# function for initializing the grid for a possble extension to other
-# p-i-n devices.
-function initialize_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
-    # without filter! we would have 2.0e-6 and 4.0e-6 twice
-    #  -> yields to singularexception
-    coord_ndoping    = collect(range(0, stop = h_ndoping, length = 3 * refinementfactor))
-    coord_intrinsic  = collect(range(h_ndoping, stop = (h_ndoping + h_intrinsic), length = 3 * refinementfactor))
-    coord_intrinsic  = filter!(x->x≠h_pdoping, coord_intrinsic)
-    coord_pdoping    = collect(range((h_ndoping + h_intrinsic), stop = (h_ndoping + h_intrinsic + h_pdoping), length = 3 * refinementfactor))
-    coord_pdoping    = filter!(x->x≠(h_ndoping+h_intrinsic), coord_pdoping)
-    coord            = vcat(coord_ndoping, coord_intrinsic)
-    coord            = vcat(coord, coord_pdoping)
-    return coord
-end
-
-
 function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     # close all windows
@@ -47,23 +31,35 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     bregions        = [bregionDonor, bregionAcceptor]
 
     # grid
-    refinementfactor = 2^(n-1)
+    # NB: Using geomspace to create uniform mesh is not a good idea. It may create near duplicates at boundaries.
     h_ndoping        = 2 * μm
     h_intrinsic      = 2 * μm
     h_pdoping        = 2 * μm
-    coord            = initialize_grid(refinementfactor,
-                       h_ndoping,
-                       h_intrinsic,
-                       h_pdoping)
-
+    δ                = 50
+    t                = μm/δ
+    coord_n_u        = collect(range(            0.0,                                 h_ndoping/1.5,                       step=h_ndoping/δ))
+    coord_n_g        = ExtendableGrids.geomspace(h_ndoping/1.5,                       h_ndoping,                           h_ndoping/δ,      h_ndoping/(2δ),   tol=t)
+    coord_i_g1       = ExtendableGrids.geomspace(h_ndoping,                           h_ndoping+h_intrinsic/1.5,           h_intrinsic/(2δ), h_intrinsic/δ,    tol=t)
+    coord_i_g2       = ExtendableGrids.geomspace(h_ndoping+h_intrinsic/1.5,           h_ndoping+h_intrinsic,               h_intrinsic/δ,    h_intrinsic/(2δ), tol=t)
+    coord_p_g        = ExtendableGrids.geomspace(h_ndoping+h_intrinsic,               h_ndoping+h_intrinsic+h_pdoping/1.5, h_pdoping/(2δ),   h_pdoping/δ,      tol=t)
+    coord_p_u        = collect(range(            h_ndoping+h_intrinsic+h_pdoping/1.5, h_ndoping+h_intrinsic+h_pdoping,     step=h_pdoping/δ))
+    coord            = ExtendableGrids.glue(coord_n_u,coord_n_g,  tol=10*t)
+    coord            = ExtendableGrids.glue(coord,coord_i_g1,     tol=10*t)
+    coord            = ExtendableGrids.glue(coord,coord_i_g2,     tol=10*t)
+    coord            = ExtendableGrids.glue(coord,coord_p_g,      tol=10*t)
+    coord            = ExtendableGrids.glue(coord,coord_p_u,      tol=10*t)
     grid             = VoronoiFVM.Grid(coord)
     numberOfNodes    = length(coord)
+    print(coord)
+
     # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)        # n-doped region = 1
-    cellmask!(grid, [h_ndoping], [h_ndoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
+    cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)                                                 # n-doped region = 1
+    cellmask!(grid, [h_ndoping], [h_ndoping + h_intrinsic], regionIntrinsic)                              # intrinsic region = 2
     cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)     # p-doped region = 3
 
-    #ExtendableGrids.plot(VoronoiFVM.Grid(coord, collect(0.0:0.25 * μm:0.5 * μm)), Plotter = PyPlot, p = PyPlot.plot()) # Plot grid
+    if pyplot
+        ExtendableGrids.plot(VoronoiFVM.Grid(coord, collect(0.0:0.25 * μm:0.5 * μm)), Plotter = PyPlot, p = PyPlot.plot()) # Plot grid
+    end
     println("*** done\n")
 
     ################################################################################
