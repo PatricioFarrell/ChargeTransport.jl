@@ -1,8 +1,8 @@
 """
-Simulating charge transport in a GAs pin diode.
+Simulating charge transport in a GAs pin diode with (psi, n, p) as set of unknowns.
 """
 
-module PIN
+module PINdensities
 
 using VoronoiFVM
 using DDFermi
@@ -13,16 +13,20 @@ using Printf
 # function for initializing the grid for a possble extension to other
 # p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
-    coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 3 * refinementfactor))
+    # without filter! we would have 2.0e-6 and 4.0e-6 twice
+    #  -> yields to singularexception
+    coord_ndoping    = collect(range(0, stop = h_ndoping, length = 3 * refinementfactor))
     coord_intrinsic  = collect(range(h_ndoping, stop = (h_ndoping + h_intrinsic), length = 3 * refinementfactor))
+    coord_intrinsic  = filter!(x->x≠h_pdoping, coord_intrinsic)
     coord_pdoping    = collect(range((h_ndoping + h_intrinsic), stop = (h_ndoping + h_intrinsic + h_pdoping), length = 3 * refinementfactor))
-    coord = glue(coord_ndoping, coord_intrinsic)
-    coord = glue(coord, coord_pdoping)
+    coord_pdoping    = filter!(x->x≠(h_ndoping+h_intrinsic), coord_pdoping)
+    coord            = vcat(coord_ndoping, coord_intrinsic)
+    coord            = vcat(coord, coord_pdoping)
     return coord
 end
 
 
-function main(;n = 3, pyplot = false, verbose = false, dense = true)
+function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     # close all windows
     PyPlot.close("all")
@@ -32,33 +36,34 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     # region numbers
-    regionAcceptor  = 1                           # p doped region
+    regionDonor     = 1                           # n doped region
     regionIntrinsic = 2
-    regionDonor     = 3                           # n doped region
-    regions         = [regionAcceptor, regionIntrinsic, regionDonor]
+    regionAcceptor  = 3                           # p doped region
+    regions         = [regionDonor, regionIntrinsic, regionAcceptor]
 
     # boundary region numbers
-    bregionAcceptor = 1
-    bregionDonor    = 2
-    bregions        = [bregionAcceptor, bregionDonor]
+    bregionDonor    = 1
+    bregionAcceptor = 2
+    bregions        = [bregionDonor, bregionAcceptor]
 
     # grid
     refinementfactor = 2^(n-1)
-    h_pdoping        = 2 * μm
-    h_intrinsic      = 2 * μm
     h_ndoping        = 2 * μm
+    h_intrinsic      = 2 * μm
+    h_pdoping        = 2 * μm
     coord            = initialize_pin_grid(refinementfactor,
-                       h_pdoping,
-                       h_intrinsic,
-                       h_ndoping)
+    h_ndoping,
+    h_intrinsic,
+    h_pdoping)
 
     grid             = VoronoiFVM.Grid(coord)
     numberOfNodes    = length(coord)
     # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm], [h_pdoping], regionAcceptor)        # p-doped region = 1
-    cellmask!(grid, [h_pdoping], [h_pdoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
-    cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
+    cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)        # n-doped region = 1
+    cellmask!(grid, [h_ndoping], [h_ndoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
+    cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)     # p-doped region = 3
 
+    #ExtendableGrids.plot(VoronoiFVM.Grid(coord, collect(0.0:0.25 * μm:0.5 * μm)), Plotter = PyPlot, p = PyPlot.plot()) # Plot grid
     println("*** done\n")
 
     ################################################################################
@@ -66,10 +71,10 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     # indices
-    iphin           = 1
-    iphip           = 2
+    in           = 1
+    ip           = 2
     ipsi            = 3
-    species         = [iphin, iphip, ipsi]
+    species         = [in, ip, ipsi]
 
     # number of (boundary) regions and carriers
     numberOfRegions         = length(regions)
@@ -103,8 +108,8 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     ni             =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) / (cm^3)
 
     # contact voltages
-    voltageAcceptor     = 3.0 * V
-    voltageDonor        = 0.0 * V
+    voltageDonor     = 0.0 * V
+    voltageAcceptor  = 3.0 * V
 
     println("*** done\n")
 
@@ -117,20 +122,20 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     data      = DDFermi.DDFermiData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
-    data.F                   .= Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
+    data.F                    = Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
     data.temperature          = T
     data.UT                   = (kB * data.temperature) / q
-    data.contactVoltage       = [voltageAcceptor, voltageDonor]
-    data.chargeNumbers[iphin] = -1
-    data.chargeNumbers[iphip] =  1
+    data.contactVoltage       = [voltageDonor, voltageAcceptor]
+    data.chargeNumbers[in] = -1
+    data.chargeNumbers[ip] =  1
 
     # boundary region data
     for ibreg in 1:numberOfBoundaryRegions
 
-        data.bDensityOfStates[ibreg,iphin] = Nc
-        data.bDensityOfStates[ibreg,iphip] = Nv
-        data.bBandEdgeEnergy[ibreg,iphin]  = Ec
-        data.bBandEdgeEnergy[ibreg,iphip]  = Ev
+        data.bDensityOfStates[ibreg,in] = Nc
+        data.bDensityOfStates[ibreg,ip] = Nv
+        data.bBandEdgeEnergy[ibreg,in]  = Ec
+        data.bBandEdgeEnergy[ibreg,ip]  = Ev
 
     end
 
@@ -140,46 +145,46 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         data.dielectricConstant[ireg]    = εr
 
         # dos, band edge energy and mobilities
-        data.densityOfStates[ireg,iphin] = Nc
-        data.densityOfStates[ireg,iphip] = Nv
-        data.bandEdgeEnergy[ireg,iphin]  = Ec
-        data.bandEdgeEnergy[ireg,iphip]  = Ev
-        data.mobility[ireg,iphin]        = mun
-        data.mobility[ireg,iphip]        = mup
+        data.densityOfStates[ireg,in] = Nc
+        data.densityOfStates[ireg,ip] = Nv
+        data.bandEdgeEnergy[ireg,in]  = Ec
+        data.bandEdgeEnergy[ireg,ip]  = Ev
+        data.mobility[ireg,in]        = mun
+        data.mobility[ireg,ip]        = mup
 
         # recombination parameters
         data.recombinationRadiative[ireg]            = Radiative
-        data.recombinationSRHLifetime[ireg,iphin]    = SRH_LifeTime
-        data.recombinationSRHLifetime[ireg,iphip]    = SRH_LifeTime
-        data.recombinationSRHTrapDensity[ireg,iphin] = SRH_TrapDensity
-        data.recombinationSRHTrapDensity[ireg,iphip] = SRH_TrapDensity
-        data.recombinationAuger[ireg,iphin]          = Auger
-        data.recombinationAuger[ireg,iphip]          = Auger
+        data.recombinationSRHLifetime[ireg,in]    = SRH_LifeTime
+        data.recombinationSRHLifetime[ireg,ip]    = SRH_LifeTime
+        data.recombinationSRHTrapDensity[ireg,in] = SRH_TrapDensity
+        data.recombinationSRHTrapDensity[ireg,ip] = SRH_TrapDensity
+        data.recombinationAuger[ireg,in]          = Auger
+        data.recombinationAuger[ireg,ip]          = Auger
 
     end
 
     # interior doping
-    data.doping[regionDonor,iphin]      = Nd        # data.doping   = [0.0  Na;
-    data.doping[regionIntrinsic,iphin]  = ni        #                  ni   ni;
-    data.doping[regionIntrinsic,iphip]  = ni        #                  Nd  0.0]
-    data.doping[regionAcceptor,iphip]   = Na
+    data.doping[regionDonor,in]      = Nd        # data.doping   = [Nd  0.0;
+    data.doping[regionIntrinsic,in]  = ni        #                  ni   ni;
+    data.doping[regionIntrinsic,ip]  = ni        #                  0.0  Na]
+    data.doping[regionAcceptor,ip]   = Na
 
     # boundary doping
-    data.bDoping[bregionDonor,iphin]    = Nd        # data.bDoping  = [0.0  Na;
-    data.bDoping[bregionAcceptor,iphip] = Na        #                  Nd  0.0]
+    data.bDoping[bregionDonor,in]    = Nd        # data.bDoping  = [Nd  0.0;
+    data.bDoping[bregionAcceptor,ip] = Na        #                  0.0  Na]
 
     # print data
     println(data)
 
     println("*** done\n")
-
+    psi0 = zeros(length(coord))
     psi0 = DDFermi.electroNeutralSolutionBoltzmann(grid, data)
     if pyplot
         ################################################################################
         println("Plot electroneutral potential and doping")
         ################################################################################
         #DDFermi.plotEnergies(grid, data)
-        #DDFermi.plotDoping(grid, data)
+        DDFermi.plotDoping(grid, data)
         #DDFermi.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
         println("*** done\n")
@@ -193,9 +198,9 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     physics = VoronoiFVM.Physics(
     data        = data,
     num_species = numberOfSpecies,
-    flux        = DDFermi.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
-    reaction    = DDFermi.reaction!,
-    breaction   = DDFermi.breaction!
+    flux        = DDFermi.ScharfetterGummelDensities!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
+    reaction    = DDFermi.reactionDensities!,
+    breaction   = DDFermi.breactionDensities!
     )
 
     if dense
@@ -206,21 +211,25 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
     # enable all three species in all regions
     enable_species!(sys, ipsi,  regions)
-    enable_species!(sys, iphin, regions)
-    enable_species!(sys, iphip, regions)
+    enable_species!(sys, in, regions)
+    enable_species!(sys, ip, regions)
 
+    bfaceregions  = grid[BFaceRegions]
+    bfacenodes    = grid[BFaceNodes]
 
-    sys.boundary_values[iphin,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
+    for icc = 1:data.numberOfSpecies-1
+        EDonor = data.bBandEdgeEnergy[bfaceregions[bregionDonor],icc] + data.bandEdgeEnergyNode[bfacenodes[bregionDonor],icc]
+        EAcceptor = data.bBandEdgeEnergy[bfaceregions[bregionAcceptor],icc] + data.bandEdgeEnergyNode[bfacenodes[bregionAcceptor],icc]
+        etaDonor = data.chargeNumbers[icc] / data.UT * ( (data.contactVoltage[bregionDonor]- psi0[1]) + EDonor / q )
+        etaAcceptor = data.chargeNumbers[icc] / data.UT * ( (data.contactVoltage[bregionAcceptor]- psi0[length(coord)]) + EAcceptor / q )
 
-    sys.boundary_values[iphin,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
+        sys.boundary_values[icc,  bregionDonor]    = data.bDensityOfStates[bregionDonor, icc] * data.F(etaDonor)
+        sys.boundary_factors[icc, bregionDonor]    = VoronoiFVM.Dirichlet
 
-    sys.boundary_values[iphip,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
+        sys.boundary_values[icc,  bregionAcceptor] = data.bDensityOfStates[bregionAcceptor, icc] * data.F(etaAcceptor)
+        sys.boundary_factors[icc, bregionAcceptor] = VoronoiFVM.Dirichlet
+    end
 
-    sys.boundary_values[iphip,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
 
     println("*** done\n")
 
@@ -250,9 +259,9 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     # initialize solution and starting vectors
     initialGuess                   = unknowns(sys)
     solution                       = unknowns(sys)
-    @views initialGuess[ipsi,  :] .= psi0
-    @views initialGuess[iphin, :] .= 0.0
-    @views initialGuess[iphip, :] .= 0.0
+    @views initialGuess[ipsi,  :]  = psi0
+    @views initialGuess[in, :] .= 0.0
+    @views initialGuess[ip, :] .= 0.0
 
     DDFermi.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
 
@@ -268,17 +277,29 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     end
 
     maxBias    = data.contactVoltage[bregionAcceptor]
-    biasValues = range(0, stop = maxBias, length = 31)
+    biasValues = range(0, stop = maxBias, length = 51)
     IV         = zeros(0)
 
     w_device = 0.5 * μm     # width of device
     z_device = 1.0e-4 * cm  # depth of device
 
+
+    # put the below values in comments, if using Boltzmann statistics.
+    control.damp_initial      = 0.5
+    control.damp_growth       = 1.2
+    control.max_iterations    = 30
+
+
+
     for Δu in biasValues
         data.contactVoltage[bregionAcceptor] = Δu
 
-        sys.boundary_values[iphin, bregionAcceptor] = Δu
-        sys.boundary_values[iphip, bregionAcceptor] = Δu
+        for icc = 1:data.numberOfSpecies-1
+            EAcceptor = data.bBandEdgeEnergy[bfaceregions[bregionAcceptor],icc] + data.bandEdgeEnergyNode[bfacenodes[bregionAcceptor],icc]
+            etaAcceptor = data.chargeNumbers[icc] / data.UT * ( (data.contactVoltage[bregionAcceptor]- psi0[length(coord)]) + EAcceptor / q )
+
+            sys.boundary_values[icc,  bregionAcceptor] = data.bDensityOfStates[bregionAcceptor, icc] * data.F(etaAcceptor)
+        end
 
         solve!(solution, initialGuess, sys, control = control, tstep = Inf)
 
@@ -291,18 +312,16 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])
         I      = integrate(sys, tf, solution)
 
-        push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
+        push!(IV,  abs.(w_device * z_device * (I[in] + I[ip])))
 
         # plot solution and IV curve
         if pyplot
-            #DDFermi.plotEnergies(grid, sys, solution, Δu)
-            #DDFermi.plotSolution(grid, sys, solution)
-            DDFermi.plotDensities(grid, sys, solution, Δu)
-            #DDFermi.plotIV(biasValues,IV)
+            DDFermi.plotIV(biasValues,IV)
         end
 
     end # bias loop
 
+    # return IV
     println("*** done\n")
 
 end #  main

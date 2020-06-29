@@ -37,7 +37,6 @@ function plotDensities(grid, sys, U0, Δu )
     PyPlot.grid()
     PyPlot.xlabel("space [\$\\mu m \$]")
     PyPlot.ylabel("density [\$\\frac{1}{m^3}\$]")
-    PyPlot.ylim([10e12, 10e25])
     PyPlot.legend(fancybox = true, loc = "best")
     PyPlot.title("bias \$\\delta U\$ = $Δu")
     PyPlot.pause(1.0e-0)
@@ -177,7 +176,7 @@ function plotEnergies(grid::ExtendableGrid, data::DDFermiData)
 
     PyPlot.xlabel("\$x\$")
     PyPlot.title("band-edge Energies")
-    PyPlot.legend()
+    PyPlot.legend(fancybox = true, loc = "best")
     PyPlot.show();
     PyPlot.figure()
 
@@ -252,10 +251,9 @@ function plotDoping(g::ExtendableGrid, data::DDFermiData)
     PyPlot.xlabel("\$x\$")
     PyPlot.ylabel("\$N_{icc}\$")
     PyPlot.title("Doping")
-    PyPlot.legend()
+    PyPlot.legend(fancybox = true, loc = "best")
 
     PyPlot.show();
-    savefig("pin-doping.eps")
     PyPlot.figure()
 end
 
@@ -269,7 +267,7 @@ function plotElectroNeutralSolutionBoltzmann(grid, psi0)
     PyPlot.plot(coord[:],psi0, label = "electroneutral potential (Boltzmann)", color="g", marker="o")
     PyPlot.xlabel("space [m]")
     PyPlot.ylabel("potential [V]")
-    PyPlot.legend(loc="upper left")
+    PyPlot.legend(fancybox = true, loc = "best")
     PyPlot.show()
     PyPlot.figure()
 end
@@ -292,7 +290,7 @@ potentials for fixed time and fixed boundary values.
             PyPlot.grid()
             PyPlot.xlabel("space [m]")
             PyPlot.ylabel("potential [V]")
-            PyPlot.legend(loc="upper left")
+            PyPlot.legend(fancybox = true, loc = "best")
             PyPlot.title("applied bias = $Δu [V] and time = $time [s]")
             PyPlot.gcf()
         end
@@ -311,7 +309,6 @@ potentials for fixed time and fixed boundary values.
 
         PyPlot.clf()
         @views begin
-            PyPlot.subplot(211)
             #todo_da changed sys.grid.coord into coord
             PyPlot.plot(coord[1,:], U0[3,:], label = "electrostatic potential", color="g", marker="o")
             PyPlot.plot(coord[1,:], U0[1,:], label = "quasi-Fermi electron", color="b", marker="o", linestyle = "dashed")
@@ -319,7 +316,7 @@ potentials for fixed time and fixed boundary values.
             PyPlot.grid()
             PyPlot.xlabel("space [m]")
             PyPlot.ylabel("potential [V]")
-            PyPlot.legend(loc="upper left")
+            PyPlot.legend(fancybox = true, loc = "best")
             PyPlot.gcf()
         end
 
@@ -330,7 +327,6 @@ potentials for fixed time and fixed boundary values.
     Plot the IV curve.
     """
     function plotIV(biasValues,IV)
-        #PyPlot.subplot(212)
         PyPlot.plot(biasValues[1:length(IV)], IV)
         PyPlot.grid()
         PyPlot.xlabel("bias [V]")

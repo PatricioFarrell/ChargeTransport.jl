@@ -177,6 +177,7 @@ function etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 
+
 """
 $(SIGNATURES)
 
@@ -211,6 +212,32 @@ function breaction!(f,u,bnode,data)
 
         # boundary conditions for charge carriers are set in main program
         f[icc]  = 0.0
+
+    end
+    f[ipsi] = -1/α *  q * f[ipsi]
+
+end
+"""
+$(SIGNATURES)
+
+Boundary reaction term for densities.
+"""
+
+function breactionDensities!(f,u,bnode,data)
+
+    # parameters
+    α    = 1.0/VoronoiFVM.Dirichlet         # tiny penalty value
+    ipsi = data.numberOfSpecies             # final index for electrostatic potential
+
+    for icc = 1:data.numberOfSpecies - 1
+
+        eta = etaFunction(u,bnode,data,icc,ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
+
+        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.bDoping[bnode.region,icc]                            # subtract doping
+        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F(eta)
+
+        # boundary conditions for charge carriers are set in main program
+        f[icc]  = 0.0# data.bDensityOfStates[bnode.region,icc] * data.F(eta) - data.chargeNumbers[icc] * u[icc]
 
     end
     f[ipsi] = -1/α *  q * f[ipsi]
@@ -266,6 +293,8 @@ function reaction!(f,u,node,data)
             f[icc] = f[icc] + sum(data.recombinationAuger[ireg,:] .* u[1:end-1])
 
             # SRH recombination
+            # da: TrapDensity und LifeTime vertauscht.
+            #vllt sowas wie data.recombinationSRHActive ?
             f[icc] = f[icc] + 1 / ( sum(data.recombinationSRHTrapDensity[ireg,end:-1:1] .* (u[1:end-1] .+ data.recombinationSRHLifetime[ireg,1:end] ) ) )
         end
 
@@ -280,7 +309,27 @@ function reaction!(f,u,node,data)
         # end
 
     end
+    f[ipsi] = - q * f[ipsi]
+end
 
+"""
+$(SIGNATURES)
+
+Reaction term for densities. For simplicity, the recombination is neglected.
+"""
+
+function reactionDensities!(f,u,node,data)
+
+    # parameters
+    ipsi = data.numberOfSpecies             # final index for electrostatic potential
+
+    for icc = 1:data.numberOfSpecies - 1
+
+        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                          # subtract doping
+        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * u[icc]   # add charge carrier
+        f[icc]  = 0.0
+
+    end
     f[ipsi] = - q * f[ipsi]
 end
 
@@ -300,6 +349,39 @@ function storage!(f, u, node, data)
         f[icc] = data.chargeNumbers[icc] * data.densityOfStates[node.region, icc] * data.F[icc](eta)
     end
     f[ipsi] = 0.0
+end
+"""
+$(SIGNATURES)
+
+The classical Scharfetter-Gummel flux scheme for densities.
+
+"""
+
+function ScharfetterGummelDensities!(f, u, edge, data)
+    uk  = viewK(edge, u)
+    ul  = viewL(edge, u)
+
+    ipsi = data.numberOfSpecies
+    ireg = edge.region
+
+    dpsi     = ul[ipsi]- uk[ipsi]
+
+    f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
+
+    for icc = 1:data.numberOfSpecies-1
+
+        j0    =  - data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT
+
+        nodel = edge.node[2]
+        nodek = edge.node[1]
+
+        bandEdgeDifference = data.bandEdgeEnergyNode[nodel, icc] - data.bandEdgeEnergyNode[nodek, icc]
+
+        bp, bm = fbernoulli_pm( data.chargeNumbers[icc] * (dpsi - bandEdgeDifference/q)/ data.UT)
+        f[icc] = - data.chargeNumbers[icc] * j0 * ( bm * ul[icc] - bp * uk[icc] )
+
+    end
+
 end
 
 
@@ -337,6 +419,7 @@ function ScharfetterGummel!(f, u, edge, data)
         f[icc] = - data.chargeNumbers[icc] * j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
 
     end
+
 
 end
 
