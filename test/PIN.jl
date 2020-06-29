@@ -122,7 +122,7 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     data      = DDFermi.DDFermiData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
-    data.F                    = Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
+    data.F                   .= Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
     data.temperature          = T
     data.UT                   = (kB * data.temperature) / q
     data.contactVoltage       = [voltageDonor, voltageAcceptor]
