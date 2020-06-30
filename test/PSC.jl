@@ -30,35 +30,63 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     bregionAcceptor = 2
     bregions        = [bregionDonor, bregionAcceptor]
 
+    # inner regions
+    iregionDonor    = 3
+    iregionAcceptor = 4
+    iregions        = [iregionDonor, iregionAcceptor]
+
     # grid
-    # NB: Using geomspace to create uniform mesh is not a good idea. It may create near duplicates at boundaries.
-    h_ndoping        = 2 * μm
-    h_intrinsic      = 2 * μm
-    h_pdoping        = 2 * μm
-    δ                = 50
-    t                = μm/δ
-    coord_n_u        = collect(range(            0.0,                                 h_ndoping/1.5,                       step=h_ndoping/δ))
-    coord_n_g        = ExtendableGrids.geomspace(h_ndoping/1.5,                       h_ndoping,                           h_ndoping/δ,      h_ndoping/(2δ),   tol=t)
-    coord_i_g1       = ExtendableGrids.geomspace(h_ndoping,                           h_ndoping+h_intrinsic/1.5,           h_intrinsic/(2δ), h_intrinsic/δ,    tol=t)
-    coord_i_g2       = ExtendableGrids.geomspace(h_ndoping+h_intrinsic/1.5,           h_ndoping+h_intrinsic,               h_intrinsic/δ,    h_intrinsic/(2δ), tol=t)
-    coord_p_g        = ExtendableGrids.geomspace(h_ndoping+h_intrinsic,               h_ndoping+h_intrinsic+h_pdoping/1.5, h_pdoping/(2δ),   h_pdoping/δ,      tol=t)
-    coord_p_u        = collect(range(            h_ndoping+h_intrinsic+h_pdoping/1.5, h_ndoping+h_intrinsic+h_pdoping,     step=h_pdoping/δ))
-    coord            = ExtendableGrids.glue(coord_n_u,coord_n_g,  tol=10*t)
-    coord            = ExtendableGrids.glue(coord,coord_i_g1,     tol=10*t)
-    coord            = ExtendableGrids.glue(coord,coord_i_g2,     tol=10*t)
-    coord            = ExtendableGrids.glue(coord,coord_p_g,      tol=10*t)
-    coord            = ExtendableGrids.glue(coord,coord_p_u,      tol=10*t)
-    grid             = VoronoiFVM.Grid(coord)
-    numberOfNodes    = length(coord)
-    print(coord)
+    # NB: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
+    h_ndoping       = 2 * μm
+    h_intrinsic     = 2 * μm
+    h_pdoping       = 2 * μm
+    x0              = 0 * μm 
+    δ               = 5        # the larger, the finer the mesh
+    t               = μm/δ     # tolerance for geomspace and glue (with factor 10)
+    k               = 1.5      # the closer to 1, the closer to the boundary geomspace works
+
+    coord_n_u       = collect(range(x0, h_ndoping/k, step=h_ndoping/δ))
+    coord_n_g       = geomspace(h_ndoping/k, 
+                                h_ndoping, 
+                                h_ndoping/δ, 
+                                h_ndoping/(2δ), 
+                                tol=t)
+    coord_i_g1      = geomspace(h_ndoping, 
+                                h_ndoping+h_intrinsic/k, 
+                                h_intrinsic/(2δ), 
+                                h_intrinsic/δ, 
+                                tol=t)
+    coord_i_g2      = geomspace(h_ndoping+h_intrinsic/k, 
+                                h_ndoping+h_intrinsic,               
+                                h_intrinsic/δ,    
+                                h_intrinsic/(2δ), 
+                                tol=t)
+    coord_p_g       = geomspace(h_ndoping+h_intrinsic,               
+                                h_ndoping+h_intrinsic+h_pdoping/k, 
+                                h_pdoping/(2δ),   
+                                h_pdoping/δ,      
+                                tol=t)
+    coord_p_u       = collect(range(h_ndoping+h_intrinsic+h_pdoping/k, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/δ))
+
+    coord           = glue(coord_n_u,coord_n_g,  tol=10*t)
+    coord           = glue(coord,    coord_i_g1, tol=10*t)
+    coord           = glue(coord,    coord_i_g2, tol=10*t)
+    coord           = glue(coord,    coord_p_g,  tol=10*t)
+    coord           = glue(coord,    coord_p_u,  tol=10*t)
+    grid            = VoronoiFVM.Grid(coord)
+    numberOfNodes   = length(coord)
 
     # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)                                                 # n-doped region = 1
-    cellmask!(grid, [h_ndoping], [h_ndoping + h_intrinsic], regionIntrinsic)                              # intrinsic region = 2
-    cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)     # p-doped region = 3
+    cellmask!(grid, [0.0 * μm],                [h_ndoping],                           regionDonor)     # n-doped region   = 1
+    cellmask!(grid, [h_ndoping],               [h_ndoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
+    cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)  # p-doped region   = 3
+
+    # set interior boundary regions
+    bfacemask!(grid, [h_ndoping],           [h_ndoping],           iregionDonor)
+    bfacemask!(grid, [h_ndoping+h_pdoping], [h_ndoping+h_pdoping], iregionAcceptor)
 
     if pyplot
-        ExtendableGrids.plot(VoronoiFVM.Grid(coord, collect(0.0:0.25 * μm:0.5 * μm)), Plotter = PyPlot, p = PyPlot.plot()) # Plot grid
+        ExtendableGrids.plot(VoronoiFVM.Grid(coord, collect(0.0 : 0.25*μm : 0.5*μm)), Plotter = PyPlot, p = PyPlot.plot()) 
     end
     println("*** done\n")
 
@@ -74,7 +102,7 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     # number of (boundary) regions and carriers
     numberOfRegions         = length(regions)
-    numberOfBoundaryRegions = length(bregions)
+    numberOfBoundaryRegions = length(bregions) + length(iregions)
     numberOfSpecies         = length(species)
 
     # physical data
@@ -126,7 +154,7 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     data.chargeNumbers[iphip] =  1
 
     # boundary region data
-    for ibreg in 1:numberOfBoundaryRegions
+    for ibreg in bregions
 
         data.bDensityOfStates[ibreg,iphin] = Nc
         data.bDensityOfStates[ibreg,iphip] = Nv
@@ -287,7 +315,8 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
         sys.boundary_values[iphin, bregionAcceptor] = Δu
         sys.boundary_values[iphip, bregionAcceptor] = Δu
 
-        solve!(solution, initialGuess, sys, control = control, tstep = Inf)
+        # solve!(solution, initialGuess, sys, control = control, tstep = Inf)
+        solve!(solution, initialGuess, sys, control = control)
 
         initialGuess .= solution
 

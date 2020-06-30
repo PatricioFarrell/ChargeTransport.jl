@@ -199,22 +199,34 @@ for all charge carriers `icc`.
 """
 function breaction!(f,u,bnode,data)
 
-    # parameters
-    α    = 1.0/VoronoiFVM.Dirichlet         # tiny penalty value
-    ipsi = data.numberOfSpecies             # final index for electrostatic potential
+    # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...
+    if bnode.region == 1 || bnode.region == 2 
 
-    for icc = 1:data.numberOfSpecies - 1
+        # parameters
+        α    = 1.0/VoronoiFVM.Dirichlet         # tiny penalty value
+        ipsi = data.numberOfSpecies             # final index for electrostatic potential
 
-        eta = etaFunction(u,bnode,data,icc,ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
+        for icc = 1:data.numberOfSpecies - 1
 
-        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.bDoping[bnode.region,icc]                            # subtract doping
-        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F[icc](eta)     # add charge carrier
+            eta = etaFunction(u,bnode,data,icc,ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
 
-        # boundary conditions for charge carriers are set in main program
-        f[icc]  = 0.0
+            f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.bDoping[bnode.region,icc]                             # subtract doping
+            f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F[icc](eta) # add charge carrier
+
+            # boundary conditions for charge carriers are set in main program
+            f[icc]  = 0.0
+
+        end
+        f[ipsi] = -1/α *  q * f[ipsi]
+     
+    # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...    
+    elseif bnode.region == 3 || bnode.region == 4 
+
+        for icc = 1:data.numberOfSpecies - 1
+            # f[icc] = 1e-14
+        end
 
     end
-    f[ipsi] = -1/α *  q * f[ipsi]
 
 end
 """
@@ -680,9 +692,11 @@ Find the equilibrium solution for the electrostatic potential
 
 function solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
 
-    if !prod(data.F .== DDFermi.Boltzmann) # if F != Boltzmann componentwise, find equilibrium solution for Boltzmann
+    # if F != Boltzmann componentwise, find equilibrium solution for Boltzmann
+    if !prod(data.F .== DDFermi.Boltzmann) 
         num_cellregions = grid[NumCellRegions]
-        num_bfaceregions = grid[NumBFaceRegions]
+        # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...
+        num_bfaceregions = 2 # grid[NumBFaceRegions] 
         species  = 1:data.numberOfSpecies
         regions  = 1:num_cellregions
         bregions = 1:num_bfaceregions
@@ -724,7 +738,8 @@ function solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control,
         data.F              = saveDistribution
         data.contactVoltage = saveContactVoltage
 
-    else # if F = Boltzmann componentwise, don't do anything
+    # if F = Boltzmann componentwise, don't do anything    
+    else 
 
         println("*** We compute with Boltzmann statistics anyway. ")
 
