@@ -350,3 +350,71 @@ end #  main
 println("This message should show when the PSC module is successfully recompiled.")
 
 end # module
+
+
+
+#  # Solve the stationary state system
+#         control=VoronoiFVM.NewtonControl()
+#         control.Δt=tstep
+#         control.Δt_max=tstep_max
+#         control.Δt_grow=1.5
+#         control.Δu_opt=dI
+#         control.verbose=false
+#         control.max_lureuse=0
+#         control.edge_cutoff=1.0e-10
+
+
+#         inival.=solution
+
+
+#     # Number of periods to run
+#     nper=1
+
+#     # Number of samples per period
+#     nsamp=4
+#     ###############################################################
+
+#     # BV kinetic constants
+#     phi_min=0*V
+#     phi_max=-1.6*V
+
+#     # Scan rate
+#     scan=scan_rate*mV/s
+
+#     per=2*abs(phi_max-phi_min)/scan
+
+#     sampling_times=[t for t in 0.0:0.5*per/nsamp:per*nper]
+
+
+#             function pre(sol,time)
+#             #theta=Nernst_const(time)
+#             #omega=freq*2.0*π
+#             eplus,eminus=BV_rate_constants(time)
+#         end
+#         I_disk=[0.0,0.0]
+#         I_disk_old=[0.0,0.0]
+#         I_ring=[]
+#         di=0.0
+#         function delta(solution, oldsolution, time,tstep)
+#             I_disk=VoronoiFVM.integrate(rdcell,tfc_disk,solution,oldsolution,tstep)
+#             I_ring=VoronoiFVM.integrate(rdcell,tfc_ring,solution,oldsolution,tstep)
+#             di=FaradayConstant*abs(I_disk_old[specB]-I_disk[specB])/mA
+#         end
+
+        
+#         function post(solution, oldsolution, time,tstep)
+#             push!(vdisk,phi_cv(time))
+#             push!(iring,-I_ring[specB]*FaradayConstant)
+#             push!(idisk,I_disk[specB]*FaradayConstant)
+#             push!(time_discretization,time)
+#             if verbose
+#                 ProgressMeter.next!(pmeter,showvalues=[
+#                     (:Δϕ,phi_cv(time)),
+#                     (:dI,di),
+#                     (:t,time),
+#                 ],valuecolor=:yellow)
+#             end
+#             I_disk_old=I_disk
+#         end
+
+# evolve!(solution,inival,sys,sampling_times, control=control, pre=pre,post=post,delta=delta)
