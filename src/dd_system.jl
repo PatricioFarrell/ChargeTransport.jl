@@ -224,6 +224,7 @@ function breaction!(f,u,bnode,data)
 
         for icc = 1:data.numberOfSpecies - 1
             # f[icc] = 1e-14
+            ## auf Spezies zugreifen mit u[3], u[4]
         end
 
     end
