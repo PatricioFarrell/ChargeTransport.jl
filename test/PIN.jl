@@ -148,7 +148,8 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         data.mobility[ireg,iphip]        = mup
 
         # recombination parameters
-        data.recombinationRadiative[ireg]            = Radiative
+        data.recombinationRadiative[ireg,iphin]      = Radiative
+        data.recombinationRadiative[ireg,iphip]      = Radiative
         data.recombinationSRHLifetime[ireg,iphin]    = SRH_LifeTime
         data.recombinationSRHLifetime[ireg,iphip]    = SRH_LifeTime
         data.recombinationSRHTrapDensity[ireg,iphin] = SRH_TrapDensity
@@ -297,7 +298,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         if pyplot
             #DDFermi.plotEnergies(grid, sys, solution, Δu)
             #DDFermi.plotSolution(grid, sys, solution)
-            DDFermi.plotDensities(grid, sys, solution, Δu)
+            DDFermi.plotDensities(grid, data, solution, Δu)
             #DDFermi.plotIV(biasValues,IV)
         end
 

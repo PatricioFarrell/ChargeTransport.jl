@@ -3,43 +3,32 @@ $(SIGNATURES)
 
 Plot densities of system.
 """
-function plotDensities(grid, sys, U0, Δu )
+function plotDensities(grid, data, sol, bias)
 
-    dddata        = data(sys)
-    ipsi          = dddata.numberOfSpecies
+    coord = grid[Coordinates]
 
-    coord         = grid[Coordinates]
-    bfaceregions  = grid[BFaceRegions]
-    bfacenodes    = grid[BFaceNodes]
-    cellregions   = grid[CellRegions]
-    cellnodes     = grid[CellNodes]
-    numberOfCoord = length(coord)
+    if length(coord[1]) != 1
+        println("plotDensities is so far only implemented in 1D")
+    end
 
     rcParams = PyPlot.PyDict(PyPlot.matplotlib."rcParams")
     rcParams["font.size"] = 12
     rcParams["font.sans-serif"] = "Arial"
-
     colors = ["green", "red", "blue", "yellow"]
     linestyles = ["-", ":", "--", "-."]
 
-    #if length(coord[1]) != 1
-    if length(coord[1]) != 1
-        println("plotEnergies is so far only implemented in 1D")
-    end
+    densities = computeDensities(grid, data, sol)
 
-    densities = Array{Real,2}(undef, dddata.numberOfSpecies-1, length(coord))
-    densities = calculateDensities(grid, sys, U0)
-
-    PyPlot.clf() # semilog plot!
-    for icc = 1:dddata.numberOfSpecies-1
+    PyPlot.clf() 
+    for icc = 1:data.numberOfSpecies-1
         PyPlot.semilogy(coord[1,:]./μm, densities[icc,:], label = " density (icc = $icc)", color = colors[icc], linewidth = 3, linestyle = "dashed")
     end
     PyPlot.grid()
     PyPlot.xlabel("space [\$\\mu m \$]")
     PyPlot.ylabel("density [\$\\frac{1}{m^3}\$]")
     PyPlot.legend(fancybox = true, loc = "best")
-    PyPlot.title("bias \$\\delta U\$ = $Δu")
-    PyPlot.pause(1.0e-0)
+    PyPlot.title("bias \$\\delta U\$ = $bias")
+    PyPlot.pause(0.2)
 
 end
 

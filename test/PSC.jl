@@ -177,7 +177,8 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
         data.mobility[ireg,iphip]        = mup
 
         # recombination parameters
-        data.recombinationRadiative[ireg]            = Radiative
+        data.recombinationRadiative[ireg,iphin]      = Radiative
+        data.recombinationRadiative[ireg,iphip]      = Radiative
         data.recombinationSRHLifetime[ireg,iphin]    = SRH_LifeTime
         data.recombinationSRHLifetime[ireg,iphip]    = SRH_LifeTime
         data.recombinationSRHTrapDensity[ireg,iphin] = SRH_TrapDensity
@@ -332,11 +333,11 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
         # plot solution and IV curve
         if pyplot
             #DDFermi.plotDensities(grid, sys, solution, Δu)
-            #PyPlot.figure()
-            DDFermi.plotDensities(grid, sys, solution , Δu)
-            if Δu == 0.0 || Δu == 1.5 Δu == 3
-                savefig("psc-densities-nref-$n-deltaU-$Δu.eps")
-            end
+            # DDFermi.plotEnergies(grid, sys, solution, Δu)
+            DDFermi.plotDensities(grid, data, solution, Δu)
+            # if Δu == 0.0 || Δu == 1.5 Δu == 3
+            #     savefig("psc-densities-nref-$n-deltaU-$Δu.eps")
+            # end
             #DDFermi.plotIV(biasValues,IV)
         end
 

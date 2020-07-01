@@ -109,7 +109,7 @@ function DDFermiData(numberOfNodes::Int64, numberOfRegions=3::Int64, numberOfBou
     Array{Float64,2}(undef,numberOfRegions,numberOfSpecies-1),         # recombinationSRHLifetime
     Array{Float64,2}(undef,numberOfRegions,numberOfSpecies-1),         # recombinationSRHTrapDensity
     Array{Float64,2}(undef,numberOfRegions,numberOfSpecies-1),         # recombinationAuger
-    Array{Float64,1}(undef,numberOfRegions,numberOfSpecies-1),         # recombinationRadiative
+    Array{Float64,2}(undef,numberOfRegions,numberOfSpecies-1),         # recombinationRadiative
 
     # number of regions
     Array{Float64,1}(undef,numberOfRegions),                           # dielectricConstant
@@ -144,7 +144,7 @@ The argument of the distribution function for interior nodes:
     z / UT  * ( (phi - psi) + E / q ).
 
 """
-function etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
+function etaFunction(u,node::VoronoiFVM.Node,data::DDFermi.DDFermiData,icc::Int64,ipsi::Int64)
     E  = data.bandEdgeEnergy[node.region,icc] + data.bandEdgeEnergyNode[node.index,icc]
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
@@ -157,7 +157,7 @@ The argument of the distribution function for boundary nodes:
     z / UT  * ( (phi_at_boundary - psi) + E / q ).
 """
 
-function etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
+function etaFunction(u,bnode::VoronoiFVM.BNode,data::DDFermi.DDFermiData,icc::Int64,ipsi::Int64)
     E  = data.bBandEdgeEnergy[bnode.region,icc] + data.bandEdgeEnergyNode[bnode.index,icc]
     data.chargeNumbers[icc] / data.UT * ( (data.contactVoltage[bnode.region]- u[ipsi]) + E / q )
 end
@@ -172,8 +172,23 @@ The argument of the distribution function for edges:
 
 """
 
-function etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
+function etaFunction(u,edge::VoronoiFVM.Edge,data::DDFermi.DDFermiData,icc::Int64,ipsi::Int64)
     E  = data.bandEdgeEnergy[edge.region,icc] + data.bandEdgeEnergyNode[edge.icell,icc] #icell: Number of discretization cell the edge is invoked from
+    data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
+end
+
+"""
+
+$(SIGNATURES)
+
+The argument of the distribution function for floats
+
+    z / UT  * ( (phi_at_edge - psi) + E / q ).
+
+"""
+
+function etaFunction(u,inode,data::DDFermi.DDFermiData,ireg::Int64,icc::Int64,ipsi::Int64)
+    E  = data.bandEdgeEnergy[ireg,icc] + data.bandEdgeEnergyNode[inode,icc]
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 
@@ -299,11 +314,11 @@ function reaction!(f,u,node,data)
         ## add different recombination kernels r(n,p)
         for ireg = 1:data.numberOfRegions
 
-            c1 = computeDensities(u, node, data, ireg, 1, ipsi)  
-            c2 = computeDensities(u, node, data, ireg, 2, ipsi)
+            c1 = computeDensities(u, node.index, data, ireg, 1, ipsi)  
+            c2 = computeDensities(u, node.index, data, ireg, 2, ipsi) 
 
             # radiative recombination
-            f[icc] = data.recombinationRadiative[ireg][icc]
+            f[icc] = data.recombinationRadiative[ireg,icc]
 
             # Auger recombination
             f[icc] = f[icc] + sum(data.recombinationAuger[ireg,:] .* u[1:end-1])
@@ -581,11 +596,39 @@ $(SIGNATURES)
 For given potentials, compute corresponding densities.
 
 """
-function computeDensities(u, node, data::DDFermiData, ireg::Int, icc::Int, ipsi::Int)
+function computeDensities(u, inode, data::DDFermiData, ireg::Int, icc::Int, ipsi::Int)
 
-    data.densityOfStates[ireg,icc] * etaFunction(u,node,data,icc,ipsi)
+    data.densityOfStates[ireg,icc] * data.F[icc](etaFunction(u,inode,data,ireg,icc,ipsi))
 
 end
+
+"""
+
+$(SIGNATURES)
+
+For given potentials in vector form, compute corresponding vectorized densities.
+
+"""
+
+function computeDensities(grid, data, sol)
+
+    ipsi      = data.numberOfSpecies
+    densities = Array{Real,2}(undef, data.numberOfSpecies-1, length(grid.components[Coordinates]))
+
+    for ireg in 1:data.numberOfRegions
+        for icc in 1:data.numberOfSpecies-1
+            for inode in 1:data.numberOfNodes
+                node = grid.components[Coordinates][inode]
+                u    = sol[:,inode]
+                densities[icc,inode] = computeDensities(u, inode, data, ireg, icc, ipsi)
+            end
+        end
+    end
+
+    return densities
+
+end
+
 
 """
 
