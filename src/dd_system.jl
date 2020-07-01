@@ -40,13 +40,13 @@ mutable struct DDFermiData <: VoronoiFVM.AbstractData
     recombinationSRHLifetime    ::  Array{Float64,2}
     recombinationSRHTrapDensity ::  Array{Float64,2}
     recombinationAuger          ::  Array{Float64,2}
+    recombinationRadiative      ::  Array{Float64,2}
 
     # number of regions
     dielectricConstant          ::  Array{Float64,1}
-    recombinationRadiative      ::  Array{Float64,1}
     electronSpinRelaxationTime  ::  Array{Float64,1}
     holeSpinRelaxationTime      ::  Array{Float64,1}
-    recombinationDirect         ::  Array{Float64,1}
+    # recombinationDirect         ::  Array{Float64,1}
     generationEmittedLight      ::  Array{Float64,1}
     generationPrefactor         ::  Array{Float64,1}
     generationAbsorption        ::  Array{Float64,1}
@@ -109,13 +109,13 @@ function DDFermiData(numberOfNodes::Int64, numberOfRegions=3::Int64, numberOfBou
     Array{Float64,2}(undef,numberOfRegions,numberOfSpecies-1),         # recombinationSRHLifetime
     Array{Float64,2}(undef,numberOfRegions,numberOfSpecies-1),         # recombinationSRHTrapDensity
     Array{Float64,2}(undef,numberOfRegions,numberOfSpecies-1),         # recombinationAuger
+    Array{Float64,1}(undef,numberOfRegions,numberOfSpecies-1),         # recombinationRadiative
 
     # number of regions
     Array{Float64,1}(undef,numberOfRegions),                           # dielectricConstant
-    Array{Float64,1}(undef,numberOfRegions),                           # recombinationRadiative
     Array{Float64,1}(undef,numberOfRegions),                           # electronSpinRelaxationTime
     Array{Float64,1}(undef,numberOfRegions),                           # holeSpinRelaxationTime
-    Array{Float64,1}(undef,numberOfRegions),                           # recombinationDirect
+    # Array{Float64,1}(undef,numberOfRegions),                           # recombinationDirect
     Array{Float64,1}(undef,numberOfRegions),                           # generationEmittedLight
     Array{Float64,1}(undef,numberOfRegions),                           # generationPrefactor
     Array{Float64,1}(undef,numberOfRegions),                           # generationAbsorption
@@ -293,14 +293,17 @@ function reaction!(f,u,node,data)
 
         eta = etaFunction(u,node,data,icc,ipsi) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
 
-        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                          # subtract doping
+        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                               # subtract doping
         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
 
         ## add different recombination kernels r(n,p)
         for ireg = 1:data.numberOfRegions
 
+            c1 = computeDensities(u, node, data, ireg, 1, ipsi)  
+            c2 = computeDensities(u, node, data, ireg, 2, ipsi)
+
             # radiative recombination
-            f[icc] = data.recombinationRadiative[ireg]
+            f[icc] = data.recombinationRadiative[ireg][icc]
 
             # Auger recombination
             f[icc] = f[icc] + sum(data.recombinationAuger[ireg,:] .* u[1:end-1])
@@ -581,6 +584,7 @@ For given potentials, compute corresponding densities.
 function computeDensities(u, node, data::DDFermiData, ireg::Int, icc::Int, ipsi::Int)
 
     data.densityOfStates[ireg,icc] * etaFunction(u,node,data,icc,ipsi)
+
 end
 
 """
