@@ -17,7 +17,7 @@ function plotDensities(grid, data, sol, bias)
     colors = ["green", "red", "blue", "yellow"]
     linestyles = ["-", ":", "--", "-."]
 
-    densities = computeDensities(grid, data, sol)
+    densities = computeDensities(data, sol)
 
     PyPlot.clf() 
     for icc = 1:data.numberOfSpecies-1

@@ -610,15 +610,14 @@ For given potentials in vector form, compute corresponding vectorized densities.
 
 """
 
-function computeDensities(grid, data, sol)
+function computeDensities(data, sol)
 
     ipsi      = data.numberOfSpecies
-    densities = Array{Real,2}(undef, data.numberOfSpecies-1, length(grid.components[Coordinates]))
+    densities = Array{Real,2}(undef, data.numberOfSpecies-1, size(sol,2))
 
     for ireg in 1:data.numberOfRegions
         for icc in 1:data.numberOfSpecies-1
             for inode in 1:data.numberOfNodes
-                node = grid.components[Coordinates][inode]
                 u    = sol[:,inode]
                 densities[icc,inode] = computeDensities(u, inode, data, ireg, icc, ipsi)
             end
