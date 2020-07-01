@@ -272,6 +272,17 @@ function breactionDensities!(f,u,bnode,data)
 
 end
 
+
+"""
+(SIGNATURES)
+
+Generation rate.
+"""
+
+function generation(node)
+    return 0 #2.5e21 / (cm^3 * s)    # Phil considers a uniform generation rate (but only in the intrinsic layer)
+end
+
 """
 $(SIGNATURES)
 
@@ -333,7 +344,8 @@ function reaction!(f,u,node,data)
         # end
 
         # full recombination
-        f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) )
+        # f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) )
+        f[icc]  = - q * data.chargeNumbers[icc] * (generation(node) - f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) ) )
 
         # try
         #     println(f[icc].value)
