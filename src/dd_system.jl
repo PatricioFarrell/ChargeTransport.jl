@@ -187,7 +187,7 @@ The argument of the distribution function for floats
 
 """
 
-function etaFunction(u,inode,data::DDFermi.DDFermiData,ireg::Int64,icc::Int64,ipsi::Int64)
+function etaFunction(u,inode::Union{Int32,Int64},data::DDFermi.DDFermiData,ireg::Union{Int32,Int64},icc::Int64,ipsi::Int64)
     E  = data.bandEdgeEnergy[ireg,icc] + data.bandEdgeEnergyNode[inode,icc]
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
@@ -301,8 +301,12 @@ It needs to be used carefully.
 """
 function reaction!(f,u,node,data)
 
-    # parameters
-    ipsi = data.numberOfSpecies             # final index for electrostatic potential
+    # indices
+    iphin = 1
+    iphip = 2
+    ipsi  = data.numberOfSpecies             # final index for electrostatic potential
+    ireg  = node.region
+    inode = node.index
 
     for icc = 1:data.numberOfSpecies - 1
 
@@ -312,26 +316,24 @@ function reaction!(f,u,node,data)
         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
 
         ## add different recombination kernels r(n,p)
-        for ireg = 1:data.numberOfRegions
+        # for ireg = 1:data.numberOfRegions
 
-            c1 = computeDensities(u, node.index, data, ireg, 1, ipsi)  
-            c2 = computeDensities(u, node.index, data, ireg, 2, ipsi) 
+            n = computeDensities(u, inode, data, ireg, iphin, ipsi)  
+            p = computeDensities(u, inode, data, ireg, iphip, ipsi) 
 
             # radiative recombination
             f[icc] = data.recombinationRadiative[ireg,icc]
 
             # Auger recombination
-            f[icc] = f[icc] + sum(data.recombinationAuger[ireg,:] .* u[1:end-1])
+            f[icc] = f[icc] + (data.recombinationAuger[ireg,iphin] * n + data.recombinationAuger[ireg,iphip] * p)
 
             # SRH recombination
-            # da: TrapDensity und LifeTime vertauscht.
-            #vllt sowas wie data.recombinationSRHActive ?
-            f[icc] = f[icc] + 1 / ( sum(data.recombinationSRHTrapDensity[ireg,end:-1:1] .* (u[1:end-1] .+ data.recombinationSRHLifetime[ireg,1:end] ) ) )
-        end
+            f[icc] = f[icc] + 1 / (  data.recombinationSRHLifetime[ireg,iphip]*(n+data.recombinationSRHTrapDensity[ireg,iphin]) 
+                                   + data.recombinationSRHLifetime[ireg,iphin]*(p+data.recombinationSRHTrapDensity[ireg,iphip]) )
+        # end
 
         # full recombination
-        # note: typeof(vec .* vec) is Array so we compute (vec .* vec)[1]
-        f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * prod(u[1:end-1]) * ( 1 - prod( exp( (-data.chargeNumbers .* u[1:end-1])[1] ) ) )
+        f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) )
 
         # try
         #     println(f[icc].value)
@@ -596,7 +598,7 @@ $(SIGNATURES)
 For given potentials, compute corresponding densities.
 
 """
-function computeDensities(u, inode, data::DDFermiData, ireg::Int, icc::Int, ipsi::Int)
+function computeDensities(u, inode, data::DDFermiData, ireg::Union{Int32,Int64}, icc::Int, ipsi::Int)
 
     data.densityOfStates[ireg,icc] * data.F[icc](etaFunction(u,inode,data,ireg,icc,ipsi))
 
