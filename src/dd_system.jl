@@ -578,41 +578,9 @@ $(SIGNATURES)
 For given potentials, compute corresponding densities.
 
 """
-function calculateDensities(grid, sys, U0)
-    dddata        = data(sys)
-    ipsi          = dddata.numberOfSpecies
+function computeDensities(u, node, data::DDFermiData, ireg::Int, icc::Int, ipsi::Int)
 
-    coord         = grid[Coordinates]
-    bfaceregions  = grid[BFaceRegions]
-    bfacenodes    = grid[BFaceNodes]
-    cellregions   = grid[CellRegions]
-    cellnodes     = grid[CellNodes]
-    numberOfCoord = length(coord)
-
-    # densities extrahieren in eigene Funktion.
-    densities = Array{Real,2}(undef, dddata.numberOfSpecies-1, length(coord))
-
-    for icc = 1:dddata.numberOfSpecies-1
-        # Möglichkeit densities in einer zeile zu implementieren? (Über etaF()-> multiple dispatch)
-        # --> versuche Informationen über coord zu bekommen!
-
-        E = dddata.bBandEdgeEnergy[bfaceregions[1],icc] + dddata.bandEdgeEnergyNode[bfacenodes[1],icc]
-        eta = dddata.chargeNumbers[icc] / dddata.UT * ( (dddata.contactVoltage[1]- U0[ipsi, 1]) + E / q )
-        densities[icc, 1] = dddata.bDensityOfStates[1, icc] * dddata.F[icc](eta)
-
-        for i = 2:numberOfCoord-1
-            # frage: wie am besten etaF() benutzen? -> etaF() hat als Eingeparameter etwas vom Typ VoronoiFVM.Node
-            E   = dddata.bandEdgeEnergy[cellregions[i], icc] + dddata.bandEdgeEnergyNode[i, icc]
-            eta = dddata.chargeNumbers[icc] / dddata.UT * ( (U0[icc, i]- U0[ipsi, i]) + E / q )
-            densities[icc, i] = dddata.densityOfStates[cellregions[i], icc] * dddata.F[icc](eta)
-
-        end
-        E = dddata.bBandEdgeEnergy[bfaceregions[2],icc] + dddata.bandEdgeEnergyNode[bfacenodes[2],icc]
-        eta = dddata.chargeNumbers[icc] / dddata.UT * ( (dddata.contactVoltage[2]- U0[ipsi, numberOfCoord]) + E / q )
-        densities[icc, numberOfCoord] = dddata.bDensityOfStates[2, icc] * dddata.F[icc](eta)
-
-    end
-    return densities
+    data.densityOfStates[ireg,icc] * etaFunction(u,node,data,icc,ipsi)
 end
 
 """
