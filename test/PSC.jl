@@ -31,9 +31,9 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     bregions        = [bregionDonor, bregionAcceptor]
 
     # inner regions
-    iregionDonor    = 3
-    iregionAcceptor = 4
-    iregions        = [iregionDonor, iregionAcceptor]
+    # iregionDonor    = 3
+    # iregionAcceptor = 4
+    # iregions        = [iregionDonor, iregionAcceptor]
 
     # grid
     # NB: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
@@ -82,8 +82,8 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)  # p-doped region   = 3
 
     # set interior boundary regions
-    bfacemask!(grid, [h_ndoping],           [h_ndoping],           iregionDonor)
-    bfacemask!(grid, [h_ndoping+h_pdoping], [h_ndoping+h_pdoping], iregionAcceptor)
+    # bfacemask!(grid, [h_ndoping],           [h_ndoping],           iregionDonor)
+    # bfacemask!(grid, [h_ndoping+h_pdoping], [h_ndoping+h_pdoping], iregionIntrinsic)
 
     if pyplot
         ExtendableGrids.plot(VoronoiFVM.Grid(coord, collect(0.0 : 0.25*μm : 0.5*μm)), Plotter = PyPlot, p = PyPlot.plot()) 
@@ -102,7 +102,7 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     # number of (boundary) regions and carriers
     numberOfRegions         = length(regions)
-    numberOfBoundaryRegions = length(bregions) + length(iregions)
+    numberOfBoundaryRegions = length(bregions) #+ length(iregions)
     numberOfSpecies         = length(species)
 
     # physical data
@@ -286,6 +286,12 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     DDFermi.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
 
+    PyPlot.figure()
+    DDFermi.plotDensities(grid, data, solution, "EQUILIBRIUM")
+    PyPlot.figure()
+    DDFermi.plotEnergies(grid, data, solution, "EQUILIBRIUM")
+    PyPlot.figure()
+
     println("*** done\n")
 
     ################################################################################
@@ -309,6 +315,8 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     control.damp_initial      = 0.5
     control.damp_growth       = 1.2
     control.max_iterations    = 30
+
+    initial_solution = unknowns(sys)
 
     for Δu in biasValues
         data.contactVoltage[bregionAcceptor] = Δu
@@ -341,10 +349,50 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
             #DDFermi.plotIV(biasValues,IV)
         end
 
+        initial_solution = solution
+
     end # bias loop
 
     # return IV
     println("*** done\n")
+
+    ################################################################################
+    println("Transient solution")
+    ################################################################################
+
+    tstep = 0.5*1e-10
+    tstep_max = 0.5*1e0
+    dV = 0.25
+
+
+     # Solve the stationary state system
+    control=VoronoiFVM.NewtonControl()
+    control.Δt=tstep
+    control.Δt_max=tstep_max
+    control.Δt_grow=1.5
+    control.Δu_opt=dV
+    control.verbose=false
+    control.max_lureuse=0
+    control.edge_cutoff=1.0e-16
+
+    # inival.=initial_solution
+    # println(inival)
+    sampling_times=[t for t in 0.0:1e4:1e5]
+
+    solution_transient = unknowns(sys)
+
+    evolve!(solution_transient,initial_solution,sys,sampling_times, control=control)
+
+    DDFermi.plotDensities(grid, data, solution_transient, "FINAL")
+
+    PyPlot.figure()
+    DDFermi.plotEnergies(grid, data, solution_transient, "FINAL")
+
+    println("*** done\n")
+
+
+
+    
 
 end #  main
 
@@ -354,18 +402,7 @@ end # module
 
 
 
-#  # Solve the stationary state system
-#         control=VoronoiFVM.NewtonControl()
-#         control.Δt=tstep
-#         control.Δt_max=tstep_max
-#         control.Δt_grow=1.5
-#         control.Δu_opt=dI
-#         control.verbose=false
-#         control.max_lureuse=0
-#         control.edge_cutoff=1.0e-10
 
-
-#         inival.=solution
 
 
 #     # Number of periods to run
@@ -387,7 +424,7 @@ end # module
 #     sampling_times=[t for t in 0.0:0.5*per/nsamp:per*nper]
 
 
-#             function pre(sol,time)
+#             function pre(sol,time) # vielleich t nicht nötig bei uns
 #             #theta=Nernst_const(time)
 #             #omega=freq*2.0*π
 #             eplus,eminus=BV_rate_constants(time)
@@ -396,14 +433,14 @@ end # module
 #         I_disk_old=[0.0,0.0]
 #         I_ring=[]
 #         di=0.0
-#         function delta(solution, oldsolution, time,tstep)
+#         function delta(solution, oldsolution, time,tstep) # discrete Energie
 #             I_disk=VoronoiFVM.integrate(rdcell,tfc_disk,solution,oldsolution,tstep)
 #             I_ring=VoronoiFVM.integrate(rdcell,tfc_ring,solution,oldsolution,tstep)
 #             di=FaradayConstant*abs(I_disk_old[specB]-I_disk[specB])/mA
 #         end
 
         
-#         function post(solution, oldsolution, time,tstep)
+#         function post(solution, oldsolution, time,tstep) # vielleich t nicht nötig bei uns, plotten
 #             push!(vdisk,phi_cv(time))
 #             push!(iring,-I_ring[specB]*FaradayConstant)
 #             push!(idisk,I_disk[specB]*FaradayConstant)

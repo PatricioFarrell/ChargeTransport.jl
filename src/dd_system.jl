@@ -158,6 +158,7 @@ The argument of the distribution function for boundary nodes:
 """
 
 function etaFunction(u,bnode::VoronoiFVM.BNode,data::DDFermi.DDFermiData,icc::Int64,ipsi::Int64)
+    # bnode.index refers to index in overall mesh
     E  = data.bBandEdgeEnergy[bnode.region,icc] + data.bandEdgeEnergyNode[bnode.index,icc]
     data.chargeNumbers[icc] / data.UT * ( (data.contactVoltage[bnode.region]- u[ipsi]) + E / q )
 end
@@ -214,12 +215,14 @@ for all charge carriers `icc`.
 """
 function breaction!(f,u,bnode,data)
 
-    # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...
-    if bnode.region == 1 || bnode.region == 2 
+    # parameters
+    α    = 1.0/VoronoiFVM.Dirichlet         # tiny penalty value
+    ipsi = data.numberOfSpecies             # final index for electrostatic potential
 
-        # parameters
-        α    = 1.0/VoronoiFVM.Dirichlet         # tiny penalty value
-        ipsi = data.numberOfSpecies             # final index for electrostatic potential
+    # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...
+    ### TESTEN AUF ÄU?EREN RAND 
+    # bnode.coord
+    # if bnode.region == 1 || bnode.region == 2 
 
         for icc = 1:data.numberOfSpecies - 1
 
@@ -232,17 +235,32 @@ function breaction!(f,u,bnode,data)
             f[icc]  = 0.0
 
         end
+
         f[ipsi] = -1/α *  q * f[ipsi]
      
-    # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...    
-    elseif bnode.region == 3 || bnode.region == 4 
+    # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...  
+    ### TESTEN AUF INNEREN RAND  
+    # elseif bnode.region == 3 || bnode.region == 4 
 
-        for icc = 1:data.numberOfSpecies - 1
-            # f[icc] = 1e-14
-            ## auf Spezies zugreifen mit u[3], u[4]
-        end
+    #     iphin = 1 
+    #     iphip = 2
 
-    end
+    #     sn = 1e-8 * cm / s
+    #     sp = 1e-8 * cm / s
+
+    #     for icc = 1:data.numberOfSpecies - 1
+
+    #         n = computeDensities(u, bnode.index, data, bnode.region, iphin, ipsi)  
+    #         p = computeDensities(u, bnode.index, data, bnode.region, iphip, ipsi) 
+
+    #         # surface recombination
+    #         f[icc] = 1 / (  1/sp*(n+data.recombinationSRHTrapDensity[bnode.region,iphin]) 
+    #                       + 1/sn*(p+data.recombinationSRHTrapDensity[bnode.region,iphip]) )
+
+    #         f[icc]  =  q * data.chargeNumbers[icc] * f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT )  )
+    #     end
+
+    # end
 
 end
 """
@@ -632,7 +650,7 @@ function computeDensities(data, sol)
     for ireg in 1:data.numberOfRegions
         for icc in 1:data.numberOfSpecies-1
             for inode in 1:data.numberOfNodes
-                u    = sol[:,inode]
+                u = sol[:,inode]
                 densities[icc,inode] = computeDensities(u, inode, data, ireg, icc, ipsi)
             end
         end

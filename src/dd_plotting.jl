@@ -28,7 +28,7 @@ function plotDensities(grid, data, sol, bias)
     PyPlot.ylabel("density [\$\\frac{1}{m^3}\$]")
     PyPlot.legend(fancybox = true, loc = "best")
     PyPlot.title("bias \$\\delta U\$ = $bias")
-    PyPlot.pause(0.2)
+    PyPlot.pause(0.00001)
 
 end
 
@@ -37,16 +37,15 @@ $(SIGNATURES)
 
 Plot energies of system (physical variant).
 """
-function plotEnergies(grid, sys, U0, Δu)
+function plotEnergies(grid, data, sol, Δu)
 
-    dddata        = data(sys)
-    ipsi          = dddata.numberOfSpecies
+    ipsi          = data.numberOfSpecies
 
     coord         = grid[Coordinates]
     bfaceregions  = grid[BFaceRegions]
     bfacenodes    = grid[BFaceNodes]
     cellregions   = grid[CellRegions]
-    cellnodes     = grid[CellNodes]
+    # cellnodes     = grid[CellNodes]
     numberOfCoord = length(coord)
 
     #if length(coord[1]) != 1
@@ -54,32 +53,32 @@ function plotEnergies(grid, sys, U0, Δu)
         println("plotEnergies is so far only implemented in 1D")
     end
 
-    energies   = Array{Real,2}(undef, dddata.numberOfSpecies-1, length(coord))
-    fermiLevel = Array{Real,2}(undef, dddata.numberOfSpecies-1, length(coord))
+    energies   = Array{Real,2}(undef, data.numberOfSpecies-1, length(coord))
+    fermiLevel = Array{Real,2}(undef, data.numberOfSpecies-1, length(coord))
 
     colors = ["green", "red", "blue", "yellow"]
     linestyles = ["-", ":", "--", "-."]
     # warum das - bei den Fermi level?
-    for icc = 1:dddata.numberOfSpecies-1
-        E = dddata.bBandEdgeEnergy[bfaceregions[1],icc] + dddata.bandEdgeEnergyNode[bfacenodes[1],icc]
-        energies[icc, 1]   = E - q * U0[ipsi, 1]
-        fermiLevel[icc, 1] = - q * U0[icc, 1]
+    for icc = 1:data.numberOfSpecies-1
+        E = data.bBandEdgeEnergy[bfaceregions[1],icc] + data.bandEdgeEnergyNode[bfacenodes[1],icc]
+        energies[icc, 1]   = E - q * sol[ipsi, 1]
+        fermiLevel[icc, 1] = - q * sol[icc, 1]
 
         for i = 2:numberOfCoord-1
             # frage: wie am besten etaF() benutzen? -> etaF() hat als Eingeparameter etwas vom Typ VoronoiFVM.Node
-            E   = dddata.bandEdgeEnergy[cellregions[i], icc] + dddata.bandEdgeEnergyNode[i, icc]
-            energies[icc, i]   = E - q *U0[ipsi, i]
-            fermiLevel[icc, i] = -q* U0[icc, i]
+            E   = data.bandEdgeEnergy[cellregions[i], icc] + data.bandEdgeEnergyNode[i, icc]
+            energies[icc, i]   = E - q *sol[ipsi, i]
+            fermiLevel[icc, i] = -q* sol[icc, i]
 
         end
-        E = dddata.bBandEdgeEnergy[bfaceregions[2],icc] + dddata.bandEdgeEnergyNode[bfacenodes[2],icc]
-        energies[icc, numberOfCoord]   = E - q * U0[ipsi, numberOfCoord]
-        fermiLevel[icc, numberOfCoord] = - q * U0[icc, numberOfCoord]
+        E = data.bBandEdgeEnergy[bfaceregions[2],icc] + data.bandEdgeEnergyNode[bfacenodes[2],icc]
+        energies[icc, numberOfCoord]   = E - q * sol[ipsi, numberOfCoord]
+        fermiLevel[icc, numberOfCoord] = - q * sol[icc, numberOfCoord]
     end
 
 
     PyPlot.clf()
-    for icc = 1:dddata.numberOfSpecies-1
+    for icc = 1:data.numberOfSpecies-1
         PyPlot.plot(coord[1,:]./μm, energies[icc,:]./q,
                     label = "\$E_i-\\psi\$ (icc = $icc)",
                     linewidth = 3,
