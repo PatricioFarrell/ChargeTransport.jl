@@ -6,6 +6,7 @@ using PyPlot; PyPlot.pygui(true)
 using Printf
 using DocStringExtensions
 using SparseArrays
+using Roots
 
 include("dd_constants.jl")
 include("dd_units.jl")

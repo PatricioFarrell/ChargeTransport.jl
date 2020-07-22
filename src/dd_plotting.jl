@@ -178,7 +178,6 @@ Visualize doping and bDoping (x) to make sure they agree.
 function plotDoping(g::ExtendableGrid, data::DDFermiData)
     #todo_da: add following line
     coord  = g[Coordinates]
-    #if length(g.coord[1]) != 1
     if length(coord[1]) != 1
         println("plotDoping is so far only implemented in 1D")
     end
@@ -193,8 +192,8 @@ function plotDoping(g::ExtendableGrid, data::DDFermiData)
     # plot different doping values in interior
     #todo_da: add following line and delete dependency of cellregions from g
     cellregions = g[CellRegions]
-    cellnodes = g[CellNodes]
-    coord = g[Coordinates]
+    cellnodes   = g[CellNodes]
+    coord       = g[Coordinates]
     for icc = 1:data.numberOfSpecies - 1
         for i in 1:length(cellregions)
 
@@ -252,7 +251,7 @@ Plot electroneutral potential.
 function plotElectroNeutralSolutionBoltzmann(grid, psi0)
     #todo_da: add following line
     coord = grid[Coordinates]
-    PyPlot.plot(coord[:],psi0, label = "electroneutral potential (Boltzmann)", color="g", marker="o")
+    PyPlot.plot(coord[:],psi0, label = "electroneutral potential", color="g", marker="o")
     PyPlot.xlabel("space [m]")
     PyPlot.ylabel("potential [V]")
     PyPlot.legend(fancybox = true, loc = "best")

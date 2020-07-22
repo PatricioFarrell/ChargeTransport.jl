@@ -117,12 +117,13 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     data      = DDFermi.DDFermiData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
-    data.F                   .= Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
-    data.temperature          = T
-    data.UT                   = (kB * data.temperature) / q
-    data.contactVoltage       = [voltageAcceptor, voltageDonor]
-    data.chargeNumbers[iphin] = -1
-    data.chargeNumbers[iphip] =  1
+    data.F                              .= Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
+    data.temperature                     = T
+    data.UT                              = (kB * data.temperature) / q
+    data.contactVoltage[bregionDonor]    = voltageDonor
+    data.contactVoltage[bregionAcceptor] = voltageAcceptor
+    data.chargeNumbers[iphin]            = -1
+    data.chargeNumbers[iphip]            =  1
 
     # boundary region data
     for ibreg in 1:numberOfBoundaryRegions
@@ -148,8 +149,8 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         data.mobility[ireg,iphip]        = mup
 
         # recombination parameters
-        data.recombinationRadiative[ireg,iphin]      = Radiative
-        data.recombinationRadiative[ireg,iphip]      = Radiative
+        data.recombinationRadiative[ireg]      = Radiative
+        data.recombinationRadiative[ireg]      = Radiative
         data.recombinationSRHLifetime[ireg,iphin]    = SRH_LifeTime
         data.recombinationSRHLifetime[ireg,iphip]    = SRH_LifeTime
         data.recombinationSRHTrapDensity[ireg,iphin] = SRH_TrapDensity
@@ -179,9 +180,9 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         ################################################################################
         println("Plot electroneutral potential and doping")
         ################################################################################
-        #DDFermi.plotEnergies(grid, data)
-        #DDFermi.plotDoping(grid, data)
-        #DDFermi.plotElectroNeutralSolutionBoltzmann(grid, psi0)
+        DDFermi.plotEnergies(grid, data)
+        DDFermi.plotDoping(grid, data)
+        DDFermi.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
         println("*** done\n")
     end
@@ -256,6 +257,18 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     @views initialGuess[iphip, :] .= 0.0
 
     DDFermi.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
+
+    ### Test embedding parameter ###
+    # println(solution)
+    # sys.physics.data.λ = 0.0
+    # data.contactVoltage[bregionAcceptor] = 0.0
+    # sys.boundary_values[iphin, bregionAcceptor] = 0.0
+    # sys.boundary_values[iphip, bregionAcceptor] = 0.0
+    # solve!(solution, initialGuess, sys, control = control, tstep=Inf)
+    # DDFermi.plotDensities(grid, data, solution, "LINEAR")
+    # data.contactVoltage = [voltageAcceptor, voltageDonor]
+    # println(solution)
+    # @assert 1 == 0
 
     println("*** done\n")
 
