@@ -19,7 +19,11 @@ mutable struct DDFermiData <: VoronoiFVM.AbstractData
     # real numbers
     temperature                 ::  Float64
     UT                          ::  Float64
-    λ                           ::  Float64
+    λ1                          ::  Float64
+    λ2                          ::  Float64
+
+    # booleans
+    generationOn                ::  Bool
 
     # number of boundary regions
     contactVoltage              ::  Array{Float64,1}
@@ -86,7 +90,11 @@ function DDFermiData(numberOfNodes::Int64, numberOfRegions=3::Int64, numberOfBou
     # real numbers
     300 * K,                                                                 # temperature
     (kB * 300 * K ) / q,                                                     # thermal voltage
-    1.0,                                                                     # λ: embedding parameter for NLP
+    1.0,                                                                     # λ1: embedding parameter for NLP
+    0.0,                                                                     # λ2: embedding parameter for G
+
+    # booleans
+    false,                                                                    # generationOn
 
     # number of boundary regions
     Array{Float64,1}(undef,numberOfBoundaryRegions),                         # contactVoltage
@@ -251,7 +259,7 @@ function breaction!(f,u,bnode,data)
 
         end
 
-        f[ipsi] = -1/α *  q * data.λ * f[ipsi]
+        f[ipsi] = -1/α *  q * data.λ1 * f[ipsi]
         # println(f[ipsi].value)
 
      
@@ -303,7 +311,7 @@ function breactionDensities!(f,u,bnode,data)
         f[icc]  = 0.0# data.bDensityOfStates[bnode.region,icc] * data.F(eta) - data.chargeNumbers[icc] * u[icc]
 
     end
-    f[ipsi] = -1/α *  q * data.λ * f[ipsi]
+    f[ipsi] = -1/α *  q * data.λ1 * f[ipsi]
 
 end
 
@@ -314,8 +322,18 @@ end
 Generation rate.
 """
 
-function generation(node)
-    return 2.5e2 / (cm^3 * s)  # 2.5e21 / (cm^3 * s)    # Phil considers a uniform generation rate (but only in the intrinsic layer)
+function generation(data,node)
+    if data.generationOn == false 
+        return 0.0 
+    elseif data.generationOn == true
+        # println("ddd")
+        # if node.region == 2 ## intrinsic
+            # println(data.λ2 * 2.5e21 / (cm^3 * s) )
+            return data.λ2 * 2.5e21 / (cm^3 * s)    # Phil considers a uniform generation rate (but only in the intrinsic layer)
+        # else
+            # return 0.0
+        # end
+    end
 end
 
 """
@@ -373,26 +391,16 @@ function reaction!(f,u,node,data)
 
         # full recombination
         # f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) )
-        f[icc]  = - q * data.chargeNumbers[icc] * (generation(node) - f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) ) )
+        f[icc]  = - q * data.chargeNumbers[icc] * (generation(data,node) - f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) ) )
 
         # try
-        #     println("try")
         #     println(f[icc].value)
-        #     # if (f[icc].value) == NaN
-        #     #     println("---")
-        #         println(generation(node))
-        #     # end
         # catch
-        #     println("catch")
         #     println(f[icc])
-        #     # if f[icc] == Inf || f[icc] = -Inf || f[icc] = NaN
-        #     #     println("---")
-        #     #     println(generation(node))
-        #     # end
         # end
 
     end
-    f[ipsi] = - q * data.λ * f[ipsi]
+    f[ipsi] = - q * data.λ1 * f[ipsi]
 
     # println(f[ipsi].value)
 end
@@ -415,7 +423,7 @@ function reactionDensities!(f,u,node,data)
         f[icc]  = 0.0
 
     end
-    f[ipsi] = - q * data.λ * f[ipsi]
+    f[ipsi] = - q * data.λ1 * f[ipsi]
 end
 
 """

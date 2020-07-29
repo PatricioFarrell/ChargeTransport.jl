@@ -38,7 +38,7 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     # grid
     # NB: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
     h_ndoping       = 0.2 * μm
-    h_intrinsic     = 0.2 * μm
+    h_intrinsic     = 0.4 * μm
     h_pdoping       = 0.2 * μm
     x0              = 0 * μm 
     δ               = 5        # the larger, the finer the mesh
@@ -111,16 +111,16 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     T    = 300.0                *  K
 
     # band edge energies
-    Eref =  2.0                 
-    Ec_d = (-4.1 + Eref)        *  eV # -4.1 # 3.3
-    Ev_d = (-7.4 + Eref)        *  eV # -7.4 # 0.0
+    Eref =  3.8              
+    Ec_d = (-3.8 + Eref)        *  eV # -4.1 # 3.3
+    Ev_d = (-5.4 + Eref)        *  eV # -7.4 # 0.0
 
     Ec_i = (-3.8 + Eref)        *  eV # -3.8 # 1.6
     Ev_i = (-5.4 + Eref)        *  eV # -5.4 # 0.0
     Ea_i = (-1.8 + Eref)        *  eV ## ????? # -1.8
 
-    Ec_a = (-1.9 + Eref)        *  eV # -1.9 # 3.0
-    Ev_a = (-4.9 + Eref)        *  eV # -4.9 # 0.0
+    Ec_a = (-3.8 + Eref)        *  eV # -1.9 # 3.0
+    Ev_a = (-5.4 + Eref)        *  eV # -4.9 # 0.0
 
     EC   = [Ec_d, Ec_i, Ec_a] 
     EV   = [Ev_d, Ev_i, Ev_a] 
@@ -136,40 +136,40 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     NA   = [0.0, Na, 0.0]
 
     # mobilities 
-    μn_d = 0.09                 * (cm^2) / (V * s)  # 20 in Phil's paper  
-    μp_d = 0.09                 * (cm^2) / (V * s)  # 20 in Phil's paper  
+    μn_d = 20.0                 * (cm^2) / (V * s)  # 20 in Phil's paper  
+    μp_d = 20.0                 * (cm^2) / (V * s)  # 20 in Phil's paper  
 
     μn_i = 20.0                 * (cm^2) / (V * s)  
     μp_i = 20.0                 * (cm^2) / (V * s)  
-    μa_i = 1.0e-12              * (cm^2) / (V * s)
+    μa_i = 1.0e-10              * (cm^2) / (V * s)
 
-    μn_a = 0.02                 * (cm^2) / (V * s)  # 20 in Phil's paper  
-    μp_a = 0.02                 * (cm^2) / (V * s)  # 20 in Phil's paper  
-
+    μn_a = 20.0                 * (cm^2) / (V * s)  # 20 in Phil's paper  
+    μp_a = 20.0                 * (cm^2) / (V * s)  # 20 in Phil's paper  
+ 
     μn   = [μn_d, μn_i, μn_a] 
     μp   = [μp_d, μp_i, μp_a] 
     μa   = [0.0,  μa_i, 0.0] 
 
     # relative dielectric permittivity  
-    ε_d  = 12.0                 *  1.0         # 20 in Phil's paper      
-    ε_i  = 23.0                 *  1.0         # 20 in Phil's paper      
-    ε_a  = 04.0                 *  1.0         # 20 in Phil's paper  
+    ε_d  = 20.0                 *  1.0         # 20 in Phil's paper      
+    ε_i  = 20.0                 *  1.0         # 20 in Phil's paper      
+    ε_a  = 20.0                 *  1.0         # 20 in Phil's paper  
     
     ε   = [ε_d, ε_i, ε_a] 
 
     # radiative recombination
-    r0_d = 1.54e-10             * cm^3 / s   # 1e-10 in Phil's paper 
-    r0_i = 3.60e-12             * cm^3 / s   # 1e-10 in Phil's paper  
-    r0_a = 3.18e-11             * cm^3 / s   # 1e-10 in Phil's paper 
+    r0_d = 1.0e-10              * cm^3 / s   # 1e-10 in Phil's paper 
+    r0_i = 1.0e-10              * cm^3 / s   # 1e-10 in Phil's paper  
+    r0_a = 1.0e-10              * cm^3 / s   # 1e-10 in Phil's paper 
 
     r0   = [r0_d, r0_i, r0_a]
     ra   = [0.0, 0.0, 0.0]
 
     # life times
-    τn_d = 1e-6                 * s
-    τp_d = 1e-6                 * s
-    τn_i = 1e-7                 * s   # 2.0e-15 *s
-    τp_i = 1e-7                 * s   # 2.0e-15 *s
+    τn_d = 1e-14                * s
+    τp_d = 1e-15                * s
+    τn_i = 1e6                  * s   # 2.0e-15 *s
+    τp_i = 1e6                  * s   # 2.0e-15 *s
     τn_a = τn_i
     τp_a = τp_i
 
@@ -177,10 +177,10 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     τp   = [τp_d, τp_i, τp_a]
 
     # intrinsic Fermi energies
-
-    Ei_d = -5.75                * eV   
+  
+    Ei_d = -5.2                 * eV   
     Ei_i = -4.6                 * eV  # paper: intrinsic: -0.2+eV (n), -1.4 *eV (p)
-    Ei_a = -3.4                 * eV
+    Ei_a = -4.0                 * eV
 
     EI   = [Ei_d, Ei_i, Ei_a]
 
@@ -193,8 +193,14 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     G               = 2.5e21    / (cm^3 * s)        # uniform generation rate (but only in the intrinsic layer)
 
     # doping
-    Nd             =   3.0e17   / (cm^3)
-    Na             =   3.0e17   / (cm^3)
+    Nd             =   3.0e18   / (cm^3)
+    Na             =   3.0e18   / (cm^3)
+    # E0             =   -0.5 *eV
+    # Nd             =   Nc*exp((E0-Ec_i)/(kB*T))
+    # Na             =   Nv*exp((Ev_i-E0)/(kB*T))
+    # println(Nd)
+    # println(Na)
+    # @assert 1==0
     C0             =   1.0e19   / (cm^3)        # average anion vacancy density
     
 
@@ -419,80 +425,58 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     # DDFermi.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
 
     function pre(u,lambda)
-        sys.physics.data.λ = lambda
+        sys.physics.data.λ1 = lambda
         # sys.physics.data.contactVoltage[bregionAcceptor] = lambda * 3.0
         sys.boundary_values[iphin, bregionAcceptor] = 0.0
         sys.boundary_values[iphip, bregionAcceptor] = 0.0
     end
 
-    # sys.physics.data.λ = 0.0
+    # sys.physics.data.λ1 = 0.0
     # solve!(solution, initialGuess, sys, control = control, tstep=Inf)
 
     control.tol_absolute      = 1.0e-2
-    # control.tol_relative      = 1.0e-2
-    # control.handle_exceptions = true
-    # control.tol_round         = 1.0e-6
-    # control.max_round         = 4
-    # control.damp_growth       = 1.1
+    control.damp_initial      = 0.0005
 
     # ### Test embedding parameter ###
-    sys.physics.data.λ = 0.0
+    sys.physics.data.λ1 = 0.0
     sys.boundary_values[iphin, bregionAcceptor] = 0.0*V
     sys.boundary_values[iphip, bregionAcceptor] = 0.0*V
     sys.physics.data.contactVoltage = 0.0 * sys.physics.data.contactVoltage
 
-     I = 75.0:-1:0.0
-
-
-    LAMBDA = 10 .^ (-I) #[0.0, 1e-150, 1e-140, 1e-138, 1e-135, 1e-130, 1e-120, 1e-100, 1e0]
+    I = collect(58.0:-1:0.0)
+    J = collect(I .- log(5)/log(10))[1:end-1]
+    LAMBDA = 10 .^ (-sort(append!(I,J),rev=true)) #[0.0, 1e-150, 1e-140, 1e-138, 1e-135, 1e-130, 1e-120, 1e-100, 1e0]
     prepend!(LAMBDA,0.0)
 
     for i in 1:length(LAMBDA)
-        println("λ = $(LAMBDA[i])")
-        sys.physics.data.λ = LAMBDA[i]
+        println("λ1 = $(LAMBDA[i])")
+        sys.physics.data.λ1 = LAMBDA[i]
         solve!(solution, initialGuess, sys, control = control, tstep=Inf)
         initialGuess = solution
     end
 
-
-
-    # solve!(solution, initialGuess, sys, control = control, tstep=Inf)
-    # println(solution)
-    # println(initialGuess)
-
-    # initialGuess = solution
-    # sys.physics.data.λ = 1e-60
-    # solve!(solution, initialGuess, sys, control = control, tstep=Inf)
-
-    # initialGuess = solution
-    # sys.physics.data.λ = 1e-50
-    # solve!(solution, initialGuess, sys, control = control, tstep=Inf)
-
-    # initialGuess = solution
-    # sys.physics.data.λ = 1e-10
-    # solve!(solution, initialGuess, sys, control = control, tstep=Inf)
-
-    # initialGuess = solution
-    # sys.physics.data.λ = 1e0
-    # solve!(solution, initialGuess, sys, control = control, tstep=Inf)
+    # solve once more with higher tolerance
+    control.tol_absolute      = 1.0e-6
+    println("λ1 = $(LAMBDA[end]) with tolerance = $(control.tol_absolute)")
+    solve!(solution, initialGuess, sys, control = control, tstep=Inf)
+    initialGuess = solution
 
 
 
 
 
-    DDFermi.plotDensities(grid, data, solution, "EQUILIBRIUM")
-    PyPlot.figure()
-    DDFermi.plotEnergies(grid, data, solution, "EQUILIBRIUM")
-    PyPlot.figure()
+    if pyplot
+        DDFermi.plotDensities(grid, data, solution, "EQUILIBRIUM")
+        PyPlot.figure()
+        DDFermi.plotEnergies(grid, data, solution, "EQUILIBRIUM")
+        PyPlot.figure()
+    end
     
     # # embed!(solution, oldsolution,sys,pre=pre, control=control)
     # # DDFermi.plotDensities(grid, data, solution, "LINEAR")
-    sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor
-    sys.physics.data.contactVoltage[bregionAcceptor] = voltageAcceptor
-    sys.boundary_values[iphin, bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_values[iphip, bregionAcceptor] = data.contactVoltage[bregionAcceptor]
+
     # println(solution)
-    # println(sys.physics.data.λ)
+    # println(sys.physics.data.λ1)
     # println(sys.physics.data.contactVoltage)
     # println(sys.boundary_values)
     # println(data.contactVoltage)
@@ -505,13 +489,20 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     println("*** done\n")
 
+
+
     ################################################################################
     println("Bias loop")
     ################################################################################
     # if !(data.F == DDFermi.Boltzmann) # adjust control, when not using Boltzmann
-    #     control.damp_initial      = 0.5
-    #     control.damp_growth       = 1.2
-    #     control.max_iterations    = 30
+        # control.damp_initial      = 0.05
+        # control.damp_growth       = 1.2
+        control.damp_initial      = 0.001
+        control.max_iterations    = 30
+        control.tol_absolute      = 1.0e-8
+        control.tol_relative      = 1.0e-8
+        control.handle_exceptions = true
+        control.tol_round         = 1.0e-8
     # end
 
     # function pre_bias(u,lambda)
@@ -519,6 +510,14 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     #     sys.boundary_values[iphin, bregionAcceptor] = lambda * 
     #     sys.boundary_values[iphip, bregionAcceptor] = lambda * 
     # end
+
+    # set non equilibrium boundary conditions
+    sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor
+    sys.physics.data.contactVoltage[bregionAcceptor] = voltageAcceptor
+    sys.boundary_values[iphin, bregionAcceptor] = data.contactVoltage[bregionAcceptor]
+    sys.boundary_values[iphip, bregionAcceptor] = data.contactVoltage[bregionAcceptor]
+
+    
 
     maxBias    = data.contactVoltage[bregionAcceptor]
     biasValues = range(0, stop = maxBias, length = 41)
@@ -534,7 +533,7 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     control.max_iterations    = 30
 
     for Δu in biasValues
-        println("Bias value: Δu = $(Δu)")
+        println("Bias value: Δu = $(Δu) (no generation)")
         data.contactVoltage[bregionAcceptor] = Δu
 
         sys.boundary_values[iphin, bregionAcceptor] = Δu
@@ -569,6 +568,66 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     end # bias loop
 
     # return IV
+    println("*** done\n")
+
+    ################################################################################
+    println("Generation loop")
+    ################################################################################ 
+
+    sys.physics.data.generationOn = true
+    control.max_round         = 2
+    # control.tol_absolute      = 1.0e-6
+    control.tol_relative      = 1.0e-4
+    control.tol_round         = 1.0e-4
+
+    step = 2.0
+    e10 = 1.0e-10*(1:step:10)
+    e11 = 1.0e-11*(1:step:10)
+    e12 = 1.0e-12*(1:step:10)
+    e13 = 1.0e-13*(1:step:10)
+    e14 = 1.0e-14*(1:step:10)
+    e15 = 1.0e-15*(1:step:10)
+    e16 = 1.0e-16*(1:step:10)
+    e17 = 1.0e-17*(1:step:10)
+    
+
+
+    LAMBDA = [0.0, 1e-17, 
+    e17...,
+    e16...,
+    e15...,
+    e14...,
+    e13...,
+    e12...,
+    e11...,
+    e10...]
+    # 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0]
+
+    I = collect(17.0:-1:0.0)
+    LAMBDA = 10 .^ (-I) #[0.0, 1e-150, 1e-140, 1e-138, 1e-135, 1e-130, 1e-120, 1e-100, 1e0]
+    prepend!(LAMBDA,0.0)
+   
+
+    for i in 1:length(LAMBDA)
+        println("λ2 = $(LAMBDA[i])")
+        sys.physics.data.λ2 = LAMBDA[i]
+        solve!(solution, initialGuess, sys, control = control, tstep=Inf)
+        initialGuess = solution
+    end
+
+    control.max_round         = 5
+    control.tol_absolute      = 1.0e-14
+    control.tol_relative      = 1.0e-14
+    control.tol_absolute      = 1.0e-14
+    control.tol_round         = 1.0e-8
+
+    
+    if pyplot
+        DDFermi.plotDensities(grid, data, solution, " Δu = $(maxBias) (generation on)")
+        PyPlot.figure()
+        DDFermi.plotEnergies(grid, data, solution, " Δu = $(maxBias) (generation on)")
+    end
+
     println("*** done\n")
 
 
