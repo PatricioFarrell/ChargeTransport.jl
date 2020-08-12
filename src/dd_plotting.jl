@@ -304,7 +304,8 @@ potentials for fixed time and fixed boundary values.
             PyPlot.xlabel("space [m]")
             PyPlot.ylabel("potential [V]")
             PyPlot.legend(fancybox = true, loc = "best")
-            PyPlot.gcf()
+            PyPlot.pause(1.0e-5)
+            #PyPlot.gcf()
         end
 
     end
@@ -313,9 +314,10 @@ potentials for fixed time and fixed boundary values.
     $(SIGNATURES)
     Plot the IV curve.
     """
-    function plotIV(biasValues,IV)
+    function plotIV(biasValues,IV, Δu)
         PyPlot.plot(biasValues[1:length(IV)], IV)
         PyPlot.grid()
+        PyPlot.title("applied bias = $Δu [V]")
         PyPlot.xlabel("bias [V]")
         PyPlot.ylabel("total current [A]")
         PyPlot.pause(1.0e-5)
