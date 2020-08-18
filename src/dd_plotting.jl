@@ -27,7 +27,7 @@ function plotDensities(grid, data, sol, bias)
     PyPlot.xlabel("space [\$\\mu m \$]")
     PyPlot.ylabel("density [\$\\frac{1}{m^3}\$]")
     PyPlot.legend(fancybox = true, loc = "best")
-    PyPlot.title("bias \$\\delta U\$ = $bias")
+    PyPlot.title("bias \$\\Delta u\$ = $bias")
     PyPlot.pause(0.00001)
 
 end
@@ -95,8 +95,8 @@ function plotEnergies(grid, data, sol, Δu)
     PyPlot.xlabel("space [\$\\mu m\$]")
     PyPlot.ylabel("energies [\$eV\$]")
     PyPlot.legend(fancybox = true, loc = "best")
-    PyPlot.title("bias \$\\delta U\$ = $Δu")
-    PyPlot.pause(1.0e-0)
+    PyPlot.title("bias \$\\Delta u\$ = $Δu")
+    PyPlot.pause(1.0e-5)
 
 end
 
