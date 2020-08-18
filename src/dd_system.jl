@@ -23,7 +23,7 @@ mutable struct DDFermiData <: VoronoiFVM.AbstractData
     λ2                          ::  Float64
 
     # booleans
-    generationOn                ::  Bool
+    inEquilibrium               ::  Bool
 
     # number of boundary regions
     contactVoltage              ::  Array{Float64,1}
@@ -94,7 +94,7 @@ function DDFermiData(numberOfNodes::Int64, numberOfRegions=3::Int64, numberOfBou
     0.0,                                                                     # λ2: embedding parameter for G
 
     # booleans
-    false,                                                                    # generationOn
+    true,                                                                    # inEquilibrium
 
     # number of boundary regions
     Array{Float64,1}(undef,numberOfBoundaryRegions),                         # contactVoltage
@@ -240,6 +240,7 @@ function breaction!(f,u,bnode,data)
 
     # parameters
     α    = 1.0/VoronoiFVM.Dirichlet         # tiny penalty value
+    α    = 1.0e-10                          # tiny penalty value
     ipsi = data.numberOfSpecies             # final index for electrostatic potential
 
     # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...
@@ -308,7 +309,7 @@ function breactionDensities!(f,u,bnode,data)
         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F(eta) 
 
         # boundary conditions for charge carriers are set in main program
-        f[icc]  = 0.0# data.bDensityOfStates[bnode.region,icc] * data.F(eta) - data.chargeNumbers[icc] * u[icc]
+        f[icc]  = 0.0 # data.bDensityOfStates[bnode.region,icc] * data.F(eta) - data.chargeNumbers[icc] * u[icc]
 
     end
     f[ipsi] = -1/α *  q * data.λ1 * f[ipsi]
@@ -323,17 +324,9 @@ Generation rate.
 """
 
 function generation(data,node)
-    if data.generationOn == false 
-        return 0.0 
-    elseif data.generationOn == true
-        # println("ddd")
-        # if node.region == 2 ## intrinsic
-            # println(data.λ2 * 2.5e21 / (cm^3 * s) )
-            return data.λ2 * 2.5e21 / (cm^3 * s)    # Phil considers a uniform generation rate (but only in the intrinsic layer)
-        # else
-            # return 0.0
-        # end
-    end
+
+    return data.λ2 * 2.5e21 / (cm^3 * s)    # Phil considers a uniform generation rate (but only in the intrinsic layer)
+
 end
 
 """
@@ -372,8 +365,11 @@ function reaction!(f,u,node,data)
         f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                               # subtract doping
         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
 
-        ## add different recombination kernels r(n,p)
-        # for ireg = 1:data.numberOfRegions
+        if data.inEquilibrium == true 
+
+            f[icc] = u[icc] - 0.0
+
+        else
 
             n = computeDensities(u, inode, data, ireg, iphin, ipsi)  
             p = computeDensities(u, inode, data, ireg, iphip, ipsi) 
@@ -387,11 +383,10 @@ function reaction!(f,u,node,data)
             # SRH recombination
             f[icc] = f[icc] + 1 / (  data.recombinationSRHLifetime[ireg,iphip]*(n+data.recombinationSRHTrapDensity[ireg,iphin]) 
                                    + data.recombinationSRHLifetime[ireg,iphin]*(p+data.recombinationSRHTrapDensity[ireg,iphip]) )
-        # end
 
-        # full recombination
-        # f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) )
-        f[icc]  = - q * data.chargeNumbers[icc] * (generation(data,node) - f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) ) )
+            # full recombination
+            f[icc]  = - q * data.chargeNumbers[icc] * (generation(data,node) - f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) ) )
+        end
 
         # try
         #     println(f[icc].value)
@@ -418,11 +413,12 @@ function reactionDensities!(f,u,node,data)
 
     for icc = 1:data.numberOfSpecies - 1
 
-        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                          # subtract doping
-        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * u[icc]   # add charge carrier
+        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]  # subtract doping
+        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * u[icc]                        # add charge carrier
         f[icc]  = 0.0
 
     end
+    
     f[ipsi] = - q * data.λ1 * f[ipsi]
 end
 
@@ -480,6 +476,11 @@ function ScharfetterGummelDensities!(f, u, edge, data)
 
     f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
 
+    # return zero flux in equilibrium
+    if data.inEquilibrium == true 
+        return
+    end
+
     for icc = 1:data.numberOfSpecies-1
 
         j0    =  - data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT
@@ -515,6 +516,11 @@ function ScharfetterGummel!(f, u, edge, data)
 
     f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
 
+    # return zero flux in equilibrium
+    if data.inEquilibrium == true 
+        return
+    end
+
     for icc = 1:data.numberOfSpecies-1
 
         j0    =  - data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
@@ -543,6 +549,7 @@ The Sedan flux scheme.
 """
 
 function Sedan!(f, u, edge, data)
+
     uk  = viewK(edge, u)
     ul  = viewL(edge, u)
 
@@ -551,6 +558,11 @@ function Sedan!(f, u, edge, data)
 
     dpsi     = ul[ipsi]- uk[ipsi]
     f[ipsi]  = - data.dielectricConstant[ireg] * ε0 * dpsi
+
+    # return zero flux in equilibrium
+    if data.inEquilibrium == true 
+        return
+    end
 
     for icc = 1:data.numberOfSpecies-1
 
@@ -588,6 +600,11 @@ function diffusionEnhanced!(f, u, edge, data)
 
     dpsi = ul[ipsi]- uk[ipsi]
     f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
+
+    # return zero flux in equilibrium
+    if data.inEquilibrium == true 
+        return
+    end
 
     for icc = 1:data.numberOfSpecies-1
 
@@ -635,6 +652,11 @@ function KopruckiGaertner!(f, u, edge, data)
 
     dpsi     = ul[ipsi]- uk[ipsi]
     f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
+
+    # return zero flux in equilibrium
+    if data.inEquilibrium == true 
+        return
+    end
 
     for icc = 1:data.numberOfSpecies-1
 
