@@ -275,6 +275,9 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     ################################################################################
     println("Bias loop")
     ################################################################################
+
+    data.inEquilibrium = false
+
     if !(data.F == DDFermi.Boltzmann) # adjust control, when not using Boltzmann
         control.damp_initial      = 0.5
         control.damp_growth       = 1.2
@@ -312,6 +315,8 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
             #DDFermi.plotEnergies(grid, sys, solution, Δu)
             #DDFermi.plotSolution(grid, sys, solution)
             DDFermi.plotDensities(grid, data, solution, Δu)
+            # PyPlot.figure()
+            # DDFermi.plotEnergies(grid, data, solution, Δu)
             #DDFermi.plotIV(biasValues,IV)
         end
 
