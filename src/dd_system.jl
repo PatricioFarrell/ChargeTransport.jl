@@ -357,6 +357,7 @@ function reaction!(f,u,node,data)
     ipsi  = data.numberOfSpecies             # final index for electrostatic potential
     ireg  = node.region
     inode = node.index
+    exponentialTerm = exp( (u[iphin] - u[iphip])/ data.UT )
 
     for icc = 1:2  # for electrons and holes
 
@@ -378,18 +379,29 @@ function reaction!(f,u,node,data)
             f[icc] = data.recombinationRadiative[ireg]
 
             # Auger recombination
-            f[icc] = f[icc] + (data.recombinationAuger[ireg,iphin] * n + data.recombinationAuger[ireg,iphip] * p)
+            f[icc] = f[icc] + (data.recombinationAuger[ireg,iphin] * n + data.recombinationAuger[ireg,iphip] *p)
 
             # SRH recombination
-            f[icc] = f[icc] + 1 / (  data.recombinationSRHLifetime[ireg,iphip]*(n+data.recombinationSRHTrapDensity[ireg,iphin]) 
-                                   + data.recombinationSRHLifetime[ireg,iphin]*(p+data.recombinationSRHTrapDensity[ireg,iphip]) )
+            f[icc] = f[icc] + 1.0 / (  data.recombinationSRHLifetime[ireg,iphip] * (n + data.recombinationSRHTrapDensity[ireg,iphin]) 
+                                + data.recombinationSRHLifetime[ireg,iphin] * (p + data.recombinationSRHTrapDensity[ireg,iphip]) )
+         #end
 
-            # full recombination
-            f[icc]  = - q * data.chargeNumbers[icc] * (generation(data,node) - f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) ) )
-        end
+        # full recombination
+        # f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT ) )
+        #f[icc]  = - q * data.chargeNumbers[icc] * (generation(node) - f[icc] * n * p * ( 1.0 - exp( (u[iphin]-u[iphip])/data.UT ) ) )
+        f[icc]  = + q * data.chargeNumbers[icc] *  f[icc] * n * p * ( 1.0 - exponentialTerm )  - q * data.chargeNumbers[icc] * generation(node)
 
         # try
+        #     #println("try")
+        #     if data.contactVoltage[1] == 1.4
+        #     println(data.contactVoltage)
+        #     println(node.index)
         #     println(f[icc].value)
+        #     end
+        #     # if (f[icc].value) == NaN
+        #     #     println("---")
+        #     #    println(generation(node))
+        #     # end
         # catch
         #     println(f[icc])
         # end
@@ -401,26 +413,47 @@ function reaction!(f,u,node,data)
 end
 
 """
-$(SIGNATURES)
+(SIGNATURES)
 
-Reaction term for densities. For simplicity, the recombination is neglected.
+Anissas simulation used this false implementation of the recombination.
 """
 
-function reactionDensities!(f,u,node,data)
-
+function reactionOld!(f,u,node,data)
     # parameters
     ipsi = data.numberOfSpecies             # final index for electrostatic potential
-
     for icc = 1:data.numberOfSpecies - 1
+        eta = etaFunction(u,node,data,icc,ipsi) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
 
-        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]  # subtract doping
-        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * u[icc]                        # add charge carrier
-        f[icc]  = 0.0
+        # f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]  # subtract doping
+        # f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * u[icc]                        # add charge carrier
+        # f[icc]  = 0.0
+        
+        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                          # subtract doping
+        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
+        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
 
+        ## add different recombination kernels r(n,p)
+        for ireg = 1:data.numberOfRegions
+            # radiative recombination
+            f[icc] = data.recombinationRadiative[ireg]
+            # Auger recombination
+            f[icc] = f[icc] + sum(data.recombinationAuger[ireg,:] .* u[1:end-1])
+            # SRH recombination
+            f[icc] = f[icc] + 1 / ( sum(data.recombinationSRHLifetime[ireg,end:-1:1] .* (u[1:end-1] .+ data.recombinationSRHTrapDensity[ireg,1:end] ) ) )
+        end
+        # full recombination
+        # note: typeof(vec .* vec) is Array so we compute (vec .* vec)[1]
+        f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * prod(u[1:end-1]) * ( 1 - prod( exp( (- data.chargeNumbers .* u[1:end-1])[1] ) ) )
+        # try
+        #     println(f[icc].value)
+        # catch
+        #     println(f[icc])
+        # end
     end
     
     f[ipsi] = - q * data.λ1 * f[ipsi]
 end
+
 
 """
 $(SIGNATURES)
@@ -523,7 +556,7 @@ function ScharfetterGummel!(f, u, edge, data)
 
     for icc = 1:data.numberOfSpecies-1
 
-        j0    =  - data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
+        j0    =  data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
 
         etak  = etaFunction(uk,edge,data,icc,ipsi) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi)
         etal  = etaFunction(ul,edge,data,icc,ipsi) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi)
@@ -608,7 +641,7 @@ function diffusionEnhanced!(f, u, edge, data)
 
     for icc = 1:data.numberOfSpecies-1
 
-        j0   = - data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
+        j0   =  data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
 
         etak = etaFunction(uk,edge,data,icc,ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
         etal = etaFunction(ul,edge,data,icc,ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
