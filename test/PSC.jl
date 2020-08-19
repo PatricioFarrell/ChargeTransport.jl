@@ -417,7 +417,7 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     # initialize solution and starting vectors
     initialGuess                   = unknowns(sys)
     solution                       = unknowns(sys)
-    @views initialGuess[ipsi,  :] .= 0.0#psi0
+    @views initialGuess[ipsi,  :] .= 0.0 # psi0
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
 
@@ -434,11 +434,9 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     control.damp_growth       = 1.2 # >= 1
     control.max_round         = 3
 
-    # ### Test embedding parameter ###
-    sys.physics.data.λ1 = 0.0
     sys.boundary_values[iphin, bregionAcceptor] = 0.0*V
     sys.boundary_values[iphip, bregionAcceptor] = 0.0*V
-    sys.physics.data.contactVoltage = 0.0 * sys.physics.data.contactVoltage
+    sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
 
     I = collect(30.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 
@@ -476,8 +474,8 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     # set non equilibrium boundary conditions
     sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor
     sys.physics.data.contactVoltage[bregionAcceptor] = voltageAcceptor
-    sys.boundary_values[iphin, bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_values[iphip, bregionAcceptor] = data.contactVoltage[bregionAcceptor]
+    sys.boundary_values[iphin, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
+    sys.boundary_values[iphip, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
 
     function pre(u,lambda)
         # sys.physics.data.contactVoltage[bregionAcceptor] = lambda * 3.0
@@ -535,19 +533,9 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     println("Illumination loop")
     ################################################################################ 
 
-    
-    # control.max_round         = 2
-    # # control.tol_absolute      = 1.0e-6
-    # control.tol_relative      = 1.0e-4
-    # control.tol_round         = 1.0e-4
-
-    I = collect(14.0:-1:0.0)
+    I = collect(20.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 
     prepend!(LAMBDA,0.0)
-    insert!(LAMBDA,length(LAMBDA),0.5)
-    insert!(LAMBDA,length(LAMBDA),0.75)
-
-   
 
     for i in 1:length(LAMBDA)
         println("λ2 = $(LAMBDA[i])")
@@ -556,9 +544,6 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
         initialGuess = solution
     end
 
-
-
-    
     if pyplot
         PyPlot.figure()
         DDFermi.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
