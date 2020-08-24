@@ -60,7 +60,7 @@ function plotDistributions()
 
     x = -5:0.01:10;
 
-    PyPlot.semilogy(x, DDFermi.FermiDiracOneHalf.(x), label="\$F_{1/2}\$");
+    PyPlot.semilogy(x, ChargeTransportInSolids.FermiDiracOneHalf.(x), label="\$F_{1/2}\$");
     PyPlot.semilogy(x, Boltzmann.(x), label="Boltzmann");
     PyPlot.semilogy(x, ones(size(x))/0.27, "--", label="\$1/\\gamma=3.\\overline{703}\$", color=(0.6,0.6,0.6,1));
     PyPlot.semilogy(x, Blakemore.(x), label="Blakemore (\$\\gamma=0.27\$)");   
@@ -87,16 +87,16 @@ function plotDiffusionEnhancements()
 
     x = -5:0.01:10;
 
-    f = DDFermi.FermiDiracOneHalf; df = x -> ForwardDiff.derivative(f,x)
+    f = ChargeTransportInSolids.FermiDiracOneHalf; df = x -> ForwardDiff.derivative(f,x)
     PyPlot.semilogy(x, f.(x)./df.(x), label="\$F_{1/2}\$");
 
-    f = DDFermi.Boltzmann; df = x -> ForwardDiff.derivative(f,x)
+    f = ChargeTransportInSolids.Boltzmann; df = x -> ForwardDiff.derivative(f,x)
     PyPlot.semilogy(x, f.(x)./df.(x), label="Boltzmann");
 
-    f = DDFermi.Blakemore; df = x -> ForwardDiff.derivative(f,x)
+    f = ChargeTransportInSolids.Blakemore; df = x -> ForwardDiff.derivative(f,x)
     PyPlot.semilogy(x, f.(x)./df.(x), label="Blakemore (\$\\gamma=0.27\$)");
 
-    f = DDFermi.degenerateLimit; df = x -> ForwardDiff.derivative(f,x)
+    f = ChargeTransportInSolids.degenerateLimit; df = x -> ForwardDiff.derivative(f,x)
     PyPlot.semilogy(x, f.(x)./df.(x), label="degenerate limit");
 
     PyPlot.xlabel("\$\\eta\$")

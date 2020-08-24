@@ -151,7 +151,7 @@ The argument of the distribution function for interior nodes:
     z / UT  * ( (phi - psi) + E / q ).
 
 """
-function etaFunction(u,node::VoronoiFVM.Node,data::ChargeTransport.ChargeTransportData,icc::Int64,ipsi::Int64)
+function etaFunction(u,node::VoronoiFVM.Node,data::ChargeTransportInSolids.ChargeTransportData,icc::Int64,ipsi::Int64)
     E  = data.bandEdgeEnergy[node.region,icc] + data.bandEdgeEnergyNode[node.index,icc]
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
@@ -164,7 +164,7 @@ The argument of the distribution function for boundary nodes:
     z / UT  * ( (phi_at_boundary - psi) + E / q ).
 """
 
-function etaFunction(u,bnode::VoronoiFVM.BNode,data::ChargeTransport.ChargeTransportData,icc::Int64,ipsi::Int64)
+function etaFunction(u,bnode::VoronoiFVM.BNode,data::ChargeTransportInSolids.ChargeTransportData,icc::Int64,ipsi::Int64)
     # bnode.index refers to index in overall mesh
     E  = data.bBandEdgeEnergy[bnode.region,icc] + data.bandEdgeEnergyNode[bnode.index,icc]
     data.chargeNumbers[icc] / data.UT * ( (data.contactVoltage[bnode.region]- u[ipsi]) + E / q )
@@ -180,7 +180,7 @@ The argument of the distribution function for edges:
 
 """
 
-function etaFunction(u,edge::VoronoiFVM.Edge,data::ChargeTransport.ChargeTransportData,icc::Int64,ipsi::Int64)
+function etaFunction(u,edge::VoronoiFVM.Edge,data::ChargeTransportInSolids.ChargeTransportData,icc::Int64,ipsi::Int64)
     E  = data.bandEdgeEnergy[edge.region,icc] + data.bandEdgeEnergyNode[edge.icell,icc] #icell: Number of discretization cell the edge is invoked from
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
@@ -195,7 +195,7 @@ The argument of the distribution function for floats
 
 """
 
-function etaFunction(u,inode::Union{Int32,Int64},data::ChargeTransport.ChargeTransportData,ireg::Union{Int32,Int64},icc::Int64,ipsi::Int64)
+function etaFunction(u,inode::Union{Int32,Int64},data::ChargeTransportInSolids.ChargeTransportData,ireg::Union{Int32,Int64},icc::Int64,ipsi::Int64)
     E  = data.bandEdgeEnergy[ireg,icc] + data.bandEdgeEnergyNode[inode,icc]
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
@@ -755,7 +755,7 @@ Compute the electro-neutral solution for the Boltzmann approximation.
 It is obtained by setting the left-hand side in
 the Poisson equation equal to zero and solving for \\psi.
 
-    DEPRECATED, use ChargeTransport.electroNeutralSolution!(data, grid)
+    DEPRECATED, use ChargeTransportInSolids.electroNeutralSolution!(data, grid)
 
 """
 
@@ -828,7 +828,7 @@ Find the equilibrium solution for the electrostatic potential with Boltzmann sta
 function solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
 
     # if F != Boltzmann componentwise, find equilibrium solution for Boltzmann
-    if !prod(data.F .== ChargeTransport.Boltzmann) 
+    if !prod(data.F .== ChargeTransportInSolids.Boltzmann) 
         num_cellregions = grid[NumCellRegions]
         num_bfaceregions = grid[NumBFaceRegions] 
         species  = 1:data.numberOfSpecies
@@ -845,9 +845,9 @@ function solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control,
         physicsBoltzmann = VoronoiFVM.Physics(
             data        = data,
             num_species = data.numberOfSpecies,
-            flux        = ChargeTransport.ScharfetterGummel!,
-            reaction    = ChargeTransport.reaction!,
-            breaction   = ChargeTransport.breaction!
+            flux        = ChargeTransportInSolids.ScharfetterGummel!,
+            reaction    = ChargeTransportInSolids.reaction!,
+            breaction   = ChargeTransportInSolids.breaction!
         )
 
         if dense

@@ -81,7 +81,7 @@ $(SIGNATURES)
 Plot band-edge energies.
 """
 
-function plotEnergies(grid::ExtendableGrid, data::DDFermiData)
+function plotEnergies(grid::ExtendableGrid, data::ChargeTransportData)
     coord       = grid[Coordinates]
     cellregions = grid[CellRegions]
     cellnodes   = grid[CellNodes]
@@ -149,7 +149,7 @@ end
 $(SIGNATURES)
 Visualize doping and bDoping (x) to make sure they agree.
 """
-function plotDoping(g::ExtendableGrid, data::DDFermiData)
+function plotDoping(g::ExtendableGrid, data::ChargeTransportData)
     coord  = g[Coordinates]
     if length(coord[1]) != 1
         println("plotDoping is so far only implemented in 1D")
