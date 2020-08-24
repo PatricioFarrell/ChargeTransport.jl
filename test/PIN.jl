@@ -114,7 +114,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     # initialize ChargeTransport instance
-    data      = ChargeTransport.ChargeTransportData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
+    data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
     data.F                              .= Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
@@ -175,14 +175,14 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
     println("*** done\n")
 
-    psi0 = ChargeTransport.electroNeutralSolutionBoltzmann(grid, data)
+    psi0 = ChargeTransportInSolids.electroNeutralSolutionBoltzmann(grid, data)
     if pyplot
         ################################################################################
         println("Plot electroneutral potential and doping")
         ################################################################################
-        ChargeTransport.plotEnergies(grid, data)
-        ChargeTransport.plotDoping(grid, data)
-        ChargeTransport.plotElectroNeutralSolutionBoltzmann(grid, psi0)
+        ChargeTransportInSolids.plotEnergies(grid, data)
+        ChargeTransportInSolids.plotDoping(grid, data)
+        ChargeTransportInSolids.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
         println("*** done\n")
     end
@@ -195,9 +195,9 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     physics = VoronoiFVM.Physics(
     data        = data,
     num_species = numberOfSpecies,
-    flux        = ChargeTransport.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
-    reaction    = ChargeTransport.reaction!,
-    breaction   = ChargeTransport.breaction!
+    flux        = ChargeTransportInSolids.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
+    reaction    = ChargeTransportInSolids.reaction!,
+    breaction   = ChargeTransportInSolids.breaction!
     )
 
     if dense
@@ -256,7 +256,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
 
-    ChargeTransport.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
+    ChargeTransportInSolids.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
 
     ### Test embedding parameter ###
     # println(solution)
@@ -265,7 +265,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     # sys.boundary_values[iphin, bregionAcceptor] = 0.0
     # sys.boundary_values[iphip, bregionAcceptor] = 0.0
     # solve!(solution, initialGuess, sys, control = control, tstep=Inf)
-    # ChargeTransport.plotDensities(grid, data, solution, "LINEAR")
+    # ChargeTransportInSolids.plotDensities(grid, data, solution, "LINEAR")
     # data.contactVoltage = [voltageAcceptor, voltageDonor]
     # println(solution)
     # @assert 1 == 0
@@ -278,7 +278,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
     data.inEquilibrium = false
 
-    if !(data.F == ChargeTransport.Boltzmann) # adjust control, when not using Boltzmann
+    if !(data.F == ChargeTransportInSolids.Boltzmann) # adjust control, when not using Boltzmann
         control.damp_initial      = 0.5
         control.damp_growth       = 1.2
         control.max_iterations    = 30
@@ -312,11 +312,11 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
         # plot solution and IV curve
         if pyplot
-            #ChargeTransport.plotEnergies(grid, data, sol, Δu)
-            #ChargeTransport.plotSolution(coord, solution, E_ref)
-            ChargeTransport.plotDensities(grid, data, solution, Δu)
+            #ChargeTransportInSolids.plotEnergies(grid, data, sol, Δu)
+            #ChargeTransportInSolids.plotSolution(coord, solution, E_ref)
+            ChargeTransportInSolids.plotDensities(grid, data, solution, Δu)
             # PyPlot.figure()
-            #ChargeTransport.plotIV(biasValues,IV)
+            #ChargeTransportInSolids.plotIV(biasValues,IV)
         end
 
     end # bias loop

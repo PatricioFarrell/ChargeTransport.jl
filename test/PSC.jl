@@ -240,7 +240,7 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     # initialize ChargeTransport instance
-    data      = ChargeTransport.ChargeTransportData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
+    data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
     data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
@@ -288,8 +288,8 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
         data.recombinationRadiative[ireg]            = r0[ireg]
         data.recombinationSRHLifetime[ireg,iphin]    = τn[ireg]
         data.recombinationSRHLifetime[ireg,iphip]    = τp[ireg]
-        data.recombinationSRHTrapDensity[ireg,iphin] = ChargeTransport.trapDensity(iphin, ireg, data, EI[ireg])
-        data.recombinationSRHTrapDensity[ireg,iphip] = ChargeTransport.trapDensity(iphin, ireg, data, EI[ireg])
+        data.recombinationSRHTrapDensity[ireg,iphin] = ChargeTransportInSolids.trapDensity(iphin, ireg, data, EI[ireg])
+        data.recombinationSRHTrapDensity[ireg,iphip] = ChargeTransportInSolids.trapDensity(iphin, ireg, data, EI[ireg])
         # data.recombinationAuger[ireg,iphin]          = Auger
         # data.recombinationAuger[ireg,iphip]          = Auger
 
@@ -323,17 +323,17 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     println("*** done\n")
 
-    # psi0 = ChargeTransport.electroNeutralSolutionBoltzmann(grid, data)
-    # psi0 = ChargeTransport.electroNeutralSolution!(data, grid)
+    # psi0 = ChargeTransportInSolids.electroNeutralSolutionBoltzmann(grid, data)
+    # psi0 = ChargeTransportInSolids.electroNeutralSolution!(data, grid)
     # println(psi0)
     if pyplot
         ################################################################################
         println("Plot electroneutral potential and doping")
         ################################################################################
-        # ChargeTransport.plotEnergies(grid, data)
+        # ChargeTransportInSolids.plotEnergies(grid, data)
         PyPlot.figure()
-        ChargeTransport.plotDoping(grid, data)
-        # ChargeTransport.plotElectroNeutralSolutionBoltzmann(grid, psi0)
+        ChargeTransportInSolids.plotDoping(grid, data)
+        # ChargeTransportInSolids.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
         println("*** done\n")
     end
@@ -346,9 +346,9 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     physics = VoronoiFVM.Physics(
     data        = data,
     num_species = numberOfSpecies,
-    flux        = ChargeTransport.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
-    reaction    = ChargeTransport.reaction!,
-    breaction   = ChargeTransport.breaction!
+    flux        = ChargeTransportInSolids.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
+    reaction    = ChargeTransportInSolids.reaction!,
+    breaction   = ChargeTransportInSolids.breaction!
     )
 
     if dense
@@ -421,7 +421,7 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
 
-    # ChargeTransport.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
+    # ChargeTransportInSolids.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
 
     function pre(u,lambda)
         sys.physics.data.λ1 = lambda
@@ -452,9 +452,9 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
 
     if pyplot
-        ChargeTransport.plotDensities(grid, data, solution, "EQUILIBRIUM")
+        ChargeTransportInSolids.plotDensities(grid, data, solution, "EQUILIBRIUM")
         PyPlot.figure()
-        ChargeTransport.plotEnergies(grid, data, solution, "EQUILIBRIUM")
+        ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQUILIBRIUM")
         PyPlot.figure()
     end
 
@@ -515,12 +515,12 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
         # plot solution and IV curve
         if pyplot
-            #ChargeTransport.plotEnergies(grid, data, solution, Δu)
-            ChargeTransport.plotDensities(grid, data, solution, Δu)
+            #ChargeTransportInSolids.plotEnergies(grid, data, solution, Δu)
+            ChargeTransportInSolids.plotDensities(grid, data, solution, Δu)
             # if Δu == 0.0 || Δu == 1.5 Δu == 3
             #     savefig("psc-densities-nref-$n-deltaU-$Δu.eps")
             # end
-            #ChargeTransport.plotIV(biasValues,IV)
+            #ChargeTransportInSolids.plotIV(biasValues,IV)
         end
 
 
@@ -546,9 +546,9 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     if pyplot
         PyPlot.figure()
-        ChargeTransport.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
+        ChargeTransportInSolids.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
         PyPlot.figure()
-        ChargeTransport.plotEnergies(grid, data, solution, "$(maxBias) (illuminated)")
+        ChargeTransportInSolids.plotEnergies(grid, data, solution, "$(maxBias) (illuminated)")
     end
 
     println("*** done\n")
@@ -583,10 +583,10 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     # evolve!(solution_transient,initial_solution,sys,sampling_times, control=control)
 
-    # ChargeTransport.plotDensities(grid, data, solution_transient, "FINAL")
+    # ChargeTransportInSolids.plotDensities(grid, data, solution_transient, "FINAL")
 
     # PyPlot.figure()
-    # ChargeTransport.plotEnergies(grid, data, solution_transient, "FINAL")
+    # ChargeTransportInSolids.plotEnergies(grid, data, solution_transient, "FINAL")
 
     # println("*** done\n")
 
