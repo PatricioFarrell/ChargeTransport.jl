@@ -5,7 +5,7 @@ Simulating charge transport in a perovskite solar cell (PSC).
 module PSC
 
 using VoronoiFVM
-using DDFermi
+using ChargeTransport
 using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf
@@ -236,11 +236,11 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
 
     ################################################################################
-    println("Define ddfermi data and fill in previously defined data")
+    println("Define ChargeTransport data and fill in previously defined data")
     ################################################################################
 
-    # initialize ddfermi instance
-    data      = DDFermi.DDFermiData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
+    # initialize ChargeTransport instance
+    data      = ChargeTransport.ChargeTransportData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
     data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
@@ -288,8 +288,8 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
         data.recombinationRadiative[ireg]            = r0[ireg]
         data.recombinationSRHLifetime[ireg,iphin]    = τn[ireg]
         data.recombinationSRHLifetime[ireg,iphip]    = τp[ireg]
-        data.recombinationSRHTrapDensity[ireg,iphin] = DDFermi.trapDensity(iphin, ireg, data, EI[ireg])
-        data.recombinationSRHTrapDensity[ireg,iphip] = DDFermi.trapDensity(iphin, ireg, data, EI[ireg])
+        data.recombinationSRHTrapDensity[ireg,iphin] = ChargeTransport.trapDensity(iphin, ireg, data, EI[ireg])
+        data.recombinationSRHTrapDensity[ireg,iphip] = ChargeTransport.trapDensity(iphin, ireg, data, EI[ireg])
         # data.recombinationAuger[ireg,iphin]          = Auger
         # data.recombinationAuger[ireg,iphip]          = Auger
 
@@ -323,17 +323,17 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     println("*** done\n")
 
-    # psi0 = DDFermi.electroNeutralSolutionBoltzmann(grid, data)
-    # psi0 = DDFermi.electroNeutralSolution!(data, grid)
+    # psi0 = ChargeTransport.electroNeutralSolutionBoltzmann(grid, data)
+    # psi0 = ChargeTransport.electroNeutralSolution!(data, grid)
     # println(psi0)
     if pyplot
         ################################################################################
         println("Plot electroneutral potential and doping")
         ################################################################################
-        # DDFermi.plotEnergies(grid, data)
+        # ChargeTransport.plotEnergies(grid, data)
         PyPlot.figure()
-        DDFermi.plotDoping(grid, data)
-        # DDFermi.plotElectroNeutralSolutionBoltzmann(grid, psi0)
+        ChargeTransport.plotDoping(grid, data)
+        # ChargeTransport.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
         println("*** done\n")
     end
@@ -346,9 +346,9 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     physics = VoronoiFVM.Physics(
     data        = data,
     num_species = numberOfSpecies,
-    flux        = DDFermi.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
-    reaction    = DDFermi.reaction!,
-    breaction   = DDFermi.breaction!
+    flux        = ChargeTransport.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
+    reaction    = ChargeTransport.reaction!,
+    breaction   = ChargeTransport.breaction!
     )
 
     if dense
@@ -421,7 +421,7 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
 
-    # DDFermi.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
+    # ChargeTransport.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
 
     function pre(u,lambda)
         sys.physics.data.λ1 = lambda
@@ -452,9 +452,9 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
 
     if pyplot
-        DDFermi.plotDensities(grid, data, solution, "EQUILIBRIUM")
+        ChargeTransport.plotDensities(grid, data, solution, "EQUILIBRIUM")
         PyPlot.figure()
-        DDFermi.plotEnergies(grid, data, solution, "EQUILIBRIUM")
+        ChargeTransport.plotEnergies(grid, data, solution, "EQUILIBRIUM")
         PyPlot.figure()
     end
 
@@ -515,12 +515,12 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
         # plot solution and IV curve
         if pyplot
-            # DDFermi.plotEnergies(grid, data, solution, Δu)
-            DDFermi.plotDensities(grid, data, solution, Δu)
+            #ChargeTransport.plotEnergies(grid, data, solution, Δu)
+            ChargeTransport.plotDensities(grid, data, solution, Δu)
             # if Δu == 0.0 || Δu == 1.5 Δu == 3
             #     savefig("psc-densities-nref-$n-deltaU-$Δu.eps")
             # end
-            #DDFermi.plotIV(biasValues,IV)
+            #ChargeTransport.plotIV(biasValues,IV)
         end
 
 
@@ -546,9 +546,9 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     if pyplot
         PyPlot.figure()
-        DDFermi.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
+        ChargeTransport.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
         PyPlot.figure()
-        DDFermi.plotEnergies(grid, data, solution, "$(maxBias) (illuminated)")
+        ChargeTransport.plotEnergies(grid, data, solution, "$(maxBias) (illuminated)")
     end
 
     println("*** done\n")
@@ -583,10 +583,10 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     # evolve!(solution_transient,initial_solution,sys,sampling_times, control=control)
 
-    # DDFermi.plotDensities(grid, data, solution_transient, "FINAL")
+    # ChargeTransport.plotDensities(grid, data, solution_transient, "FINAL")
 
     # PyPlot.figure()
-    # DDFermi.plotEnergies(grid, data, solution_transient, "FINAL")
+    # ChargeTransport.plotEnergies(grid, data, solution_transient, "FINAL")
 
     # println("*** done\n")
 

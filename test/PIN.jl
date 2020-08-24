@@ -5,7 +5,7 @@ Simulating charge transport in a GAs pin diode.
 module PIN
 
 using VoronoiFVM
-using DDFermi
+using ChargeTransport
 using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf
@@ -110,11 +110,11 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
 
     ################################################################################
-    println("Define ddfermi data and fill in previously defined data")
+    println("Define ChargeTransport data and fill in previously defined data")
     ################################################################################
 
-    # initialize ddfermi instance
-    data      = DDFermi.DDFermiData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
+    # initialize ChargeTransport instance
+    data      = ChargeTransport.ChargeTransportData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
     data.F                              .= Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
@@ -175,14 +175,14 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
     println("*** done\n")
 
-    psi0 = DDFermi.electroNeutralSolutionBoltzmann(grid, data)
+    psi0 = ChargeTransport.electroNeutralSolutionBoltzmann(grid, data)
     if pyplot
         ################################################################################
         println("Plot electroneutral potential and doping")
         ################################################################################
-        DDFermi.plotEnergies(grid, data)
-        DDFermi.plotDoping(grid, data)
-        DDFermi.plotElectroNeutralSolutionBoltzmann(grid, psi0)
+        ChargeTransport.plotEnergies(grid, data)
+        ChargeTransport.plotDoping(grid, data)
+        ChargeTransport.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
         println("*** done\n")
     end
@@ -195,9 +195,9 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     physics = VoronoiFVM.Physics(
     data        = data,
     num_species = numberOfSpecies,
-    flux        = DDFermi.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
-    reaction    = DDFermi.reaction!,
-    breaction   = DDFermi.breaction!
+    flux        = ChargeTransport.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
+    reaction    = ChargeTransport.reaction!,
+    breaction   = ChargeTransport.breaction!
     )
 
     if dense
@@ -256,7 +256,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
 
-    DDFermi.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
+    ChargeTransport.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
 
     ### Test embedding parameter ###
     # println(solution)
@@ -265,7 +265,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     # sys.boundary_values[iphin, bregionAcceptor] = 0.0
     # sys.boundary_values[iphip, bregionAcceptor] = 0.0
     # solve!(solution, initialGuess, sys, control = control, tstep=Inf)
-    # DDFermi.plotDensities(grid, data, solution, "LINEAR")
+    # ChargeTransport.plotDensities(grid, data, solution, "LINEAR")
     # data.contactVoltage = [voltageAcceptor, voltageDonor]
     # println(solution)
     # @assert 1 == 0
@@ -278,7 +278,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
     data.inEquilibrium = false
 
-    if !(data.F == DDFermi.Boltzmann) # adjust control, when not using Boltzmann
+    if !(data.F == ChargeTransport.Boltzmann) # adjust control, when not using Boltzmann
         control.damp_initial      = 0.5
         control.damp_growth       = 1.2
         control.max_iterations    = 30
@@ -312,11 +312,11 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
         # plot solution and IV curve
         if pyplot
-            #DDFermi.plotEnergies(grid, data, sol, Δu)
-            #DDFermi.plotSolution(coord, solution, E_ref)
-            DDFermi.plotDensities(grid, data, solution, Δu)
+            #ChargeTransport.plotEnergies(grid, data, sol, Δu)
+            #ChargeTransport.plotSolution(coord, solution, E_ref)
+            ChargeTransport.plotDensities(grid, data, solution, Δu)
             # PyPlot.figure()
-            #DDFermi.plotIV(biasValues,IV)
+            #ChargeTransport.plotIV(biasValues,IV)
         end
 
     end # bias loop
