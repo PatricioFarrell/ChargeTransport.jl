@@ -17,14 +17,14 @@ function plotDensities(grid, data, sol, bias)
     colors = ["green", "red", "blue", "yellow"]
     linestyles = ["-", ":", "--", "-."]
 
-    densities = computeDensities(data, sol)
+    densities = computeDensities(grid, data, sol)
 
     PyPlot.clf() 
     for icc = 1:data.numberOfSpecies-1
-        PyPlot.semilogy(coord[1,:]./μm, densities[icc,:], label = " density (icc = $icc)", color = colors[icc], linewidth = 3, linestyle = "dashed")
+        PyPlot.semilogy(coord[1,:]./1, densities[icc,:], label = " density (icc = $icc)", color = colors[icc], linewidth = 2, linestyle = "dashed")
     end
     PyPlot.grid()
-    PyPlot.xlabel("space [\$\\mu m \$]")
+    PyPlot.xlabel("space [\$ m \$]")
     PyPlot.ylabel("density [\$\\frac{1}{m^3}\$]")
     PyPlot.legend(fancybox = true, loc = "best")
     PyPlot.title("bias \$\\Delta u\$ = $bias")
@@ -40,59 +40,33 @@ Plot energies of system (physical variant).
 function plotEnergies(grid, data, sol, Δu)
 
     ipsi          = data.numberOfSpecies
-
     coord         = grid[Coordinates]
-    bfaceregions  = grid[BFaceRegions]
-    bfacenodes    = grid[BFaceNodes]
-    cellregions   = grid[CellRegions]
-    # cellnodes     = grid[CellNodes]
-    numberOfCoord = length(coord)
 
-    #if length(coord[1]) != 1
     if length(coord[1]) != 1
         println("plotEnergies is so far only implemented in 1D")
     end
 
-    energies   = Array{Real,2}(undef, data.numberOfSpecies-1, length(coord))
-    fermiLevel = Array{Real,2}(undef, data.numberOfSpecies-1, length(coord))
-
     colors = ["green", "red", "blue", "yellow"]
     linestyles = ["-", ":", "--", "-."]
-    # warum das - bei den Fermi level?
+
+    energies, fermiLevel = computeEnergies(grid, data, sol)
+
+
     for icc = 1:data.numberOfSpecies-1
-        E = data.bBandEdgeEnergy[bfaceregions[1],icc] + data.bandEdgeEnergyNode[bfacenodes[1],icc]
-        energies[icc, 1]   = E - q * sol[ipsi, 1]
-        fermiLevel[icc, 1] = - q * sol[icc, 1]
-
-        for i = 2:numberOfCoord-1
-            # frage: wie am besten etaF() benutzen? -> etaF() hat als Eingeparameter etwas vom Typ VoronoiFVM.Node
-            E   = data.bandEdgeEnergy[cellregions[i], icc] + data.bandEdgeEnergyNode[i, icc]
-            energies[icc, i]   = E - q *sol[ipsi, i]
-            fermiLevel[icc, i] = -q* sol[icc, i]
-
-        end
-        E = data.bBandEdgeEnergy[bfaceregions[2],icc] + data.bandEdgeEnergyNode[bfacenodes[2],icc]
-        energies[icc, numberOfCoord]   = E - q * sol[ipsi, numberOfCoord]
-        fermiLevel[icc, numberOfCoord] = - q * sol[icc, numberOfCoord]
-    end
-
-
-    PyPlot.clf()
-    for icc = 1:data.numberOfSpecies-1
-        PyPlot.plot(coord[1,:]./μm, energies[icc,:]./q,
+        PyPlot.plot(coord[1,:]./1, energies[icc,:]./q,
                     label = "\$E_i-\\psi\$ (icc = $icc)",
-                    linewidth = 3,
+                    linewidth = 2,
                     color = colors[icc],
                     linestyle = linestyles[1])
-        PyPlot.plot(coord[1,:]./μm, fermiLevel[icc,:]./q,
+        PyPlot.plot(coord[1,:]./1, fermiLevel[icc,:]./q,
                     label = "\$ - q \\varphi_i\$ (icc = $icc)",
-                    linewidth = 3,
+                    linewidth = 2,
                     color = colors[icc],
                     linestyle = linestyles[2])
     end
 
     PyPlot.grid()
-    PyPlot.xlabel("space [\$\\mu m\$]")
+    PyPlot.xlabel("space [\$ m\$]")
     PyPlot.ylabel("energies [\$eV\$]")
     PyPlot.legend(fancybox = true, loc = "best")
     PyPlot.title("bias \$\\Delta u\$ = $Δu")
@@ -176,7 +150,6 @@ $(SIGNATURES)
 Visualize doping and bDoping (x) to make sure they agree.
 """
 function plotDoping(g::ExtendableGrid, data::DDFermiData)
-    #todo_da: add following line
     coord  = g[Coordinates]
     if length(coord[1]) != 1
         println("plotDoping is so far only implemented in 1D")
@@ -190,7 +163,6 @@ function plotDoping(g::ExtendableGrid, data::DDFermiData)
     styles = ["-",":", "--", "-."]
 
     # plot different doping values in interior
-    #todo_da: add following line and delete dependency of cellregions from g
     cellregions = g[CellRegions]
     cellnodes   = g[CellNodes]
     coord       = g[Coordinates]
@@ -198,7 +170,6 @@ function plotDoping(g::ExtendableGrid, data::DDFermiData)
         for i in 1:length(cellregions)
 
             # determine doping value in cell and number of cell nodes
-            #todo_da: deleted dependency on g
             cellValue            = data.doping[cellregions[i],icc]
             numberLocalCellNodes = length(cellnodes[:,i])
 
@@ -215,7 +186,6 @@ function plotDoping(g::ExtendableGrid, data::DDFermiData)
     end
 
     # plot different doping values on boundary
-    #todo_da: following two lines added and delete dependency on g
     bfaceregions = g[BFaceRegions]
     bfacenodes = g[BFaceNodes]
     for icc = 1: data.numberOfSpecies - 1
@@ -249,7 +219,6 @@ $(SIGNATURES)
 Plot electroneutral potential.
 """
 function plotElectroNeutralSolutionBoltzmann(grid, psi0)
-    #todo_da: add following line
     coord = grid[Coordinates]
     PyPlot.plot(coord[:],psi0, label = "electroneutral potential", color="g", marker="o")
     PyPlot.xlabel("space [m]")
@@ -265,22 +234,24 @@ Plot electrostatic potential as well as the electron and hole quasi-Fermi
 potentials for fixed time and fixed boundary values.
     """
 
-    function plotSolution(grid, sys, U0, Δu, time)
-        dddata = VoronoiFVM.data(sys)
-        coord  = grid[Coordinates]
+    function plotSolution(coord, solution, Eref,  Δu, time)
 
-        PyPlot.clf()
-        @views begin
-            PyPlot.plot(coord[1,:], U0[3,:], label = "electrostatic potential", color="g", marker="o")
-            PyPlot.plot(coord[1,:], U0[1,:], label = "quasi-Fermi electron", color="b", marker="o", linestyle = "dashed")
-            PyPlot.plot(coord[1,:], U0[2,:], label = "quasi-Fermi hole", color="r", marker="o", linestyle = "dashdot")
+        ipsi = size(solution)[1] # convention: psi is the last species
+        colors = ["green", "red", "yellow"]
+        linestyles = ["--", "-.", "-", ":"]
+
+            PyPlot.plot(coord, (solution[ipsi,:] - Eref*ones(length(solution[ipsi,:]))), label = "electrostatic potential", color="b")
+
+            for icc in 1:ipsi-1
+                PyPlot.plot(coord./1, solution[icc,:], label = "icc = $icc", color= colors[icc], linestyle = linestyles[icc])
+             end
+            
             PyPlot.grid()
             PyPlot.xlabel("space [m]")
             PyPlot.ylabel("potential [V]")
             PyPlot.legend(fancybox = true, loc = "best")
             PyPlot.title("applied bias = $Δu [V] and time = $time [s]")
             PyPlot.gcf()
-        end
 
     end
 
@@ -289,24 +260,23 @@ potentials for fixed time and fixed boundary values.
     $(SIGNATURES)
     Plot electrostatic potential as well as the electron and hole quasi-Fermi potentials in stationary case.
     """
-    #todo_da:add dependency on grid
-    function plotSolution(grid, sys, U0)
-        dddata = VoronoiFVM.data(sys)
-        coord = grid[Coordinates]
+    function plotSolution(coord, solution, Eref) # need to be dependent on E_ref
+        ipsi = size(solution)[1] # convention: psi is the last species
+        colors = ["green", "red", "yellow"]
+        linestyles = ["--", "-.", "-", ":"]
+                              
+            PyPlot.plot(coord./1, solution[ipsi,:]-Eref*ones(length(solution[ipsi,:])), label = "electrostatic potential", color="b")
+                                                   
+            for icc in 1:ipsi-1
+            PyPlot.plot(coord./1, solution[icc,:], label = "icc = $icc", color= colors[icc], linestyle = linestyles[icc])
+            end
 
-        PyPlot.clf()
-        @views begin
-            #todo_da changed sys.grid.coord into coord
-            PyPlot.plot(coord[1,:], U0[3,:], label = "electrostatic potential", color="g", marker="o")
-            PyPlot.plot(coord[1,:], U0[1,:], label = "quasi-Fermi electron", color="b", marker="o", linestyle = "dashed")
-            PyPlot.plot(coord[1,:], U0[2,:], label = "quasi-Fermi hole", color="r", marker="o", linestyle = "dashdot")
             PyPlot.grid()
             PyPlot.xlabel("space [m]")
             PyPlot.ylabel("potential [V]")
             PyPlot.legend(fancybox = true, loc = "best")
             PyPlot.pause(1.0e-5)
             #PyPlot.gcf()
-        end
 
     end
 

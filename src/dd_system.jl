@@ -653,7 +653,7 @@ end
 
 $(SIGNATURES)
 
-For given potentials, compute corresponding densities.
+For given potentials, compute corresponding densities for interior nodes.
 
 """
 function computeDensities(u, inode, data::DDFermiData, ireg::Union{Int32,Int64}, icc::Int, ipsi::Int)
@@ -661,6 +661,7 @@ function computeDensities(u, inode, data::DDFermiData, ireg::Union{Int32,Int64},
     data.densityOfStates[ireg,icc] * data.F[icc](etaFunction(u,inode,data,ireg,icc,ipsi))
 
 end
+
 
 """
 
@@ -670,21 +671,78 @@ For given potentials in vector form, compute corresponding vectorized densities.
 
 """
 
-function computeDensities(data, sol)
-
+# DA: - still problem: need seperate computeDensities and etaFunction for boundaryNodes
+#     - Patricio removed dependency from grid, but I think we need it ...
+#     - generalization to multidimensions missing! 
+#     - line "cellregions = push!(cellregions, cellregions[end])" is not nice -> cellregions has one entry less than data.numberOfSpecies.
+function computeDensities(grid, data, sol)
     ipsi      = data.numberOfSpecies
     densities = Array{Real,2}(undef, data.numberOfSpecies-1, size(sol,2))
 
-    for ireg in 1:data.numberOfRegions
-        for icc in 1:data.numberOfSpecies-1
-            for inode in 1:data.numberOfNodes
-                u = sol[:,inode]
-                densities[icc,inode] = computeDensities(u, inode, data, ireg, icc, ipsi)
-            end
+    bfaceregions  = grid[BFaceRegions]
+    bfacenodes    = grid[BFaceNodes]
+    cellregions   = grid[CellRegions]
+    cellregions   = push!(cellregions, cellregions[end])
+
+    if size(bfacenodes)[1] != 1
+        println("computeDensities() is so far only implemented in 1D")
+    end
+    
+    for icc in 1:data.numberOfSpecies-1
+
+        # for bnode in 1:length(bfacenodes)
+        #     u = sol[:,bfacenodes[bnode]]
+        #     densities[icc,bfacenodes[bnode]] = computeDensities(u, bfacenodes[bnode], data, bfaceregions[bnode], icc, ipsi)
+        # end
+
+
+        for inode in 1:data.numberOfNodes
+            u = sol[:,inode]
+            densities[icc,inode] = computeDensities(u, inode, data, cellregions[inode], icc, ipsi)
         end
+
     end
 
     return densities
+
+end
+
+"""
+
+$(SIGNATURES)
+
+For given solution in vector form, compute corresponding vectorized band-edge energies and fermi level.
+
+"""
+# DA: - generalization to multidimensions missing! 
+#     - line "cellregions = push!(cellregions, cellregions[end])" is not nice -> cellregions has one entry less than data.numberOfSpecies.
+# if boundary values for bandEdeEnergy differ, then false computations!
+function computeEnergies(grid, data, sol)
+
+    ipsi       = data.numberOfSpecies
+    energies   = Array{Real,2}(undef, data.numberOfSpecies-1, size(sol,2))
+    fermiLevel = Array{Real,2}(undef, data.numberOfSpecies-1, size(sol,2))
+
+    cellregions   = grid[CellRegions]
+    cellregions   = push!(cellregions, cellregions[end])
+
+    for icc in 1:data.numberOfSpecies-1
+
+        # for bnode in 1:length(bfacenodes)
+        #     u = sol[:,bfacenodes[bnode]]
+        #     densities[icc,bfacenodes[bnode]] = computeDensities(u, bfacenodes[bnode], data, bfaceregions[bnode], icc, ipsi)
+        # end
+
+
+        for inode in 1:data.numberOfNodes
+             E   = data.bandEdgeEnergy[cellregions[inode], icc] + data.bandEdgeEnergyNode[inode, icc]
+             energies[icc, inode]   = E - q *sol[ipsi, inode]
+             fermiLevel[icc, inode] = -q* sol[icc, inode]
+        end
+
+    end
+
+    return energies, fermiLevel
 
 end
 
