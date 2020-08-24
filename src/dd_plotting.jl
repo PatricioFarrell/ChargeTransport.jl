@@ -263,21 +263,20 @@ potentials for fixed time and fixed boundary values.
     function plotSolution(coord, solution, Eref) # need to be dependent on E_ref
         ipsi = size(solution)[1] # convention: psi is the last species
         colors = ["green", "red", "yellow"]
-        linestyles = ["--", "-.", "-", ":"]
-                              
-            PyPlot.plot(coord./1, solution[ipsi,:]-Eref*ones(length(solution[ipsi,:])), label = "electrostatic potential", color="b")
+        linestyles = ["--", "-.", "-", ":"]   
+        PyPlot.clf()       
+        
+        PyPlot.plot(coord./1, solution[ipsi,:]-Eref*ones(length(solution[ipsi,:])), label = "electrostatic potential", color="b")
                                                    
-            for icc in 1:ipsi-1
-            PyPlot.plot(coord./1, solution[icc,:], label = "icc = $icc", color= colors[icc], linestyle = linestyles[icc])
-            end
+        for icc in 1:ipsi-1
+        PyPlot.plot(coord./1, solution[icc,:], label = "icc = $icc", color= colors[icc], linestyle = linestyles[icc])
+        end
 
-            PyPlot.grid()
-            PyPlot.xlabel("space [m]")
-            PyPlot.ylabel("potential [V]")
-            PyPlot.legend(fancybox = true, loc = "best")
-            PyPlot.pause(1.0e-5)
-            #PyPlot.gcf()
-
+        PyPlot.grid()
+        PyPlot.xlabel("space [m]")
+        PyPlot.ylabel("potential [V]")
+        PyPlot.legend(fancybox = true, loc = "best")
+        PyPlot.pause(1.0e-5)
     end
 
     """
