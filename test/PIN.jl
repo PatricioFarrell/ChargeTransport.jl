@@ -312,11 +312,10 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
         # plot solution and IV curve
         if pyplot
-            #DDFermi.plotEnergies(grid, sys, solution, Δu)
-            #DDFermi.plotSolution(grid, sys, solution)
+            #DDFermi.plotEnergies(grid, data, sol, Δu)
+            #DDFermi.plotSolution(coord, solution, E_ref)
             DDFermi.plotDensities(grid, data, solution, Δu)
             # PyPlot.figure()
-            # DDFermi.plotEnergies(grid, data, solution, Δu)
             #DDFermi.plotIV(biasValues,IV)
         end
 
