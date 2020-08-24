@@ -5,7 +5,7 @@ Simulating charge transport in a GAs pin diode.
 module PIN
 
 using VoronoiFVM
-using ChargeTransport
+using ChargeTransportInSolids
 using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf

@@ -5,7 +5,7 @@ Simulating charge transport in a perovskite solar cell (PSC).
 module PSC
 
 using VoronoiFVM
-using ChargeTransport
+using ChargeTransportInSolids
 using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf
