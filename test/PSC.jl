@@ -86,7 +86,7 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     # bfacemask!(grid, [h_ndoping+h_pdoping], [h_ndoping+h_pdoping], iregionIntrinsic)
 
     if pyplot
-        ExtendableGrids.plot(VoronoiFVM.Grid(coord, collect(0.0 : 0.25*μm : 0.5*μm)), Plotter = PyPlot, p = PyPlot.plot()) 
+        ExtendableGrids.plot(ExtendableGrids.simplexgrid(coord, collect(0.0 : 0.25*μm : 0.5*μm)), Plotter = PyPlot, p = PyPlot.plot()) 
         PyPlot.title("Grid")
     end
     println("*** done\n")
@@ -110,17 +110,16 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     # temperature
     T    = 300.0                *  K
 
-    # band edge energies
-    Eref =  3.8              
-    Ec_d = (-3.8 + Eref)        *  eV # -4.1 # 3.3
-    Ev_d = (-5.4 + Eref)        *  eV # -7.4 # 0.0
+    # band edge energies          
+    Ec_d = -3.8        *  eV # -4.1 # 3.3
+    Ev_d = -5.4        *  eV # -7.4 # 0.0
 
-    Ec_i = (-3.8 + Eref)        *  eV # -3.8 # 1.6
-    Ev_i = (-5.4 + Eref)        *  eV # -5.4 # 0.0
-    Ea_i = (-1.8 + Eref)        *  eV ## ????? # -1.8
+    Ec_i = -3.8        *  eV # -3.8 # 1.6
+    Ev_i = -5.4        *  eV # -5.4 # 0.0
+    Ea_i = -1.8        *  eV ## ????? # -1.8
 
-    Ec_a = (-3.8 + Eref)        *  eV # -1.9 # 3.0
-    Ev_a = (-5.4 + Eref)        *  eV # -4.9 # 0.0
+    Ec_a = -3.8        *  eV # -1.9 # 3.0
+    Ev_a = -5.4        *  eV # -4.9 # 0.0
 
     EC   = [Ec_d, Ec_i, Ec_a] 
     EV   = [Ev_d, Ev_i, Ev_a] 
@@ -243,13 +242,14 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
-    data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
+    data.F                              .= Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
     data.temperature                     = T
     data.UT                              = (kB * data.temperature) / q
     data.contactVoltage[bregionDonor]    = voltageDonor
     data.contactVoltage[bregionAcceptor] = voltageAcceptor
     data.chargeNumbers[iphin]            = -1
     data.chargeNumbers[iphip]            =  1
+    #data.Eref                            =  5.0  * eV 
     # data.chargeNumbers[iphia] =  1
 
     # boundary region data
@@ -260,8 +260,8 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
 
     end
 
-    data.bBandEdgeEnergy[bregionDonor,iphin]     = Ec_d
-    data.bBandEdgeEnergy[bregionDonor,iphip]     = Ev_d
+    data.bBandEdgeEnergy[bregionDonor,iphin]     = Ec_d + data.Eref
+    data.bBandEdgeEnergy[bregionDonor,iphip]     = Ev_d + data.Eref
     data.bBandEdgeEnergy[bregionAcceptor,iphin]  = Ec_a
     data.bBandEdgeEnergy[bregionAcceptor,iphip]  = Ev_a
     # data.bBandEdgeEnergy[bregionAcceptor,iphia]  = 0.0 # should not be necessary
@@ -276,9 +276,9 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
         data.densityOfStates[ireg,iphin] = NC[ireg]
         data.densityOfStates[ireg,iphip] = NV[ireg]
         # data.densityOfStates[ireg,iphia] = NA[ireg]
-        data.bandEdgeEnergy[ireg,iphin]  = EC[ireg]
-        data.bandEdgeEnergy[ireg,iphip]  = EV[ireg]
-        # data.bandEdgeEnergy[ireg,iphia]  = EA[ireg]
+        data.bandEdgeEnergy[ireg,iphin]  = EC[ireg] + data.Eref
+        data.bandEdgeEnergy[ireg,iphip]  = EV[ireg] + data.Eref
+        # data.bandEdgeEnergy[ireg,iphia]= EA[ireg] + data.Eref
         data.mobility[ireg,iphin]        = μn[ireg]
         data.mobility[ireg,iphip]        = μp[ireg]
         # data.mobility[ireg,iphia]        = μa[ireg]
@@ -326,17 +326,17 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
     # psi0 = ChargeTransportInSolids.electroNeutralSolutionBoltzmann(grid, data)
     # psi0 = ChargeTransportInSolids.electroNeutralSolution!(data, grid)
     # println(psi0)
-    if pyplot
-        ################################################################################
-        println("Plot electroneutral potential and doping")
-        ################################################################################
-        # ChargeTransportInSolids.plotEnergies(grid, data)
-        PyPlot.figure()
-        ChargeTransportInSolids.plotDoping(grid, data)
-        # ChargeTransportInSolids.plotElectroNeutralSolutionBoltzmann(grid, psi0)
+    # if pyplot
+    #     ################################################################################
+    #     println("Plot electroneutral potential and doping")
+    #     ################################################################################
+    #     # ChargeTransportInSolids.plotEnergies(grid, data)
+    #     PyPlot.figure()
+    #     ChargeTransportInSolids.plotDoping(grid, data)
+    #     # ChargeTransportInSolids.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
-        println("*** done\n")
-    end
+    #     println("*** done\n")
+    # end
 
     ################################################################################
     println("Define physics and system")
@@ -549,6 +549,8 @@ function main(;n = 4, pyplot = false, verbose = false, dense = true)
         ChargeTransportInSolids.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
         PyPlot.figure()
         ChargeTransportInSolids.plotEnergies(grid, data, solution, "$(maxBias) (illuminated)")
+        PyPlot.figure()
+        ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, (maxBias))
     end
 
     println("*** done\n")

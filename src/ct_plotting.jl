@@ -234,24 +234,26 @@ Plot electrostatic potential as well as the electron and hole quasi-Fermi
 potentials for fixed time and fixed boundary values.
     """
 
-    function plotSolution(coord, solution, Eref,  Δu, time)
+    function plotSolution(coord, solution, Eref,  Δu)
 
         ipsi = size(solution)[1] # convention: psi is the last species
         colors = ["green", "red", "yellow"]
         linestyles = ["--", "-.", "-", ":"]
 
-            PyPlot.plot(coord, (solution[ipsi,:] - Eref*ones(length(solution[ipsi,:]))), label = "electrostatic potential", color="b")
+        PyPlot.clf() 
 
-            for icc in 1:ipsi-1
-                PyPlot.plot(coord./1, solution[icc,:], label = "icc = $icc", color= colors[icc], linestyle = linestyles[icc])
-             end
+        PyPlot.plot(coord, (solution[ipsi,:] - Eref/q*ones(length(solution[ipsi,:]))), label = "electrostatic potential", color="b")
+
+        for icc in 1:ipsi-1
+            PyPlot.plot(coord./1, solution[icc,:], label = "icc = $icc", color= colors[icc], linestyle = linestyles[icc])
+        end
             
-            PyPlot.grid()
-            PyPlot.xlabel("space [m]")
-            PyPlot.ylabel("potential [V]")
-            PyPlot.legend(fancybox = true, loc = "best")
-            PyPlot.title("applied bias = $Δu [V] and time = $time [s]")
-            PyPlot.gcf()
+        PyPlot.grid()
+        PyPlot.xlabel("space [m]")
+        PyPlot.ylabel("potential [V]")
+        PyPlot.legend(fancybox = true, loc = "best")
+        PyPlot.title("applied bias = $Δu [V]")
+        PyPlot.gcf()
 
     end
 
@@ -260,13 +262,13 @@ potentials for fixed time and fixed boundary values.
     $(SIGNATURES)
     Plot electrostatic potential as well as the electron and hole quasi-Fermi potentials in stationary case.
     """
-    function plotSolution(coord, solution, Eref) # need to be dependent on E_ref
+    function plotSolution(coord, solution, Eref) # need to be dependent on Eref
         ipsi = size(solution)[1] # convention: psi is the last species
         colors = ["green", "red", "yellow"]
         linestyles = ["--", "-.", "-", ":"]   
         PyPlot.clf()       
         
-        PyPlot.plot(coord./1, solution[ipsi,:]-Eref*ones(length(solution[ipsi,:])), label = "electrostatic potential", color="b")
+        PyPlot.plot(coord./1, solution[ipsi,:]-Eref/q*ones(length(solution[ipsi,:])), label = "electrostatic potential", color="b")
                                                    
         for icc in 1:ipsi-1
         PyPlot.plot(coord./1, solution[icc,:], label = "icc = $icc", color= colors[icc], linestyle = linestyles[icc])

@@ -117,7 +117,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
-    data.F                              .= Blakemore # Boltzmann, FermiDiracOneHalf, Blakemore
+    data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
     data.temperature                     = T
     data.UT                              = (kB * data.temperature) / q
     data.contactVoltage[bregionDonor]    = voltageDonor
@@ -132,7 +132,6 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         data.bDensityOfStates[ibreg,iphip] = Nv
         data.bBandEdgeEnergy[ibreg,iphin]  = Ec
         data.bBandEdgeEnergy[ibreg,iphip]  = Ev
-
     end
 
     # interior region data
@@ -170,19 +169,18 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     data.bDoping[bregionDonor,iphin]    = Nd        # data.bDoping  = [0.0  Na;
     data.bDoping[bregionAcceptor,iphip] = Na        #                  Nd  0.0]
 
+    data.γ = 1.0
     # print data
     println(data)
 
     println("*** done\n")
 
-    psi0 = ChargeTransportInSolids.electroNeutralSolutionBoltzmann(grid, data)
     if pyplot
         ################################################################################
         println("Plot electroneutral potential and doping")
         ################################################################################
         ChargeTransportInSolids.plotEnergies(grid, data)
         ChargeTransportInSolids.plotDoping(grid, data)
-        ChargeTransportInSolids.plotElectroNeutralSolutionBoltzmann(grid, psi0)
 
         println("*** done\n")
     end
@@ -249,34 +247,70 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     println("Compute solution in thermodynamic equilibrium for Boltzmann")
     ################################################################################
 
+    data.inEquilibrium = true
+
     # initialize solution and starting vectors
     initialGuess                   = unknowns(sys)
     solution                       = unknowns(sys)
-    @views initialGuess[ipsi,  :] .= psi0
+    @views initialGuess[ipsi,  :] .= 0.0 
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
 
-    ChargeTransportInSolids.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
+    # ChargeTransportInSolids.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
+    
+    function pre(u,lambda)
+        sys.physics.data.λ1 = lambda
+        # sys.physics.data.contactVoltage[bregionAcceptor] = lambda * 3.0
+        sys.boundary_values[iphin, bregionAcceptor] = 0.0
+        sys.boundary_values[iphip, bregionAcceptor] = 0.0
+    end
 
-    ### Test embedding parameter ###
-    # println(solution)
-    # sys.physics.data.λ = 0.0
-    # data.contactVoltage[bregionAcceptor] = 0.0
-    # sys.boundary_values[iphin, bregionAcceptor] = 0.0
-    # sys.boundary_values[iphip, bregionAcceptor] = 0.0
-    # solve!(solution, initialGuess, sys, control = control, tstep=Inf)
-    # ChargeTransportInSolids.plotDensities(grid, data, solution, "LINEAR")
-    # data.contactVoltage = [voltageAcceptor, voltageDonor]
-    # println(solution)
-    # @assert 1 == 0
+    control.damp_initial      = 0.01
+    control.damp_growth       = 1.2 # >= 1
+    control.max_round         = 3
+
+    sys.boundary_values[iphin, bregionAcceptor] = 0.0*V
+    sys.boundary_values[iphip, bregionAcceptor] = 0.0*V
+    sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
+
+    I = collect(20.0:-1:0.0)
+    LAMBDA = 10 .^ (-I) 
+    prepend!(LAMBDA,0.0)
+
+
+    for i in 1:length(LAMBDA)
+        println("λ1 = $(LAMBDA[i])")
+        sys.physics.data.λ1 = LAMBDA[i]
+        solve!(solution, initialGuess, sys, control = control, tstep=Inf)
+        initialGuess = solution
+    end
+
+
+    # if pyplot
+    #     ChargeTransportInSolids.plotDensities(grid, data, solution, "EQUILIBRIUM")
+    #     PyPlot.figure()
+    #     ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQUILIBRIUM")
+    #     PyPlot.figure()
+    # end
+
+    # @assert 1==0
+
 
     println("*** done\n")
+
+
 
     ################################################################################
     println("Bias loop")
     ################################################################################
 
     data.inEquilibrium = false
+
+    # set non equilibrium boundary conditions
+    sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor
+    sys.physics.data.contactVoltage[bregionAcceptor] = voltageAcceptor
+    sys.boundary_values[iphin, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
+    sys.boundary_values[iphip, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
 
     if !(data.F == ChargeTransportInSolids.Boltzmann) # adjust control, when not using Boltzmann
         control.damp_initial      = 0.5
@@ -313,7 +347,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         # plot solution and IV curve
         if pyplot
             #ChargeTransportInSolids.plotEnergies(grid, data, sol, Δu)
-            #ChargeTransportInSolids.plotSolution(coord, solution, E_ref)
+            #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref)
             ChargeTransportInSolids.plotDensities(grid, data, solution, Δu)
             # PyPlot.figure()
             #ChargeTransportInSolids.plotIV(biasValues,IV)

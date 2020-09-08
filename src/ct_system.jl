@@ -19,6 +19,8 @@ mutable struct ChargeTransportData <: VoronoiFVM.AbstractData
     # real numbers
     temperature                 ::  Float64
     UT                          ::  Float64
+    Eref                        ::  Float64
+    γ                           ::  Float64
     λ1                          ::  Float64
     λ2                          ::  Float64
 
@@ -48,8 +50,6 @@ mutable struct ChargeTransportData <: VoronoiFVM.AbstractData
 
     # number of regions
     dielectricConstant          ::  Array{Float64,1}
-    electronSpinRelaxationTime  ::  Array{Float64,1}
-    holeSpinRelaxationTime      ::  Array{Float64,1}
     generationEmittedLight      ::  Array{Float64,1}
     generationPrefactor         ::  Array{Float64,1}
     generationAbsorption        ::  Array{Float64,1}
@@ -90,6 +90,8 @@ function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, num
     # real numbers
     300 * K,                                                                 # temperature
     (kB * 300 * K ) / q,                                                     # thermal voltage
+    0.0,                                                                     # reference energy
+    0.27,                                                                    # parameter for Blakemore statistics
     1.0,                                                                     # λ1: embedding parameter for NLP
     0.0,                                                                     # λ2: embedding parameter for G
 
@@ -120,8 +122,6 @@ function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, num
 
     # number of regions
     Array{Float64,1}(undef,numberOfRegions),                                 # dielectricConstant
-    Array{Float64,1}(undef,numberOfRegions),                                 # electronSpinRelaxationTime
-    Array{Float64,1}(undef,numberOfRegions),                                 # holeSpinRelaxationTime
     Array{Float64,1}(undef,numberOfRegions),                                 # generationEmittedLight
     Array{Float64,1}(undef,numberOfRegions),                                 # generationPrefactor
     Array{Float64,1}(undef,numberOfRegions),                                 # generationAbsorption
@@ -189,21 +189,6 @@ end
 
 $(SIGNATURES)
 
-The argument of the distribution function for floats
-
-    z / UT  * ( (phi - psi) + E / q ).
-
-"""
-
-function etaFunction(u,inode::Union{Int32,Int64},data::ChargeTransportInSolids.ChargeTransportData,ireg::Union{Int32,Int64},icc::Int64,ipsi::Int64)
-    E  = data.bandEdgeEnergy[ireg,icc] + data.bandEdgeEnergyNode[inode,icc]
-    data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
-end
-
-"""
-
-$(SIGNATURES)
-
 The argument of the distribution function for given psi and phi:
 
     z / UT  * ( (phi_at_edge - psi) + E / q ).
@@ -213,7 +198,6 @@ the charge density.
 """
 
 function etaFunction(psi,phi,UT,E::Array,z::Array)
-    # println(z ./ UT .* ( (phi - psi) .+ E / q ))
     z ./ UT .* ( (phi - psi) .+ E / q )
 end
 
@@ -261,7 +245,6 @@ function breaction!(f,u,bnode,data)
         end
 
         f[ipsi] = -1/α *  q * data.λ1 * f[ipsi]
-        # println(f[ipsi].value)
 
      
     # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...  
@@ -276,8 +259,8 @@ function breaction!(f,u,bnode,data)
 
     #     for icc = 1:data.numberOfSpecies - 1
 
-    #         n = computeDensities(u, bnode.index, data, bnode.region, iphin, ipsi)  
-    #         p = computeDensities(u, bnode.index, data, bnode.region, iphip, ipsi) 
+    #         n = computeDensities(u, data, bnode.index,bnode.region, iphin, ipsi, true)  
+    #         p = computeDensities(u, data, bnode.index, bnode.region, iphip, ipsi, true) 
 
     #         # surface recombination
     #         f[icc] = 1 / (  1/sp*(n+data.recombinationSRHTrapDensity[bnode.region,iphin]) 
@@ -352,8 +335,8 @@ function reaction!(f,u,node,data)
 
         else
 
-            n = computeDensities(u, inode, data, ireg, iphin, ipsi)  
-            p = computeDensities(u, inode, data, ireg, iphip, ipsi) 
+            n = computeDensities(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
+            p = computeDensities(u, data, inode, ireg, iphip, ipsi, true) 
 
             # radiative recombination
             f[icc] = data.recombinationRadiative[ireg]
@@ -372,51 +355,7 @@ function reaction!(f,u,node,data)
     end
 
     f[ipsi] = - q * data.λ1 * f[ipsi]
-
-    # println(f[ipsi].value)
 end
-
-# """
-# (SIGNATURES)
-
-# Anissas simulation used this false implementation of the recombination.
-# """
-
-# function reactionOld!(f,u,node,data)
-#     # parameters
-#     ipsi = data.numberOfSpecies             # final index for electrostatic potential
-#     for icc = 1:data.numberOfSpecies - 1
-#         eta = etaFunction(u,node,data,icc,ipsi) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
-
-#         # f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]  # subtract doping
-#         # f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * u[icc]                        # add charge carrier
-#         # f[icc]  = 0.0
-        
-#         f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                          # subtract doping
-#         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
-#         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
-
-#         ## add different recombination kernels r(n,p)
-#         for ireg = 1:data.numberOfRegions
-#             # radiative recombination
-#             f[icc] = data.recombinationRadiative[ireg]
-#             # Auger recombination
-#             f[icc] = f[icc] + sum(data.recombinationAuger[ireg,:] .* u[1:end-1])
-#             # SRH recombination
-#             f[icc] = f[icc] + 1 / ( sum(data.recombinationSRHLifetime[ireg,end:-1:1] .* (u[1:end-1] .+ data.recombinationSRHTrapDensity[ireg,1:end] ) ) )
-#         end
-#         # full recombination
-#         # note: typeof(vec .* vec) is Array so we compute (vec .* vec)[1]
-#         f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * prod(u[1:end-1]) * ( 1 - prod( exp( (- data.chargeNumbers .* u[1:end-1])[1] ) ) )
-#         # try
-#         #     println(f[icc].value)
-#         # catch
-#         #     println(f[icc])
-#         # end
-#     end
-    
-#     f[ipsi] = - q * data.λ1 * f[ipsi]
-# end
 
 
 """
@@ -425,6 +364,7 @@ $(SIGNATURES)
 The storage term for time-dependent problems.
 Currently, for the time-dependent current densities the implicit Euler scheme is used.
 Hence, we have ``f[c_i] =  z_i  q ∂_t c_i`` and for the electrostatic potential ``f[ψ] = 0``.
+[NOT TESTED.]
 """
 
 function storage!(f, u, node, data)
@@ -473,8 +413,7 @@ function ScharfetterGummel!(f, u, edge, data)
 
     f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
 
-    # return zero flux in equilibrium
-    if data.inEquilibrium == true 
+    if data.inEquilibrium == true # return zero flux in equilibrium
         return
     end
 
@@ -516,8 +455,7 @@ function Sedan!(f, u, edge, data)
     dpsi     = ul[ipsi]- uk[ipsi]
     f[ipsi]  = - data.dielectricConstant[ireg] * ε0 * dpsi
 
-    # return zero flux in equilibrium
-    if data.inEquilibrium == true 
+    if data.inEquilibrium == true # return zero flux in equilibrium
         return
     end
 
@@ -542,7 +480,8 @@ end
 """
 $(SIGNATURES)
 
-The diffusion enhanced scheme by Bessemoulin-Chatard. Currently, the Pietra-Jüngel scheme is used for regularization of removable singularity.
+The diffusion enhanced scheme by Bessemoulin-Chatard. Currently, the Pietra-Jüngel scheme is 
+used for the regularization of the removable singularity.
 
 """
 
@@ -558,8 +497,7 @@ function diffusionEnhanced!(f, u, edge, data)
     dpsi = ul[ipsi]- uk[ipsi]
     f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
 
-    # return zero flux in equilibrium
-    if data.inEquilibrium == true 
+    if data.inEquilibrium == true # return zero flux in equilibrium
         return
     end
 
@@ -590,13 +528,13 @@ end
 """
 $(SIGNATURES)
 
-The Koprucki-Gärtner scheme. This scheme is calculated by solving a fixed point equation which arises when considering the generalized Scharfetter-Gummel scheme in case of Blakemore statistics.
+The Koprucki-Gärtner scheme. This scheme is calculated by solving a fixed point equation which arise
+when considering the generalized Scharfetter-Gummel scheme in case of Blakemore statistics.
 Hence, it should be exclusively worked with, when considering the Blakemore distribution.
 
 """
 
 function KopruckiGaertner!(f, u, edge, data)
-    gamma = 0.27        # from Blakemore distribution
     max_iteration = 200 # for Newton solver
     it = 0              # number of iterations (newton)
     damp = 0.1          # damping factor
@@ -610,8 +548,7 @@ function KopruckiGaertner!(f, u, edge, data)
     dpsi     = ul[ipsi]- uk[ipsi]
     f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
 
-    # return zero flux in equilibrium
-    if data.inEquilibrium == true 
+    if data.inEquilibrium == true # return zero flux in equilibrium
         return
     end
 
@@ -627,7 +564,7 @@ function KopruckiGaertner!(f, u, edge, data)
         bp, bm = fbernoulli_pm(Q)
         jInitial =  ( bm * data.F[icc](etal)  - bp * data.F[icc](etak))
 
-        implicitEquation(j::Real) =  (fbernoulli_pm(data.chargeNumbers[icc] * (dpsi / data.UT) - gamma*j )[2] * exp(etal) - fbernoulli_pm(data.chargeNumbers[icc] * (dpsi/ data.UT) - gamma*j )[1] * exp(etak)) - j
+        implicitEquation(j::Real) =  (fbernoulli_pm(data.chargeNumbers[icc] * (dpsi / data.UT) - data.γ*j )[2] * exp(etal) - fbernoulli_pm(data.chargeNumbers[icc] * (dpsi/ data.UT) - data.γ*j )[1] * exp(etak)) - j
 
         delta = 1.0e-18 + 1.0e-14 * abs(value(jInitial))
         while (it < max_iteration)
@@ -649,17 +586,41 @@ function KopruckiGaertner!(f, u, edge, data)
     end
 end
 
+
 """
 
 $(SIGNATURES)
 
-For given potentials, compute corresponding densities for interior nodes.
+The argument of the distribution function for floats.
+
+    z / UT  * ( (phi - psi) + E / q ).
 
 """
-function computeDensities(u, inode, data::ChargeTransportData, ireg::Union{Int32,Int64}, icc::Int, ipsi::Int)
+function etaFunction(u, data::ChargeTransportInSolids.ChargeTransportData, node, region, icc::Int64,ipsi::Int64, in_region::Bool)
+    if in_region == true
+        E  = data.bandEdgeEnergy[region,icc] + data.bandEdgeEnergyNode[node,icc]
+    elseif in_region == false
+        E  = data.bBandEdgeEnergy[region,icc] + data.bandEdgeEnergyNode[node,icc]
+    end
+    data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
+end
 
-    data.densityOfStates[ireg,icc] * data.F[icc](etaFunction(u,inode,data,ireg,icc,ipsi))
+"""
 
+$(SIGNATURES)
+
+For given potentials, compute corresponding densities.
+
+"""
+
+function computeDensities(u, data::ChargeTransportData, node, region, icc::Int, ipsi::Int, in_region::Bool)
+    if  in_region == false
+        data.bDensityOfStates[region, icc] * data.F[icc]( etaFunction(u, data, node, region, icc,ipsi, in_region::Bool) )
+    elseif  in_region == true
+        data.densityOfStates[region,icc] * data.F[icc]( etaFunction(u,data, node, region, icc, ipsi, in_region::Bool) )
+
+    end
+        
 end
 
 
@@ -668,37 +629,36 @@ end
 $(SIGNATURES)
 
 For given potentials in vector form, compute corresponding vectorized densities.
-
+[NOT TESTED FOR MULTIDIMENSIONS]
 """
 
-# DA: - still problem: need seperate computeDensities and etaFunction for boundaryNodes
-#     - Patricio removed dependency from grid, but I think we need it ...
-#     - generalization to multidimensions missing! 
-#     - line "cellregions = push!(cellregions, cellregions[end])" is not nice -> cellregions has one entry less than data.numberOfSpecies.
 function computeDensities(grid, data, sol)
     ipsi      = data.numberOfSpecies
     densities = Array{Real,2}(undef, data.numberOfSpecies-1, size(sol,2))
 
-    bfaceregions  = grid[BFaceRegions]
-    bfacenodes    = grid[BFaceNodes]
-    cellregions   = grid[CellRegions]
-    cellregions   = push!(cellregions, cellregions[end])
+    bfacenodes   = grid[BFaceNodes]
+    bfaceregions = grid[BFaceRegions]
+    cellRegions  = copy(grid[CellRegions])
+    cellRegions  = push!(cellRegions,grid[CellRegions][end]) #  enlarge region by final cell
 
-    if size(bfacenodes)[1] != 1
-        println("computeDensities() is so far only implemented in 1D")
+    if dim_space(grid) > 1
+        println("ComputeDensities is so far only tested in 1D")
     end
     
     for icc in 1:data.numberOfSpecies-1
 
-        # for bnode in 1:length(bfacenodes)
-        #     u = sol[:,bfacenodes[bnode]]
-        #     densities[icc,bfacenodes[bnode]] = computeDensities(u, bfacenodes[bnode], data, bfaceregions[bnode], icc, ipsi)
-        # end
+        for node in 1:data.numberOfNodes
+            in_region = true
+            u      = sol[:, node]
+            region = cellRegions[node]
 
+            if node in bfacenodes
+                in_region = false
+                indexNode = findall(x->x ==node, vec(bfacenodes))[1] # we need to know which index the node has in bfacenodes
+                region = bfaceregions[indexNode]                      # since the corresponding region number is at the same index
+            end
 
-        for inode in 1:data.numberOfNodes
-            u = sol[:,inode]
-            densities[icc,inode] = computeDensities(u, inode, data, cellregions[inode], icc, ipsi)
+            densities[icc, node] = computeDensities(u, data, node, region, icc, ipsi, in_region)
         end
 
     end
@@ -728,12 +688,6 @@ function computeEnergies(grid, data, sol)
 
     for icc in 1:data.numberOfSpecies-1
 
-        # for bnode in 1:length(bfacenodes)
-        #     u = sol[:,bfacenodes[bnode]]
-        #     densities[icc,bfacenodes[bnode]] = computeDensities(u, bfacenodes[bnode], data, bfaceregions[bnode], icc, ipsi)
-        # end
-
-
         for inode in 1:data.numberOfNodes
              E   = data.bandEdgeEnergy[cellregions[inode], icc] + data.bandEdgeEnergyNode[inode, icc]
              energies[icc, inode]   = E - q *sol[ipsi, inode]
@@ -754,149 +708,11 @@ $(SIGNATURES)
 Compute the electro-neutral solution for the Boltzmann approximation. 
 It is obtained by setting the left-hand side in
 the Poisson equation equal to zero and solving for \\psi.
-
-    DEPRECATED, use ChargeTransportInSolids.electroNeutralSolution!(data, grid)
-
-"""
-
-function electroNeutralSolutionBoltzmann(grid::ExtendableGrid,data::ChargeTransportData)
-
-    if data.numberOfSpecies-1 != 2
-        error("The electroneutral solution is only implemented for two species!")
-    end
-
-    # region independent parameters
-    iphin = 1;
-    iphip = 2;
-
-    # initialize zero vector
-    coord        = grid[Coordinates]
-    bfacenodes   = grid[BFaceNodes]
-    bfaceregions = grid[BFaceRegions]
-    psi0         = zeros(length(coord))
-
-    # boundary values
-    for i = 1:length(bfacenodes)
-        # boundary index
-        ibreg = bfaceregions[i]
-
-        # boundary region specific data
-        Ec = data.bBandEdgeEnergy[ibreg,iphin]
-        Ev = data.bBandEdgeEnergy[ibreg,iphip]
-        Nc = data.bDensityOfStates[ibreg,iphin]
-        Nv = data.bDensityOfStates[ibreg,iphip]
-        Ni = sqrt( Nc*Nv*exp(-(Ec-Ev)/(kB*data.temperature)) )
-        C  = -data.chargeNumbers[iphin] * data.bDoping[ibreg,iphin] -data.chargeNumbers[iphip] * data.bDoping[ibreg,iphip]
-
-        # set boundary values for electroneutral potential
-        psi0[bfacenodes[i]] = (Ec+Ev)/(2q) - 0.5*data.UT*log(Nc/Nv) + data.UT*asinh(C/(2*Ni))
-    end
-
-    # interior values
-    cellregions = grid[CellRegions]
-
-    for i=1:length(cellregions)-1
-
-        # interior index
-        ireg      = cellregions[i]
-        ireg_next = cellregions[i+1]
-
-        # interior region specific data
-        Ec = (data.bandEdgeEnergy[ireg,iphin]  + data.bandEdgeEnergy[ireg_next,iphin] ) / 2 + data.bandEdgeEnergyNode[i,iphin]
-        Ev = (data.bandEdgeEnergy[ireg,iphip]  + data.bandEdgeEnergy[ireg_next,iphip] ) / 2 + data.bandEdgeEnergyNode[i,iphip]
-        Nc = (data.densityOfStates[ireg,iphin] + data.densityOfStates[ireg_next,iphin]) / 2
-        Nv = (data.densityOfStates[ireg,iphip] + data.densityOfStates[ireg_next,iphip]) / 2
-        Ni = sqrt( Nc*Nv*exp(-(Ec-Ev)/(kB*data.temperature)) )
-        C  = -data.chargeNumbers[iphin] * (data.doping[ireg,iphin]+data.doping[ireg_next,iphin])/2 -
-              data.chargeNumbers[iphip] * (data.doping[ireg,iphip]+data.doping[ireg_next,iphip])/2
-
-        # set interior values for electroneutral potential
-        psi0[i+1] = (Ec+Ev)/(2q) - 0.5*data.UT*log(Nc/Nv) + data.UT*asinh(C/(2*Ni))
-    end
-
-    psi0
-end
-
-"""
-
-$(SIGNATURES)
-
-Find the equilibrium solution for the electrostatic potential with Boltzmann statistics for non-Boltzmann statistics.
-
-"""
-
-function solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
-
-    # if F != Boltzmann componentwise, find equilibrium solution for Boltzmann
-    if !prod(data.F .== ChargeTransportInSolids.Boltzmann) 
-        num_cellregions = grid[NumCellRegions]
-        num_bfaceregions = grid[NumBFaceRegions] 
-        species  = 1:data.numberOfSpecies
-        regions  = 1:num_cellregions
-        bregions = 1:num_bfaceregions
-
-        # save and set new values (careful with aliasing of arrays!)
-        saveDistribution    = copy(data.F)                          # copy() avoids aliasing
-        saveContactVoltage  = copy(data.contactVoltage)             # copy() avoids aliasing
-        data.F             .= Boltzmann
-        data.contactVoltage = zeros(size(data.contactVoltage)) * V
-
-        # initializing physics environment with the Boltzmann approximation as distribution function
-        physicsBoltzmann = VoronoiFVM.Physics(
-            data        = data,
-            num_species = data.numberOfSpecies,
-            flux        = ChargeTransportInSolids.ScharfetterGummel!,
-            reaction    = ChargeTransportInSolids.reaction!,
-            breaction   = ChargeTransportInSolids.breaction!
-        )
-
-        if dense
-            sysBoltzmann = VoronoiFVM.System(grid, physicsBoltzmann, unknown_storage = :dense)
-        else
-            sysBoltzmann = VoronoiFVM.System(grid, physicsBoltzmann, unknown_storage = :sparse)
-        end
-        # enable all species in all regions
-        for ispecies in species
-            enable_species!(sysBoltzmann, ispecies, regions)
-        end
-        for icc in species[1:end-1]
-            for bregion in bregions
-                sysBoltzmann.boundary_values[icc,  bregion] = data.contactVoltage[bregion]
-                sysBoltzmann.boundary_factors[icc, bregion] = VoronoiFVM.Dirichlet
-            end
-        end
-        solve!(solution, initialGuess, sysBoltzmann, control = control, tstep = Inf)
-        initialGuess .= solution
-
-        # switch back to the original data values
-        data.F              = saveDistribution
-        data.contactVoltage = saveContactVoltage
-
-    # if F = Boltzmann componentwise, don't do anything    
-    else 
-        
-        println("*** We compute with Boltzmann statistics anyway. ")
-        println("*** WARNING: Nothing is computed! ")
-
-    end
-
-end
-
-
-
-"""
-
-$(SIGNATURES)
-
-Compute the electro-neutral solution for the Boltzmann approximation. 
-It is obtained by setting the left-hand side in
-the Poisson equation equal to zero and solving for \\psi.
 The charge carriers may obey different statitics functions.
 
 """
 function electroNeutralSolution!(data, grid; Newton=false)
 
-    println(data.numberOfSpecies)
     solution        = zeros(length(grid[Coordinates]))
     iccVector       = collect(1:data.numberOfSpecies-1)
     zVector         = data.chargeNumbers[iccVector]
@@ -908,7 +724,6 @@ function electroNeutralSolution!(data, grid; Newton=false)
 
     for index = 1:length(regionsAllCells)-1
         
-        println(index)
         ireg          = regionsAllCells[index]
         zVector       = data.chargeNumbers[iccVector]
         FVector       = data.F[iccVector]

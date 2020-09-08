@@ -14,7 +14,7 @@ end
 """
 The Blakemore approximation 1/(exp(-x) + gamma)
 """
-function Blakemore(x::Real, gamma::Real)
+function Blakemore(x::Real, gamma::Real )
     1/(exp(-x) + gamma)
 end
 
@@ -22,7 +22,7 @@ end
 The Blakemore approximation 1/(exp(-x) + gamma)
 """
 function Blakemore(x::Real)
-    Blakemore(x,0.27)
+    Blakemore(x, 0.27)
 end
 
 """
