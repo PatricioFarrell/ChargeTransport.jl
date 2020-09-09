@@ -239,13 +239,18 @@ function breaction!(f,u,bnode,data)
             f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.bDoping[bnode.region,icc]                             # subtract doping
             f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F[icc](eta)  # add charge carrier
 
+            if data.inEquilibrium == true 
+
+                f[icc] = u[icc] - 0.0
+        
+            else
             # boundary conditions for charge carriers are set in main program
             f[icc]  = 0.0
+            end
 
         end
 
         f[ipsi] = -1/α *  q * data.λ1 * f[ipsi]
-
      
     # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...  
     ### TESTEN AUF INNEREN RAND  
@@ -281,9 +286,9 @@ end
 Generation rate.
 """
 
-function generation(data,node)
+function generation(data,ireg)
 
-    return data.λ2 * 2.5e21 / (cm^3 * s)    # Phil considers a uniform generation rate (but only in the intrinsic layer)
+    return data.λ2 * data.generationEmittedLight[ireg]    # Phil considers a uniform generation rate (but only in the intrinsic layer)
 
 end
 
@@ -348,7 +353,7 @@ function reaction!(f,u,node,data)
             f[icc] = f[icc] + 1.0 / (  data.recombinationSRHLifetime[ireg,iphip] * (n + data.recombinationSRHTrapDensity[ireg,iphin]) + data.recombinationSRHLifetime[ireg,iphin] * (p + data.recombinationSRHTrapDensity[ireg,iphip]) )
 
             # full recombination
-            f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * n * p * ( 1.0 - exponentialTerm )  - q * data.chargeNumbers[icc] * generation(data,node)
+            f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * n * p * ( 1.0 - exponentialTerm )  - q * data.chargeNumbers[icc] * generation(data,ireg)
 
         end
 
@@ -384,14 +389,9 @@ Compute trap densities. Their computation is only implemented for electron and h
 that the electron index is 1 and the hole index is 2.  
 
 """
-function trapDensity(icc,region, data, Et) ### nur Boltzmann!!
-    iphin = 1
-    iphip = 2
-    Ei = 0.5 * (data.bandEdgeEnergy[region, iphin] + data.bandEdgeEnergy[region, iphip] + kB * data.temperature * (log(data.densityOfStates[region,iphip]) - log(data.densityOfStates[region,iphin])) ) 
-    
-    ni  =   sqrt(data.densityOfStates[region,iphin] * data.densityOfStates[region,iphip]) * exp(-(data.bandEdgeEnergy[region, iphin] - data.bandEdgeEnergy[region, iphip]) / (2 * kB * data.temperature)) / (cm^3)
+function trapDensity(icc, ireg, data, Et) ### nur Boltzmann!!
 
-return ni * exp(data.chargeNumbers[icc] * (Ei - Et)/ (kB * data.temperature))
+return data.densityOfStates[ireg, icc] * exp( data.chargeNumbers[icc] *(data.bandEdgeEnergy[ireg, icc] - Et)/ (kB * data.temperature) )
 end
 
 

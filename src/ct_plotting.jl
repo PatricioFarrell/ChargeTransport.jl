@@ -239,20 +239,21 @@ potentials for fixed time and fixed boundary values.
         ipsi = size(solution)[1] # convention: psi is the last species
         colors = ["green", "red", "yellow"]
         linestyles = ["--", "-.", "-", ":"]
+        densities  = ["n", "p", "a", "c"]  
 
         PyPlot.clf() 
 
-        PyPlot.plot(coord, (solution[ipsi,:] - Eref/q*ones(length(solution[ipsi,:]))), label = "electrostatic potential", color="b")
+        PyPlot.plot(coord, (solution[ipsi,:] - Eref/q*ones(length(solution[ipsi,:]))), label = "\$\\psi\$", color="b")
 
         for icc in 1:ipsi-1
-            PyPlot.plot(coord./1, solution[icc,:], label = "icc = $icc", color= colors[icc], linestyle = linestyles[icc])
+            PyPlot.plot(coord./1, solution[icc,:], label =  densities[icc], color= colors[icc], linestyle = linestyles[icc])
         end
             
         PyPlot.grid()
         PyPlot.xlabel("space [m]")
         PyPlot.ylabel("potential [V]")
         PyPlot.legend(fancybox = true, loc = "best")
-        PyPlot.title("applied bias = $Δu [V]")
+        PyPlot.title("bias \$\\Delta u\$ = $Δu")
         PyPlot.gcf()
 
     end
@@ -265,13 +266,14 @@ potentials for fixed time and fixed boundary values.
     function plotSolution(coord, solution, Eref) # need to be dependent on Eref
         ipsi = size(solution)[1] # convention: psi is the last species
         colors = ["green", "red", "yellow"]
-        linestyles = ["--", "-.", "-", ":"]   
+        linestyles = ["--", "-.", "-", ":"] 
+        densities  = ["n", "p", "a", "c"]  
         PyPlot.clf()       
         
-        PyPlot.plot(coord./1, solution[ipsi,:]-Eref/q*ones(length(solution[ipsi,:])), label = "electrostatic potential", color="b")
+        PyPlot.plot(coord./1, solution[ipsi,:]-Eref/q*ones(length(solution[ipsi,:])), label = "\$\\psi\$", color="b")
                                                    
         for icc in 1:ipsi-1
-        PyPlot.plot(coord./1, solution[icc,:], label = "icc = $icc", color= colors[icc], linestyle = linestyles[icc])
+        PyPlot.plot(coord./1, solution[icc,:], label = densities[icc], color= colors[icc], linestyle = linestyles[icc])
         end
 
         PyPlot.grid()
@@ -288,7 +290,7 @@ potentials for fixed time and fixed boundary values.
     function plotIV(biasValues,IV, Δu)
         PyPlot.plot(biasValues[1:length(IV)], IV)
         PyPlot.grid()
-        PyPlot.title("applied bias = $Δu [V]")
+        PyPlot.title("bias \$\\Delta u\$ = $Δu")
         PyPlot.xlabel("bias [V]")
         PyPlot.ylabel("total current [A]")
         PyPlot.pause(1.0e-5)
