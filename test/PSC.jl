@@ -24,61 +24,61 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     # region numbers
-    regionDonor     = 1                           # n doped region
+    regionAcceptor  = 1                           # p doped region
     regionIntrinsic = 2                           # intrinsic region
-    regionAcceptor  = 3                           # p doped region
+    regionDonor     = 3                           # n doped region
     regions         = [regionDonor, regionIntrinsic, regionAcceptor]
 
     # boundary region numbers
-    bregionDonor    = 1
-    bregionAcceptor = 2
-    bregions        = [bregionDonor, bregionAcceptor]
+    bregionAcceptor = 1
+    bregionDonor    = 2
+    bregions        = [bregionAcceptor, bregionDonor]
 
     # grid
     # NB: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
-    h_ndoping       = 0.2 * μm
-    h_intrinsic     = 0.4 * μm
     h_pdoping       = 0.2 * μm
+    h_intrinsic     = 0.4 * μm
+    h_ndoping       = 0.2 * μm
     x0              = 0.0 * μm 
     δ               = 4*n        # the larger, the finer the mesh
     t               = 0.2*μm/δ   # tolerance for geomspace and glue (with factor 10)
     k               = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    coord_n_u       = collect(range(x0, h_ndoping/2, step=h_ndoping/(δ)))
-    coord_n_g       = geomspace(h_ndoping/2, 
-                                h_ndoping, 
-                                h_ndoping/(δ), 
-                                h_ndoping/(2δ), 
+    coord_p_u       = collect(range(x0, h_pdoping/2, step=h_pdoping/(δ)))
+    coord_p_g       = geomspace(h_pdoping/2, 
+                                h_pdoping, 
+                                h_pdoping/(δ), 
+                                h_pdoping/(2δ), 
                                 tol=t)
-    coord_i_g1      = geomspace(h_ndoping, 
-                                h_ndoping+h_intrinsic/k, 
+    coord_i_g1      = geomspace(h_pdoping, 
+                                h_pdoping+h_intrinsic/k, 
                                 h_intrinsic/(4δ), 
                                 h_intrinsic/(2δ), 
                                 tol=t)
-    coord_i_g2      = geomspace(h_ndoping+h_intrinsic/k, 
-                                h_ndoping+h_intrinsic,               
+    coord_i_g2      = geomspace(h_pdoping+h_intrinsic/k, 
+                                h_pdoping+h_intrinsic,               
                                 h_intrinsic/(2δ),    
                                 h_intrinsic/(4δ), 
                                 tol=t)
-    coord_p_g       = geomspace(h_ndoping+h_intrinsic,               
-                                h_ndoping+h_intrinsic+h_pdoping/2, 
-                                h_pdoping/(2δ),   
-                                h_pdoping/(1δ),      
+    coord_n_g       = geomspace(h_pdoping+h_intrinsic,               
+                                h_pdoping+h_intrinsic+h_ndoping/2, 
+                                h_ndoping/(2δ),   
+                                h_ndoping/(1δ),      
                                 tol=t)
-    coord_p_u       = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(δ)))
+    coord_n_u       = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_ndoping/(δ)))
 
-    coord           = glue(coord_n_u,coord_n_g,  tol=10*t)
+    coord           = glue(coord_p_u,coord_p_g,  tol=10*t)
     coord           = glue(coord,    coord_i_g1, tol=10*t)
     coord           = glue(coord,    coord_i_g2, tol=10*t)
-    coord           = glue(coord,    coord_p_g,  tol=10*t)
-    coord           = glue(coord,    coord_p_u,  tol=10*t)
+    coord           = glue(coord,    coord_n_g,  tol=10*t)
+    coord           = glue(coord,    coord_n_u,  tol=10*t)
     grid            = ExtendableGrids.simplexgrid(coord)
     numberOfNodes   = length(coord)
 
     # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm],                [h_ndoping],                           regionDonor)     # n-doped region   = 1
-    cellmask!(grid, [h_ndoping],               [h_ndoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
-    cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)  # p-doped region   = 3
+    cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor)  # p-doped region   = 1
+    cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
+    cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region   = 3
 
     if pyplot
         ExtendableGrids.plot(ExtendableGrids.simplexgrid(coord, collect(0.0 : 0.25*μm : 0.5*μm)), Plotter = PyPlot, p = PyPlot.plot()) 
@@ -105,19 +105,19 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     T    = 300.0                *  K
 
     # band edge energies    
-    Eref =  5.4        *  eV # reference energy       
-    Ec_d = -3.8        *  eV 
-    Ev_d = -5.4        *  eV 
+    Eref =  5.4        *  eV # reference energy 
+    Ec_a = -3.8        *  eV 
+    Ev_a = -5.4        *  eV 
 
     Ec_i = -3.8        *  eV 
     Ev_i = -5.4        *  eV 
     Ea_i = -1.8        *  eV 
 
-    Ec_a = -3.8        *  eV 
-    Ev_a = -5.4        *  eV 
+    Ec_d = -3.8        *  eV 
+    Ev_d = -5.4        *  eV 
 
-    EC   = [Ec_d, Ec_i, Ec_a] 
-    EV   = [Ev_d, Ev_i, Ev_a] 
+    EC   = [Ec_a, Ec_i, Ec_d] 
+    EV   = [Ev_a, Ev_i, Ev_d] 
     EA   = [0.0,  Ea_i, 0.0] 
 
     # effective densities of state
@@ -130,65 +130,66 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     NA   = [0.0, Nanion, 0.0]
 
     # mobilities 
-    μn_d = 20.0                 * (cm^2) / (V * s) 
-    μp_d = 20.0                 * (cm^2) / (V * s) 
+    μn_a = 20.0                 * (cm^2) / (V * s)  
+    μp_a = 20.0                 * (cm^2) / (V * s)  
 
     μn_i = 20.0                 * (cm^2) / (V * s)  
     μp_i = 20.0                 * (cm^2) / (V * s)  
     μa_i = 1.0e-10              * (cm^2) / (V * s)
 
-    μn_a = 20.0                 * (cm^2) / (V * s)  
-    μp_a = 20.0                 * (cm^2) / (V * s)  
+    μn_d = 20.0                 * (cm^2) / (V * s) 
+    μp_d = 20.0                 * (cm^2) / (V * s) 
  
-    μn   = [μn_d, μn_i, μn_a] 
-    μp   = [μp_d, μp_i, μp_a] 
+    μn   = [μn_a, μn_i, μn_d] 
+    μp   = [μp_a, μp_i, μp_d] 
     μa   = [0.0,  μa_i, 0.0] 
 
     # relative dielectric permittivity  
-    ε_d  = 20.0                 *  1.0    
-    ε_i  = 20.0                 *  1.0 
+
     ε_a  = 20.0                 *  1.0  
-    
-    ε   = [ε_d, ε_i, ε_a] 
+    ε_d  = 20.0                 *  1.0 
+    ε_i  = 20.0                 *  1.0 
+
+    ε   = [ε_a, ε_i, ε_d] 
 
     # radiative recombination
-    r0_d = 1.0e-10              * cm^3 / s
-    r0_i = 1.0e-10              * cm^3 / s  
     r0_a = 1.0e-10              * cm^3 / s 
+    r0_i = 1.0e-10              * cm^3 / s  
+    r0_d = 1.0e-10              * cm^3 / s
 
-    r0   = [r0_d, r0_i, r0_a]
+    r0   = [r0_a, r0_i, r0_d]
 
     # life times and trap densities (these values are from code)
-    τn_d = 2.0e-31              * s
-    τp_d = 2.0e-31              * s
+    τn_a = 2.0e-31              * s
+    τp_a = 2.0e-31              * s
 
     τn_i = 1.0e6                * s
     τp_i = 1.0e6               * s
-    τn_a = τn_d
-    τp_a = τp_d
+    τn_d = τn_a
+    τp_d = τp_a
 
-    τn   = [τn_d, τn_i, τn_a]
-    τp   = [τp_d, τp_i, τp_a]
+    τn   = [τn_a, τn_i, τn_d]
+    τp   = [τp_a, τp_i, τp_d]
 
     # SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
-    Ei_d = -5.2                 * eV   
+    Ei_a = -5.2                 * eV   
     Ei_i = -4.6                 * eV 
-    Ei_a = -4.0                 * eV
+    Ei_d = -4.0                 * eV
 
     # Ei_d = -4.6                 * eV   
     # Ei_i = -4.6                 * eV 
     # Ei_a = -4.6                 * eV
 
-    EI   = [Ei_d, Ei_i, Ei_a]
+    EI   = [Ei_a, Ei_i, Ei_d]
 
     # Auger recombination
     Auger = 0.0
 
     # generation (only intrinsically present)
-    generation_d = 0.0
-    generation_i = 2.5e21 / (cm^3 * s)
     generation_a = 0.0
-    generationEmittedLight = [generation_d, generation_i, generation_a]
+    generation_i = 2.5e21 / (cm^3 * s)
+    generation_d = 0.0
+    generationEmittedLight = [generation_a, generation_i, generation_d]
 
     # doping (doping values are from Phils paper, not stated in the parameter list online)
     Nd             =   3.0e17   / (cm^3) 
@@ -200,8 +201,8 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     ni             =   sqrt(Nc * Nv) * exp(-(Ec_i - Ev_i) / (2 * kB * T)) #/ (cm^3)
 
     # contact voltages
-    voltageDonor     = 0.0 * V
-    voltageAcceptor  = 1.1 * V 
+    voltageAcceptor     = 1.1 * V
+    voltageDonor        = 0.0 * V 
 
     println("*** done\n")
 
@@ -216,8 +217,8 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
     data.temperature                     = T
     data.UT                              = (kB * data.temperature) / q
-    data.contactVoltage[bregionDonor]    = voltageDonor
     data.contactVoltage[bregionAcceptor] = voltageAcceptor
+    data.contactVoltage[bregionDonor]    = voltageDonor
     data.chargeNumbers[iphin]            = -1
     data.chargeNumbers[iphip]            =  1
     #data.chargeNumbers[iphia]            =  1
@@ -232,12 +233,12 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
     end
 
-    data.bBandEdgeEnergy[bregionDonor,iphin]     = Ec_d + data.Eref
-    data.bBandEdgeEnergy[bregionDonor,iphip]     = Ev_d + data.Eref
-    #data.bBandEdgeEnergy[bregionDonor,iphia]     = 0.0 + data.Eref
     data.bBandEdgeEnergy[bregionAcceptor,iphin]  = Ec_a + data.Eref
     data.bBandEdgeEnergy[bregionAcceptor,iphip]  = Ev_a + data.Eref
     #data.bBandEdgeEnergy[bregionAcceptor,iphia]  = 0.0  + data.Eref
+    data.bBandEdgeEnergy[bregionDonor,iphin]     = Ec_d + data.Eref
+    data.bBandEdgeEnergy[bregionDonor,iphip]     = Ev_d + data.Eref
+    #data.bBandEdgeEnergy[bregionDonor,iphia]     = 0.0 + data.Eref
 
     # interior region data
     for ireg in 1:numberOfRegions
@@ -270,17 +271,17 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     end
 
     # interior doping
-    data.doping[regionDonor,iphin]      = Nd        # data.doping   = [Nd  0.0  0.0;                   
-    #data.doping[regionDonor,iphia]      = 0.0       #                  ni   ni  C0; 
+    data.doping[regionAcceptor,iphip]   = Na 
+    #data.doping[regionAcceptor,iphia]   = 0.0        #                  ni   ni  C0; 
     data.doping[regionIntrinsic,iphin]  = ni        #                  0.0  Na  0.0]
     data.doping[regionIntrinsic,iphip]  = ni        
     #data.doping[regionIntrinsic,iphia]  = C0        
-    data.doping[regionAcceptor,iphip]   = Na
-    #data.doping[regionAcceptor,iphia]   = 0.0
+    data.doping[regionDonor,iphin]      = Nd        # data.doping   = [Nd  0.0  0.0;                   
+    #data.doping[regionDonor,iphia]      = 0.0
 
     # boundary doping
-    data.bDoping[bregionDonor,iphin]    = Nd        # data.bDoping  = [Nd  0.0;
-    data.bDoping[bregionAcceptor,iphip] = Na        #                  0.0  Na]
+    data.bDoping[bregionAcceptor,iphip] = Na        # data.bDoping  = [Nd  0.0;
+    data.bDoping[bregionDonor,iphin]    = Nd        #                  0.0  Na]
 
     # print data
     println(data)
@@ -311,23 +312,23 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     enable_species!(sys, iphip, regions)
     #enable_species!(sys, iphia, [regionIntrinsic])
 
-    sys.boundary_values[iphin,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
-
     sys.boundary_values[iphin,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
     sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
 
-    sys.boundary_values[iphip,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphin,  bregionDonor]    = data.contactVoltage[bregionDonor]
+    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
 
     sys.boundary_values[iphip,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
     sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
 
-    # sys.boundary_values[iphia,  bregionDonor]    = 0.0 * V
-    # sys.boundary_factors[iphia, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphip,  bregionDonor]    = data.contactVoltage[bregionDonor]
+    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
 
     # sys.boundary_values[iphia,  bregionAcceptor] = 0.0 * V
     # sys.boundary_factors[iphia, bregionAcceptor] = VoronoiFVM.Dirichlet
+
+    # sys.boundary_values[iphia,  bregionDonor]    = 0.0 * V
+    # sys.boundary_factors[iphia, bregionDonor]    = VoronoiFVM.Dirichlet
 
     println("*** done\n")
 
@@ -382,13 +383,13 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
         PyPlot.clf()
     end
 
-    # if pyplot
-    #     ChargeTransportInSolids.plotDensities(grid, data, solution, "EQUILIBRIUM")
-    #     PyPlot.figure()
-    #     ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQUILIBRIUM")
-    #     PyPlot.figure()
-    #     ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "EQUILIBRIUM")
-    # end
+    if pyplot
+        ChargeTransportInSolids.plotDensities(grid, data, solution, "EQUILIBRIUM")
+        PyPlot.figure()
+        ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQUILIBRIUM")
+        PyPlot.figure()
+        ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "EQUILIBRIUM")
+    end
 
     println("*** done\n")
 
@@ -431,8 +432,8 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
         # get IV curve
         factory = VoronoiFVM.TestFunctionFactory(sys)
 
-        # testfunction zero in bregionAcceptor and one in bregionDonor
-        tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])
+        # testfunction zero in bregionDonor and one in bregionAcceptor
+        tf     = testfunction(factory, [bregionDonor], [bregionAcceptor])
         I      = integrate(sys, tf, solution)
 
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
@@ -444,6 +445,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
             PyPlot.figure()
             ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (no illumination)")
             PyPlot.figure()
+            PyPlot.clf()
             ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$Δu (no illumination)")
             end
         end
@@ -453,7 +455,6 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
     # return IV
     println("*** done\n")
-
     ################################################################################
     println("Illumination loop")
     ################################################################################ 
@@ -473,7 +474,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
         PyPlot.figure()
         ChargeTransportInSolids.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
         PyPlot.figure()
-        ChargeTransportInSolids.plotEnergies(grid, data, solution, "$(maxBias) (illuminated)")
+        #ChargeTransportInSolids.plotEnergies(grid, data, solution, "$(maxBias) (illuminated)")
         PyPlot.figure()
         ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$(maxBias) (illuminated)")
     end
