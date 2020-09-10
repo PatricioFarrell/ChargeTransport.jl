@@ -39,33 +39,33 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     h_ndoping       = 0.2 * μm
     h_intrinsic     = 0.4 * μm
     h_pdoping       = 0.2 * μm
-    x0              = 0 * μm 
+    x0              = 0.0 * μm 
     δ               = 4*n        # the larger, the finer the mesh
     t               = 0.2*μm/δ   # tolerance for geomspace and glue (with factor 10)
     k               = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    coord_n_u       = collect(range(x0, h_ndoping/2, step=h_ndoping/δ))
+    coord_n_u       = collect(range(x0, h_ndoping/2, step=h_ndoping/(δ)))
     coord_n_g       = geomspace(h_ndoping/2, 
                                 h_ndoping, 
-                                h_ndoping/δ, 
+                                h_ndoping/(δ), 
                                 h_ndoping/(2δ), 
                                 tol=t)
     coord_i_g1      = geomspace(h_ndoping, 
                                 h_ndoping+h_intrinsic/k, 
                                 h_intrinsic/(4δ), 
-                                h_intrinsic/δ, 
+                                h_intrinsic/(2δ), 
                                 tol=t)
     coord_i_g2      = geomspace(h_ndoping+h_intrinsic/k, 
                                 h_ndoping+h_intrinsic,               
-                                h_intrinsic/(δ),    
+                                h_intrinsic/(2δ),    
                                 h_intrinsic/(4δ), 
                                 tol=t)
     coord_p_g       = geomspace(h_ndoping+h_intrinsic,               
                                 h_ndoping+h_intrinsic+h_pdoping/2, 
                                 h_pdoping/(2δ),   
-                                h_pdoping/(δ),      
+                                h_pdoping/(1δ),      
                                 tol=t)
-    coord_p_u       = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/δ))
+    coord_p_u       = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(δ)))
 
     coord           = glue(coord_n_u,coord_n_g,  tol=10*t)
     coord           = glue(coord,    coord_i_g1, tol=10*t)
@@ -83,9 +83,9 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     if pyplot
         ExtendableGrids.plot(ExtendableGrids.simplexgrid(coord, collect(0.0 : 0.25*μm : 0.5*μm)), Plotter = PyPlot, p = PyPlot.plot()) 
         PyPlot.title("Grid")
+        PyPlot.figure()
     end
     println("*** done\n")
-
     ################################################################################
     println("Define physical parameters and model")
     ################################################################################
@@ -104,7 +104,8 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     # temperature
     T    = 300.0                *  K
 
-    # band edge energies          
+    # band edge energies    
+    Eref =  5.4        *  eV # reference energy       
     Ec_d = -3.8        *  eV 
     Ev_d = -5.4        *  eV 
 
@@ -158,22 +159,13 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     r0   = [r0_d, r0_i, r0_a]
 
     # life times and trap densities (these values are from code)
-    τn_d = 1.0e-14              * s
-    τp_d = 1.0e-15              * s
+    τn_d = 2.0e-31              * s
+    τp_d = 2.0e-31              * s
 
     τn_i = 1.0e6                * s
-    τp_i = 1.0e6                * s
+    τp_i = 1.0e6               * s
     τn_a = τn_d
     τp_a = τp_d
-
-    # in the paper they used
-    # τn_d = 2.0e-15              * s
-    # τp_d = 2.0e-15              * s
-
-    # τn_i = 2.0e-15              * s
-    # τp_i = 2.0e-15              * s
-    # τn_a = τn_d
-    # τp_a = τp_d
 
     τn   = [τn_d, τn_i, τn_a]
     τp   = [τp_d, τp_i, τp_a]
@@ -182,6 +174,10 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     Ei_d = -5.2                 * eV   
     Ei_i = -4.6                 * eV 
     Ei_a = -4.0                 * eV
+
+    # Ei_d = -4.6                 * eV   
+    # Ei_i = -4.6                 * eV 
+    # Ei_a = -4.6                 * eV
 
     EI   = [Ei_d, Ei_i, Ei_a]
 
@@ -225,7 +221,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     data.chargeNumbers[iphin]            = -1
     data.chargeNumbers[iphip]            =  1
     #data.chargeNumbers[iphia]            =  1
-    data.Eref                            =  5.4  * eV 
+    data.Eref                            =  Eref
 
 
     # boundary region data
@@ -298,7 +294,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     physics = VoronoiFVM.Physics(
     data        = data,
     num_species = numberOfSpecies,
-    flux        = ChargeTransportInSolids.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
+    flux        = ChargeTransportInSolids.ScharfetterGummel!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
     reaction    = ChargeTransportInSolids.reaction!,
     breaction   = ChargeTransportInSolids.breaction!
     )
@@ -327,11 +323,11 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     sys.boundary_values[iphip,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
     sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
 
-    #sys.boundary_values[iphia,  bregionDonor]    = 0.0 * V
-    #sys.boundary_factors[iphia, bregionDonor]    = VoronoiFVM.Dirichlet
+    # sys.boundary_values[iphia,  bregionDonor]    = 0.0 * V
+    # sys.boundary_factors[iphia, bregionDonor]    = VoronoiFVM.Dirichlet
 
-    #sys.boundary_values[iphia,  bregionAcceptor] = 0.0 * V
-    #sys.boundary_factors[iphia, bregionAcceptor] = VoronoiFVM.Dirichlet
+    # sys.boundary_values[iphia,  bregionAcceptor] = 0.0 * V
+    # sys.boundary_factors[iphia, bregionAcceptor] = VoronoiFVM.Dirichlet
 
     println("*** done\n")
 
@@ -342,15 +338,12 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
     control = VoronoiFVM.NewtonControl()
     control.verbose           = verbose
-    control.damp_initial      = 0.001
-    control.damp_growth       = 1.21
-    control.max_iterations    = 250
+    control.max_iterations    = 50
     control.tol_absolute      = 1.0e-14
     control.tol_relative      = 1.0e-14
     control.handle_exceptions = true
     control.tol_round         = 1.0e-14
     control.max_round         = 5
-    control.tol_linear        = 1.0e-14
 
     println("*** done\n")
 
@@ -368,7 +361,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     @views initialGuess[iphip, :] .= 0.0
     #@views initialGuess[iphia, :] .= 0.0
 
-    control.damp_initial      = 0.001
+    control.damp_initial      = 0.4
     control.damp_growth       = 1.21 # >= 1
     control.max_round         = 5
 
@@ -389,13 +382,13 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
         PyPlot.clf()
     end
 
-    if pyplot
-        ChargeTransportInSolids.plotDensities(grid, data, solution, "EQUILIBRIUM")
-        PyPlot.figure()
-        ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQUILIBRIUM")
-        PyPlot.figure()
-        ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "EQUILIBRIUM")
-    end
+    # if pyplot
+    #     ChargeTransportInSolids.plotDensities(grid, data, solution, "EQUILIBRIUM")
+    #     PyPlot.figure()
+    #     ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQUILIBRIUM")
+    #     PyPlot.figure()
+    #     ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "EQUILIBRIUM")
+    # end
 
     println("*** done\n")
 
@@ -404,6 +397,10 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     data.inEquilibrium = false
+
+    control.damp_initial      = 0.5
+    control.damp_growth       = 1.2 # >= 1
+    control.max_round         = 7
 
     # set non equilibrium boundary conditions
     sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor

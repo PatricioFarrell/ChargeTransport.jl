@@ -14,14 +14,15 @@ function plotDensities(grid, data, sol, bias)
     rcParams = PyPlot.PyDict(PyPlot.matplotlib."rcParams")
     rcParams["font.size"] = 12
     rcParams["font.sans-serif"] = "Arial"
-    colors = ["green", "red", "blue", "yellow"]
+    colors = ["green", "red", "gold", "purple"]
     linestyles = ["-", ":", "--", "-."]
+    densityNames  = ["n", "p", "a", "c"]
 
     densities = computeDensities(grid, data, sol)
 
     PyPlot.clf() 
     for icc = 1:data.numberOfSpecies-1
-        PyPlot.semilogy(coord[1,:]./1, densities[icc,:], label = " density (icc = $icc)", color = colors[icc], linewidth = 2, linestyle = "dashed")
+        PyPlot.semilogy(coord[1,:]./1, densities[icc,:], label = densityNames[icc], color = colors[icc], linewidth = 2, linestyle = "dashed")
     end
     PyPlot.grid()
     PyPlot.xlabel("space [\$ m \$]")
@@ -46,20 +47,22 @@ function plotEnergies(grid, data, sol, Δu)
         println("plotEnergies is so far only implemented in 1D")
     end
 
-    colors = ["green", "red", "blue", "yellow"]
+    colors = ["green", "red", "gold", "purple"]
     linestyles = ["-", ":", "--", "-."]
+    labelBandEdgeEnergy = ["\$E_c-\\psi\$ ", "\$E_v-\\psi\$ ", "\$E_a-\\psi\$ ", "\$E_{cat}-\\psi\$ "]
+    labelPotential = ["\$ - q \\varphi_n\$", "\$ - q \\varphi_p\$", "\$ - q \\varphi_a\$", "\$ - q \\varphi_c\$"]
 
     energies, fermiLevel = computeEnergies(grid, data, sol)
 
 
     for icc = 1:data.numberOfSpecies-1
         PyPlot.plot(coord[1,:]./1, energies[icc,:]./q,
-                    label = "\$E_i-\\psi\$ (icc = $icc)",
+                    label = labelBandEdgeEnergy[icc],
                     linewidth = 2,
                     color = colors[icc],
                     linestyle = linestyles[1])
         PyPlot.plot(coord[1,:]./1, fermiLevel[icc,:]./q,
-                    label = "\$ - q \\varphi_i\$ (icc = $icc)",
+                    label = labelPotential[icc],
                     linewidth = 2,
                     color = colors[icc],
                     linestyle = linestyles[2])
@@ -95,8 +98,9 @@ function plotEnergies(grid::ExtendableGrid, data::ChargeTransportData)
     rcParams["font.size"] = 12
     rcParams["font.sans-serif"] = "Arial"
 
-    colors = ["green", "red", "blue", "yellow"]
+    colors = ["green", "red", "gold", "purple"]
     styles = ["-", ":", "--", "-."]
+    densityNames  = ["\$ E_c\$", "\$ E_v \$", " \$ E_a \$", " \$ E_{cat}\$"]
 
     # plot different band-edge energies values in interior
     for icc = 1:data.numberOfSpecies - 1
@@ -159,8 +163,10 @@ function plotDoping(g::ExtendableGrid, data::ChargeTransportData)
     rcParams["font.size"] = 12
     rcParams["font.sans-serif"] = "Arial"
 
-    colors = ["green", "red", "blue", "yellow"]
-    styles = ["-",":", "--", "-."]
+    colors        = ["green", "red", "gold", "purple"]
+    styles        = ["-",":", "--", "-."]
+    densityNames  = ["n", "p", "a", "c"]
+    
 
     # plot different doping values in interior
     cellregions = g[CellRegions]
@@ -182,7 +188,7 @@ function plotDoping(g::ExtendableGrid, data::ChargeTransportData)
         end
 
         # legend
-        PyPlot.semilogy(NaN,NaN,color=colors[icc],linewidth=3,label="icc="*string(icc))
+        PyPlot.semilogy(NaN,NaN,color=colors[icc],linewidth=3,label=densityNames[icc])
     end
 
     # plot different doping values on boundary
@@ -232,66 +238,67 @@ end
 $(SIGNATURES)
 Plot electrostatic potential as well as the electron and hole quasi-Fermi
 potentials for fixed time and fixed boundary values.
-    """
+"""
 
-    function plotSolution(coord, solution, Eref,  Δu)
+function plotSolution(coord, solution, Eref,  Δu)
 
-        ipsi = size(solution)[1] # convention: psi is the last species
-        colors = ["green", "red", "yellow"]
-        linestyles = ["--", "-.", "-", ":"]
-        densities  = ["n", "p", "a", "c"]  
+    ipsi = size(solution)[1] # convention: psi is the last species
 
-        PyPlot.clf() 
+    colors        = ["green", "red", "gold", "purple"]
+    linestyles    = ["--", "-.", "-", ":"]
+    densityNames  = ["n", "p", "a", "c"]  
+    PyPlot.clf() 
 
-        PyPlot.plot(coord, (solution[ipsi,:] - Eref/q*ones(length(solution[ipsi,:]))), label = "\$\\psi\$", color="b")
+    PyPlot.plot(coord, (solution[ipsi,:] - Eref/q*ones(length(solution[ipsi,:]))), label = "\$\\psi\$", color="b")
 
-        for icc in 1:ipsi-1
-            PyPlot.plot(coord./1, solution[icc,:], label =  densities[icc], color= colors[icc], linestyle = linestyles[icc])
-        end
+    for icc in 1:ipsi-1
+        PyPlot.plot(coord./1, solution[icc,:], label =  densityNames[icc], color= colors[icc], linestyle = linestyles[icc])
+    end
             
-        PyPlot.grid()
-        PyPlot.xlabel("space [m]")
-        PyPlot.ylabel("potential [V]")
-        PyPlot.legend(fancybox = true, loc = "best")
-        PyPlot.title("bias \$\\Delta u\$ = $Δu")
-        PyPlot.gcf()
+    PyPlot.grid()
+    PyPlot.xlabel("space [m]")
+    PyPlot.ylabel("potential [V]")
+    PyPlot.legend(fancybox = true, loc = "best")
+    PyPlot.title("bias \$\\Delta u\$ = $Δu")
+    PyPlot.gcf()
 
-    end
+end
 
 
-    """
-    $(SIGNATURES)
-    Plot electrostatic potential as well as the electron and hole quasi-Fermi potentials in stationary case.
-    """
-    function plotSolution(coord, solution, Eref) # need to be dependent on Eref
-        ipsi = size(solution)[1] # convention: psi is the last species
-        colors = ["green", "red", "yellow"]
-        linestyles = ["--", "-.", "-", ":"] 
-        densities  = ["n", "p", "a", "c"]  
-        PyPlot.clf()       
+"""
+$(SIGNATURES)
+Plot electrostatic potential as well as the electron and hole quasi-Fermi potentials in stationary case.
+"""
+function plotSolution(coord, solution, Eref) # need to be dependent on Eref
+    ipsi = size(solution)[1] # convention: psi is the last species
+    
+    colors        = ["green", "red", "yellow"]
+    linestyles    = ["--", "-.", "-", ":"] 
+    densityNames  = ["n", "p", "a", "c"]  
+    PyPlot.clf()       
         
-        PyPlot.plot(coord./1, solution[ipsi,:]-Eref/q*ones(length(solution[ipsi,:])), label = "\$\\psi\$", color="b")
+    PyPlot.plot(coord./1, solution[ipsi,:]-Eref/q*ones(length(solution[ipsi,:])), label = "\$\\psi\$", color="b")
                                                    
-        for icc in 1:ipsi-1
-        PyPlot.plot(coord./1, solution[icc,:], label = densities[icc], color= colors[icc], linestyle = linestyles[icc])
-        end
-
-        PyPlot.grid()
-        PyPlot.xlabel("space [m]")
-        PyPlot.ylabel("potential [V]")
-        PyPlot.legend(fancybox = true, loc = "best")
-        PyPlot.pause(1.0e-5)
+    for icc in 1:ipsi-1
+    PyPlot.plot(coord./1, solution[icc,:], label = densityNames[icc], color= colors[icc], linestyle = linestyles[icc])
     end
 
-    """
-    $(SIGNATURES)
-    Plot the IV curve.
-    """
-    function plotIV(biasValues,IV, Δu)
-        PyPlot.plot(biasValues[1:length(IV)], IV)
-        PyPlot.grid()
-        PyPlot.title("bias \$\\Delta u\$ = $Δu")
-        PyPlot.xlabel("bias [V]")
-        PyPlot.ylabel("total current [A]")
-        PyPlot.pause(1.0e-5)
-    end
+    PyPlot.grid()
+    PyPlot.xlabel("space [m]")
+    PyPlot.ylabel("potential [V]")
+    PyPlot.legend(fancybox = true, loc = "best")
+    PyPlot.pause(1.0e-5)
+end
+
+"""
+$(SIGNATURES)
+Plot the IV curve.
+"""
+function plotIV(biasValues,IV, Δu)
+    PyPlot.plot(biasValues[1:length(IV)], IV)
+    PyPlot.grid()
+    PyPlot.title("bias \$\\Delta u\$ = $Δu")
+    PyPlot.xlabel("bias [V]")
+    PyPlot.ylabel("total current [A]")
+    PyPlot.pause(1.0e-5)
+end
