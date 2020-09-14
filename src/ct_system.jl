@@ -320,16 +320,30 @@ function reaction!(f, u, node, data)
     ipsi  = data.numberOfSpecies             # final index for electrostatic potential
     ireg  = node.region
     inode = node.index
-    exponentialTerm = exp((u[iphin] - u[iphip]) / data.UT)
+    n = computeDensities(u, data, inode, ireg, iphin, ipsi, true)  #*exp(data.Eref/(kB*data.temperature))  # true for interior region
+    p = computeDensities(u, data, inode, ireg, iphip, ipsi, true) #* exp(-data.Eref/(kB*data.temperature))
+    exponentialTerm = exp((q *u[iphin] - q  * u[iphip]) / (kB*data.temperature))
+    excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
 
     # rhs of NLP (charge density)
-    for icc = 1:data.numberOfSpecies - 1
+    #if data.inEquilibrium == false
+        for icc = 1:data.numberOfSpecies - 1
 
         eta     = etaFunction(u, node, data, icc, ipsi) 
         f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                               # subtract doping
         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
+
+        end
+    # else
+    #     for icc in [iphin,iphip]
+
+    #         eta     = etaFunction(u, node, data, icc, ipsi) 
+    #         f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                               # subtract doping
+    #         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
     
-    end
+    #     end
+        
+    # end
 
     # rhs of continuity equations for electron and holes (bipolar reaction)
     
@@ -343,21 +357,17 @@ function reaction!(f, u, node, data)
     else
         for icc in [iphin, iphip] 
 
-        n = computeDensities(u, data, inode, ireg, iphin, ipsi, true)  #*exp(data.Eref/(kB*data.temperature))  # true for interior region
-        p = computeDensities(u, data, inode, ireg, iphip, ipsi, true) #* exp(-data.Eref/(kB*data.temperature))
-
         # radiative recombination
-        f[icc] = data.recombinationRadiative[ireg]
+        kernelRadiative = data.recombinationRadiative[ireg]
 
         # Auger recombination
-        f[icc] = f[icc] + (data.recombinationAuger[ireg,iphin] * n + data.recombinationAuger[ireg,iphip] * p)
+        kernelAuger = (data.recombinationAuger[ireg,iphin] * n + data.recombinationAuger[ireg,iphip] * p)
 
         # SRH recombination
-        f[icc] = f[icc] + 1.0 / (  data.recombinationSRHLifetime[ireg,iphip] * (n + data.recombinationSRHTrapDensity[ireg,iphin]) + data.recombinationSRHLifetime[ireg,iphin] * (p + data.recombinationSRHTrapDensity[ireg,iphip]) )
+        kernelSRH = 1.0 / (  data.recombinationSRHLifetime[ireg,iphip] * (n + data.recombinationSRHTrapDensity[ireg,iphin]) + data.recombinationSRHLifetime[ireg,iphin] * (p + data.recombinationSRHTrapDensity[ireg,iphip]) )
 
         # full recombination
-        f[icc]  = + q * data.chargeNumbers[icc] * f[icc] * n * p * ( 1.0 - exponentialTerm )  - q * data.chargeNumbers[icc] * generation(data, ireg)
-
+        f[icc]  = q * data.chargeNumbers[icc] * (kernelRadiative + kernelAuger + kernelSRH)*  excessCarrierDensTerm  - q * data.chargeNumbers[icc] * generation(data, ireg)
         end
     
     end
@@ -393,7 +403,7 @@ Compute trap densities. Currently, only done for the Boltzmann statistics.
 """
 function trapDensity(icc, ireg, data, Et) 
 
-return data.densityOfStates[ireg, icc] * exp( data.chargeNumbers[icc] * (data.bandEdgeEnergy[ireg, icc] - Et - data.Eref) / (kB * data.temperature)) # need to subtract Eref
+return data.densityOfStates[ireg, icc] * exp( data.chargeNumbers[icc] * (data.bandEdgeEnergy[ireg, icc] - Et) / (kB * data.temperature)) # need to subtract Eref
 
 end
 

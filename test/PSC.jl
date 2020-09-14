@@ -14,7 +14,7 @@ using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf
 
-function main(;n = 7, pyplot = false, verbose = false, dense = true)
+function main(;n = 5, pyplot = false, verbose = false, dense = true)
 
     # close all windows
     PyPlot.close("all")
@@ -27,7 +27,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     regionAcceptor  = 1                           # p doped region
     regionIntrinsic = 2                           # intrinsic region
     regionDonor     = 3                           # n doped region
-    regions         = [regionDonor, regionIntrinsic, regionAcceptor]
+    regions         = [regionAcceptor, regionIntrinsic, regionDonor]
 
     # boundary region numbers
     bregionAcceptor = 1
@@ -67,13 +67,13 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
                                 tol=t)
     coord_n_u       = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_ndoping/(δ)))
 
-    coord           = glue(coord_p_u,coord_p_g,  tol=10*t)
+    coord           = glue(coord_p_u,coord_p_g,  tol=10*t) # 25
     coord           = glue(coord,    coord_i_g1, tol=10*t)
-    coord           = glue(coord,    coord_i_g2, tol=10*t)
+    coord           = glue(coord,    coord_i_g2, tol=10*t) # 56
     coord           = glue(coord,    coord_n_g,  tol=10*t)
-    coord           = glue(coord,    coord_n_u,  tol=10*t)
+    coord           = glue(coord,    coord_n_u,  tol=10*t) # 24
     grid            = ExtendableGrids.simplexgrid(coord)
-    numberOfNodes   = length(coord)
+    numberOfNodes   = length(coord) # 105
 
     # set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor)  # p-doped region   = 1
@@ -160,11 +160,12 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     r0   = [r0_a, r0_i, r0_d]
 
     # life times and trap densities (these values are from code)
-    τn_a = 2.0e-31              * s
-    τp_a = 2.0e-31              * s
+    # if setting to 2.0e-15, then not working ....
+    τn_a = 2.0e-31            * s 
+    τp_a = 2.0e-31            * s
 
-    τn_i = 1.0e6                * s
-    τp_i = 1.0e6               * s
+    τn_i = 1.0e6              * s
+    τp_i = 1.0e6              * s
     τn_d = τn_a
     τp_d = τp_a
 
@@ -172,13 +173,13 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     τp   = [τp_a, τp_i, τp_d]
 
     # SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
-    Ei_a = -5.2                 * eV   
-    Ei_i = -4.6                 * eV 
-    Ei_d = -4.0                 * eV
+    Ei_a = -5.2                 * eV   + Eref
+    Ei_i = -4.6                 * eV   + Eref
+    Ei_d = -4.0                 * eV   + Eref
 
-    # Ei_d = -4.6                 * eV   
-    # Ei_i = -4.6                 * eV 
-    # Ei_a = -4.6                 * eV
+    # Ei_a = -4.0                 * eV   + Eref
+    # Ei_i = -4.0                 * eV   + Eref
+    # Ei_d = -4.6                 * eV   + Eref
 
     EI   = [Ei_a, Ei_i, Ei_d]
 
@@ -339,7 +340,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
     control = VoronoiFVM.NewtonControl()
     control.verbose           = verbose
-    control.max_iterations    = 50
+    control.max_iterations    = 100
     control.tol_absolute      = 1.0e-14
     control.tol_relative      = 1.0e-14
     control.handle_exceptions = true
@@ -362,7 +363,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     @views initialGuess[iphip, :] .= 0.0
     #@views initialGuess[iphia, :] .= 0.0
 
-    control.damp_initial      = 0.4
+    control.damp_initial      = 0.3
     control.damp_growth       = 1.21 # >= 1
     control.max_round         = 5
 
@@ -440,14 +441,13 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
         # plotting
         if pyplot
-            if Δu == maxBias
+            #if Δu == maxBias
             ChargeTransportInSolids.plotDensities(grid, data, solution, "$Δu (no illumination)")
             PyPlot.figure()
             ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (no illumination)")
             PyPlot.figure()
-            PyPlot.clf()
             ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$Δu (no illumination)")
-            end
+            #end
         end
 
 

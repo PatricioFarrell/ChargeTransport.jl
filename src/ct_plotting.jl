@@ -246,7 +246,7 @@ function plotSolution(coord, solution, Eref,  Δu)
 
     colors        = ["green", "red", "gold", "purple"]
     linestyles    = ["--", "-.", "-", ":"]
-    densityNames  = ["n", "p", "a", "c"]  
+    densityNames  = ["\$\\varphi_n\$", "\$\\varphi_p\$", "\$\\varphi_a\$", "\$\\varphi_c\$"]  
     PyPlot.clf() 
 
     PyPlot.plot(coord, (solution[ipsi,:] - Eref/q*ones(length(solution[ipsi,:]))), label = "\$\\psi\$", color="b")
@@ -274,7 +274,7 @@ function plotSolution(coord, solution, Eref) # need to be dependent on Eref
     
     colors        = ["green", "red", "yellow"]
     linestyles    = ["--", "-.", "-", ":"] 
-    densityNames  = ["n", "p", "a", "c"]  
+    densityNames  = ["\$\\varphi_n\$", "\$\\varphi_p\$", "\$\\varphi_a\$", "\$\\varphi_c\$"]  
     PyPlot.clf()       
         
     PyPlot.plot(coord./1, solution[ipsi,:]-Eref/q*ones(length(solution[ipsi,:])), label = "\$\\psi\$", color="b")
