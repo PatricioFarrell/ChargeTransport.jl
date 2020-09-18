@@ -295,6 +295,7 @@ $(SIGNATURES)
 Plot the IV curve.
 """
 function plotIV(biasValues,IV, Δu)
+    PyPlot.clf()
     PyPlot.plot(biasValues[1:length(IV)], IV)
     PyPlot.grid()
     PyPlot.title("bias \$\\Delta u\$ = $Δu")

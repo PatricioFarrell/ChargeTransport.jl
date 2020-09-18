@@ -302,7 +302,7 @@ the right-hand side for the electrostatic potential becomes
 
 and the right-hand sides for the charge carriers yields
 
-``f[c_i] =  z_i  q  R ``
+``f[c_i] =  - z_i  q (G -  R) ``
 
 for a charge number ``z_i`` and all charge carriers ``c_i``.
 The recombination includes radiative, Auger and Shockley-Read-Hall
@@ -367,7 +367,7 @@ function reaction!(f, u, node, data)
         kernelSRH = 1.0 / (  data.recombinationSRHLifetime[ireg,iphip] * (n + data.recombinationSRHTrapDensity[ireg,iphin]) + data.recombinationSRHLifetime[ireg,iphin] * (p + data.recombinationSRHTrapDensity[ireg,iphip]) )
 
         # full recombination
-        f[icc]  = q * data.chargeNumbers[icc] * (kernelRadiative + kernelAuger + kernelSRH)*  excessCarrierDensTerm  - q * data.chargeNumbers[icc] * generation(data, ireg)
+        f[icc]  =q* data.chargeNumbers[icc]* (kernelRadiative + kernelAuger + kernelSRH)*  excessCarrierDensTerm  - q * data.chargeNumbers[icc] * generation(data, ireg)
         end
     
     end
@@ -443,7 +443,7 @@ function ScharfetterGummel!(f, u, edge, data)
         bandEdgeDifference = data.bandEdgeEnergyNode[nodel, icc] - data.bandEdgeEnergyNode[nodek, icc]
 
         bp, bm = fbernoulli_pm(data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / data.UT)
-        f[icc] = - data.chargeNumbers[icc] * j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
+        f[icc] = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
     
     end
 
@@ -474,7 +474,7 @@ function Sedan!(f, u, edge, data)
     
     for icc = 1:data.numberOfSpecies - 1
 
-        j0       = - data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
+        j0       =  data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
 
         etak = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u, edge, data, icc, ipsi)
         etal = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u, edge, data, icc, ipsi)
@@ -485,7 +485,7 @@ function Sedan!(f, u, edge, data)
         Q = data.chargeNumbers[icc] * ((dpsi - bandEdgeDifference / q) / data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak))
         bp, bm = fbernoulli_pm(Q)
 
-        f[icc] = data.chargeNumbers[icc] * j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
+        f[icc] = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
 end
 
 end
@@ -533,7 +533,7 @@ function diffusionEnhanced!(f, u, edge, data)
         bandEdgeDifference = data.bandEdgeEnergyNode[nodel, icc] - data.bandEdgeEnergyNode[nodek, icc]
 
         bp, bm = fbernoulli_pm(data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / (data.UT * g))
-        f[icc] = - data.chargeNumbers[icc] * j0 * g * (  bm * data.F[icc](etal) - bp * data.F[icc](etak))
+        f[icc] = -  j0 * g * (  bm * data.F[icc](etal) - bp * data.F[icc](etak))
 end
 
 end
@@ -567,7 +567,7 @@ function KopruckiGaertner!(f, u, edge, data)
     
     for icc = 1:data.numberOfSpecies - 1
 
-        j0   = - data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
+        j0   =  data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
 
         etak = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
         etal = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
@@ -595,7 +595,7 @@ function KopruckiGaertner!(f, u, edge, data)
             it = it + 1
             damp = min(damp * 1.2, 1.0)
         end
-        f[icc] =   data.chargeNumbers[icc] * j0 * jInitial
+        f[icc] =  -  j0 * jInitial
     end
 end
 
