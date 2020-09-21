@@ -14,7 +14,7 @@ using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf
 
-function main(;n = 5, pyplot = false, verbose = false, dense = true)
+function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
     # close all windows
     PyPlot.close("all")
@@ -41,39 +41,40 @@ function main(;n = 5, pyplot = false, verbose = false, dense = true)
     h_ndoping       = 0.2 * μm
     x0              = 0.0 * μm 
     δ               = 4*n        # the larger, the finer the mesh
-    t               = 0.2*μm/δ   # tolerance for geomspace and glue (with factor 10)
+    t               = 0.5*μm/δ   # tolerance for geomspace and glue (with factor 10)
     k               = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    coord_p_u       = collect(range(x0, h_pdoping/2, step=h_pdoping/(δ)))
+    coord_p_u       = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.5*δ)))
     coord_p_g       = geomspace(h_pdoping/2, 
                                 h_pdoping, 
                                 h_pdoping/(δ), 
-                                h_pdoping/(2δ), 
+                                h_pdoping/(1.5*δ), 
                                 tol=t)
     coord_i_g1      = geomspace(h_pdoping, 
                                 h_pdoping+h_intrinsic/k, 
-                                h_intrinsic/(4δ), 
-                                h_intrinsic/(2δ), 
+                                h_intrinsic/(3.1*δ), 
+                                h_intrinsic/(1.1*δ), 
                                 tol=t)
     coord_i_g2      = geomspace(h_pdoping+h_intrinsic/k, 
                                 h_pdoping+h_intrinsic,               
-                                h_intrinsic/(2δ),    
-                                h_intrinsic/(4δ), 
+                                h_intrinsic/(1.1*δ),    
+                                h_intrinsic/(3.0*δ), 
                                 tol=t)
     coord_n_g       = geomspace(h_pdoping+h_intrinsic,               
                                 h_pdoping+h_intrinsic+h_ndoping/2, 
-                                h_ndoping/(2δ),   
+                                h_ndoping/(1.5*δ),   
                                 h_ndoping/(1δ),      
                                 tol=t)
-    coord_n_u       = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_ndoping/(δ)))
+    coord_n_u       = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_ndoping/(0.5*δ)))
 
-    coord           = glue(coord_p_u,coord_p_g,  tol=10*t) # 25
+    coord           = glue(coord_p_u,coord_p_g,  tol=10*t) 
+    length_pcoord = length(coord)
     coord           = glue(coord,    coord_i_g1, tol=10*t)
-    coord           = glue(coord,    coord_i_g2, tol=10*t) # 56
+    coord           = glue(coord,    coord_i_g2, tol=10*t) 
     coord           = glue(coord,    coord_n_g,  tol=10*t)
-    coord           = glue(coord,    coord_n_u,  tol=10*t) # 24
+    coord           = glue(coord,    coord_n_u,  tol=10*t)
     grid            = ExtendableGrids.simplexgrid(coord)
-    numberOfNodes   = length(coord) # 105
+    numberOfNodes   = length(coord)
 
     # set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor)  # p-doped region   = 1
@@ -81,11 +82,11 @@ function main(;n = 5, pyplot = false, verbose = false, dense = true)
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region   = 3
 
     if pyplot
-        ExtendableGrids.plot(ExtendableGrids.simplexgrid(coord, collect(0.0 : 0.25*μm : 0.5*μm)), Plotter = PyPlot, p = PyPlot.plot()) 
+        ExtendableGrids.plot(grid, Plotter = PyPlot, p = PyPlot.plot()) 
         PyPlot.title("Grid")
-        PyPlot.figure()
     end
     println("*** done\n")
+
     ################################################################################
     println("Define physical parameters and model")
     ################################################################################
@@ -159,10 +160,9 @@ function main(;n = 5, pyplot = false, verbose = false, dense = true)
 
     r0   = [r0_a, r0_i, r0_d]
 
-    # life times and trap densities (these values are from code)
-    # if setting to 2.0e-15, then not working ....
-    τn_a = 2.0e-31            * s 
-    τp_a = 2.0e-31            * s
+    # life times and trap densities 
+    τn_a = 2.0e-15            * s 
+    τp_a = 2.0e-15            * s
 
     τn_i = 1.0e6              * s
     τp_i = 1.0e6              * s
@@ -363,7 +363,7 @@ function main(;n = 5, pyplot = false, verbose = false, dense = true)
     @views initialGuess[iphip, :] .= 0.0
     #@views initialGuess[iphia, :] .= 0.0
 
-    control.damp_initial      = 0.3
+    control.damp_initial      = 0.001
     control.damp_growth       = 1.21 # >= 1
     control.max_round         = 5
 
@@ -375,22 +375,25 @@ function main(;n = 5, pyplot = false, verbose = false, dense = true)
     I = collect(20.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 
     prepend!(LAMBDA,0.0)
-
+    #node = 10
     for i in 1:length(LAMBDA)
         println("λ1 = $(LAMBDA[i])")
         sys.physics.data.λ1 = LAMBDA[i]
         solve!(solution, initialGuess, sys, control = control, tstep=Inf)
         initialGuess .= solution
+        # if LAMBDA[i] == 1.0
+        #     ChargeTransportInSolids.printJacobi(node, sys)
+        # end
         PyPlot.clf()
     end
 
-    if pyplot
-        ChargeTransportInSolids.plotDensities(grid, data, solution, "EQUILIBRIUM")
-        PyPlot.figure()
-        ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQUILIBRIUM")
-        PyPlot.figure()
-        ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "EQUILIBRIUM")
-    end
+    # if pyplot
+    #     ChargeTransportInSolids.plotDensities(grid, data, solution, "EQUILIBRIUM")
+    #     PyPlot.figure()
+    #     ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQUILIBRIUM")
+    #     PyPlot.figure()
+    #     ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "EQUILIBRIUM")
+    # end
 
     println("*** done\n")
 
@@ -411,7 +414,7 @@ function main(;n = 5, pyplot = false, verbose = false, dense = true)
     sys.boundary_values[iphip, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
 
     maxBias    = data.contactVoltage[bregionAcceptor]
-    biasValues = range(0, stop = maxBias, length = 41)
+    biasValues = range(0, stop = maxBias, length = 21)
     IV         = zeros(0)
 
     w_device = 0.5 * μm     # width of device
@@ -427,9 +430,13 @@ function main(;n = 5, pyplot = false, verbose = false, dense = true)
         sys.boundary_values[iphip, bregionAcceptor] = Δu
 
         solve!(solution, initialGuess, sys, control = control, tstep = Inf)
-
+        # if Δu == 0.0
+        #     ChargeTransportInSolids.printJacobi(node, sys)
+        # end
+        # return
         initialGuess .= solution
 
+        ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (no illumination)")
         # get IV curve
         factory = VoronoiFVM.TestFunctionFactory(sys)
 
@@ -440,15 +447,15 @@ function main(;n = 5, pyplot = false, verbose = false, dense = true)
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 
         # plotting
-        if pyplot
-            #if Δu == maxBias
-            ChargeTransportInSolids.plotDensities(grid, data, solution, "$Δu (no illumination)")
-            PyPlot.figure()
-            ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (no illumination)")
-            PyPlot.figure()
-            ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$Δu (no illumination)")
-            #end
-        end
+        # if pyplot
+        #     if Δu   == maxBias
+        #     ChargeTransportInSolids.plotDensities(grid, data, solution, "$Δu (no illumination)")
+        #     PyPlot.figure()
+        #     ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (no illumination)")
+        #     PyPlot.figure()
+        #     ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$Δu (no illumination)")
+        #     end
+        # end
 
 
     end # bias loop
@@ -471,12 +478,13 @@ function main(;n = 5, pyplot = false, verbose = false, dense = true)
     end
 
     if pyplot
+        #PyPlot.figure()
+        #ChargeTransportInSolids.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
         PyPlot.figure()
-        ChargeTransportInSolids.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
+        ChargeTransportInSolids.plotEnergies(grid, data, solution, "$(maxBias) (illuminated)")
         PyPlot.figure()
-        #ChargeTransportInSolids.plotEnergies(grid, data, solution, "$(maxBias) (illuminated)")
-        PyPlot.figure()
-        ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$(maxBias) (illuminated)")
+        #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$(maxBias) (illuminated)")
+        return
     end
 
     println("*** done\n")

@@ -326,7 +326,6 @@ function reaction!(f, u, node, data)
     excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
 
     # rhs of NLP (charge density)
-    #if data.inEquilibrium == false
         for icc = 1:data.numberOfSpecies - 1
 
         eta     = etaFunction(u, node, data, icc, ipsi) 
@@ -334,16 +333,6 @@ function reaction!(f, u, node, data)
         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
 
         end
-    # else
-    #     for icc in [iphin,iphip]
-
-    #         eta     = etaFunction(u, node, data, icc, ipsi) 
-    #         f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                               # subtract doping
-    #         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
-    
-    #     end
-        
-    # end
 
     # rhs of continuity equations for electron and holes (bipolar reaction)
     
@@ -642,13 +631,14 @@ end
 $(SIGNATURES)
 
 For given potentials in vector form, compute corresponding vectorized densities.
+(Caution: DID NOT TAKE JUMPING PARAMETERS INTO ACCOUNT!!!!)
 [NOT TESTED FOR MULTIDIMENSIONS]
 """
 
 function computeDensities(grid, data, sol)
     ipsi      = data.numberOfSpecies
     densities = Array{Real,2}(undef, data.numberOfSpecies - 1, size(sol, 2))
-    
+        
     bfacenodes   = grid[BFaceNodes]
     bfaceregions = grid[BFaceRegions]
     cellRegions  = copy(grid[CellRegions])
@@ -680,16 +670,16 @@ function computeDensities(grid, data, sol)
 
 end
 
+
 """
 
 $(SIGNATURES)
 
 For given solution in vector form, compute corresponding vectorized band-edge energies and fermi level.
+(Caution: DID NOT TAKE JUMPING PARAMETERS INTO ACCOUNT!!!!)
+[NOT TESTED FOR MULTIDIMENSIONS]
 
 """
-# DA: - generalization to multidimensions missing! 
-#     - line "cellregions = push!(cellregions, cellregions[end])" is not nice -> cellregions has one entry less than data.numberOfSpecies.
-# if boundary values for bandEdeEnergy differ, then false computations!
 function computeEnergies(grid, data, sol)
     
     ipsi       = data.numberOfSpecies
@@ -793,4 +783,26 @@ Compute the charge density, i.e. the right-hand side of Poisson's equation.
 function chargeDensity(psi0, phi, UT, EVector, chargeNumbers, dopingVector, dosVector, FVector)
     # https://stackoverflow.com/questions/45667291/how-to-apply-one-argument-to-arrayfunction-1-element-wise-smartly-in-julia
     sum(-chargeNumbers .* dopingVector) + sum(chargeNumbers .* dosVector .* (etaFunction(psi0, phi, UT, EVector, chargeNumbers) .|> FVector))
+end
+
+"""
+
+$(SIGNATURES)
+
+First try of debugger. Print the Jacobi matrix for a given node, i.e.
+the number of the node in the grid and not the excact coordinate.
+This is only done for the one dimensional case so far.
+[insert some information about VoronoiFVM]
+"""
+
+function printJacobi(node, sys)
+    ct_data = data(sys)
+    numberOfNodes = ct_data.numberOfNodes
+    if node == 1
+        println(sys.matrix[1:3, 1:9])
+    elseif node == numberOfNodes
+        println(sys.matrix[3*numberOfNodes-2:3*numberOfNodes, 3*numberOfNodes-8:3*numberOfNodes])
+    else
+        println(sys.matrix[3*node-2:3*node, 3*node-5:3*node+3])
+    end
 end
