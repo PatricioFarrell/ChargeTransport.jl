@@ -13,8 +13,9 @@ using ChargeTransportInSolids
 using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf
+using DelimitedFiles
 
-function main(;n = 7, pyplot = false, verbose = false, dense = true)
+function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
     # close all windows
     PyPlot.close("all")
@@ -33,6 +34,12 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     bregionAcceptor = 1
     bregionDonor    = 2
     bregions        = [bregionAcceptor, bregionDonor]
+
+    # #inner regions
+    # iregionAcceptor = 3
+    # iregionDonor    = 4
+
+    # iregions        = [iregionAcceptor, iregionDonor]
 
     # grid
     # NB: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
@@ -81,10 +88,14 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region   = 3
 
-    if pyplot
-        ExtendableGrids.plot(grid, Plotter = PyPlot, p = PyPlot.plot()) 
-        PyPlot.title("Grid")
-    end
+    # # set interior boundary regions
+    # bfacemask!(grid, [h_pdoping],           [h_pdoping],           iregionAcceptor)
+    # bfacemask!(grid, [h_pdoping+h_intrinsic], [h_pdoping+h_intrinsic], iregionDonor)
+
+    # if pyplot
+    #     ExtendableGrids.plot(grid, Plotter = PyPlot, p = PyPlot.plot()) 
+    #     PyPlot.title("Grid")
+    # end
     println("*** done\n")
 
     ################################################################################
@@ -94,25 +105,25 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     # indices
     iphin, iphip, ipsi        = 1:3
     species                   = [iphin, iphip, ipsi]
-    # iphin, iphip, iphia, ipsi = 1:4
-    # species         = [iphin, iphip, iphia, ipsi]
+    iphin, iphip, iphia, ipsi = 1:4
+    species         = [iphin, iphip, iphia, ipsi]
 
     # number of (boundary) regions and carriers
     numberOfRegions         = length(regions)
-    numberOfBoundaryRegions = length(bregions) 
+    numberOfBoundaryRegions = length(bregions) #+ length(iregions)
     numberOfSpecies         = length(species)
 
     # temperature
     T    = 300.0                *  K
 
     # band edge energies    
-    Eref =  5.4        *  eV # reference energy 
+    Eref =  0.0#5.4        *  eV # reference energy 
     Ec_a = -3.8        *  eV 
     Ev_a = -5.4        *  eV 
 
     Ec_i = -3.8        *  eV 
     Ev_i = -5.4        *  eV 
-    Ea_i = -1.8        *  eV 
+    Ea_i = -4.8        *  eV 
 
     Ec_d = -3.8        *  eV 
     Ev_d = -5.4        *  eV 
@@ -124,7 +135,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     # effective densities of state
     Nc       = 1.0e20               / (cm^3)
     Nv       = 1.0e20               / (cm^3)
-    Nanion   = 1.0e19               / (cm^3)
+    Nanion   = 1.0e17               / (cm^3)
 
     NC   = [Nc, Nc, Nc]
     NV   = [Nv, Nv, Nv]
@@ -153,6 +164,9 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
     ε   = [ε_a, ε_i, ε_d] 
 
+    # recombination model
+    recombinationOn = true
+
     # radiative recombination
     r0_a = 1.0e-10              * cm^3 / s 
     r0_i = 1.0e-10              * cm^3 / s  
@@ -177,10 +191,6 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     Ei_i = -4.6                 * eV   + Eref
     Ei_d = -4.0                 * eV   + Eref
 
-    # Ei_a = -4.0                 * eV   + Eref
-    # Ei_i = -4.0                 * eV   + Eref
-    # Ei_d = -4.6                 * eV   + Eref
-
     EI   = [Ei_a, Ei_i, Ei_d]
 
     # Auger recombination
@@ -195,14 +205,14 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     # doping (doping values are from Phils paper, not stated in the parameter list online)
     Nd             =   3.0e17   / (cm^3) 
     Na             =   3.0e17   / (cm^3) 
-    C0             =   1.0e19   / (cm^3) 
+    C0             =   1.0e17   / (cm^3) 
     
 
     # intrinsic concentration (not doping!)
-    ni             =   sqrt(Nc * Nv) * exp(-(Ec_i - Ev_i) / (2 * kB * T)) #/ (cm^3)
+    ni             =   sqrt(Nc * Nv) * exp(-(Ec_i - Ev_i) / (2 * kB * T))
 
     # contact voltages
-    voltageAcceptor     = 1.1 * V
+    voltageAcceptor     = 1.1*V #0.079 * V
     voltageDonor        = 0.0 * V 
 
     println("*** done\n")
@@ -222,24 +232,30 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     data.contactVoltage[bregionDonor]    = voltageDonor
     data.chargeNumbers[iphin]            = -1
     data.chargeNumbers[iphip]            =  1
-    #data.chargeNumbers[iphia]            =  1
+    data.chargeNumbers[iphia]            =  1
     data.Eref                            =  Eref
+
+    data.recombinationOn                 = recombinationOn
 
 
     # boundary region data
     for ibreg in bregions
         data.bDensityOfStates[ibreg,iphin] = Nc
         data.bDensityOfStates[ibreg,iphip] = Nv
-        #data.bDensityOfStates[ibreg,iphia] = 0.0
-
+        data.bDensityOfStates[ibreg,iphia] = 0.0
     end
 
     data.bBandEdgeEnergy[bregionAcceptor,iphin]  = Ec_a + data.Eref
     data.bBandEdgeEnergy[bregionAcceptor,iphip]  = Ev_a + data.Eref
-    #data.bBandEdgeEnergy[bregionAcceptor,iphia]  = 0.0  + data.Eref
+
+    # data.bBandEdgeEnergy[iregionAcceptor, iphin]        =  Ec_a + data.Eref
+    # data.bBandEdgeEnergy[iregionAcceptor, iphip]        =  Ev_a + data.Eref
+
     data.bBandEdgeEnergy[bregionDonor,iphin]     = Ec_d + data.Eref
     data.bBandEdgeEnergy[bregionDonor,iphip]     = Ev_d + data.Eref
-    #data.bBandEdgeEnergy[bregionDonor,iphia]     = 0.0 + data.Eref
+
+    # data.bBandEdgeEnergy[iregionDonor, iphin]         =  Ec_a + data.Eref
+    # data.bBandEdgeEnergy[iregionDonor, iphip]         =  Ev_a + data.Eref
 
     # interior region data
     for ireg in 1:numberOfRegions
@@ -249,14 +265,14 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
         # dos, band edge energy and mobilities
         data.densityOfStates[ireg,iphin] = NC[ireg]
         data.densityOfStates[ireg,iphip] = NV[ireg]
-        #data.densityOfStates[ireg,iphia] = NA[ireg]
+        data.densityOfStates[ireg,iphia] = NA[ireg]
 
         data.bandEdgeEnergy[ireg,iphin]  = EC[ireg] + data.Eref
         data.bandEdgeEnergy[ireg,iphip]  = EV[ireg] + data.Eref
-        #data.bandEdgeEnergy[ireg,iphia]  = EA[ireg] + data.Eref
+        data.bandEdgeEnergy[ireg,iphia]  = EA[ireg] + data.Eref
         data.mobility[ireg,iphin]        = μn[ireg]
         data.mobility[ireg,iphip]        = μp[ireg]
-        #data.mobility[ireg,iphia]        = μa[ireg]
+        data.mobility[ireg,iphia]        = μa[ireg]
 
         # recombination parameters
         data.recombinationRadiative[ireg]            = r0[ireg]
@@ -273,12 +289,12 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
     # interior doping
     data.doping[regionAcceptor,iphip]   = Na 
-    #data.doping[regionAcceptor,iphia]   = 0.0        #                  ni   ni  C0; 
-    data.doping[regionIntrinsic,iphin]  = ni        #                  0.0  Na  0.0]
-    data.doping[regionIntrinsic,iphip]  = ni        
-    #data.doping[regionIntrinsic,iphia]  = C0        
+    data.doping[regionAcceptor,iphia]   = 0.0        #                  ni   ni  C0; 
+    data.doping[regionIntrinsic,iphin]  = 0.0#ni        #                  0.0  Na  0.0]
+    data.doping[regionIntrinsic,iphip]  = 0.0#ni        
+    data.doping[regionIntrinsic,iphia]  = C0        
     data.doping[regionDonor,iphin]      = Nd        # data.doping   = [Nd  0.0  0.0;                   
-    #data.doping[regionDonor,iphia]      = 0.0
+    data.doping[regionDonor,iphia]      = 0.0
 
     # boundary doping
     data.bDoping[bregionAcceptor,iphip] = Na        # data.bDoping  = [Nd  0.0;
@@ -311,7 +327,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     enable_species!(sys, ipsi,  regions)
     enable_species!(sys, iphin, regions)
     enable_species!(sys, iphip, regions)
-    #enable_species!(sys, iphia, [regionIntrinsic])
+    enable_species!(sys, iphia, [regionIntrinsic])
 
     sys.boundary_values[iphin,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
     sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
@@ -325,11 +341,12 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     sys.boundary_values[iphip,  bregionDonor]    = data.contactVoltage[bregionDonor]
     sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
 
-    # sys.boundary_values[iphia,  bregionAcceptor] = 0.0 * V
-    # sys.boundary_factors[iphia, bregionAcceptor] = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphia,  bregionAcceptor] = 0.0
+    sys.boundary_factors[iphia, bregionAcceptor] = VoronoiFVM.Dirichlet
 
-    # sys.boundary_values[iphia,  bregionDonor]    = 0.0 * V
-    # sys.boundary_factors[iphia, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphia,  bregionDonor]    = 0.0
+    sys.boundary_factors[iphia, bregionDonor]    = VoronoiFVM.Dirichlet
+
 
     println("*** done\n")
 
@@ -338,13 +355,13 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     println("Define control parameters for Newton solver")
     ################################################################################
 
-    control = VoronoiFVM.NewtonControl()
+    control                   = VoronoiFVM.NewtonControl()
     control.verbose           = verbose
-    control.max_iterations    = 100
-    control.tol_absolute      = 1.0e-14
-    control.tol_relative      = 1.0e-14
+    control.max_iterations    = 200
+    control.tol_absolute      = 1.0e-13
+    control.tol_relative      = 1.0e-13
     control.handle_exceptions = true
-    control.tol_round         = 1.0e-14
+    control.tol_round         = 1.0e-13
     control.max_round         = 5
 
     println("*** done\n")
@@ -361,15 +378,14 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     @views initialGuess[ipsi,  :] .= 0.0
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
-    #@views initialGuess[iphia, :] .= 0.0
+    @views initialGuess[iphia, :] .= 0.0
 
-    control.damp_initial      = 0.001
-    control.damp_growth       = 1.21 # >= 1
+    control.damp_initial      = 0.9
+    control.damp_growth       = 1.61 # >= 1
     control.max_round         = 5
 
     sys.boundary_values[iphin, bregionAcceptor] = 0.0 * V
     sys.boundary_values[iphip, bregionAcceptor] = 0.0 * V
-    #sys.boundary_values[iphia, bregionAcceptor]  = 0.0 * V
     sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
 
     I = collect(20.0:-1:0.0)
@@ -384,15 +400,18 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
         # if LAMBDA[i] == 1.0
         #     ChargeTransportInSolids.printJacobi(node, sys)
         # end
-        PyPlot.clf()
     end
 
+    energyEa = Ea_i/eV
     # if pyplot
-    #     ChargeTransportInSolids.plotDensities(grid, data, solution, "EQUILIBRIUM")
+    #     ChargeTransportInSolids.plotDensities(grid, data, solution, " 0.0V, Ea= $energyEa eV")
+    #     #savefig("densities-equilibrium-17$energyEa.eps")
     #     PyPlot.figure()
-    #     ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQUILIBRIUM")
+    #     ChargeTransportInSolids.plotEnergies(grid, data, solution, " 0.0V, Ea= $energyEa eV")
+    #     #savefig("energies-equilibrium-17$energyEa.eps")
     #     PyPlot.figure()
     #     ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "EQUILIBRIUM")
+    #     #savefig("sol-equilibrium.eps")
     # end
 
     println("*** done\n")
@@ -414,15 +433,15 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     sys.boundary_values[iphip, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
 
     maxBias    = data.contactVoltage[bregionAcceptor]
-    biasValues = range(0, stop = maxBias, length = 21)
+    biasValues = range(0, stop = maxBias, length = 11)
     IV         = zeros(0)
 
-    w_device = 0.5 * μm     # width of device
-    z_device = 1.0e-4 * cm  # depth of device
+    w_device = 1.0 #0.5 * μm     # width of device
+    z_device = 1.0 #1.0e-4 * cm  # depth of device
 
 
     for Δu in biasValues
-
+        #if Δu < 0.2
         println("Bias value: Δu = $(Δu) (no illumination)")
 
         data.contactVoltage[bregionAcceptor] = Δu
@@ -436,7 +455,6 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
         # return
         initialGuess .= solution
 
-        ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (no illumination)")
         # get IV curve
         factory = VoronoiFVM.TestFunctionFactory(sys)
 
@@ -446,19 +464,35 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 
-        # plotting
-        # if pyplot
-        #     if Δu   == maxBias
-        #     ChargeTransportInSolids.plotDensities(grid, data, solution, "$Δu (no illumination)")
-        #     PyPlot.figure()
-        #     ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (no illumination)")
-        #     PyPlot.figure()
-        #     ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$Δu (no illumination)")
-        #     end
+        # if Δu==maxBias
+        #     sol = [coord solution']
+        #     writedlm("jl-PSC-sol-Boltzmann-SG.dat", sol)
         # end
+
+        # plotting
+        if pyplot
+            if Δu == maxBias #>0.2 # == maxBias
+            PyPlot.figure()
+            ChargeTransportInSolids.plotDensities(grid, data, solution, "$Δu (no illumination)")
+            #savefig("PSC-sol-$Δu-dens.eps")
+            PyPlot.figure()
+            ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (no illumination)")
+            #PyPlot.figure()
+            #savefig("PSC-sol-$Δu-energy.eps")
+            #PyPlot.figure()
+            #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$Δu (no illumination)")
+            #ChargeTransportInSolids.plotIV(biasValues,IV, Δu)
+            end
+        #end
+    end
 
 
     end # bias loop
+    # sol = [coord solution']
+    # writedlm("PSC-sol.dat", sol)
+
+    # res = [biasValues IV]
+    # writedlm("jl-PSC-IV-Boltzmann-SG.dat", res)
 
     # return IV
     println("*** done\n")
@@ -466,7 +500,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     println("Illumination loop")
     ################################################################################ 
 
-    I = collect(20.0:-1:0.0)
+    I = collect(10.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 
     prepend!(LAMBDA,0.0)
 
@@ -477,14 +511,16 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
         initialGuess = solution
     end
 
+        sol = [coord solution']
+        writedlm("PSC-illuminated-sol.dat", sol)
+    
     if pyplot
-        #PyPlot.figure()
-        #ChargeTransportInSolids.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
+        PyPlot.figure()
+        ChargeTransportInSolids.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
         PyPlot.figure()
         ChargeTransportInSolids.plotEnergies(grid, data, solution, "$(maxBias) (illuminated)")
-        PyPlot.figure()
+        #PyPlot.figure()
         #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$(maxBias) (illuminated)")
-        return
     end
 
     println("*** done\n")

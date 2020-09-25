@@ -100,7 +100,7 @@ function plotEnergies(grid, data, sol, Δu)
     labelBandEdgeEnergy = ["\$E_c-\\psi\$ ", "\$E_v-\\psi\$ ", "\$E_a-\\psi\$ ", "\$E_{cat}-\\psi\$ "]
     labelPotential = ["\$ - q \\varphi_n\$", "\$ - q \\varphi_p\$", "\$ - q \\varphi_a\$", "\$ - q \\varphi_c\$"]
 
-    for icc in 1:data.numberOfSpecies - 1
+    for icc in 1:data.numberOfSpecies - 2
 
         # first cell
         ireg = cellregions[1]
@@ -323,7 +323,7 @@ function plotSolution(coord, solution, Eref,  Δu)
     densityNames  = ["\$\\varphi_n\$", "\$\\varphi_p\$", "\$\\varphi_a\$", "\$\\varphi_c\$"]  
     PyPlot.clf() 
 
-    PyPlot.plot(coord, (solution[ipsi,:] - Eref/q*ones(length(solution[ipsi,:]))), label = "\$\\psi\$", color="b")
+    PyPlot.plot(coord, (solution[ipsi,:] + 2*Eref/q*ones(length(solution[ipsi,:]))), label = "\$\\psi\$", color="b")
 
     for icc in 1:ipsi-1
         PyPlot.plot(coord./1, solution[icc,:], label =  densityNames[icc], color= colors[icc], linestyle = linestyles[icc])
@@ -370,7 +370,6 @@ $(SIGNATURES)
 Plot the IV curve.
 """
 function plotIV(biasValues,IV, Δu)
-    PyPlot.clf()
     PyPlot.plot(biasValues[1:length(IV)], IV)
     PyPlot.grid()
     PyPlot.title("bias \$\\Delta u\$ = $Δu")

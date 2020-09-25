@@ -26,6 +26,7 @@ mutable struct ChargeTransportData <: VoronoiFVM.AbstractData
 
     # booleans
     inEquilibrium               ::  Bool
+    recombinationOn             ::  Bool
 
     # number of boundary regions
     contactVoltage              ::  Array{Float64,1}
@@ -97,6 +98,7 @@ function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, num
 
     # booleans
     true,                                                                    # inEquilibrium
+    true,                                                                    # recombinationOn
 
     # number of boundary regions
     Array{Float64,1}(undef,numberOfBoundaryRegions),                         # contactVoltage
@@ -230,7 +232,7 @@ function breaction!(f, u, bnode, data)
     # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...
     ### TESTEN AUF ÄU?EREN RAND 
     # bnode.coord
-    # if bnode.region == 1 || bnode.region == 2 
+    if bnode.region == 1 || bnode.region == 2 
 
         for icc = 1:data.numberOfSpecies - 1
 
@@ -239,42 +241,48 @@ function breaction!(f, u, bnode, data)
             f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.bDoping[bnode.region,icc]                             # subtract doping
             f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F[icc](eta)  # add charge carrier
 
-            if data.inEquilibrium == true 
-
-                f[icc] = u[icc] - 0.0
-        
-            else
             # boundary conditions for charge carriers are set in main program
             f[icc]  = 0.0
-            end
+            
 
         end
 
         f[ipsi] = -1 / α *  q * data.λ1 * f[ipsi]
      
-    # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...  
-    ### TESTEN AUF INNEREN RAND  
+    # # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...  
+    # ### TESTEN AUF INNEREN RAND  
     # elseif bnode.region == 3 || bnode.region == 4 
+    #     if data.inEquilibrium == true
+    #         for icc = 1:data.numberOfSpecies - 1
+    #             f[icc] = 0.0#u[icc] - 0.0
+    #         end
+    #     else
+    #         if bnode.region == 3
+    #             ireg = 1
+    #         elseif bnode.region == 4
+    #             ireg = 2
+    #         end
+    #         iphin = 1 
+    #         iphip = 2
+    #         sn = 1.0e7 * cm / s
+    #         sp = 1.0e7 * cm / s
 
-    #     iphin = 1 
-    #     iphip = 2
+    #         for icc = 1:data.numberOfSpecies - 2
 
-    #     sn = 1e-8 * cm / s
-    #     sp = 1e-8 * cm / s
+    #             n = computeDensities(u, data, bnode.index,bnode.region, iphin, ipsi, false) 
+    #             p = computeDensities(u, data, bnode.index, bnode.region, iphip, ipsi, false) 
+                
+    #             # surface recombination
+    #             f[icc] = 1 / (  1/sp*(n+ ( data.recombinationSRHTrapDensity[ireg,iphin] + data.recombinationSRHTrapDensity[ireg+1, iphin])/2  ) 
+    #             + 1/sn*(p+ (data.recombinationSRHTrapDensity[ireg,iphip] + data.recombinationSRHTrapDensity[ireg+1, iphip] )/2 ) )
+                
+    #             f[icc]  =   q  *data.chargeNumbers[icc] * f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT )  )
+    #         end
 
-    #     for icc = 1:data.numberOfSpecies - 1
-
-    #         n = computeDensities(u, data, bnode.index,bnode.region, iphin, ipsi, true)  
-    #         p = computeDensities(u, data, bnode.index, bnode.region, iphip, ipsi, true) 
-
-    #         # surface recombination
-    #         f[icc] = 1 / (  1/sp*(n+data.recombinationSRHTrapDensity[bnode.region,iphin]) 
-    #                       + 1/sn*(p+data.recombinationSRHTrapDensity[bnode.region,iphip]) )
-
-    #         f[icc]  =  q * data.chargeNumbers[icc] * f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT )  )
-    #     end
-
+    #     f[3] = u[3] - 0.0
     # end
+
+    end
 
 end
 
@@ -326,17 +334,16 @@ function reaction!(f, u, node, data)
     excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
 
     # rhs of NLP (charge density)
-        for icc = 1:data.numberOfSpecies - 1
-
+    for icc = 1:data.numberOfSpecies - 1
+        
         eta     = etaFunction(u, node, data, icc, ipsi) 
         f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                               # subtract doping
         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
 
-        end
+    end
 
     # rhs of continuity equations for electron and holes (bipolar reaction)
     
-
     if data.inEquilibrium == true 
         for icc = 1:data.numberOfSpecies - 1
 
@@ -345,18 +352,28 @@ function reaction!(f, u, node, data)
 
     else
         for icc in [iphin, iphip] 
+            if data.recombinationOn == true
+                
+                # radiative recombination
+                kernelRadiative = data.recombinationRadiative[ireg]
+                
+                # Auger recombination
+                kernelAuger = (data.recombinationAuger[ireg,iphin] * n + data.recombinationAuger[ireg,iphip] * p)
+                
+                # SRH recombination
+                kernelSRH = 1.0 / (  data.recombinationSRHLifetime[ireg,iphip] * (n + data.recombinationSRHTrapDensity[ireg,iphin]) + data.recombinationSRHLifetime[ireg,iphin] * (p + data.recombinationSRHTrapDensity[ireg,iphip]) )
+                
+                # full recombination
+                f[icc]  = q* data.chargeNumbers[icc]* (kernelRadiative + kernelAuger + kernelSRH)*  excessCarrierDensTerm  - q * data.chargeNumbers[icc] * generation(data, ireg)
+            else
 
-        # radiative recombination
-        kernelRadiative = data.recombinationRadiative[ireg]
+                f[icc]  = 0.0 #- q * data.chargeNumbers[icc] * generation(data, ireg)
+            
+            end
+        end
 
-        # Auger recombination
-        kernelAuger = (data.recombinationAuger[ireg,iphin] * n + data.recombinationAuger[ireg,iphip] * p)
-
-        # SRH recombination
-        kernelSRH = 1.0 / (  data.recombinationSRHLifetime[ireg,iphip] * (n + data.recombinationSRHTrapDensity[ireg,iphin]) + data.recombinationSRHLifetime[ireg,iphin] * (p + data.recombinationSRHTrapDensity[ireg,iphip]) )
-
-        # full recombination
-        f[icc]  =q* data.chargeNumbers[icc]* (kernelRadiative + kernelAuger + kernelSRH)*  excessCarrierDensTerm  - q * data.chargeNumbers[icc] * generation(data, ireg)
+        for icc in iphip+1:data.numberOfSpecies-1
+            f[icc] = u[icc] - 0.0
         end
     
     end

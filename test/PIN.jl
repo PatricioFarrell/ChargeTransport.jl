@@ -100,7 +100,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     Na             =   dopingFactorNa * Nv
 
     # intrinsic concentration (not doping!)
-    ni             =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) / (cm^3)
+    ni             =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) 
 
     # contact voltages
     voltageAcceptor     = 3.0 * V
@@ -162,7 +162,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     # interior doping
     data.doping[regionDonor,iphin]      = Nd        # data.doping   = [0.0  Na;
     data.doping[regionIntrinsic,iphin]  = ni        #                  ni   ni;
-    data.doping[regionIntrinsic,iphip]  = ni        #                  Nd  0.0]
+    data.doping[regionIntrinsic,iphip]  = 0.0        #                  Nd  0.0]
     data.doping[regionAcceptor,iphip]   = Na
 
     # boundary doping
