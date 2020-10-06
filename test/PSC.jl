@@ -15,7 +15,7 @@ using PyPlot; PyPlot.pygui(true)
 using Printf
 using DelimitedFiles
 
-function main(;n = 3, pyplot = false, verbose = false, dense = true)
+function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
     # close all windows
     PyPlot.close("all")
@@ -92,10 +92,10 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     # bfacemask!(grid, [h_pdoping],           [h_pdoping],           iregionAcceptor)
     # bfacemask!(grid, [h_pdoping+h_intrinsic], [h_pdoping+h_intrinsic], iregionDonor)
 
-    # if pyplot
-    #     ExtendableGrids.plot(grid, Plotter = PyPlot, p = PyPlot.plot()) 
-    #     PyPlot.title("Grid")
-    # end
+    if pyplot
+        ExtendableGrids.plot(grid, Plotter = PyPlot, p = PyPlot.plot()) 
+        PyPlot.title("Grid")
+    end
     println("*** done\n")
 
     ################################################################################
@@ -388,7 +388,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     sys.boundary_values[iphip, bregionAcceptor] = 0.0 * V
     sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
 
-    I = collect(20.0:-1:0.0)
+    I = collect(1.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 
     prepend!(LAMBDA,0.0)
     #node = 10
@@ -401,18 +401,6 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         #     ChargeTransportInSolids.printJacobi(node, sys)
         # end
     end
-
-    energyEa = Ea_i/eV
-    # if pyplot
-    #     ChargeTransportInSolids.plotDensities(grid, data, solution, " 0.0V, Ea= $energyEa eV")
-    #     #savefig("densities-equilibrium-17$energyEa.eps")
-    #     PyPlot.figure()
-    #     ChargeTransportInSolids.plotEnergies(grid, data, solution, " 0.0V, Ea= $energyEa eV")
-    #     #savefig("energies-equilibrium-17$energyEa.eps")
-    #     PyPlot.figure()
-    #     ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "EQUILIBRIUM")
-    #     #savefig("sol-equilibrium.eps")
-    # end
 
     println("*** done\n")
 
@@ -441,7 +429,6 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
 
     for Δu in biasValues
-        #if Δu < 0.2
         println("Bias value: Δu = $(Δu) (no illumination)")
 
         data.contactVoltage[bregionAcceptor] = Δu
@@ -449,10 +436,6 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         sys.boundary_values[iphip, bregionAcceptor] = Δu
 
         solve!(solution, initialGuess, sys, control = control, tstep = Inf)
-        # if Δu == 0.0
-        #     ChargeTransportInSolids.printJacobi(node, sys)
-        # end
-        # return
         initialGuess .= solution
 
         # get IV curve
@@ -464,43 +447,28 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 
-        # if Δu==maxBias
-        #     sol = [coord solution']
-        #     writedlm("jl-PSC-sol-Boltzmann-SG.dat", sol)
-        # end
-
-        # plotting
-        if pyplot
-            if Δu == maxBias #>0.2 # == maxBias
-            PyPlot.figure()
-            ChargeTransportInSolids.plotDensities(grid, data, solution, "$Δu (no illumination)")
-            #savefig("PSC-sol-$Δu-dens.eps")
-            PyPlot.figure()
-            ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (no illumination)")
-            #PyPlot.figure()
-            #savefig("PSC-sol-$Δu-energy.eps")
-            #PyPlot.figure()
-            #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$Δu (no illumination)")
-            #ChargeTransportInSolids.plotIV(biasValues,IV, Δu)
-            end
-        #end
-    end
+    #     # plotting
+    #     if pyplot
+    #         PyPlot.figure()
+    #         ChargeTransportInSolids.plotDensities(grid, data, solution, "$Δu (no illumination)")
+    #         PyPlot.figure()
+    #         ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (no illumination)")
+    #         #PyPlot.figure()
+    #         #ChargeTransportInSolids.plotIV(biasValues,IV, Δu)
+    # end
 
 
     end # bias loop
-    # sol = [coord solution']
-    # writedlm("PSC-sol.dat", sol)
-
-    # res = [biasValues IV]
-    # writedlm("jl-PSC-IV-Boltzmann-SG.dat", res)
 
     # return IV
     println("*** done\n")
     ################################################################################
     println("Illumination loop")
     ################################################################################ 
-
-    I = collect(10.0:-1:0.0)
+    control.damp_initial      = 0.005
+    control.damp_growth       = 1.2 # >= 1
+    control.max_round         = 7
+    I = collect(15.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 
     prepend!(LAMBDA,0.0)
 
@@ -514,17 +482,79 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         sol = [coord solution']
         writedlm("PSC-illuminated-sol.dat", sol)
     
-    if pyplot
-        PyPlot.figure()
-        ChargeTransportInSolids.plotDensities(grid, data, solution, "$(maxBias) (illuminated)")
-        PyPlot.figure()
-        ChargeTransportInSolids.plotEnergies(grid, data, solution, "$(maxBias) (illuminated)")
-        #PyPlot.figure()
-        #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$(maxBias) (illuminated)")
-    end
-
+    # if pyplot
+    #     PyPlot.figure()
+    #     ChargeTransportInSolids.plotDensities(grid, data, solution, "$(maxBias) (illumination)")
+    #     PyPlot.figure()
+    #     ChargeTransportInSolids.plotEnergies(grid, data, solution, "$(maxBias) (illumination)")
+    #     #PyPlot.figure()
+    #     #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$(maxBias) (illuminated)")
+    # end
+    
     println("*** done\n")
+     ################################################################################
+     println("Reverse Bias loop")
+     ################################################################################
+ 
+     data.inEquilibrium = false
+ 
+     control.damp_initial      = 0.05
+     control.damp_growth       = 1.2 # >= 1
+     control.max_round         = 7
 
+     IV         = zeros(0)
+ 
+     w_device = 1.0 #0.5 * μm     # width of device
+     z_device = 1.0 #1.0e-4 * cm  # depth of device
+
+ 
+     for Δu in reverse(biasValues)
+
+         println("Bias value: Δu = $(Δu) (illumination)")
+ 
+         data.contactVoltage[bregionAcceptor] = Δu
+         sys.boundary_values[iphin, bregionAcceptor] = Δu
+         sys.boundary_values[iphip, bregionAcceptor] = Δu
+ 
+         solve!(solution, initialGuess, sys, control = control, tstep = Inf)
+         # if Δu == 0.0
+         #     ChargeTransportInSolids.printJacobi(node, sys)
+         # end
+         # return
+         initialGuess .= solution
+ 
+         # get IV curve
+         factory = VoronoiFVM.TestFunctionFactory(sys)
+ 
+         # testfunction zero in bregionDonor and one in bregionAcceptor
+         tf     = testfunction(factory, [bregionDonor], [bregionAcceptor])
+         I      = integrate(sys, tf, solution)
+ 
+         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
+ 
+         # if Δu==maxBias
+         #     sol = [coord solution']
+         #     writedlm("jl-PSC-sol-Boltzmann-SG.dat", sol)
+         # end
+ 
+         # plotting
+         if pyplot
+             #if Δu == maxBias #>0.2 # == maxBias
+             #PyPlot.figure()
+             ChargeTransportInSolids.plotDensities(grid, data, solution, "$Δu (illumination)")
+             #savefig("PSC-sol-$Δu-dens.eps")
+             PyPlot.figure()
+             ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (illumination)")
+             PyPlot.figure()
+             #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$Δu (illumination)")
+             #ChargeTransportInSolids.plotIV(biasValues,IV, Δu)
+             #end
+         #end
+     end
+ 
+ 
+     end # bias loop
+     println("*** done\n")
 
     # ################################################################################
     # println("Transient solution")

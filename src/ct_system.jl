@@ -229,6 +229,11 @@ function breaction!(f, u, bnode, data)
     α    = 1.0e-10                          # tiny penalty value
     ipsi = data.numberOfSpecies             # final index for electrostatic potential
 
+    phi_right  = -4.15 * eV 
+    phi_left   = -5.2 * eV 
+    s_left     = [1.0e8*cm/s 1.0e8*cm/s]
+    s_right    = [1.0e8*cm/s 1.0e8*cm/s]
+
     # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...
     ### TESTEN AUF ÄU?EREN RAND 
     # bnode.coord
@@ -246,41 +251,85 @@ function breaction!(f, u, bnode, data)
             
 
         end
-
-        f[ipsi] = -1 / α *  q * data.λ1 * f[ipsi]
      
-    # # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...  
-    # ### TESTEN AUF INNEREN RAND  
+    # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...  
+    ### TESTEN AUF INNEREN RAND  
     # elseif bnode.region == 3 || bnode.region == 4 
-    #     if data.inEquilibrium == true
-    #         for icc = 1:data.numberOfSpecies - 1
-    #             f[icc] = 0.0#u[icc] - 0.0
-    #         end
-    #     else
+
+    #     phi_right  = -4.15 * eV 
+    #     phi_left   = -5.2 * eV 
+    #     s_left     = [1.0e8*cm/s 1.0e8*cm/s]
+    #     s_right    = [1.0e8*cm/s 1.0e8*cm/s]
+
+    #     for icc = 1:data.numberOfSpecies -1
+    #         E      = data.bBandEdgeEnergy[bnode.region,icc] + data.bandEdgeEnergyNode[bnode.index,icc]
+            
     #         if bnode.region == 3
-    #             ireg = 1
+    #             etaFix = data.chargeNumbers[icc] / data.UT * ((phi_left - u[ipsi]) + E / q )
+    #             eta    = data.chargeNumbers[icc] / data.UT * (  (u[icc] - u[ipsi]) + E / q )
+            
+    #             f[icc] = -data.λ1* s_left[icc] * (  data.bDensityOfStates[bnode.region, icc] * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+
     #         elseif bnode.region == 4
-    #             ireg = 2
+    #             etaFix = data.chargeNumbers[icc] / data.UT * ( (phi_right - u[ipsi]) + E / q )
+    #             eta    = data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
+    
+    #             f[icc] = -data.λ1* s_right[icc] * (  data.bDensityOfStates[bnode.region, icc] * (data.F[icc](eta) - data.F[icc](etaFix)  ))
     #         end
-    #         iphin = 1 
-    #         iphip = 2
-    #         sn = 1.0e7 * cm / s
-    #         sp = 1.0e7 * cm / s
+    #     end
+    end
 
-    #         for icc = 1:data.numberOfSpecies - 2
+    f[ipsi] = -1 / α *  q * data.λ1 * f[ipsi]
 
-    #             n = computeDensities(u, data, bnode.index,bnode.region, iphin, ipsi, false) 
-    #             p = computeDensities(u, data, bnode.index, bnode.region, iphip, ipsi, false) 
-                
-    #             # surface recombination
-    #             f[icc] = 1 / (  1/sp*(n+ ( data.recombinationSRHTrapDensity[ireg,iphin] + data.recombinationSRHTrapDensity[ireg+1, iphin])/2  ) 
-    #             + 1/sn*(p+ (data.recombinationSRHTrapDensity[ireg,iphip] + data.recombinationSRHTrapDensity[ireg+1, iphip] )/2 ) )
-                
-    #             f[icc]  =   q  *data.chargeNumbers[icc] * f[icc] * n * p * ( 1 - exp( (u[iphin]-u[iphip])/data.UT )  )
-    #         end
 
-    #     f[3] = u[3] - 0.0
-    # end
+end
+
+
+
+function breactionCalado!(f, u, bnode, data)
+
+    # parameters
+    α    = 1.0 / VoronoiFVM.Dirichlet       # tiny penalty value
+    α    = 1.0e-10                          # tiny penalty value
+    ipsi = data.numberOfSpecies             # final index for electrostatic potential
+
+    phi_right  = -4.15 * eV 
+    phi_left   = -5.2 * eV 
+    s_left     = [1.0e8*cm/s 1.0e8*cm/s]
+    s_right    = [1.0e8*cm/s 1.0e8*cm/s]
+
+     # für die Daten aus Calado 2016
+    #  phi_right  = -5.25 * eV 
+    #  phi_left   = -3.95 * eV 
+    #  s_left     = [1.0e7*cm/s 1.0e7*cm/s]
+    #  s_right    = [1.0e7*cm/s 1.0e7*cm/s]
+
+    # bnode.coord
+    if bnode.region == 1
+        f[ipsi] = 0.0
+
+    elseif bnode.region == 2
+        f[ipsi] =  data.λ1 * ((phi_right - phi_left)/q )+  data.contactVoltage[bnode.region]  
+    end
+
+    for icc = 1:data.numberOfSpecies - 1
+        E      = data.bBandEdgeEnergy[bnode.region,icc] + data.bandEdgeEnergyNode[bnode.index,icc]
+
+        if bnode.region == 1
+
+        etaFix = data.chargeNumbers[icc] / data.UT * ((phi_left - u[ipsi]) + E / q )
+        eta    = data.chargeNumbers[icc] / data.UT * (  (u[icc] - u[ipsi]) + E / q )
+
+        f[icc] = -data.λ1* s_left[icc] * (  data.bDensityOfStates[bnode.region, icc] * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+
+        elseif bnode.region == 2
+
+        etaFix = data.chargeNumbers[icc] / data.UT * ( (phi_right - u[ipsi]) + E / q )
+        eta    = data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
+
+        f[icc] = -data.λ1* s_right[icc] * (  data.bDensityOfStates[bnode.region, icc] * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+
+        end
 
     end
 

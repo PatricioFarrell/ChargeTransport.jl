@@ -100,7 +100,7 @@ function plotEnergies(grid, data, sol, Δu)
     labelBandEdgeEnergy = ["\$E_c-\\psi\$ ", "\$E_v-\\psi\$ ", "\$E_a-\\psi\$ ", "\$E_{cat}-\\psi\$ "]
     labelPotential = ["\$ - q \\varphi_n\$", "\$ - q \\varphi_p\$", "\$ - q \\varphi_a\$", "\$ - q \\varphi_c\$"]
 
-    for icc in 1:data.numberOfSpecies - 2
+    for icc in 1:2
 
         # first cell
         ireg = cellregions[1]
