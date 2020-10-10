@@ -386,7 +386,7 @@ function reaction!(f, u, node, data)
     for icc = 1:data.numberOfSpecies - 1
         
         eta     = etaFunction(u, node, data, icc, ipsi) 
-        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.doping[node.region,icc]                               # subtract doping
+        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * (data.doping[node.region,icc] + data.dopingNode[node.index,icc])  # subtract doping
         f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
 
     end
