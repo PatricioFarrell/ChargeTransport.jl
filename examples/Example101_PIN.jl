@@ -350,7 +350,7 @@ end #  main
 
 function test()
     testval=2.8499930065732104
-    main(test = true, unknown_storage=:dense) ≈ testval && main(unknown_storage=:sparse) ≈ testval
+    main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 println("This message should show when the PIN module is successfully recompiled.")

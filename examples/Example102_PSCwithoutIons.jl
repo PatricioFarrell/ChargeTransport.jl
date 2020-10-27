@@ -336,7 +336,7 @@ end #  main
 
 function test()
     testval=-4.196344422098774
-    main(test = true, unknown_storage=:dense) ≈ testval && main(unknown_storage=:sparse) ≈ testval
+    main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 
