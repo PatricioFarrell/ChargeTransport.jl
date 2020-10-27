@@ -1,8 +1,9 @@
 """
 Simulating charge transport in a GAs pin diode.
+The simulations are performed out of equilibrium.
 """
 
-module PIN
+module Example101_PIN
 
 using VoronoiFVM
 using ChargeTransportInSolids
@@ -22,7 +23,7 @@ function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping
 end
 
 
-function main(;n = 3, pyplot = false, verbose = false, dense = true)
+function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_storage=:sparse)
 
     # close all windows
     PyPlot.close("all")
@@ -66,10 +67,10 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     # indices
-    iphin           = 1
-    iphip           = 2
-    ipsi            = 3
-    species         = [iphin, iphip, ipsi]
+    iphin                   = 1
+    iphip                   = 2
+    ipsi                    = 3
+    species                 = [iphin, iphip, ipsi]
 
     # number of (boundary) regions and carriers
     numberOfRegions         = length(regions)
@@ -77,34 +78,34 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     numberOfSpecies         = length(species)
 
     # physical data
-    Ec   = 1.424                *  eV
-    Ev   = 0.0                  *  eV
-    Nc   = 4.351959895879690e17 / (cm^3)
-    Nv   = 9.139615903601645e18 / (cm^3)
-    mun  = 8500.0               * (cm^2) / (V * s)
-    mup  = 400.0                * (cm^2) / (V * s)
-    εr   = 12.9                 *  1.0              # relative dielectric permittivity of GAs
-    T    = 300.0                *  K
+    Ec                = 1.424                *  eV
+    Ev                = 0.0                  *  eV
+    Nc                = 4.351959895879690e17 / (cm^3)
+    Nv                = 9.139615903601645e18 / (cm^3)
+    mun               = 8500.0               * (cm^2) / (V * s)
+    mup               = 400.0                * (cm^2) / (V * s)
+    εr                = 12.9                 *  1.0              # relative dielectric permittivity of GAs
+    T                 = 300.0                *  K
 
 
     # recombination parameters
-    Auger           = 1.0e-29   * cm^6 / s          # 1.0e-41
-    SRH_TrapDensity = 1.0e10    / cm^3              # 1.0e16
-    SRH_LifeTime    = 1.0       * ns                # 1.0e10
-    Radiative       = 1.0e-10   * cm^3 / s          # 1.0e-16
+    Auger             = 1.0e-29   * cm^6 / s          # 1.0e-41
+    SRH_TrapDensity   = 1.0e10    / cm^3              # 1.0e16
+    SRH_LifeTime      = 1.0       * ns                # 1.0e10
+    Radiative         = 1.0e-10   * cm^3 / s          # 1.0e-16
 
     # doping
-    dopingFactorNd =   1.0
-    dopingFactorNa =   0.46
-    Nd             =   dopingFactorNd * Nc
-    Na             =   dopingFactorNa * Nv
+    dopingFactorNd    =   1.0
+    dopingFactorNa    =   0.46
+    Nd                =   dopingFactorNd * Nc
+    Na                =   dopingFactorNa * Nv
 
     # intrinsic concentration (not doping!)
-    ni             =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) 
+    ni                =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) 
 
     # contact voltages
-    voltageAcceptor     = 3.0 * V
-    voltageDonor        = 0.0 * V
+    voltageAcceptor   = 3.0 * V
+    voltageDonor      = 0.0 * V
 
     println("*** done\n")
 
@@ -137,19 +138,19 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     # interior region data
     for ireg in 1:numberOfRegions
 
-        data.dielectricConstant[ireg]    = εr
+        data.dielectricConstant[ireg]                = εr
 
         # dos, band edge energy and mobilities
-        data.densityOfStates[ireg,iphin] = Nc
-        data.densityOfStates[ireg,iphip] = Nv
-        data.bandEdgeEnergy[ireg,iphin]  = Ec
-        data.bandEdgeEnergy[ireg,iphip]  = Ev
-        data.mobility[ireg,iphin]        = mun
-        data.mobility[ireg,iphip]        = mup
+        data.densityOfStates[ireg,iphin]             = Nc
+        data.densityOfStates[ireg,iphip]             = Nv
+        data.bandEdgeEnergy[ireg,iphin]              = Ec
+        data.bandEdgeEnergy[ireg,iphip]              = Ev
+        data.mobility[ireg,iphin]                    = mun
+        data.mobility[ireg,iphip]                    = mup
 
         # recombination parameters
-        data.recombinationRadiative[ireg]      = Radiative
-        data.recombinationRadiative[ireg]      = Radiative
+        data.recombinationRadiative[ireg]            = Radiative
+        data.recombinationRadiative[ireg]            = Radiative
         data.recombinationSRHLifetime[ireg,iphin]    = SRH_LifeTime
         data.recombinationSRHLifetime[ireg,iphip]    = SRH_LifeTime
         data.recombinationSRHTrapDensity[ireg,iphin] = SRH_TrapDensity
@@ -171,7 +172,9 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
     data.γ = 1.0
     # print data
-    println(data)
+    if test == false
+        println(data)
+    end
 
     println("*** done\n")
 
@@ -198,11 +201,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     breaction   = ChargeTransportInSolids.breaction!
     )
 
-    if dense
-        sys = VoronoiFVM.System(grid, physics, unknown_storage = :dense)
-    else
-        sys = VoronoiFVM.System(grid, physics, unknown_storage = :sparse)
-    end
+    sys         = VoronoiFVM.System(grid,physics,unknown_storage=unknown_storage)
 
     # enable all three species in all regions
     enable_species!(sys, ipsi,  regions)
@@ -259,8 +258,7 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
     # ChargeTransportInSolids.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
     
     function pre(u,lambda)
-        sys.physics.data.λ1 = lambda
-        # sys.physics.data.contactVoltage[bregionAcceptor] = lambda * 3.0
+        sys.physics.data.λ1                         = lambda
         sys.boundary_values[iphin, bregionAcceptor] = 0.0
         sys.boundary_values[iphip, bregionAcceptor] = 0.0
     end
@@ -279,26 +277,15 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
 
 
     for i in 1:length(LAMBDA)
-        println("λ1 = $(LAMBDA[i])")
+        if test == false
+            println("λ1 = $(LAMBDA[i])")
+        end
         sys.physics.data.λ1 = LAMBDA[i]
         solve!(solution, initialGuess, sys, control = control, tstep=Inf)
         initialGuess = solution
     end
 
-
-    # if pyplot
-    #     ChargeTransportInSolids.plotDensities(grid, data, solution, "EQUILIBRIUM")
-    #     PyPlot.figure()
-    #     ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQUILIBRIUM")
-    #     PyPlot.figure()
-    # end
-
-    # @assert 1==0
-
-
     println("*** done\n")
-
-
 
     ################################################################################
     println("Bias loop")
@@ -354,10 +341,17 @@ function main(;n = 3, pyplot = false, verbose = false, dense = true)
         end
 
     end # bias loop
+    testval = solution[15]
+    return testval
 
     println("*** done\n")
 
 end #  main
+
+function test()
+    testval=2.8499930065732104
+    main(test = true, unknown_storage=:dense) ≈ testval && main(unknown_storage=:sparse) ≈ testval
+end
 
 println("This message should show when the PIN module is successfully recompiled.")
 

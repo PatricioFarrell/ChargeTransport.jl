@@ -143,7 +143,7 @@ function plotEnergies(grid, data, sol, Δu)
    end
    
     PyPlot.grid()
-    PyPlot.xlabel("space [\$ m\$]")
+    PyPlot.xlabel("space [\$m\$]")
     PyPlot.ylabel("energies [\$eV\$]")
     PyPlot.legend(fancybox = true, loc = "best")
     PyPlot.title("bias \$\\Delta u\$ = $Δu")
