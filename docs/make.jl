@@ -1,4 +1,4 @@
 using Documenter
-using DDFermi
+using ChargeTransportInSolids
 
-makedocs(sitename="DDFermi documentation")
+makedocs(sitename="ChargeTransportInSolids documentation")

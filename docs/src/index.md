@@ -1,3 +1,3 @@
 ```@autodocs
-Modules = [DDFermi]
+Modules = [ChargeTransportInSolids]
 ```
