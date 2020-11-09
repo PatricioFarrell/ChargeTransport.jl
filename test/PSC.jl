@@ -75,7 +75,6 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     coord_n_u       = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_ndoping/(0.5*δ)))
 
     coord           = glue(coord_p_u,coord_p_g,  tol=10*t) 
-    length_pcoord = length(coord)
     coord           = glue(coord,    coord_i_g1, tol=10*t)
     coord           = glue(coord,    coord_i_g2, tol=10*t) 
     coord           = glue(coord,    coord_n_g,  tol=10*t)
@@ -103,8 +102,6 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     # indices
-    iphin, iphip, ipsi        = 1:3
-    species                   = [iphin, iphip, ipsi]
     iphin, iphip, iphia, ipsi = 1:4
     species         = [iphin, iphip, iphia, ipsi]
 
@@ -240,22 +237,22 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
     # boundary region data
     for ibreg in bregions
-        data.bDensityOfStates[ibreg,iphin] = Nc
-        data.bDensityOfStates[ibreg,iphip] = Nv
-        data.bDensityOfStates[ibreg,iphia] = 0.0
+        data.bDensityOfStates[iphin, ibreg] = Nc
+        data.bDensityOfStates[iphip, ibreg] = Nv
+        data.bDensityOfStates[iphia, ibreg] = 0.0
     end
 
-    data.bBandEdgeEnergy[bregionAcceptor,iphin]  = Ec_a + data.Eref
-    data.bBandEdgeEnergy[bregionAcceptor,iphip]  = Ev_a + data.Eref
+    data.bBandEdgeEnergy[iphin, bregionAcceptor]  = Ec_a + data.Eref
+    data.bBandEdgeEnergy[iphip, bregionAcceptor]  = Ev_a + data.Eref
 
-    # data.bBandEdgeEnergy[iregionAcceptor, iphin]        =  Ec_a + data.Eref
-    # data.bBandEdgeEnergy[iregionAcceptor, iphip]        =  Ev_a + data.Eref
+    # data.bBandEdgeEnergy[iphin, iregionAcceptor]        =  Ec_a + data.Eref
+    # data.bBandEdgeEnergy[iphip, iregionAcceptor]        =  Ev_a + data.Eref
 
-    data.bBandEdgeEnergy[bregionDonor,iphin]     = Ec_d + data.Eref
-    data.bBandEdgeEnergy[bregionDonor,iphip]     = Ev_d + data.Eref
+    data.bBandEdgeEnergy[iphin, bregionDonor]     = Ec_d + data.Eref
+    data.bBandEdgeEnergy[iphip, bregionDonor]     = Ev_d + data.Eref
 
-    # data.bBandEdgeEnergy[iregionDonor, iphin]         =  Ec_a + data.Eref
-    # data.bBandEdgeEnergy[iregionDonor, iphip]         =  Ev_a + data.Eref
+    # data.bBandEdgeEnergy[iphin, iregionDonor]         =  Ec_a + data.Eref
+    # data.bBandEdgeEnergy[iphip, iregionDonor]         =  Ev_a + data.Eref
 
     # interior region data
     for ireg in 1:numberOfRegions
@@ -263,42 +260,42 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
         data.dielectricConstant[ireg]    = ε[ireg]
 
         # dos, band edge energy and mobilities
-        data.densityOfStates[ireg,iphin] = NC[ireg]
-        data.densityOfStates[ireg,iphip] = NV[ireg]
-        data.densityOfStates[ireg,iphia] = NA[ireg]
+        data.densityOfStates[iphin,ireg] = NC[ireg]
+        data.densityOfStates[iphip, ireg] = NV[ireg]
+        data.densityOfStates[iphia, ireg] = NA[ireg]
 
-        data.bandEdgeEnergy[ireg,iphin]  = EC[ireg] + data.Eref
-        data.bandEdgeEnergy[ireg,iphip]  = EV[ireg] + data.Eref
-        data.bandEdgeEnergy[ireg,iphia]  = EA[ireg] + data.Eref
-        data.mobility[ireg,iphin]        = μn[ireg]
-        data.mobility[ireg,iphip]        = μp[ireg]
-        data.mobility[ireg,iphia]        = μa[ireg]
+        data.bandEdgeEnergy[iphin, ireg]  = EC[ireg] + data.Eref
+        data.bandEdgeEnergy[iphip,ireg]  = EV[ireg] + data.Eref
+        data.bandEdgeEnergy[iphia,ireg]  = EA[ireg] + data.Eref
+        data.mobility[iphin,ireg]        = μn[ireg]
+        data.mobility[iphip, ireg]        = μp[ireg]
+        data.mobility[iphia, ireg]        = μa[ireg]
 
         # recombination parameters
         data.recombinationRadiative[ireg]            = r0[ireg]
-        data.recombinationSRHLifetime[ireg,iphin]    = τn[ireg]
-        data.recombinationSRHLifetime[ireg,iphip]    = τp[ireg]
-        data.recombinationSRHTrapDensity[ireg,iphin] = ChargeTransportInSolids.trapDensity(iphin, ireg, data, EI[ireg])
-        data.recombinationSRHTrapDensity[ireg,iphip] = ChargeTransportInSolids.trapDensity(iphip, ireg, data, EI[ireg])
-        data.recombinationAuger[ireg,iphin]          = Auger
-        data.recombinationAuger[ireg,iphip]          = Auger
+        data.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
+        data.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
+        data.recombinationSRHTrapDensity[iphin, ireg] = ChargeTransportInSolids.trapDensity(iphin, ireg, data, EI[ireg])
+        data.recombinationSRHTrapDensity[iphip, ireg] = ChargeTransportInSolids.trapDensity(iphip, ireg, data, EI[ireg])
+        data.recombinationAuger[iphin, ireg]          = Auger
+        data.recombinationAuger[iphip, ireg]          = Auger
 
         data.generationEmittedLight[ireg]            = generationEmittedLight[ireg]
 
     end
 
     # interior doping
-    data.doping[regionAcceptor,iphip]   = Na 
-    data.doping[regionAcceptor,iphia]   = 0.0        #                  ni   ni  C0; 
-    data.doping[regionIntrinsic,iphin]  = 0.0#ni        #                  0.0  Na  0.0]
-    data.doping[regionIntrinsic,iphip]  = 0.0#ni        
-    data.doping[regionIntrinsic,iphia]  = C0        
-    data.doping[regionDonor,iphin]      = Nd        # data.doping   = [Nd  0.0  0.0;                   
-    data.doping[regionDonor,iphia]      = 0.0
+    data.doping[iphip, regionAcceptor]   = Na 
+    data.doping[iphia, regionAcceptor]   = 0.0        #                  ni   ni  C0; 
+    data.doping[iphin, regionIntrinsic]  = 0.0#ni        #                  0.0  Na  0.0]
+    data.doping[iphip, regionIntrinsic]  = 0.0#ni        
+    data.doping[iphia, regionIntrinsic]  = C0        
+    data.doping[iphin, regionDonor]      = Nd        # data.doping   = [Nd  0.0  0.0;                   
+    data.doping[iphia,regionDonor]      = 0.0
 
     # boundary doping
-    data.bDoping[bregionAcceptor,iphip] = Na        # data.bDoping  = [Nd  0.0;
-    data.bDoping[bregionDonor,iphin]    = Nd        #                  0.0  Na]
+    data.bDoping[iphip, bregionAcceptor] = Na        # data.bDoping  = [Nd  0.0;
+    data.bDoping[iphin, bregionDonor]    = Nd        #                  0.0  Na]
 
     # print data
     println(data)
@@ -539,7 +536,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
  
          # plotting
          if pyplot
-             #if Δu == maxBias #>0.2 # == maxBias
+             if Δu == maxBias #>0.2 # == maxBias
              #PyPlot.figure()
              ChargeTransportInSolids.plotDensities(grid, data, solution, "$Δu (illumination)")
              #savefig("PSC-sol-$Δu-dens.eps")
@@ -548,7 +545,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
              PyPlot.figure()
              #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$Δu (illumination)")
              #ChargeTransportInSolids.plotIV(biasValues,IV, Δu)
-             #end
+             end
          #end
      end
  

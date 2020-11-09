@@ -107,20 +107,20 @@ function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, num
     Array{Float64,1}(undef,numberOfSpecies-1),                               # chargeNumbers
     fill!(similar(Array{Function,1}(undef,numberOfSpecies-1),Function),exp), # F (Boltzmann)
 
-    # number of boundary regions x number of carriers
-    Array{Float64,2}(undef,numberOfBoundaryRegions,numberOfSpecies-1),       # bBandEdgeEnergy
-    Array{Float64,2}(undef,numberOfBoundaryRegions,numberOfSpecies-1),       # bDensityOfStates
-    zeros(Float64,         numberOfBoundaryRegions,numberOfSpecies-1),       # bDoping
+    # number of carriers x number of boundary regions
+    Array{Float64,2}(undef,numberOfSpecies-1, numberOfBoundaryRegions),       # bBandEdgeEnergy
+    Array{Float64,2}(undef,numberOfSpecies-1, numberOfBoundaryRegions),       # bDensityOfStates
+    zeros(Float64,         numberOfSpecies-1, numberOfBoundaryRegions),       # bDoping
 
-    # number of regions x number of charge carriers
-    zeros(Float64,      numberOfRegions,numberOfSpecies-1),                  # doping
+    # number of charge carriers x number of regions
+    zeros(Float64,      numberOfSpecies-1,numberOfRegions),                  # doping
 
-    Array{Float64,2}(undef,numberOfRegions,numberOfSpecies-1),               # densityOfStates
-    Array{Float64,2}(undef,numberOfRegions,numberOfSpecies-1),               # bandEdgeEnergy
-    Array{Float64,2}(undef,numberOfRegions,numberOfSpecies-1),               # mobility
-    Array{Float64,2}(undef,numberOfRegions,2),                               # recombinationSRHLifetime
-    Array{Float64,2}(undef,numberOfRegions,2),                               # recombinationSRHTrapDensity
-    Array{Float64,2}(undef,numberOfRegions,2),                               # recombinationAuger
+    Array{Float64,2}(undef,numberOfSpecies-1,numberOfRegions),               # densityOfStates
+    Array{Float64,2}(undef,numberOfSpecies-1,numberOfRegions),               # bandEdgeEnergy
+    Array{Float64,2}(undef,numberOfSpecies-1,numberOfRegions),               # mobility
+    Array{Float64,2}(undef,2,numberOfRegions),                               # recombinationSRHLifetime
+    Array{Float64,2}(undef,2,numberOfRegions),                               # recombinationSRHTrapDensity
+    Array{Float64,2}(undef,2,numberOfRegions),                               # recombinationAuger
 
     # number of regions
     Array{Float64,1}(undef,numberOfRegions),                                 # dielectricConstant
@@ -129,10 +129,10 @@ function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, num
     Array{Float64,1}(undef,numberOfRegions),                                 # generationAbsorption
     Array{Float64,1}(undef,numberOfRegions),                                 # recombinationRadiative
 
-    # number of nodes x number of carriers
-    spzeros(Float64,numberOfNodes,numberOfSpecies-1),                        # dopingNode
-    spzeros(Float64,numberOfNodes,numberOfSpecies-1),                        # densityOfStatesNode
-    spzeros(Float64,numberOfNodes,numberOfSpecies-1)                         # bandEdgeEnergyNode
+    # number of carriers x number of nodes
+    spzeros(Float64,numberOfSpecies-1,numberOfNodes),                        # dopingNode
+    spzeros(Float64,numberOfSpecies-1,numberOfNodes),                        # densityOfStatesNode
+    spzeros(Float64,numberOfSpecies-1,numberOfNodes)                         # bandEdgeEnergyNode
     )
 
 end
@@ -154,7 +154,7 @@ The argument of the distribution function for interior nodes:
 
 """
 function etaFunction(u, node::VoronoiFVM.Node, data::ChargeTransportInSolids.ChargeTransportData, icc::Int64, ipsi::Int64)
-    E  = data.bandEdgeEnergy[node.region,icc] + data.bandEdgeEnergyNode[node.index,icc]
+    E  = data.bandEdgeEnergy[icc, node.region] + data.bandEdgeEnergyNode[icc, node.index]
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 
@@ -168,7 +168,7 @@ The argument of the distribution function for boundary nodes:
 
 function etaFunction(u, bnode::VoronoiFVM.BNode, data::ChargeTransportInSolids.ChargeTransportData, icc::Int64, ipsi::Int64)
     # bnode.index refers to index in overall mesh
-    E  = data.bBandEdgeEnergy[bnode.region,icc] + data.bandEdgeEnergyNode[bnode.index,icc]
+    E  = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
     data.chargeNumbers[icc] / data.UT * ( (data.contactVoltage[bnode.region] - u[ipsi]) + E / q )
 end
 
@@ -183,7 +183,7 @@ The argument of the distribution function for edges:
 """
 
 function etaFunction(u, edge::VoronoiFVM.Edge, data::ChargeTransportInSolids.ChargeTransportData, icc::Int64, ipsi::Int64)
-    E  = data.bandEdgeEnergy[edge.region,icc] + data.bandEdgeEnergyNode[edge.icell,icc] # icell: Number of discretization cell the edge is invoked from
+    E  = data.bandEdgeEnergy[icc, edge.region] + data.bandEdgeEnergyNode[icc, edge.icell] # icell: Number of discretization cell the edge is invoked from
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 
@@ -225,9 +225,9 @@ for all charge carriers `icc`.
 function breaction!(f, u, bnode, data)
 
     # parameters
-    α    = 1.0 / VoronoiFVM.Dirichlet         # tiny penalty value
-    α    = 1.0e-10                          # tiny penalty value
-    ipsi = data.numberOfSpecies             # final index for electrostatic potential
+    α          = 1.0 / VoronoiFVM.Dirichlet         # tiny penalty value
+    α          = 1.0e-10                          # tiny penalty value
+    ipsi       = data.numberOfSpecies             # final index for electrostatic potential
 
     phi_right  = -4.15 * eV 
     phi_left   = -5.2 * eV 
@@ -241,10 +241,10 @@ function breaction!(f, u, bnode, data)
 
         for icc = 1:data.numberOfSpecies - 1
 
-            eta = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
+            eta     = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
 
-            f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.bDoping[bnode.region,icc]                             # subtract doping
-            f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[bnode.region,icc] * data.F[icc](eta)  # add charge carrier
+            f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * data.bDoping[icc, bnode.region]                             # subtract doping
+            f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.bDensityOfStates[icc, bnode.region] * data.F[icc](eta)  # add charge carrier
 
             # boundary conditions for charge carriers are set in main program
             f[icc]  = 0.0
@@ -289,14 +289,14 @@ end
 function breactionCalado!(f, u, bnode, data)
 
     # parameters
-    α    = 1.0 / VoronoiFVM.Dirichlet       # tiny penalty value
-    α    = 1.0e-10                          # tiny penalty value
-    ipsi = data.numberOfSpecies             # final index for electrostatic potential
+    α         = 1.0 / VoronoiFVM.Dirichlet       # tiny penalty value
+    α         = 1.0e-10                          # tiny penalty value
+    ipsi      = data.numberOfSpecies             # final index for electrostatic potential
 
-    phi_right  = -4.15 * eV 
-    phi_left   = -5.2 * eV 
-    s_left     = [1.0e8*cm/s 1.0e8*cm/s]
-    s_right    = [1.0e8*cm/s 1.0e8*cm/s]
+    phi_right = -4.15 * eV 
+    phi_left  = -5.2 * eV 
+    s_left    = [1.0e8*cm/s 1.0e8*cm/s]
+    s_right   = [1.0e8*cm/s 1.0e8*cm/s]
 
      # für die Daten aus Calado 2016
     #  phi_right  = -5.25 * eV 
@@ -313,24 +313,21 @@ function breactionCalado!(f, u, bnode, data)
     end
 
     for icc = 1:data.numberOfSpecies - 1
-        E      = data.bBandEdgeEnergy[bnode.region,icc] + data.bandEdgeEnergyNode[bnode.index,icc]
+        E          = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
 
         if bnode.region == 1
+            etaFix = data.chargeNumbers[icc] / data.UT * ((phi_left - u[ipsi]) + E / q )
+            eta    = data.chargeNumbers[icc] / data.UT * (  (u[icc] - u[ipsi]) + E / q )
 
-        etaFix = data.chargeNumbers[icc] / data.UT * ((phi_left - u[ipsi]) + E / q )
-        eta    = data.chargeNumbers[icc] / data.UT * (  (u[icc] - u[ipsi]) + E / q )
-
-        f[icc] = -data.λ1* s_left[icc] * (  data.bDensityOfStates[bnode.region, icc] * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+            f[icc] = -data.λ1* s_left[icc] * (  data.bDensityOfStates[icc, bnode.region] * (data.F[icc](eta) - data.F[icc](etaFix)  ))
 
         elseif bnode.region == 2
+            etaFix = data.chargeNumbers[icc] / data.UT * ( (phi_right - u[ipsi]) + E / q )
+            eta    = data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 
-        etaFix = data.chargeNumbers[icc] / data.UT * ( (phi_right - u[ipsi]) + E / q )
-        eta    = data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
-
-        f[icc] = -data.λ1* s_right[icc] * (  data.bDensityOfStates[bnode.region, icc] * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+            f[icc] = -data.λ1* s_right[icc] * (  data.bDensityOfStates[icc, bnode.region] * (data.F[icc](eta) - data.F[icc](etaFix)  ))
 
         end
-
     end
 
 end
@@ -372,62 +369,61 @@ that the electron index is 1 and the hole index is 2.
 function reaction!(f, u, node, data)
 
     # indices
-    iphin = 1
-    iphip = 2
-    ipsi  = data.numberOfSpecies             # final index for electrostatic potential
-    ireg  = node.region
-    inode = node.index
-    n = computeDensities(u, data, inode, ireg, iphin, ipsi, true)  #*exp(data.Eref/(kB*data.temperature))  # true for interior region
-    p = computeDensities(u, data, inode, ireg, iphip, ipsi, true) #* exp(-data.Eref/(kB*data.temperature))
-    exponentialTerm = exp((q *u[iphin] - q  * u[iphip]) / (kB*data.temperature))
+    iphin                 = 1
+    iphip                 = 2
+    ipsi                  = data.numberOfSpecies             # final index for electrostatic potential
+    ireg                  = node.region
+    inode                 = node.index
+    n                     = computeDensities(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
+    p                     = computeDensities(u, data, inode, ireg, iphip, ipsi, true) 
+    exponentialTerm       = exp((q *u[iphin] - q  * u[iphip]) / (kB*data.temperature))
     excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
 
     # rhs of NLP (charge density)
     for icc = 1:data.numberOfSpecies - 1
         
         eta     = etaFunction(u, node, data, icc, ipsi) 
-        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * (data.doping[node.region,icc] + data.dopingNode[node.index,icc])  # subtract doping
-        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[node.region,icc] * data.F[icc](eta)   # add charge carrier
+        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * (data.doping[icc, node.region] + data.dopingNode[icc, node.index])  # subtract doping
+        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[icc, node.region] * data.F[icc](eta)   # add charge carrier
 
     end
 
     # rhs of continuity equations for electron and holes (bipolar reaction)
     
     if data.inEquilibrium == true 
-        for icc = 1:data.numberOfSpecies - 1
 
+        for icc = 1:data.numberOfSpecies - 1
          f[icc] = u[icc] - 0.0
         end
 
     else
         for icc in [iphin, iphip] 
-            if data.recombinationOn == true
-                
+
+            if data.recombinationOn == true   
                 # radiative recombination
                 kernelRadiative = data.recombinationRadiative[ireg]
                 
                 # Auger recombination
-                kernelAuger = (data.recombinationAuger[ireg,iphin] * n + data.recombinationAuger[ireg,iphip] * p)
+                kernelAuger     = (data.recombinationAuger[iphin, ireg] * n + data.recombinationAuger[iphip, ireg] * p)
                 
                 # SRH recombination
-                kernelSRH = 1.0 / (  data.recombinationSRHLifetime[ireg,iphip] * (n + data.recombinationSRHTrapDensity[ireg,iphin]) + data.recombinationSRHLifetime[ireg,iphin] * (p + data.recombinationSRHTrapDensity[ireg,iphip]) )
+                kernelSRH       = 1.0 / (  data.recombinationSRHLifetime[iphip, ireg] * (n + data.recombinationSRHTrapDensity[iphin, ireg]) + data.recombinationSRHLifetime[iphin, ireg] * (p + data.recombinationSRHTrapDensity[iphip, ireg]) )
                 
                 # full recombination
-                f[icc]  = q* data.chargeNumbers[icc]* (kernelRadiative + kernelAuger + kernelSRH)*  excessCarrierDensTerm  - q * data.chargeNumbers[icc] * generation(data, ireg)
-            else
+                f[icc]          = q* data.chargeNumbers[icc]* (kernelRadiative + kernelAuger + kernelSRH)*  excessCarrierDensTerm  - q * data.chargeNumbers[icc] * generation(data, ireg)
 
-                f[icc]  = 0.0 #- q * data.chargeNumbers[icc] * generation(data, ireg)
-            
+            else
+                f[icc]          = 0.0 #- q * data.chargeNumbers[icc] * generation(data, ireg) 
             end
         end
 
         for icc in iphip+1:data.numberOfSpecies-1
-            f[icc] = u[icc] - 0.0
+            f[icc]              = u[icc] - 0.0
         end
     
     end
     
-    f[ipsi] = - q * data.λ1 * f[ipsi]
+    f[ipsi]                     = - q * data.λ1 * f[ipsi]
 end
 
 
@@ -441,12 +437,14 @@ Hence, we have ``f[c_i] =  z_i  q ∂_t c_i`` and for the electrostatic potentia
 """
 
 function storage!(f, u, node, data)
-    ipsi = data.numberOfSpecies
+    ipsi       = data.numberOfSpecies
     
     for icc = 1:data.numberOfSpecies - 1
-        eta = etaFunction(u, node, data, icc, ipsi) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
-        f[icc] = data.chargeNumbers[icc] * data.densityOfStates[node.region, icc] * data.F[icc](eta)
+
+        eta    = etaFunction(u, node, data, icc, ipsi) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
+        f[icc] = data.chargeNumbers[icc] * data.densityOfStates[icc, node.region] * data.F[icc](eta)
     end
+
     f[ipsi] = 0.0
 end
 
@@ -457,9 +455,7 @@ Compute trap densities. Currently, only done for the Boltzmann statistics.
 
 """
 function trapDensity(icc, ireg, data, Et) 
-
-return data.densityOfStates[ireg, icc] * exp( data.chargeNumbers[icc] * (data.bandEdgeEnergy[ireg, icc] - Et) / (kB * data.temperature)) # need to subtract Eref
-
+    data.densityOfStates[icc, ireg] * exp( data.chargeNumbers[icc] * (data.bandEdgeEnergy[icc, ireg] - Et) / (kB * data.temperature)) # need to subtract Eref
 end
 
 
@@ -471,15 +467,14 @@ The classical Scharfetter-Gummel flux scheme.
 """
 
 function ScharfetterGummel!(f, u, edge, data)
-    uk  = viewK(edge, u)
-    ul  = viewL(edge, u)
+    uk       = viewK(edge, u)
+    ul       = viewL(edge, u)
     
-    ipsi = data.numberOfSpecies
-    ireg = edge.region
+    ipsi     = data.numberOfSpecies
+    ireg     = edge.region
     
     dpsi     = ul[ipsi] - uk[ipsi]
-    
-    f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
+    f[ipsi]  = - data.dielectricConstant[ireg] * ε0 * dpsi
     
     if data.inEquilibrium == true # return zero flux in equilibrium
         return
@@ -487,18 +482,17 @@ function ScharfetterGummel!(f, u, edge, data)
     
     for icc = 1:data.numberOfSpecies - 1
 
-        j0    =  data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
+        j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
-        etak  = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi)
-        etal  = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi)
+        etak               = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi)
+        etal               = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi)
 
-        nodel = edge.node[2]
-        nodek = edge.node[1]
+        nodel              = edge.node[2]
+        nodek              = edge.node[1]
+        bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
 
-        bandEdgeDifference = data.bandEdgeEnergyNode[nodel, icc] - data.bandEdgeEnergyNode[nodek, icc]
-
-        bp, bm = fbernoulli_pm(data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / data.UT)
-        f[icc] = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
+        bp, bm             = fbernoulli_pm(data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / data.UT)
+        f[icc]             = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
     
     end
 
@@ -514,11 +508,11 @@ The Sedan flux scheme.
 
 function Sedan!(f, u, edge, data)
     
-    uk  = viewK(edge, u)
-    ul  = viewL(edge, u)
+    uk       = viewK(edge, u)
+    ul       = viewL(edge, u)
     
-    ipsi = data.numberOfSpecies
-    ireg = edge.region
+    ipsi     = data.numberOfSpecies
+    ireg     = edge.region
     
     dpsi     = ul[ipsi] - uk[ipsi]
     f[ipsi]  = - data.dielectricConstant[ireg] * ε0 * dpsi
@@ -529,16 +523,17 @@ function Sedan!(f, u, edge, data)
     
     for icc = 1:data.numberOfSpecies - 1
 
-        j0       =  data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
+        j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
-        etak = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u, edge, data, icc, ipsi)
-        etal = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u, edge, data, icc, ipsi)
+        etak               = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u, edge, data, icc, ipsi)
+        etal               = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u, edge, data, icc, ipsi)
 
-        nodel = edge.node[2]; nodek = edge.node[1]
-        bandEdgeDifference = data.bandEdgeEnergyNode[nodel, icc] - data.bandEdgeEnergyNode[nodek, icc]
+        nodel              = edge.node[2]
+        nodek              = edge.node[1]
+        bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
 
-        Q = data.chargeNumbers[icc] * ((dpsi - bandEdgeDifference / q) / data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak))
-        bp, bm = fbernoulli_pm(Q)
+        Q                  = data.chargeNumbers[icc]*( (dpsi - bandEdgeDifference/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
+        bp, bm             = fbernoulli_pm(Q)
 
         f[icc] = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
 end
@@ -554,16 +549,16 @@ used for the regularization of the removable singularity.
 """
 
 function diffusionEnhanced!(f, u, edge, data)
-    tolRegularisation = 1.0e-13;
+    tolReg  = 1.0e-13;
     
-    uk  = viewK(edge, u)
-    ul  = viewL(edge, u)
+    uk      = viewK(edge, u)
+    ul      = viewL(edge, u)
     
-    ipsi = data.numberOfSpecies
-    ireg = edge.region
+    ipsi    = data.numberOfSpecies
+    ireg    = edge.region
     
-    dpsi = ul[ipsi] - uk[ipsi]
-    f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
+    dpsi    = ul[ipsi] - uk[ipsi]
+    f[ipsi] = - data.dielectricConstant[ireg] * ε0 * dpsi
     
     if data.inEquilibrium == true # return zero flux in equilibrium
         return
@@ -571,25 +566,27 @@ function diffusionEnhanced!(f, u, edge, data)
     
     for icc = 1:data.numberOfSpecies - 1
 
-        j0   =  data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
+        j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
-        etak = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
-        etal = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
+        etak               = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
+        etal               = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
 
-        if abs((etal - etak) / (etak + etal)) > tolRegularisation
-            g = (etal - etak ) / ( log(data.F[icc](etal)) - log(data.F[icc](etak)) )
-        else # regularization idea coming from Pietra-Jüngel scheme
+        if abs( (etal - etak)/(etak + etal) ) > tolReg
+            g  = (etal - etak ) / ( log(data.F[icc](etal)) - log(data.F[icc](etak)) )
+        else
+            # regularization idea coming from Pietra-Jüngel scheme
             gk = exp(etak) / data.F[icc](etak)
             gl = exp(etal) / data.F[icc](etal)
             g  = 0.5 * ( gk + gl )
         end
 
-        nodel = edge.node[2]; nodek = edge.node[1]
-        bandEdgeDifference = data.bandEdgeEnergyNode[nodel, icc] - data.bandEdgeEnergyNode[nodek, icc]
+        nodel              = edge.node[2]
+        nodek              = edge.node[1]
+        bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
 
-        bp, bm = fbernoulli_pm(data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / (data.UT * g))
-        f[icc] = -  j0 * g * (  bm * data.F[icc](etal) - bp * data.F[icc](etak))
-end
+        bp, bm             = fbernoulli_pm(data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / (data.UT * g))
+        f[icc]             = - j0 * g * (  bm * data.F[icc](etal) - bp * data.F[icc](etak))
+    end
 
 end
 
@@ -603,18 +600,18 @@ Hence, it should be exclusively worked with, when considering the Blakemore dist
 """
 
 function KopruckiGaertner!(f, u, edge, data)
-    max_iteration = 200 # for Newton solver
-    it = 0              # number of iterations (newton)
-    damp = 0.1          # damping factor
+    max_iteration = 200          # for Newton solver
+    it            = 0            # number of iterations (newton)
+    damp          = 0.1          # damping factor
     
-    uk  = viewK(edge, u)
-    ul  = viewL(edge, u)
+    uk            = viewK(edge, u)
+    ul            = viewL(edge, u)
     
-    ipsi = data.numberOfSpecies
-    ireg = edge.region
+    ipsi          = data.numberOfSpecies
+    ireg          = edge.region
     
-    dpsi     = ul[ipsi] - uk[ipsi]
-    f[ipsi]  =  - data.dielectricConstant[ireg] * ε0 * dpsi
+    dpsi          = ul[ipsi] - uk[ipsi]
+    f[ipsi]        =  - data.dielectricConstant[ireg] * ε0 * dpsi
     
     if data.inEquilibrium == true # return zero flux in equilibrium
         return
@@ -622,35 +619,45 @@ function KopruckiGaertner!(f, u, edge, data)
     
     for icc = 1:data.numberOfSpecies - 1
 
-        j0   =  data.chargeNumbers[icc] * q * data.mobility[ireg,icc] * data.UT * data.densityOfStates[ireg,icc]
+        j0                  = data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
-        etak = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
-        etal = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
+        etak                = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
+        etal                = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
 
         # use Sedan flux as starting guess
-        Q = data.chargeNumbers[icc] * dpsi / data.UT + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak))
-        bp, bm = fbernoulli_pm(Q)
-        jInitial =  ( bm * data.F[icc](etal)  - bp * data.F[icc](etak))
 
-        implicitEquation(j::Real) =  (fbernoulli_pm(data.chargeNumbers[icc] * (dpsi / data.UT) - data.γ * j)[2] * exp(etal) - fbernoulli_pm(data.chargeNumbers[icc] * (dpsi / data.UT) - data.γ * j)[1] * exp(etak)) - j
+        nodel               = edge.node[2]
+        nodek               = edge.node[1]
+        bandEdgeDifference  = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
 
-        delta = 1.0e-18 + 1.0e-14 * abs(value(jInitial))
+        Q                   = data.chargeNumbers[icc]*( (dpsi - bandEdgeDifference/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
+        bp, bm              = fbernoulli_pm(Q)
+        jInitial            = ( bm * data.F[icc](etal)  - bp * data.F[icc](etak))
+
+        implicitEq(j::Real) = (fbernoulli_pm(data.chargeNumbers[icc] * ((dpsi - bandEdgeDifference/q) /data.UT) - data.γ * j)[2] * exp(etal) - fbernoulli_pm(data.chargeNumbers[icc] * ((dpsi - bandEdgeDifference/q) /data.UT) - data.γ * j)[1] * exp(etak)) - j
+
+        delta               = 1.0e-18 + 1.0e-14 * abs(value(jInitial))
+
         while (it < max_iteration)
-            Fval  = implicitEquation(jInitial)
-            dFval = ForwardDiff.derivative(implicitEquation, jInitial)
+            Fval     = implicitEq(jInitial)
+            dFval    = ForwardDiff.derivative(implicitEq, jInitial)
+
             if isnan(value(dFval)) || value(abs(dFval)) < delta
                 @show value(jInitial), value(Fval), value(dFval)
                 error("singular derivative")
             end
-            update = Fval / dFval
+
+            update   = Fval / dFval
             jInitial = jInitial - damp * update
+
             if abs(update) < delta
                 break
             end
-            it = it + 1
-            damp = min(damp * 1.2, 1.0)
+
+            it       = it + 1
+            damp     = min(damp * 1.2, 1.0)
         end
-        f[icc] =  -  j0 * jInitial
+        f[icc]       = - j0 * jInitial
     end
 end
 
@@ -665,11 +672,13 @@ The argument of the distribution function for floats.
 
 """
 function etaFunction(u, data::ChargeTransportInSolids.ChargeTransportData, node, region, icc::Int64, ipsi::Int64, in_region::Bool)
+
     if in_region == true
-        E  = data.bandEdgeEnergy[region,icc] + data.bandEdgeEnergyNode[node,icc]
+        E  = data.bandEdgeEnergy[icc, region] + data.bandEdgeEnergyNode[icc, node]
     elseif in_region == false
-        E  = data.bBandEdgeEnergy[region,icc] + data.bandEdgeEnergyNode[node,icc]
+        E  = data.bBandEdgeEnergy[icc, region] + data.bandEdgeEnergyNode[icc, node]
     end
+
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 
@@ -682,11 +691,11 @@ For given potentials, compute corresponding densities.
 """
 
 function computeDensities(u, data::ChargeTransportData, node, region, icc::Int, ipsi::Int, in_region::Bool)
+
     if in_region == false
-        data.bDensityOfStates[region, icc] * data.F[icc](etaFunction(u, data, node, region, icc, ipsi, in_region::Bool))
+        data.bDensityOfStates[icc, region] * data.F[icc](etaFunction(u, data, node, region, icc, ipsi, in_region::Bool))
     elseif in_region == true
-        data.densityOfStates[region,icc] * data.F[icc](etaFunction(u, data, node, region, icc, ipsi, in_region::Bool))
-    
+        data.densityOfStates[icc, region] * data.F[icc](etaFunction(u, data, node, region, icc, ipsi, in_region::Bool)) 
     end
         
 end
@@ -702,8 +711,8 @@ For given potentials in vector form, compute corresponding vectorized densities.
 """
 
 function computeDensities(grid, data, sol)
-    ipsi      = data.numberOfSpecies
-    densities = Array{Real,2}(undef, data.numberOfSpecies - 1, size(sol, 2))
+    ipsi         = data.numberOfSpecies
+    densities    = Array{Real,2}(undef, data.numberOfSpecies - 1, size(sol, 2))
         
     bfacenodes   = grid[BFaceNodes]
     bfaceregions = grid[BFaceRegions]
@@ -718,13 +727,13 @@ function computeDensities(grid, data, sol)
 
         for node in 1:data.numberOfNodes
             in_region = true
-            u      = sol[:, node]
-            region = cellRegions[node]
+            u         = sol[:, node]
+            region    = cellRegions[node]
 
             if node in bfacenodes
                 in_region = false
-                indexNode = findall(x -> x == node, vec(bfacenodes))[1] # we need to know which index the node has in bfacenodes
-                region = bfaceregions[indexNode]                      # since the corresponding region number is at the same index
+                indexNode = findall(x -> x == node, vec(bfacenodes))[1]  # we need to know which index the node has in bfacenodes
+                region    = bfaceregions[indexNode]                      # since the corresponding region number is at the same index
             end
 
             densities[icc, node] = computeDensities(u, data, node, region, icc, ipsi, in_region)
@@ -748,17 +757,17 @@ For given solution in vector form, compute corresponding vectorized band-edge en
 """
 function computeEnergies(grid, data, sol)
     
-    ipsi       = data.numberOfSpecies
-    energies   = Array{Real,2}(undef, data.numberOfSpecies - 1, size(sol, 2))
-    fermiLevel = Array{Real,2}(undef, data.numberOfSpecies - 1, size(sol, 2))
+    ipsi         = data.numberOfSpecies
+    energies     = Array{Real,2}(undef, data.numberOfSpecies - 1, size(sol, 2))
+    fermiLevel   = Array{Real,2}(undef, data.numberOfSpecies - 1, size(sol, 2))
     
-    cellregions   = grid[CellRegions]
-    cellregions   = push!(cellregions, cellregions[end])
+    cellregions  = grid[CellRegions]
+    cellregions  = push!(cellregions, cellregions[end])
     
     for icc in 1:data.numberOfSpecies - 1
 
         for inode in 1:data.numberOfNodes
-             E   = data.bandEdgeEnergy[cellregions[inode], icc] + data.bandEdgeEnergyNode[inode, icc]
+             E                      = data.bandEdgeEnergy[icc, cellregions[inode]] + data.bandEdgeEnergyNode[icc, inode]
              energies[icc, inode]   = E - q * sol[ipsi, inode]
              fermiLevel[icc, inode] = -q * sol[icc, inode]
         end
@@ -788,7 +797,7 @@ function electroNeutralSolution!(data, grid; Newton=false)
     FVector         = data.F[iccVector]
     regionsAllCells = copy(grid[CellRegions])
     regionsAllCells = push!(regionsAllCells, grid[CellRegions][end]) #  enlarge region by final cell
-    phi             = 0.0                                           # in equilibrium set to 0
+    phi             = 0.0                                            # in equilibrium set to 0
     psi0_initial    = 0.5
 
     for index = 1:length(regionsAllCells) - 1
@@ -796,23 +805,16 @@ function electroNeutralSolution!(data, grid; Newton=false)
         ireg          = regionsAllCells[index]
         zVector       = data.chargeNumbers[iccVector]
         FVector       = data.F[iccVector]
-        # all regions of nodes belonging to cell for given index
-        regionsOfCell = regionsAllCells[grid[CellNodes][:,index]]
+        regionsOfCell = regionsAllCells[grid[CellNodes][:,index]]   # all regions of nodes belonging to cell for given index
 
         # average following quantities if needed among all regions
         EVector = Float64[]; CVector = Float64[]; NVector = Float64[]
 
         for icc = 1:data.numberOfSpecies - 1
-            push!(EVector, sum(data.bandEdgeEnergy[regionsOfCell,icc])  / length(regionsOfCell) + data.bandEdgeEnergyNode[index,icc])
-            push!(CVector, sum(data.doping[regionsOfCell,icc])          / length(regionsOfCell) + data.dopingNode[index,icc])
-            push!(NVector, sum(data.densityOfStates[regionsOfCell,icc]) / length(regionsOfCell) + data.densityOfStatesNode[index,icc])
+            push!(EVector, sum(data.bandEdgeEnergy[icc, regionsOfCell])  / length(regionsOfCell) + data.bandEdgeEnergyNode[icc,index])
+            push!(CVector, sum(data.doping[icc, regionsOfCell])          / length(regionsOfCell) + data.dopingNode[icc, index])
+            push!(NVector, sum(data.densityOfStates[icc, regionsOfCell]) / length(regionsOfCell) + data.densityOfStatesNode[icc, index])
         end
-
-        # println("data.bandEdgeEnergy[regionsOfCell,icc] = $(data.bandEdgeEnergy[regionsOfCell,:])")
-        # println("EVector = $EVector")
-        # println("CVector = $CVector")
-        # println("NVector = $NVector")
-
         # rhs of Poisson's equation as anonymous function depending on psi0
         f = psi0 -> chargeDensity(psi0, phi, data.UT, EVector, zVector, CVector, NVector, FVector)
 
@@ -820,13 +822,13 @@ function electroNeutralSolution!(data, grid; Newton=false)
             try
                 solution[index + 1] = fzero(f, psi0_initial)
             catch 
-                psi0_initial = 2.0
+                psi0_initial        = 2.0
                 solution[index + 1] = fzero(f, psi0_initial)
-                psi0_initial = 0.25
+                psi0_initial        = 0.25
             end
         else 
-            D(f) = psi0 -> ForwardDiff.derivative(f, float(psi0))
-            solution[index + 1] = find_zero((f, D(f)), psi0_initial)
+            D(f)                    = psi0 -> ForwardDiff.derivative(f, float(psi0))
+            solution[index + 1]     = find_zero((f, D(f)), psi0_initial)
         end
     end
 
@@ -834,7 +836,6 @@ function electroNeutralSolution!(data, grid; Newton=false)
     solution[1] = solution[2]
 
     return solution
-
 
 end
 

@@ -11,14 +11,14 @@ using ExtendableGrids
 using PyPlot; PyPlot.pygui(true)
 using Printf
 
-# function for initializing the grid for a possble extension to other
-# p-i-n devices.
+# function for initializing the grid for a possble extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
     coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 3 * refinementfactor))
     coord_intrinsic  = collect(range(h_ndoping, stop = (h_ndoping + h_intrinsic), length = 3 * refinementfactor))
     coord_pdoping    = collect(range((h_ndoping + h_intrinsic), stop = (h_ndoping + h_intrinsic + h_pdoping), length = 3 * refinementfactor))
-    coord = glue(coord_ndoping, coord_intrinsic)
-    coord = glue(coord, coord_pdoping)
+    coord            = glue(coord_ndoping, coord_intrinsic)
+    coord            = glue(coord, coord_pdoping)
+
     return coord
 end
 
@@ -29,19 +29,21 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
     PyPlot.close("all")
 
     ################################################################################
-    println("Set up grid and regions")
+    if test == false
+        println("Set up grid and regions")
+    end
     ################################################################################
 
     # region numbers
-    regionAcceptor  = 1                           # p doped region
-    regionIntrinsic = 2
-    regionDonor     = 3                           # n doped region
-    regions         = [regionAcceptor, regionIntrinsic, regionDonor]
+    regionAcceptor   = 1                           # p doped region
+    regionIntrinsic  = 2                           # intrinsic region
+    regionDonor      = 3                           # n doped region
+    regions          = [regionAcceptor, regionIntrinsic, regionDonor]
 
     # boundary region numbers
-    bregionAcceptor = 1
-    bregionDonor    = 2
-    bregions        = [bregionAcceptor, bregionDonor]
+    bregionAcceptor  = 1
+    bregionDonor     = 2
+    bregions         = [bregionAcceptor, bregionDonor]
 
     # grid
     refinementfactor = 2^(n-1)
@@ -55,17 +57,20 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
 
     grid             = VoronoiFVM.Grid(coord)
     numberOfNodes    = length(coord)
+
     # set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm], [h_pdoping], regionAcceptor)        # p-doped region = 1
     cellmask!(grid, [h_pdoping], [h_pdoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
 
-    println("*** done\n")
-
+    if test == false
+        println("*** done\n")
+    end
     ################################################################################
-    println("Define physical parameters and model")
+    if test == false
+        println("Define physical parameters and model")
+    end
     ################################################################################
-
     # indices
     iphin                   = 1
     iphip                   = 2
@@ -88,6 +93,9 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
     T                 = 300.0                *  K
 
 
+    # recombination model
+    recombinationOn = true
+
     # recombination parameters
     Auger             = 1.0e-29   * cm^6 / s          # 1.0e-41
     SRH_TrapDensity   = 1.0e10    / cm^3              # 1.0e16
@@ -104,79 +112,85 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
     ni                =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) 
 
     # contact voltages
-    voltageAcceptor   = 3.0 * V
+    voltageAcceptor   = 1.5 * V
     voltageDonor      = 0.0 * V
 
-    println("*** done\n")
-
-
+    if test == false
+        println("*** done\n")
+    end
     ################################################################################
-    println("Define ChargeTransport data and fill in previously defined data")
+    if test == false
+        println("Define ChargeTransport data and fill in previously defined data")
+    end
     ################################################################################
 
     # initialize ChargeTransport instance
     data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
-    data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
-    data.temperature                     = T
-    data.UT                              = (kB * data.temperature) / q
-    data.contactVoltage[bregionDonor]    = voltageDonor
-    data.contactVoltage[bregionAcceptor] = voltageAcceptor
-    data.chargeNumbers[iphin]            = -1
-    data.chargeNumbers[iphip]            =  1
+    data.F                                           .= Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
+    data.temperature                                  = T
+    data.UT                                           = (kB * data.temperature) / q
+    data.contactVoltage[bregionDonor]                 = voltageDonor
+    data.contactVoltage[bregionAcceptor]              = voltageAcceptor
+    data.chargeNumbers[iphin]                         = -1
+    data.chargeNumbers[iphip]                         =  1
+
+    data.recombinationOn                              = recombinationOn
 
     # boundary region data
     for ibreg in 1:numberOfBoundaryRegions
 
-        data.bDensityOfStates[ibreg,iphin] = Nc
-        data.bDensityOfStates[ibreg,iphip] = Nv
-        data.bBandEdgeEnergy[ibreg,iphin]  = Ec
-        data.bBandEdgeEnergy[ibreg,iphip]  = Ev
+        data.bDensityOfStates[iphin, ibreg]           = Nc
+        data.bDensityOfStates[iphip, ibreg]           = Nv
+        data.bBandEdgeEnergy[iphin, ibreg]            = Ec
+        data.bBandEdgeEnergy[iphip, ibreg]            = Ev
     end
 
     # interior region data
     for ireg in 1:numberOfRegions
 
-        data.dielectricConstant[ireg]                = εr
+        data.dielectricConstant[ireg]                 = εr
 
         # dos, band edge energy and mobilities
-        data.densityOfStates[ireg,iphin]             = Nc
-        data.densityOfStates[ireg,iphip]             = Nv
-        data.bandEdgeEnergy[ireg,iphin]              = Ec
-        data.bandEdgeEnergy[ireg,iphip]              = Ev
-        data.mobility[ireg,iphin]                    = mun
-        data.mobility[ireg,iphip]                    = mup
+        data.densityOfStates[iphin, ireg]             = Nc
+        data.densityOfStates[iphip, ireg]             = Nv
+        data.bandEdgeEnergy[iphin, ireg]              = Ec
+        data.bandEdgeEnergy[iphip, ireg]              = Ev
+        data.mobility[iphin, ireg]                    = mun
+        data.mobility[iphip, ireg]                    = mup
 
         # recombination parameters
-        data.recombinationRadiative[ireg]            = Radiative
-        data.recombinationRadiative[ireg]            = Radiative
-        data.recombinationSRHLifetime[ireg,iphin]    = SRH_LifeTime
-        data.recombinationSRHLifetime[ireg,iphip]    = SRH_LifeTime
-        data.recombinationSRHTrapDensity[ireg,iphin] = SRH_TrapDensity
-        data.recombinationSRHTrapDensity[ireg,iphip] = SRH_TrapDensity
-        data.recombinationAuger[ireg,iphin]          = Auger
-        data.recombinationAuger[ireg,iphip]          = Auger
+        data.recombinationRadiative[ireg]             = Radiative
+        data.recombinationRadiative[ireg]             = Radiative
+        data.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime
+        data.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime
+        data.recombinationSRHTrapDensity[iphin, ireg] = SRH_TrapDensity
+        data.recombinationSRHTrapDensity[iphip, ireg] = SRH_TrapDensity
+        data.recombinationAuger[iphin, ireg]          = Auger
+        data.recombinationAuger[iphip, ireg]          = Auger
 
     end
 
     # interior doping
-    data.doping[regionDonor,iphin]      = Nd        # data.doping   = [0.0  Na;
-    data.doping[regionIntrinsic,iphin]  = ni        #                  ni   ni;
-    data.doping[regionIntrinsic,iphip]  = 0.0        #                  Nd  0.0]
-    data.doping[regionAcceptor,iphip]   = Na
+    data.doping[iphin, regionDonor]                   = Nd        # data.doping   = [0.0  Na;
+    data.doping[iphin, regionIntrinsic]               = ni        #                  ni   ni;
+    data.doping[iphip, regionIntrinsic]               = 0.0        #                  Nd  0.0]
+    data.doping[iphip, regionAcceptor]                = Na
 
     # boundary doping
-    data.bDoping[bregionDonor,iphin]    = Nd        # data.bDoping  = [0.0  Na;
-    data.bDoping[bregionAcceptor,iphip] = Na        #                  Nd  0.0]
+    data.bDoping[iphin, bregionDonor]                 = Nd        # data.bDoping  = [0.0  Na;
+    data.bDoping[iphip, bregionAcceptor]              = Na        #                  Nd  0.0]
 
-    data.γ = 1.0
+    data.γ                                            = 1.0
     # print data
     if test == false
         println(data)
     end
 
-    println("*** done\n")
+    if test == false
+        println("*** done\n")
+    end
 
     if pyplot
         ################################################################################
@@ -189,7 +203,9 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
     end
 
     ################################################################################
-    println("Define physics and system")
+    if test == false
+        println("Define physics and system")
+    end
     ################################################################################
 
     ## initializing physics environment ##
@@ -221,11 +237,13 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
     sys.boundary_values[iphip,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
     sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
 
-    println("*** done\n")
-
-
+    if test == false
+        println("*** done\n")
+    end
     ################################################################################
-    println("Define control parameters for Newton solver")
+    if test == false
+        println("Define control parameters for Newton solver")
+    end
     ################################################################################
 
     control = VoronoiFVM.NewtonControl()
@@ -239,14 +257,17 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
     control.tol_round         = 1.0e-8
     control.max_round         = 5
 
-
-    println("*** done\n")
+    if test == false
+        println("*** done\n")
+    end
 
     ################################################################################
-    println("Compute solution in thermodynamic equilibrium for Boltzmann")
+    if test == false
+        println("Compute solution in thermodynamic equilibrium for Boltzmann")
+    end
     ################################################################################
 
-    data.inEquilibrium = true
+    data.inEquilibrium             = true
 
     # initialize solution and starting vectors
     initialGuess                   = unknowns(sys)
@@ -254,8 +275,6 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
     @views initialGuess[ipsi,  :] .= 0.0 
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
-
-    # ChargeTransportInSolids.solveEquilibriumBoltzmann!(solution, initialGuess, data, grid, control, dense)
     
     function pre(u,lambda)
         sys.physics.data.λ1                         = lambda
@@ -285,10 +304,13 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
         initialGuess = solution
     end
 
-    println("*** done\n")
-
+    if test == false
+        println("*** done\n")
+    end
     ################################################################################
-    println("Bias loop")
+    if test == false
+        println("Bias loop")
+    end
     ################################################################################
 
     data.inEquilibrium = false
@@ -306,7 +328,7 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
     end
 
     maxBias    = data.contactVoltage[bregionAcceptor]
-    biasValues = range(0, stop = maxBias, length = 31)
+    biasValues = range(0, stop = maxBias, length = 16)
     IV         = zeros(0)
 
     w_device = 0.5 * μm     # width of device
@@ -344,12 +366,14 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
     testval = solution[15]
     return testval
 
-    println("*** done\n")
+    if test == false
+        println("*** done\n")
+    end
 
 end #  main
 
 function test()
-    testval=2.8499930065732104
+    testval=1.5068426773059806
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
