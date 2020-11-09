@@ -14,7 +14,7 @@ mutable struct ChargeTransportData <: VoronoiFVM.AbstractData
     numberOfNodes               ::  Int64
     numberOfRegions             ::  Int64
     numberOfBoundaryRegions     ::  Int64
-    numberOfSpecies             ::  Int64
+    numberOfCarriers            ::  Int64
 
     # real numbers
     temperature                 ::  Float64
@@ -79,14 +79,14 @@ of charge carriers as input.
 
 """
 
-function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, numberOfBoundaryRegions=2::Int64, numberOfSpecies=3::Int64)
+function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, numberOfBoundaryRegions=2::Int64, ;numberOfSpecies=3 ::Int64)
     ChargeTransportData(
 
     # integer numbers
     numberOfNodes,
     numberOfRegions,
     numberOfBoundaryRegions,
-    numberOfSpecies,
+    numberOfSpecies - 1,                                                     # number of carriers
 
     # real numbers
     300 * K,                                                                 # temperature
@@ -101,38 +101,38 @@ function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, num
     true,                                                                    # recombinationOn
 
     # number of boundary regions
-    Array{Float64,1}(undef,numberOfBoundaryRegions),                         # contactVoltage
+    Array{Float64,1}(undef, numberOfBoundaryRegions),                        # contactVoltage
 
     # number of charge carriers = number of species - 1
-    Array{Float64,1}(undef,numberOfSpecies-1),                               # chargeNumbers
-    fill!(similar(Array{Function,1}(undef,numberOfSpecies-1),Function),exp), # F (Boltzmann)
+    Array{Float64,1}(undef, numberOfSpecies-1),                               # chargeNumbers
+    fill!(similar(Array{Function,1}(undef, numberOfSpecies-1),Function),exp), # F (Boltzmann)
 
     # number of carriers x number of boundary regions
-    Array{Float64,2}(undef,numberOfSpecies-1, numberOfBoundaryRegions),       # bBandEdgeEnergy
-    Array{Float64,2}(undef,numberOfSpecies-1, numberOfBoundaryRegions),       # bDensityOfStates
-    zeros(Float64,         numberOfSpecies-1, numberOfBoundaryRegions),       # bDoping
+    Array{Float64,2}(undef, numberOfSpecies-1, numberOfBoundaryRegions),      # bBandEdgeEnergy
+    Array{Float64,2}(undef, numberOfSpecies-1, numberOfBoundaryRegions),      # bDensityOfStates
+    zeros(Float64,          numberOfSpecies-1, numberOfBoundaryRegions),      # bDoping
 
     # number of charge carriers x number of regions
-    zeros(Float64,      numberOfSpecies-1,numberOfRegions),                  # doping
+    zeros(Float64,      numberOfSpecies-1,numberOfRegions),                   # doping
 
-    Array{Float64,2}(undef,numberOfSpecies-1,numberOfRegions),               # densityOfStates
-    Array{Float64,2}(undef,numberOfSpecies-1,numberOfRegions),               # bandEdgeEnergy
-    Array{Float64,2}(undef,numberOfSpecies-1,numberOfRegions),               # mobility
-    Array{Float64,2}(undef,2,numberOfRegions),                               # recombinationSRHLifetime
-    Array{Float64,2}(undef,2,numberOfRegions),                               # recombinationSRHTrapDensity
-    Array{Float64,2}(undef,2,numberOfRegions),                               # recombinationAuger
+    Array{Float64,2}(undef, numberOfSpecies-1,numberOfRegions),               # densityOfStates
+    Array{Float64,2}(undef, numberOfSpecies-1,numberOfRegions),               # bandEdgeEnergy
+    Array{Float64,2}(undef, numberOfSpecies-1,numberOfRegions),               # mobility
+    Array{Float64,2}(undef,2, numberOfRegions),                               # recombinationSRHLifetime
+    Array{Float64,2}(undef,2, numberOfRegions),                               # recombinationSRHTrapDensity
+    Array{Float64,2}(undef,2, numberOfRegions),                               # recombinationAuger
 
     # number of regions
-    Array{Float64,1}(undef,numberOfRegions),                                 # dielectricConstant
-    Array{Float64,1}(undef,numberOfRegions),                                 # generationEmittedLight
-    Array{Float64,1}(undef,numberOfRegions),                                 # generationPrefactor
-    Array{Float64,1}(undef,numberOfRegions),                                 # generationAbsorption
-    Array{Float64,1}(undef,numberOfRegions),                                 # recombinationRadiative
+    Array{Float64,1}(undef ,numberOfRegions),                                 # dielectricConstant
+    Array{Float64,1}(undef, numberOfRegions),                                 # generationEmittedLight
+    Array{Float64,1}(undef, numberOfRegions),                                 # generationPrefactor
+    Array{Float64,1}(undef, numberOfRegions),                                 # generationAbsorption
+    Array{Float64,1}(undef, numberOfRegions),                                 # recombinationRadiative
 
     # number of carriers x number of nodes
-    spzeros(Float64,numberOfSpecies-1,numberOfNodes),                        # dopingNode
-    spzeros(Float64,numberOfSpecies-1,numberOfNodes),                        # densityOfStatesNode
-    spzeros(Float64,numberOfSpecies-1,numberOfNodes)                         # bandEdgeEnergyNode
+    spzeros(Float64, numberOfSpecies-1,numberOfNodes),                        # dopingNode
+    spzeros(Float64, numberOfSpecies-1,numberOfNodes),                        # densityOfStatesNode
+    spzeros(Float64, numberOfSpecies-1,numberOfNodes)                         # bandEdgeEnergyNode
     )
 
 end
@@ -225,9 +225,9 @@ for all charge carriers `icc`.
 function breaction!(f, u, bnode, data)
 
     # parameters
-    α          = 1.0 / VoronoiFVM.Dirichlet         # tiny penalty value
+    α          = 1.0 / VoronoiFVM.Dirichlet       # tiny penalty value
     α          = 1.0e-10                          # tiny penalty value
-    ipsi       = data.numberOfSpecies             # final index for electrostatic potential
+    ipsi       = data.numberOfCarriers + 1        # final index for electrostatic potential
 
     phi_right  = -4.15 * eV 
     phi_left   = -5.2 * eV 
@@ -239,7 +239,7 @@ function breaction!(f, u, bnode, data)
     # bnode.coord
     if bnode.region == 1 || bnode.region == 2 
 
-        for icc = 1:data.numberOfSpecies - 1
+        for icc = 1:data.numberOfCarriers
 
             eta     = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
 
@@ -261,7 +261,7 @@ function breaction!(f, u, bnode, data)
     #     s_left     = [1.0e8*cm/s 1.0e8*cm/s]
     #     s_right    = [1.0e8*cm/s 1.0e8*cm/s]
 
-    #     for icc = 1:data.numberOfSpecies -1
+    #     for icc = 1:data.numberOfCarriers
     #         E      = data.bBandEdgeEnergy[bnode.region,icc] + data.bandEdgeEnergyNode[bnode.index,icc]
             
     #         if bnode.region == 3
@@ -291,7 +291,7 @@ function breactionCalado!(f, u, bnode, data)
     # parameters
     α         = 1.0 / VoronoiFVM.Dirichlet       # tiny penalty value
     α         = 1.0e-10                          # tiny penalty value
-    ipsi      = data.numberOfSpecies             # final index for electrostatic potential
+    ipsi      = data.numberOfCarriers + 1        # final index for electrostatic potential
 
     phi_right = -4.15 * eV 
     phi_left  = -5.2 * eV 
@@ -312,7 +312,7 @@ function breactionCalado!(f, u, bnode, data)
         f[ipsi] =  data.λ1 * ((phi_right - phi_left)/q )+  data.contactVoltage[bnode.region]  
     end
 
-    for icc = 1:data.numberOfSpecies - 1
+    for icc = 1:data.numberOfCarriers
         E          = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
 
         if bnode.region == 1
@@ -371,7 +371,7 @@ function reaction!(f, u, node, data)
     # indices
     iphin                 = 1
     iphip                 = 2
-    ipsi                  = data.numberOfSpecies             # final index for electrostatic potential
+    ipsi                  = data.numberOfCarriers + 1            # final index for electrostatic potential
     ireg                  = node.region
     inode                 = node.index
     n                     = computeDensities(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
@@ -380,7 +380,7 @@ function reaction!(f, u, node, data)
     excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
 
     # rhs of NLP (charge density)
-    for icc = 1:data.numberOfSpecies - 1
+    for icc = 1:data.numberOfCarriers
         
         eta     = etaFunction(u, node, data, icc, ipsi) 
         f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * (data.doping[icc, node.region] + data.dopingNode[icc, node.index])  # subtract doping
@@ -392,7 +392,7 @@ function reaction!(f, u, node, data)
     
     if data.inEquilibrium == true 
 
-        for icc = 1:data.numberOfSpecies - 1
+        for icc = 1:data.numberOfCarriers
          f[icc] = u[icc] - 0.0
         end
 
@@ -417,7 +417,7 @@ function reaction!(f, u, node, data)
             end
         end
 
-        for icc in iphip+1:data.numberOfSpecies-1
+        for icc in iphip+1:data.numberOfCarriers
             f[icc]              = u[icc] - 0.0
         end
     
@@ -437,9 +437,9 @@ Hence, we have ``f[c_i] =  z_i  q ∂_t c_i`` and for the electrostatic potentia
 """
 
 function storage!(f, u, node, data)
-    ipsi       = data.numberOfSpecies
+    ipsi       = data.numberOfCarriers + 1
     
-    for icc = 1:data.numberOfSpecies - 1
+    for icc = 1:data.numberOfCarriers
 
         eta    = etaFunction(u, node, data, icc, ipsi) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
         f[icc] = data.chargeNumbers[icc] * data.densityOfStates[icc, node.region] * data.F[icc](eta)
@@ -470,7 +470,7 @@ function ScharfetterGummel!(f, u, edge, data)
     uk       = viewK(edge, u)
     ul       = viewL(edge, u)
     
-    ipsi     = data.numberOfSpecies
+    ipsi     = data.numberOfCarriers + 1
     ireg     = edge.region
     
     dpsi     = ul[ipsi] - uk[ipsi]
@@ -480,7 +480,7 @@ function ScharfetterGummel!(f, u, edge, data)
         return
     end
     
-    for icc = 1:data.numberOfSpecies - 1
+    for icc = 1:data.numberOfCarriers
 
         j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
@@ -511,7 +511,7 @@ function Sedan!(f, u, edge, data)
     uk       = viewK(edge, u)
     ul       = viewL(edge, u)
     
-    ipsi     = data.numberOfSpecies
+    ipsi     = data.numberOfCarriers + 1
     ireg     = edge.region
     
     dpsi     = ul[ipsi] - uk[ipsi]
@@ -521,7 +521,7 @@ function Sedan!(f, u, edge, data)
         return
     end
     
-    for icc = 1:data.numberOfSpecies - 1
+    for icc = 1:data.numberOfCarriers
 
         j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
@@ -554,7 +554,7 @@ function diffusionEnhanced!(f, u, edge, data)
     uk      = viewK(edge, u)
     ul      = viewL(edge, u)
     
-    ipsi    = data.numberOfSpecies
+    ipsi    = data.numberOfCarriers + 1
     ireg    = edge.region
     
     dpsi    = ul[ipsi] - uk[ipsi]
@@ -564,7 +564,7 @@ function diffusionEnhanced!(f, u, edge, data)
         return
     end
     
-    for icc = 1:data.numberOfSpecies - 1
+    for icc = 1:data.numberOfCarriers
 
         j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
@@ -607,7 +607,7 @@ function KopruckiGaertner!(f, u, edge, data)
     uk            = viewK(edge, u)
     ul            = viewL(edge, u)
     
-    ipsi          = data.numberOfSpecies
+    ipsi          = data.numberOfCarriers + 1
     ireg          = edge.region
     
     dpsi          = ul[ipsi] - uk[ipsi]
@@ -617,7 +617,7 @@ function KopruckiGaertner!(f, u, edge, data)
         return
     end
     
-    for icc = 1:data.numberOfSpecies - 1
+    for icc = 1:data.numberOfCarriers 
 
         j0                  = data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
@@ -711,8 +711,8 @@ For given potentials in vector form, compute corresponding vectorized densities.
 """
 
 function computeDensities(grid, data, sol)
-    ipsi         = data.numberOfSpecies
-    densities    = Array{Real,2}(undef, data.numberOfSpecies - 1, size(sol, 2))
+    ipsi         = data.numberOfCarriers + 1 
+    densities    = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
         
     bfacenodes   = grid[BFaceNodes]
     bfaceregions = grid[BFaceRegions]
@@ -723,7 +723,7 @@ function computeDensities(grid, data, sol)
         println("ComputeDensities is so far only tested in 1D")
     end
     
-    for icc in 1:data.numberOfSpecies - 1
+    for icc in 1:data.numberOfCarriers
 
         for node in 1:data.numberOfNodes
             in_region = true
@@ -757,14 +757,14 @@ For given solution in vector form, compute corresponding vectorized band-edge en
 """
 function computeEnergies(grid, data, sol)
     
-    ipsi         = data.numberOfSpecies
-    energies     = Array{Real,2}(undef, data.numberOfSpecies - 1, size(sol, 2))
-    fermiLevel   = Array{Real,2}(undef, data.numberOfSpecies - 1, size(sol, 2))
+    ipsi         = data.numberOfCarriers + 1
+    energies     = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
+    fermiLevel   = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
     
     cellregions  = grid[CellRegions]
     cellregions  = push!(cellregions, cellregions[end])
     
-    for icc in 1:data.numberOfSpecies - 1
+    for icc in 1:data.numberOfCarriers
 
         for inode in 1:data.numberOfNodes
              E                      = data.bandEdgeEnergy[icc, cellregions[inode]] + data.bandEdgeEnergyNode[icc, inode]
@@ -792,7 +792,7 @@ The charge carriers may obey different statitics functions.
 function electroNeutralSolution!(data, grid; Newton=false)
 
     solution        = zeros(length(grid[Coordinates]))
-    iccVector       = collect(1:data.numberOfSpecies - 1)
+    iccVector       = collect(1:data.numberOfCarriers)
     zVector         = data.chargeNumbers[iccVector]
     FVector         = data.F[iccVector]
     regionsAllCells = copy(grid[CellRegions])
@@ -810,7 +810,7 @@ function electroNeutralSolution!(data, grid; Newton=false)
         # average following quantities if needed among all regions
         EVector = Float64[]; CVector = Float64[]; NVector = Float64[]
 
-        for icc = 1:data.numberOfSpecies - 1
+        for icc = 1:data.numberOfCarriers
             push!(EVector, sum(data.bandEdgeEnergy[icc, regionsOfCell])  / length(regionsOfCell) + data.bandEdgeEnergyNode[icc,index])
             push!(CVector, sum(data.doping[icc, regionsOfCell])          / length(regionsOfCell) + data.dopingNode[icc, index])
             push!(NVector, sum(data.densityOfStates[icc, regionsOfCell]) / length(regionsOfCell) + data.densityOfStatesNode[icc, index])

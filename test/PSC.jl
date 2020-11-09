@@ -108,7 +108,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     # number of (boundary) regions and carriers
     numberOfRegions         = length(regions)
     numberOfBoundaryRegions = length(bregions) #+ length(iregions)
-    numberOfSpecies         = length(species)
+    numberOfCarriers        = length(species) - 1
 
     # temperature
     T    = 300.0                *  K
@@ -219,7 +219,10 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     ################################################################################
 
     # initialize ChargeTransport instance
-    data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
+    data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes,
+                                                            numberOfRegions,
+                                                            numberOfBoundaryRegions,
+                                                            numberOfSpecies = numberOfCarriers + 1)
 
     # region independent data
     data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
@@ -308,7 +311,7 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     ## initializing physics environment ##
     physics = VoronoiFVM.Physics(
     data        = data,
-    num_species = numberOfSpecies,
+    num_species = numberOfCarriers + 1,
     flux        = ChargeTransportInSolids.ScharfetterGummel!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
     reaction    = ChargeTransportInSolids.reaction!,
     breaction   = ChargeTransportInSolids.breaction!

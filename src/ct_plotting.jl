@@ -18,12 +18,12 @@ function plotDensities(grid, data, sol, bias)
     linestyles                  = ["-", ":", "--", "-."]
     densityNames                = ["n", "p", "a", "c"]
 
-    ipsi                        = data.numberOfSpecies
+    ipsi                        = data.numberOfCarriers + 1
 
     cellnodes                   = grid[CellNodes]
     cellregions                 = grid[CellRegions]
     coordinates                 = grid[Coordinates]
-    for icc in 1:data.numberOfSpecies - 1
+    for icc in 1:data.numberOfCarriers
 
         # first cell
         u1                      = sol[:, 1]
@@ -83,7 +83,7 @@ Plot energies of system (physical variant).
 function plotEnergies(grid, data, sol, Δu)
     PyPlot.clf()
 
-    ipsi                = data.numberOfSpecies
+    ipsi                = data.numberOfCarriers + 1
 
     cellnodes           = grid[CellNodes]
     cellregions         = grid[CellRegions]
@@ -170,7 +170,7 @@ function plotEnergies(grid::ExtendableGrid, data::ChargeTransportData)
     densityNames                = ["\$ E_c\$", "\$ E_v \$", " \$ E_a \$", " \$ E_{cat}\$"]
 
     # plot different band-edge energies values in interior
-    for icc = 1:data.numberOfSpecies - 1
+    for icc = 1:data.numberOfCarriers
         for i in 1:length(cellregions)
             # determine band-edge energy value in cell and number of cell nodes
             cellValue            = ( data.bandEdgeEnergy[icc, cellregions[i]] + data.bandEdgeEnergyNode[icc, i] )/q
@@ -191,7 +191,7 @@ function plotEnergies(grid::ExtendableGrid, data::ChargeTransportData)
     bfaceregions = grid[BFaceRegions]
     bfacenodes   = grid[BFaceNodes]
 
-    for icc = 1: data.numberOfSpecies - 1
+    for icc = 1: data.numberOfCarriers
 
         for i in 1:length(bfaceregions)
             # determine band-edge energy value in cell and number of cell nodes
@@ -241,7 +241,7 @@ function plotDoping(g::ExtendableGrid, data::ChargeTransportData)
 
     # plot different doping values in interior
 
-    for icc = 1:data.numberOfSpecies - 1
+    for icc = 1:data.numberOfCarriers
 
         for i in 1:length(cellregions)
             # determine doping value in cell and number of cell nodes
@@ -263,7 +263,7 @@ function plotDoping(g::ExtendableGrid, data::ChargeTransportData)
     bfaceregions = g[BFaceRegions]
     bfacenodes   = g[BFaceNodes]
 
-    for icc = 1: data.numberOfSpecies - 1
+    for icc = 1: data.numberOfCarriers
 
         for i in 1:length(bfaceregions)
             # determine doping value in cell and number of cell nodes
