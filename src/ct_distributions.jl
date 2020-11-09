@@ -12,18 +12,28 @@ function Boltzmann(x::Real)
 end
 
 """
-The Blakemore approximation 1/(exp(-x) + gamma)
+The Blakemore approximation 1/(exp(-x) + γ)
 """
-function Blakemore(x::Real, gamma::Real )
-    1/(exp(-x) + gamma)
+function Blakemore(x::Real, γ::Real )
+    1/(exp(-x) + γ)
 end
 
 """
-The Blakemore approximation 1/(exp(-x) + gamma)
+The Blakemore approximation 1/(exp(-x) + γ) with
+γ = 0.27.
 """
 function Blakemore(x::Real)
+    Blakemore(x, 0.27)
+end
+
+
+"""
+The Fermi-Dirac integral of order minus one.
+"""
+function FermiDiracMinusOne(x::Real)
     Blakemore(x, 1.0)
 end
+
 
 """
 The incomplete Fermi-Dirac integral of order 1/2, 
@@ -109,7 +119,7 @@ end
 
 
 
-export Boltzmann, Blakemore, FermiDiracOneHalf
+export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalf
 
 
 

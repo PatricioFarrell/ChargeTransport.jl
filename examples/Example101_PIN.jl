@@ -128,7 +128,7 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
     data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes, numberOfRegions, numberOfBoundaryRegions, numberOfSpecies)
 
     # region independent data
-    data.F                                           .= Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
+    data.F                                           .= Boltzmann # Boltzmann, FermiDiracOneHalf, FermiDiracMinusOne, Blakemore
     data.temperature                                  = T
     data.UT                                           = (kB * data.temperature) / q
     data.contactVoltage[bregionDonor]                 = voltageDonor

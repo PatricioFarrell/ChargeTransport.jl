@@ -203,7 +203,7 @@ function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_sto
                                                             numberOfSpecies)
 
     # region independent data
-    data.F                                        = [Boltzmann, Boltzmann, Blakemore] # Boltzmann, FermiDiracOneHalf, Blakemore
+    data.F                                        = [Boltzmann, Boltzmann, FermiDiracMinusOne] # Boltzmann, FermiDiracOneHalf, FermiDiracMinusOne, Blakemore
     data.temperature                              = T
     data.UT                                       = (kB * data.temperature) / q
     data.contactVoltage[bregionAcceptor]          = voltageAcceptor
