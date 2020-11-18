@@ -152,7 +152,7 @@ $(SIGNATURES)
 Plot band-edge energies.
 """
 
-function plotEnergies(grid::ExtendableGrid, data::ChargeTransportData)
+function plotEnergies(grid::ExtendableGrid, data)
     coord       = grid[Coordinates]
     cellregions = grid[CellRegions]
     cellnodes   = grid[CellNodes]
