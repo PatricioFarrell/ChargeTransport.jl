@@ -212,6 +212,7 @@ mutable struct ChargeTransportDataGraded <: VoronoiFVM.AbstractData
     recombinationRadiative      ::  Array{Float64,1}
     # number of nodes
     dielectricConstantNode      ::  Array{Float64,1}
+    recombinationRadiativeNode      ::  Array{Float64,1}
 
     # number of nodes x number of carriers
     mobilityNode                ::  Array{Float64,2}
@@ -278,7 +279,8 @@ function ChargeTransportDataGraded(numberOfNodes::Int64, numberOfRegions=5::Int6
     spzeros(Float64, numberOfRegions),                                        # recombinationRadiative
 
     # number of nodes
-    spzeros(Float64, numberOfNodes),                                          # dielectricConstantNode  
+    spzeros(Float64, numberOfNodes),                                          # dielectricConstantNode
+    spzeros(Float64, numberOfNodes),                                          # recombinationRadiativeNode  
 
     # number of carriers x number of nodes
     spzeros(Float64, numberOfSpecies-1,numberOfNodes),                        # mobilityNode
@@ -562,7 +564,7 @@ function reactionGraded!(f, u, node, data)
             if data.recombinationOn == true   
                 
                 # radiative recombination
-                kernelRadiative = data.recombinationRadiative[ireg]
+                kernelRadiative = (data.recombinationRadiative[ireg] + data.recombinationRadiativeNode[inode])
                 
                 # Auger recombination
                 kernelAuger     = (data.recombinationAuger[iphin, ireg] * n + data.recombinationAuger[iphip, ireg] * p)
@@ -701,7 +703,7 @@ function ScharfetterGummelGraded!(f, u, edge, data)
         if data.densityOfStatesNode[icc, nodel] ≈ 0.0 || data.densityOfStatesNode[icc, nodek] ≈ 0.0
             bp, bm         = fbernoulli_pm( data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / data.UT ) 
         else
-            bp, bm         = fbernoulli_pm( data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / data.UT + log(data.densityOfStatesNode[icc, nodel]) -log(data.densityOfStatesNode[icc,nodek]) ) 
+            bp, bm         = fbernoulli_pm( data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / data.UT - (log(data.densityOfStatesNode[icc, nodel]) -log(data.densityOfStatesNode[icc,nodek])) ) 
         end
 
         f[icc]             = - j0  * ( bm  * mobilityl * densityOfStatesl * data.F[icc](etal) - bp * mobilityk * densityOfStatesk * data.F[icc](etak) )
