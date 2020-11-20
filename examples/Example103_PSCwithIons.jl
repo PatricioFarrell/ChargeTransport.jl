@@ -1,7 +1,8 @@
 """
 Simulating a three layer PSC device with mobile anion vacancies
 which obey a Fermi-Dirac of order minus 1 relation.
-The simulations are performed in equilibrium.
+The simulations are performed in equilibrium and with
+abrupt interfaces.
 
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
@@ -15,13 +16,9 @@ module Example103_PSCwithIons
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
-using PyPlot; PyPlot.pygui(true)
 using Printf
 
-function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_storage=:dense)
-
-    # close all windows
-    PyPlot.close("all")
+function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -87,10 +84,10 @@ function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_sto
     cellmask!(grid, [h_ndoping],               [h_ndoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
     cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)  # p-doped region   = 3
 
-    if pyplot
-       ExtendableGrids.plot(grid, Plotter = PyPlot, p = PyPlot.plot()) 
-       PyPlot.title("Grid")
-       PyPlot.figure()
+    if plotting
+       ExtendableGrids.plot(grid, Plotter = Plotter, p = Plotter.plot()) 
+       Plotter.title("Grid")
+       Plotter.figure()
     end
 
     if test == false
@@ -369,12 +366,12 @@ function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_sto
         initialGuess       .= solution
     end
 
-    if pyplot 
-        ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQULIBRIUM (NO illumination)")
-        PyPlot.figure()
-        ChargeTransportInSolids.plotDensities(grid, data, solution, "EQULIBRIUM (NO illumination)")
-        PyPlot.figure()
-        ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "EQULIBRIUM (NO illumination)")
+    if plotting 
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
+        Plotter.figure()
+        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
+        Plotter.figure()
+        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "EQULIBRIUM (NO illumination)")
     end
 
     if test == false
@@ -391,7 +388,8 @@ function test()
     main(test = true, unknown_storage=:dense) ≈ testval  #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
-
-println("This message should show when this module is successfully recompiled.")
+if test == false
+    println("This message should show when this module is successfully recompiled.")
+end
 
 end # module

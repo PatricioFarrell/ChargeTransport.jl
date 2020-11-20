@@ -8,7 +8,6 @@ module Example101_PIN
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
-using PyPlot; PyPlot.pygui(true)
 using Printf
 
 # function for initializing the grid for a possble extension to other p-i-n devices.
@@ -23,10 +22,7 @@ function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping
 end
 
 
-function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_storage=:sparse)
-
-    # close all windows
-    PyPlot.close("all")
+function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -196,12 +192,12 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
         println("*** done\n")
     end
 
-    if pyplot
+    if plotting == true
         ################################################################################
         println("Plot electroneutral potential and doping")
         ################################################################################
-        ChargeTransportInSolids.plotEnergies(grid, data)
-        ChargeTransportInSolids.plotDoping(grid, data)
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data)
+        ChargeTransportInSolids.plotDoping(Plotter, grid, data)
 
         println("*** done\n")
     end
@@ -358,12 +354,12 @@ function main(;n = 3, pyplot = false, verbose = false, test = false, unknown_sto
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 
         # plot solution and IV curve
-        if pyplot
-            #ChargeTransportInSolids.plotEnergies(grid, data, sol, Δu)
-            #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref)
-            ChargeTransportInSolids.plotDensities(grid, data, solution, Δu)
-            # PyPlot.figure()
-            #ChargeTransportInSolids.plotIV(biasValues,IV)
+        if plotting
+            #ChargeTransportInSolids.plotEnergies(Plotter, grid, data, sol, Δu)
+            #ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref)
+            ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, Δu)
+            # Plotter.figure()
+            #ChargeTransportInSolids.plotIV(Plotter, biasValues,IV)
         end
 
     end # bias loop
@@ -381,6 +377,8 @@ function test()
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
-println("This message should show when the PIN module is successfully recompiled.")
+if test == false
+    println("This message should show when the PIN module is successfully recompiled.")
+end
 
 end # module

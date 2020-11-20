@@ -11,14 +11,10 @@ module PSC
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
-using PyPlot; PyPlot.pygui(true)
 using Printf
 using DelimitedFiles
 
-function main(;n = 7, pyplot = false, verbose = false, dense = true)
-
-    # close all windows
-    PyPlot.close("all")
+function main(;n = 7, Plotter = nothing, plotting = false, verbose = false, dense = true)
 
     ################################################################################
     println("Set up grid and regions")
@@ -91,9 +87,9 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     # bfacemask!(grid, [h_pdoping],           [h_pdoping],           iregionAcceptor)
     # bfacemask!(grid, [h_pdoping+h_intrinsic], [h_pdoping+h_intrinsic], iregionDonor)
 
-    if pyplot
-        ExtendableGrids.plot(grid, Plotter = PyPlot, p = PyPlot.plot()) 
-        PyPlot.title("Grid")
+    if plotting
+        ExtendableGrids.plot(grid, Plotter = Plotter, p = Plotter.plot()) 
+        Plotter.title("Grid")
     end
     println("*** done\n")
 
@@ -448,13 +444,13 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 
     #     # plotting
-    #     if pyplot
-    #         PyPlot.figure()
-    #         ChargeTransportInSolids.plotDensities(grid, data, solution, "$Δu (no illumination)")
-    #         PyPlot.figure()
-    #         ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (no illumination)")
-    #         #PyPlot.figure()
-    #         #ChargeTransportInSolids.plotIV(biasValues,IV, Δu)
+    #     if plotting
+    #         Plotter.figure()
+    #         ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "$Δu (no illumination)")
+    #         Plotter.figure()
+    #         ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "$Δu (no illumination)")
+    #         #Plotter.figure()
+    #         #ChargeTransportInSolids.plotIV(Plotter, biasValues,IV, Δu)
     # end
 
 
@@ -480,21 +476,21 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
     end
 
         sol = [coord solution']
-        writedlm("PSC-illuminated-sol.dat", sol)
+        #writedlm("PSC-illuminated-sol.dat", sol)
     
-    # if pyplot
-    #     PyPlot.figure()
-    #     ChargeTransportInSolids.plotDensities(grid, data, solution, "$(maxBias) (illumination)")
-    #     PyPlot.figure()
-    #     ChargeTransportInSolids.plotEnergies(grid, data, solution, "$(maxBias) (illumination)")
-    #     #PyPlot.figure()
-    #     #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$(maxBias) (illuminated)")
+    # if plotting
+    #     Plotter.figure()
+    #     ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "$(maxBias) (illumination)")
+    #     Plotter.figure()
+    #     ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "$(maxBias) (illumination)")
+    #     #Plotter.figure()
+    #     #ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "$(maxBias) (illuminated)")
     # end
     
     println("*** done\n")
-     ################################################################################
-     println("Reverse Bias loop")
-     ################################################################################
+    ################################################################################
+    println("Reverse Bias loop")
+    ################################################################################
  
      data.inEquilibrium = false
  
@@ -538,16 +534,16 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
          # end
  
          # plotting
-         if pyplot
+         if plotting
              if Δu == maxBias #>0.2 # == maxBias
-             #PyPlot.figure()
-             ChargeTransportInSolids.plotDensities(grid, data, solution, "$Δu (illumination)")
+             #Plotter.figure()
+             ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "$Δu (illumination)")
              #savefig("PSC-sol-$Δu-dens.eps")
-             PyPlot.figure()
-             ChargeTransportInSolids.plotEnergies(grid, data, solution, "$Δu (illumination)")
-             PyPlot.figure()
-             #ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "$Δu (illumination)")
-             #ChargeTransportInSolids.plotIV(biasValues,IV, Δu)
+             Plotter.figure()
+             ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "$Δu (illumination)")
+             Plotter.figure()
+             #ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "$Δu (illumination)")
+             #ChargeTransportInSolids.plotIV(Plotter, biasValues,IV, Δu)
              end
          #end
      end
@@ -584,10 +580,10 @@ function main(;n = 7, pyplot = false, verbose = false, dense = true)
 
     # evolve!(solution_transient,initial_solution,sys,sampling_times, control=control)
 
-    # ChargeTransportInSolids.plotDensities(grid, data, solution_transient, "FINAL")
+    # ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution_transient, "FINAL")
 
-    # PyPlot.figure()
-    # ChargeTransportInSolids.plotEnergies(grid, data, solution_transient, "FINAL")
+    # Plotter.figure()
+    # ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution_transient, "FINAL")
 
     # println("*** done\n")
 

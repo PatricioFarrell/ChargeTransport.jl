@@ -1,6 +1,7 @@
 """
 Simulating a three layer PSC device without mobile ions.
-The simulations are performed in equilibrium.
+The simulations are performed out of equilibrium and with
+abrupt interfaces.
 
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
@@ -14,14 +15,9 @@ module Example102_PSCwithoutIons
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
-using PyPlot; PyPlot.pygui(true)
 using Printf
 
-
-function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_storage=:sparse)
-
-    # close all windows
-    PyPlot.close("all")
+function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -87,10 +83,10 @@ function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_sto
     cellmask!(grid, [h_ndoping],               [h_ndoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
     cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)  # p-doped region   = 3
 
-    if pyplot
-        ExtendableGrids.plot(grid, Plotter = PyPlot, p = PyPlot.plot()) 
-        PyPlot.title("Grid")
-        PyPlot.figure()
+    if plotting
+        ExtendableGrids.plot(grid, Plotter = Plotter, p = Plotter.plot()) 
+        Plotter.title("Grid")
+        Plotter.figure()
     end
  
     if test == false
@@ -164,7 +160,36 @@ function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_sto
     ε               = [ε_d, ε_i, ε_a] 
 
     # recombination model
-    recombinationOn = false
+    recombinationOn = true
+
+    # radiative recombination
+    r0_d            = 0.0e+0               * cm^3 / s 
+    r0_i            = 1.0e-12              * cm^3 / s  
+    r0_a            = 0.0e+0               * cm^3 / s
+        
+    r0              = [r0_d, r0_i, r0_a]
+        
+    # life times and trap densities 
+    τn_d            = 1.0e100              * s 
+    τp_d            = 1.0e100              * s
+        
+    τn_i            = 3.0e-10              * s
+    τp_i            = 3.0e-8               * s
+    τn_a            = τn_d
+    τp_a            = τp_d
+        
+    τn              = [τn_d, τn_i, τn_a]
+    τp              = [τp_d, τp_i, τp_a]
+        
+    # SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
+    Ei_d            = -5.0                 * eV   
+    Ei_i            = -4.55                * eV   
+    Ei_a            = -4.1                 * eV   
+
+    EI              = [Ei_d, Ei_i, Ei_a]
+        
+    # Auger recombination
+    Auger           = 0.0
 
     # doping (doping values are from Phils paper, not stated in the parameter list online)
     Nd              =   1.03e18             / (cm^3) 
@@ -172,7 +197,7 @@ function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_sto
     Ni_acceptor     =   8.32e7              / (cm^3) 
 
     # contact voltages
-    voltageAcceptor =  1.05                 * V 
+    voltageAcceptor =  1.2                  * V 
     voltageDonor    =  0.0                  * V 
 
     if test == false
@@ -192,16 +217,16 @@ function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_sto
                                                                                        numberOfSpecies = numberOfCarriers + 1)
 
     # region independent data
-    data.F                              .= Boltzmann # Boltzmann, FermiDiracMinusOne, FermiDiracOneHalf, Blakemore
-    data.temperature                     = T
-    data.UT                              = (kB * data.temperature) / q
-    data.contactVoltage[bregionAcceptor] = voltageAcceptor
-    data.contactVoltage[bregionDonor]    = voltageDonor
-    data.chargeNumbers[iphin]            = -1
-    data.chargeNumbers[iphip]            =  1
-    data.Eref                            =  Eref
+    data.F                                       .= Boltzmann # Boltzmann, FermiDiracMinusOne, FermiDiracOneHalf, Blakemore
+    data.temperature                              = T
+    data.UT                                       = (kB * data.temperature) / q
+    data.contactVoltage[bregionAcceptor]          = voltageAcceptor
+    data.contactVoltage[bregionDonor]             = voltageDonor
+    data.chargeNumbers[iphin]                     = -1
+    data.chargeNumbers[iphip]                     =  1
+    data.Eref                                     =  Eref
 
-    data.recombinationOn                 = recombinationOn
+    data.recombinationOn                          = recombinationOn
 
     # boundary region data
     data.bDensityOfStates[iphin, bregionDonor]    = Nc_d
@@ -219,25 +244,31 @@ function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_sto
     # interior region data
     for ireg in 1:numberOfRegions
 
-        data.dielectricConstant[ireg]            = ε[ireg]
+        data.dielectricConstant[ireg]                 = ε[ireg]
 
         # dos, band edge energy and mobilities
-        data.densityOfStates[iphin, ireg]         = NC[ireg]
-        data.densityOfStates[iphip, ireg]         = NV[ireg]
+        data.densityOfStates[iphin, ireg]             = NC[ireg]
+        data.densityOfStates[iphip, ireg]             = NV[ireg]
 
-        data.bandEdgeEnergy[iphin, ireg]          = EC[ireg] + data.Eref
-        data.bandEdgeEnergy[iphip, ireg]          = EV[ireg] + data.Eref
+        data.bandEdgeEnergy[iphin, ireg]              = EC[ireg] + data.Eref
+        data.bandEdgeEnergy[iphip, ireg]              = EV[ireg] + data.Eref
 
-        data.mobility[iphin, ireg]                = μn[ireg]
-        data.mobility[iphip, ireg]                = μp[ireg]
+        data.mobility[iphin, ireg]                    = μn[ireg]
+        data.mobility[iphip, ireg]                    = μp[ireg]
+
+        # recombination parameters
+        data.recombinationRadiative[ireg]             = r0[ireg]
+        data.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
+        data.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
+        data.recombinationSRHTrapDensity[iphin, ireg] = ChargeTransportInSolids.trapDensity(iphin, ireg, data, EI[ireg])
+        data.recombinationSRHTrapDensity[iphip, ireg] = ChargeTransportInSolids.trapDensity(iphip, ireg, data, EI[ireg])
+        data.recombinationAuger[iphin, ireg]          = Auger
+        data.recombinationAuger[iphip, ireg]          = Auger
     end
 
     # interior doping
     data.doping[iphin, regionDonor]               = Nd
-
-    data.doping[iphin, regionIntrinsic]           = 0.0
     data.doping[iphip, regionIntrinsic]           = Ni_acceptor    
-
     data.doping[iphip, regionAcceptor]            = Na     
                              
     # boundary doping
@@ -344,14 +375,60 @@ function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_sto
         initialGuess .= solution
     end
 
-    if pyplot
-        ChargeTransportInSolids.plotEnergies(grid, data, solution, "EQULIBRIUM (NO illumination)")
-        PyPlot.figure()
-        ChargeTransportInSolids.plotDensities(grid, data, solution, "EQULIBRIUM (NO illumination)")
-        PyPlot.figure()
-        ChargeTransportInSolids.plotSolution(coord, solution, data.Eref, "EQULIBRIUM (NO illumination)")
+    if plotting
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
+        Plotter.figure()
+        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
+        Plotter.figure()
+        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "EQULIBRIUM (NO illumination)")
+        Plotter.figure()
     end
 
+    if test == false
+        println("*** done\n")
+    end
+
+    ################################################################################
+    if test == false
+        println("Bias loop")
+    end
+    ################################################################################
+    data.inEquilibrium = false
+
+    control.damp_initial                             = 0.005
+    control.damp_growth                              = 1.21 # >= 1
+    control.max_round                                = 7
+
+    # set non equilibrium boundary conditions
+    sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor
+    sys.physics.data.contactVoltage[bregionAcceptor] = voltageAcceptor
+    sys.boundary_values[iphin, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
+    sys.boundary_values[iphip, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
+
+    maxBias    = data.contactVoltage[bregionAcceptor]
+    biasValues = range(0, stop = maxBias, length = 13)
+
+    for Δu in biasValues
+        if test == false
+            println("Bias value: Δu = $(Δu) (no illumination)")
+        end
+
+        data.contactVoltage[bregionAcceptor]         = Δu
+        sys.boundary_values[iphin, bregionAcceptor]  = Δu
+        sys.boundary_values[iphip, bregionAcceptor]  = Δu
+
+        solve!(solution, initialGuess, sys, control  = control, tstep = Inf)
+
+        initialGuess .= solution
+
+    end # bias loop
+
+    #plotting
+    if plotting
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution,  maxBias)
+        Plotter.figure()
+        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, maxBias)
+    end
     if test == false
         println("*** done\n")
     end
@@ -362,11 +439,12 @@ function main(;n = 8, pyplot = false, verbose = false, test = false, unknown_sto
 end #  main
 
 function test()
-    testval=-4.196344422098774
+    testval=-4.052650626421281
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
-
-println("This message should show when this module is successfully recompiled.")
+if test == false
+    println("This message should show when this module is successfully recompiled.")
+end
 
 end # module
