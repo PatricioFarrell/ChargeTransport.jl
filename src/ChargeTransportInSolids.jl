@@ -2,11 +2,9 @@ module ChargeTransportInSolids
 
 using VoronoiFVM
 using ExtendableGrids
-using PyPlot; PyPlot.pygui(true)
 using Printf
 using DocStringExtensions
 using SparseArrays
-using Roots
 
 include("ct_constants.jl")
 include("ct_units.jl")
