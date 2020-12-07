@@ -317,7 +317,7 @@ The argument of the distribution function for boundary nodes:
 function etaFunction(u, bnode::VoronoiFVM.BNode, data::VoronoiFVM.AbstractData, icc::Int64, ipsi::Int64)
     # bnode.index refers to index in overall mesh
     E  = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
-    data.chargeNumbers[icc] / data.UT * ( (data.contactVoltage[bnode.region] - u[ipsi]) + E / q )
+    data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 
 """
@@ -432,6 +432,100 @@ function breaction!(f, u, bnode, data)
 
 end
 
+function breactionSchottky!(f, u, bnode, data)
+    # DA: THIS WORKS. PLEASE LET IT LIKE THIS! THESE ARE THE PARAMETERS OF THE COMPARISON OF CALADO WITH COURTIER.
+    # USE PSCWithoutIonsGraded.jl for comparison.
+    # parameters
+
+    ipsi      = data.numberOfCarriers + 1        # final index for electrostatic potential
+
+    phi_left = -4.1 * eV + data.Eref
+    phi_right  = -5.0 * eV + data.Eref
+ 
+    velocity   = [1.0e7*cm/s 0.0*cm/s; 0.0*cm/s 1.0e7*cm/s; 0.0 1.0e7*cm/s]
+
+    # bnode.coord
+    if bnode.region == 1
+        f[ipsi] = -u[ipsi] 
+    elseif bnode.region == 2
+        f[ipsi] =  + u[ipsi] - data.λ1 *((phi_right - phi_left)/q ) - data.contactVoltage[bnode.region]  
+    end
+
+    for icc = 1:data.numberOfCarriers
+       
+        if bnode.region == 1
+            phi = phi_left
+        elseif bnode.region == 2
+            phi = phi_right
+        end
+        if bnode.region == 1 || bnode.region == 2
+            E          = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
+        etaFix = data.chargeNumbers[icc] / data.UT * (  (-phi + E ) / q  )
+        eta    = data.chargeNumbers[icc] / data.UT * (  (u[icc]  - u[ipsi]) + E / q )
+
+        f[icc] =  data.chargeNumbers[icc] * q * data.λ1* velocity[icc, bnode.region] * (  (data.bDensityOfStates[icc, bnode.region] + data.densityOfStatesNode[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+        end
+
+        # if icc == 3
+        #     if bnode.region == 4
+        #         E          = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
+        #         phi = phi_right
+        #     etaFix = data.chargeNumbers[icc] / data.UT * (  (-phi + E ) / q  )
+        #     eta    = data.chargeNumbers[icc] / data.UT * (  (u[icc]  - u[ipsi]) + E / q )
+    
+        #     f[icc] =  data.chargeNumbers[icc] * q * data.λ1* 0.0 * (  (data.bDensityOfStates[icc, bnode.region] + data.densityOfStatesNode[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+        #     end
+    
+        # end
+
+    end
+
+end
+
+
+function breactionIKZ!(f, u, bnode, data)
+    # parameters
+    α          = 1.0e-10   
+    ipsi      = data.numberOfCarriers + 1        # final index for electrostatic potential
+
+    metalWorkFunction      = - 6.35 * eV + data.Eref
+    equilibriumFermiEnergy = - 3.9 * eV + data.Eref
+
+    s_left   = [0.0e07*cm/s 0.0e7*cm/s]
+
+    # bnode.coord
+    if bnode.region == 1
+        f[ipsi] =   u[ipsi] + data.λ1 *((metalWorkFunction - equilibriumFermiEnergy)/q )
+
+
+        for icc = 1:data.numberOfCarriers
+            E          = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
+            etaFix = data.chargeNumbers[icc] / data.UT * (  (metalWorkFunction - u[ipsi]) + E / q )
+            eta    = data.chargeNumbers[icc] / data.UT * (  (u[icc] - u[ipsi]) + E / q )
+            
+            f[icc] = - data.chargeNumbers[icc] * q * data.λ1* s_left[icc] * (  (data.bDensityOfStates[icc, bnode.region] + data.densityOfStatesNode[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+        end
+
+    elseif bnode.region == 2
+       for icc = 1:data.numberOfCarriers
+
+            eta     = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
+
+            f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * (data.bDoping[icc, bnode.region] + data.dopingNode[icc, bnode.index])                             # subtract doping
+            f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * (data.bDensityOfStates[icc, bnode.region] + data.densityOfStatesNode[icc, bnode.index]) * data.F[icc](eta)  # add charge carrier
+
+        
+        end
+        f[ipsi] = -1 / α *  q * data.λ1 * f[ipsi]
+    end
+
+    # for icc = 1:data.numberOfCarriers
+
+    #     f[icc] = 0.0
+
+    # end
+end
+
 
 """
 (SIGNATURES)
@@ -473,10 +567,6 @@ function reaction!(f, u, node, data)
     ipsi                  = data.numberOfCarriers + 1            # final index for electrostatic potential
     ireg                  = node.region
     inode                 = node.index
-    n                     = computeDensities(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
-    p                     = computeDensities(u, data, inode, ireg, iphip, ipsi, true) 
-    exponentialTerm       = exp((q *u[iphin] - q  * u[iphip]) / (kB*data.temperature))
-    excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
 
     # rhs of NLP (charge density)
     for icc = 1:data.numberOfCarriers
@@ -496,9 +586,15 @@ function reaction!(f, u, node, data)
         end
 
     else
-        for icc in [iphin, iphip] 
+        if data.recombinationOn == true  
+            n                     = computeDensities(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
+            p                     = computeDensities(u, data, inode, ireg, iphip, ipsi, true) 
+            exponentialTerm       = exp((q *u[iphin] - q  * u[iphip]) / (kB*data.temperature))
+            excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
 
-            if data.recombinationOn == true   
+            for icc in [iphin, iphip] 
+
+             
                 # radiative recombination
                 kernelRadiative = data.recombinationRadiative[ireg]
                 
@@ -510,8 +606,10 @@ function reaction!(f, u, node, data)
                 
                 # full recombination
                 f[icc]          = q* data.chargeNumbers[icc]* (kernelRadiative + kernelAuger + kernelSRH)*  excessCarrierDensTerm  - q * data.chargeNumbers[icc] * generation(data, ireg)
+            end
 
-            else
+        else
+            for icc = 1: data.numberOfCarriers
                 f[icc]          = 0.0 #- q * data.chargeNumbers[icc] * generation(data, ireg) 
             end
         end
@@ -679,7 +777,7 @@ function ScharfetterGummelGraded!(f, u, edge, data)
     nodek    = edge.node[1]
     
     dpsi     = ul[ipsi] - uk[ipsi]
-    dpsiEps  = (data.dielectricConstant[ireg]  + data.dielectricConstantNode[nodel]) * ul[ipsi] - (data.dielectricConstant[ireg] + data.dielectricConstantNode[nodek]) * uk[ipsi]
+    dpsiEps  = (data.dielectricConstant[ireg]  + (data.dielectricConstantNode[nodel] + data.dielectricConstantNode[nodek])/2) * dpsi
     f[ipsi]  = - ε0 * dpsiEps
     
     if data.inEquilibrium == true # return zero flux in equilibrium
@@ -695,8 +793,9 @@ function ScharfetterGummelGraded!(f, u, edge, data)
 
 
         bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
-        mobilityl          = (data.mobility[icc, ireg] + data.mobilityNode[icc, nodel])
-        mobilityk          = (data.mobility[icc, ireg] + data.mobilityNode[icc, nodek])
+        #mobilityl          = (data.mobility[icc, ireg] + data.mobilityNode[icc, nodel])
+        #mobilityk          = (data.mobility[icc, ireg] + data.mobilityNode[icc, nodek])
+        mobility           = data.mobility[icc, ireg] + (data.mobilityNode[icc, nodel] + data.mobilityNode[icc, nodek])/2
         densityOfStatesl   = (data.densityOfStates[icc, ireg] + data.densityOfStatesNode[icc,nodel])
         densityOfStatesk   = (data.densityOfStates[icc, ireg] + data.densityOfStatesNode[icc,nodek])
         
@@ -706,7 +805,8 @@ function ScharfetterGummelGraded!(f, u, edge, data)
             bp, bm         = fbernoulli_pm( data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / data.UT - (log(data.densityOfStatesNode[icc, nodel]) -log(data.densityOfStatesNode[icc,nodek])) ) 
         end
 
-        f[icc]             = - j0  * ( bm  * mobilityl * densityOfStatesl * data.F[icc](etal) - bp * mobilityk * densityOfStatesk * data.F[icc](etak) )
+        #f[icc]             = - j0  * ( bm  * mobilityl * densityOfStatesl * data.F[icc](etal) - bp * mobilityk * densityOfStatesk * data.F[icc](etak) )
+        f[icc]             =  -j0  * mobility * ( bm  * densityOfStatesl * data.F[icc](etal) - bp *  densityOfStatesk * data.F[icc](etak) )
 
     end
 
@@ -753,6 +853,53 @@ function Sedan!(f, u, edge, data)
 end
 
 end
+
+function SedanGraded!(f, u, edge, data)
+
+    uk       = viewK(edge, u)
+    ul       = viewL(edge, u)
+    
+    ipsi     = data.numberOfCarriers + 1
+    ireg     = edge.region
+    nodel    = edge.node[2]
+    nodek    = edge.node[1]
+    
+    dpsi     = ul[ipsi] - uk[ipsi]
+    dpsiEps  = (data.dielectricConstant[ireg]  + data.dielectricConstantNode[nodel]) * ul[ipsi] - (data.dielectricConstant[ireg] + data.dielectricConstantNode[nodek]) * uk[ipsi]
+    f[ipsi]  = - ε0 * dpsiEps
+    
+    if data.inEquilibrium == true # return zero flux in equilibrium
+        return
+    end
+    
+    for icc = 1:data.numberOfCarriers
+
+        j0                 = data.chargeNumbers[icc] * q * data.UT
+        etak               = data.chargeNumbers[icc] / data.UT * ( (uk[icc] - uk[ipsi]) + (data.bandEdgeEnergyNode[icc, nodek] + data.bandEdgeEnergy[icc, ireg]) / q )
+        etal               = data.chargeNumbers[icc] / data.UT * ( (ul[icc] - ul[ipsi]) + (data.bandEdgeEnergyNode[icc, nodel] + data.bandEdgeEnergy[icc, ireg]) / q )
+
+        bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
+        mobilityl          = (data.mobility[icc, ireg] + data.mobilityNode[icc, nodel])
+        mobilityk          = (data.mobility[icc, ireg] + data.mobilityNode[icc, nodek])
+        densityOfStatesl   = (data.densityOfStates[icc, ireg] + data.densityOfStatesNode[icc,nodel])
+        densityOfStatesk   = (data.densityOfStates[icc, ireg] + data.densityOfStatesNode[icc,nodek])
+
+        if data.densityOfStatesNode[icc, nodel] ≈ 0.0 || data.densityOfStatesNode[icc, nodek] ≈ 0.0
+            Q              = data.chargeNumbers[icc]*( (dpsi - bandEdgeDifference/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
+
+        else
+            Q              = data.chargeNumbers[icc]*( (dpsi - bandEdgeDifference/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) - (log(data.densityOfStatesNode[icc, nodel]) -log(data.densityOfStatesNode[icc,nodek])) )
+
+        end
+
+        bp, bm         = fbernoulli_pm(Q)
+
+
+        f[icc]         = - j0  * ( bm  * mobilityl * densityOfStatesl * data.F[icc](etal) - bp * mobilityk * densityOfStatesk * data.F[icc](etak) )
+end
+
+end
+
 
 """
 $(SIGNATURES)
