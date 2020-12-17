@@ -57,11 +57,11 @@ end
 """
 Plot different distribution integrals
 """
-function plotDistributions()
+function plotDistributions(;Plotter=nothing)
 
-    PyPlot.close()
+    Plotter.close()
 
-    rcParams = PyPlot.PyDict(PyPlot.matplotlib."rcParams")
+    rcParams = Plotter.PyDict(Plotter.matplotlib."rcParams")
     rcParams["font.size"] = 12
     rcParams["font.sans-serif"] = "Arial"
 
@@ -70,18 +70,18 @@ function plotDistributions()
 
     x = -5:0.01:10;
 
-    PyPlot.semilogy(x, ChargeTransportInSolids.FermiDiracOneHalf.(x), label="\$F_{1/2}\$");
-    PyPlot.semilogy(x, Boltzmann.(x), label="Boltzmann");
-    PyPlot.semilogy(x, ones(size(x))/0.27, "--", label="\$1/\\gamma=3.\\overline{703}\$", color=(0.6,0.6,0.6,1));
-    PyPlot.semilogy(x, Blakemore.(x), label="Blakemore (\$\\gamma=0.27\$)");   
-    PyPlot.semilogy(x, degenerateLimit.(x),label="degenerate limit");
+    Plotter.semilogy(x, ChargeTransportInSolids.FermiDiracOneHalf.(x), label="\$F_{1/2}\$");
+    Plotter.semilogy(x, Boltzmann.(x), label="Boltzmann");
+    Plotter.semilogy(x, ones(size(x))/0.27, "--", label="\$1/\\gamma=3.\\overline{703}\$", color=(0.6,0.6,0.6,1));
+    Plotter.semilogy(x, Blakemore.(x), label="Blakemore (\$\\gamma=0.27\$)");   
+    Plotter.semilogy(x, degenerateLimit.(x),label="degenerate limit");
 
-    PyPlot.xlabel("\$\\eta\$")
-    PyPlot.ylabel("\$\\mathcal{F}(\\eta)\$")
-    PyPlot.title("Distributions")
-    PyPlot.legend()
+    Plotter.xlabel("\$\\eta\$")
+    Plotter.ylabel("\$\\mathcal{F}(\\eta)\$")
+    Plotter.title("Distributions")
+    Plotter.legend()
 
-    PyPlot.show();
+    Plotter.show();
 end
 
 """

@@ -489,21 +489,21 @@ function breactionIKZ!(f, u, bnode, data)
     ipsi      = data.numberOfCarriers + 1        # final index for electrostatic potential
 
     metalWorkFunction      = - 6.35 * eV + data.Eref
-    equilibriumFermiEnergy = - 3.9 * eV + data.Eref
+    equilibriumFermiEnergy =  - 5.43 * eV + data.Eref  #0.5 * (data.bandEdgeEnergyNode[1, 1] + data.bandEdgeEnergyNode[2, 1]) + 0.5 * kB * data.temperature * log(data.densityOfStatesNode[1, 1] / data.densityOfStatesNode[2, 1] ) #+ data.Eref 
 
-    s_left   = [0.0e07*cm/s 0.0e7*cm/s]
+    s_left   = [0.0e0*cm/s 0.0e0*cm/s]
 
     # bnode.coord
     if bnode.region == 1
-        f[ipsi] =   u[ipsi] + data.λ1 *((metalWorkFunction - equilibriumFermiEnergy)/q )
+        f[ipsi] =    -u[ipsi] -  data.λ1 *((metalWorkFunction - equilibriumFermiEnergy)/q ) 
 
 
         for icc = 1:data.numberOfCarriers
-            E          = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
-            etaFix = data.chargeNumbers[icc] / data.UT * (  (metalWorkFunction - u[ipsi]) + E / q )
+            E      = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
+            etaFix = data.chargeNumbers[icc] / data.UT * (  (-metalWorkFunction  + E) / q )
             eta    = data.chargeNumbers[icc] / data.UT * (  (u[icc] - u[ipsi]) + E / q )
             
-            f[icc] = - data.chargeNumbers[icc] * q * data.λ1* s_left[icc] * (  (data.bDensityOfStates[icc, bnode.region] + data.densityOfStatesNode[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+            f[icc] =  data.chargeNumbers[icc] * q * data.λ1* s_left[icc] * (  (data.bDensityOfStates[icc, bnode.region] + data.densityOfStatesNode[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
         end
 
     elseif bnode.region == 2
@@ -573,7 +573,7 @@ function reaction!(f, u, node, data)
         
         eta     = etaFunction(u, node, data, icc, ipsi) 
         f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * (data.doping[icc, node.region] + data.dopingNode[icc, node.index])  # subtract doping
-        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * data.densityOfStates[icc, node.region] * data.F[icc](eta)   # add charge carrier
+        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * (data.densityOfStates[icc, node.region] + data.densityOfStatesNode[icc, node.index]) * data.F[icc](eta)   # add charge carrier
 
     end
 
