@@ -48,6 +48,25 @@ function FermiDiracOneHalf(x::Real)
 end
 
 """
+The incomplete Fermi-Dirac integral of order 1/2, 
+implemented according to the software package TeSCA
+"""
+function FermiDiracOneHalfTeSCA(x::Real)
+    if x < 1.6107
+        z = log(1+ exp(x) )
+        return ( 1 + 0.16 * x ) * x
+    elseif 1.6107 < x < 344.7
+        z = log( 1 + exp( x^(3/4)) )
+        return 0.3258 - 0.0321 * z  + 0.7523 * z^2
+    else
+        z = x^(3/4)
+        return 0.3258 - 0.0321 * z  + 0.7523 * z^2
+    end
+
+end
+
+
+"""
 Degenerate limit of incomplete Fermi-Dirac integral of order 1/2.
 """
 function degenerateLimit(x)
