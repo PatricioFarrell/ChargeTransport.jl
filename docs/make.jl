@@ -1,4 +1,8 @@
 using Documenter
 using ChargeTransportInSolids
 
-makedocs(sitename="ChargeTransportInSolids documentation")
+makedocs(sitename="ChargeTransportInSolids.jl")
+
+deploydocs(
+    repo = "github.com/PatricioFarrell/ChargeTransportInSolids.jl.git",
+)
