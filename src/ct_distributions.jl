@@ -77,8 +77,8 @@ implemented according to the software package TeSCA, see https://wias-berlin.de/
 function FermiDiracOneHalfTeSCA(x::Real)
     if x < 1.6107
         z = log(1+ exp(x) )
-        return ( 1 + 0.16 * x ) * x
-    elseif 1.6107 < x < 344.7
+        return ( 1 + 0.16 * z ) * z
+    elseif 1.6107 <= x <= 344.7
         z = log( 1 + exp( x^(3/4)) )
         return 0.3258 - 0.0321 * z  + 0.7523 * z^2
     else
@@ -116,13 +116,14 @@ function plotDistributions(;Plotter=nothing)
     # println(PyPlot.matplotlib.rcParams)
 
 
-    x = -5:0.01:10;
+    x = -5:0.1:700;
 
-    Plotter.semilogy(x, ChargeTransportInSolids.FermiDiracOneHalfBednarczyk.(x), label="\$F_{1/2}\$");
-    Plotter.semilogy(x, Boltzmann.(x), label="Boltzmann");
-    Plotter.semilogy(x, ones(size(x))/0.27, "--", label="\$1/\\gamma=3.\\overline{703}\$", color=(0.6,0.6,0.6,1));
-    Plotter.semilogy(x, Blakemore.(x), label="Blakemore (\$\\gamma=0.27\$)");   
-    Plotter.semilogy(x, degenerateLimit.(x),label="degenerate limit");
+    Plotter.semilogy(x, FermiDiracOneHalfBednarczyk.(x), label="\$F_{1/2}  \$ (Bednarczyk)");
+    Plotter.semilogy(x, FermiDiracOneHalfTeSCA.(x), label="\$F_{1/2} \$ (TeSCA)");
+    #Plotter.semilogy(x, Boltzmann.(x), label="Boltzmann");
+    # Plotter.semilogy(x, ones(size(x))/0.27, "--", label="\$1/\\gamma=3.\\overline{703}\$", color=(0.6,0.6,0.6,1));
+    # Plotter.semilogy(x, Blakemore.(x), label="Blakemore (\$\\gamma=0.27\$)");   
+    # Plotter.semilogy(x, degenerateLimit.(x),label="degenerate limit");
 
     Plotter.xlabel("\$\\eta\$")
     Plotter.ylabel("\$\\mathcal{F}(\\eta)\$")
