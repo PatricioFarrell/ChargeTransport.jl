@@ -1,8 +1,17 @@
 """
-$(SIGNATURES)
+$(TYPEDSIGNATURES)
+Plotting routine, where the charge carrier densities are depicted
+in dependence of space. The case of heterojunctions is tested, but yet
+multidimensional calculations are missing.
+Currently, for a matching legend, we need the following order:
 
-Plot densities of system (with heterojunctions.)
-Currently, only working for non-interfacial recombination.
+index 1: electrons as charge carrier with the corresponding density ``n``,
+
+index 2: holes as charge carrier with the corresponding density ``p``,
+
+index 3: anion vacancies as charge carrier with the corresponding density ``a``,
+
+index 4: cation vacancies as charge carrier with the corresponding density ``c``.
 """
 function plotDensities(Plotter, grid, data, sol, bias)
     Plotter.clf()
@@ -147,9 +156,23 @@ end
 
 
 """
-$(SIGNATURES)
+$(TYPEDSIGNATURES)
 
-Plot energies of system (physical variant).
+With this method it is possible to plot the energies
+
+``E_\\alpha - q \\psi \\quad \\text{w.r.t. space.}``
+
+The case of heterojunctions is tested, but yet
+multidimensional calculations are missing. 
+Currently, for a matching legend, we need the following order:
+
+index 1: electrons as charge carrier with the corresponding density ``n``,
+
+index 2: holes as charge carrier with the corresponding density ``p``,
+
+index 3: anion vacancies as charge carrier with the corresponding density ``a``,
+
+index 4: cation vacancies as charge carrier with the corresponding density ``c``.
 """
 function plotEnergies(Plotter, grid, data, sol, Δu)
     Plotter.clf()
@@ -166,7 +189,7 @@ function plotEnergies(Plotter, grid, data, sol, Δu)
 
     colors              = ["green", "red", "gold", "purple"]
     linestyles          = ["-", ":", "--", "-."]
-    labelBandEdgeEnergy = ["\$E_c-\\psi\$ ", "\$E_v-\\psi\$ ", "\$E_a-\\psi\$ ", "\$E_{cat}-\\psi\$ "]
+    labelBandEdgeEnergy = ["\$E_c-q\\psi\$ ", "\$E_v-q\\psi\$ ", "\$E_a-q\\psi\$ ", "\$E_{cat}-q\\psi\$ "]
     labelPotential      = ["\$ - q \\varphi_n\$", "\$ - q \\varphi_p\$", "\$ - q \\varphi_a\$", "\$ - q \\varphi_c\$"]
 
     for icc in 1:2
@@ -287,9 +310,9 @@ end
 
 """
 $(SIGNATURES)
-Plot band-edge energies.
+With this method it is possible to depict the band-edge energies ``E_\\alpha ``. 
+This can be useful for debugging when dealing with heterojunctions.
 """
-
 function plotEnergies(Plotter, grid::ExtendableGrid, data)
     coord       = grid[Coordinates]
     cellregions = grid[CellRegions]
@@ -355,8 +378,9 @@ end
 
 
 """
-$(SIGNATURES)
-Visualize doping and bDoping (x) to make sure they agree.
+$(TYPEDSIGNATURES)
+Possibility to plot the considered doping. This is especially useful 
+for making sure that the interior and the boundary doping agree.
 """
 function plotDoping(Plotter, g::ExtendableGrid, data)
 
@@ -425,10 +449,9 @@ function plotDoping(Plotter, g::ExtendableGrid, data)
 end
 
 """
-$(SIGNATURES)
-Plot electroneutral potential.
+$(TYPEDSIGNATURES)
+Plotting routine for depicting the electroneutral potential.
 """
-
 function plotElectroNeutralSolutionBoltzmann(Plotter, grid, psi0)
     coord = grid[Coordinates]
     Plotter.plot(coord[:],psi0, label = "electroneutral potential", color="g", marker="o")
@@ -439,11 +462,21 @@ function plotElectroNeutralSolutionBoltzmann(Plotter, grid, psi0)
 end
 
 """
-$(SIGNATURES)
-Plot electrostatic potential as well as the electron and hole quasi-Fermi
-potentials for fixed time and fixed boundary values.
-"""
+$(TYPEDSIGNATURES)
+Method for plotting the solution vectors: the electrostatic potential ``\\psi``
+as well as the charge carriers.
+The case of heterojunctions is tested, but yet
+multidimensional calculations are missing. 
+Currently, for a matching legend, we need the following order:
 
+index 1: electrons as charge carrier with the corresponding density ``n``,
+
+index 2: holes as charge carrier with the corresponding density ``p``,
+
+index 3: anion vacancies as charge carrier with the corresponding density ``a``,
+
+index 4: cation vacancies as charge carrier with the corresponding density ``c``.
+"""
 function plotSolution(Plotter, coord, solution, Eref,  Δu)
 
     ipsi = size(solution)[1] # convention: psi is the last species
@@ -493,10 +526,21 @@ function plotSolutionIKZ(Plotter, coord, solution, Eref,  Δu)
 end
 
 """
-$(SIGNATURES)
-Plot electrostatic potential as well as the electron and hole quasi-Fermi potentials in stationary case.
-"""
+$(TYPEDSIGNATURES)
+Method for plotting the solution vectors: the electrostatic potential ``\\psi``
+as well as the charge carriers.
+The case of heterojunctions is tested, but yet
+multidimensional calculations are missing. 
+Currently, for a matching legend, we need the following order:
 
+index 1: electrons as charge carrier with the corresponding density ``n``,
+
+index 2: holes as charge carrier with the corresponding density ``p``,
+
+index 3: anion vacancies as charge carrier with the corresponding density ``a``,
+
+index 4: cation vacancies as charge carrier with the corresponding density ``c``.
+"""
 function plotSolution(Plotter, coord, solution, Eref) # need to be dependent on Eref
     Plotter.clf()
     ipsi = size(solution)[1] # convention: psi is the last species
@@ -520,8 +564,8 @@ function plotSolution(Plotter, coord, solution, Eref) # need to be dependent on 
 end
 
 """
-$(SIGNATURES)
-Plot the IV curve.
+$(TYPEDSIGNATURES)
+Method for showing the total current in dependence of the applied voltage.
 """
 function plotIV(Plotter, biasValues,IV, Δu)
     Plotter.plot(biasValues[1:length(IV)], IV)

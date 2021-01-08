@@ -200,7 +200,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
                                                             numberOfSpecies = numberOfCarriers + 1)
 
     # region independent data
-    data.F                                        = [Boltzmann, Boltzmann, FermiDiracMinusOne] # Boltzmann, FermiDiracOneHalf, FermiDiracMinusOne, Blakemore
+    data.F                                        = [Boltzmann, Boltzmann, FermiDiracMinusOne] # Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.temperature                              = T
     data.UT                                       = (kB * data.temperature) / q
     data.contactVoltage[bregionAcceptor]          = voltageAcceptor
@@ -282,7 +282,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     num_species = numberOfCarriers + 1,
     flux        = ChargeTransportInSolids.ScharfetterGummel!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
     reaction    = ChargeTransportInSolids.reaction!,
-    breaction   = ChargeTransportInSolids.breaction!
+    breaction   = ChargeTransportInSolids.breactionOhmic!
     )
 
     sys         = VoronoiFVM.System(grid,physics,unknown_storage=unknown_storage)

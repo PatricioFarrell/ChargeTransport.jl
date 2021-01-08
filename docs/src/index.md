@@ -1,3 +1,7 @@
-```@autodocs
-Modules = [ChargeTransportInSolids]
-```
+ 
+````@eval
+using Markdown
+Markdown.parse("""
+$(read("../../README.md",String))
+""")
+````

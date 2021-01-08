@@ -221,7 +221,7 @@ function main(;n = 7, Plotter = nothing, plotting = false, verbose = false, dens
                                                             numberOfSpecies = numberOfCarriers + 1)
 
     # region independent data
-    data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalf, Blakemore
+    data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.temperature                     = T
     data.UT                              = (kB * data.temperature) / q
     data.contactVoltage[bregionAcceptor] = voltageAcceptor
@@ -310,7 +310,7 @@ function main(;n = 7, Plotter = nothing, plotting = false, verbose = false, dens
     num_species = numberOfCarriers + 1,
     flux        = ChargeTransportInSolids.ScharfetterGummel!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
     reaction    = ChargeTransportInSolids.reaction!,
-    breaction   = ChargeTransportInSolids.breaction!
+    breaction   = ChargeTransportInSolids.breactionOhmic!
     )
 
     if dense

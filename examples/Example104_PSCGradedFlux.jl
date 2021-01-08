@@ -261,13 +261,13 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     # initialize ChargeTransport instance
-    data      = ChargeTransportInSolids.ChargeTransportDataGraded(numberOfNodes,
+    data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes,
                                                             numberOfRegions,
                                                             numberOfBoundaryRegions,
                                                             ;numberOfSpecies = numberOfCarriers + 1)
 
     # region independent data
-    data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalf, FermiDiracMinusOne, Blakemore
+    data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.temperature                     = T
     data.UT                              = (kB * data.temperature) / q
     data.contactVoltage[bregionAcceptor] = voltageAcceptor
@@ -331,8 +331,8 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     data        = data,
     num_species = numberOfCarriers + 1,
     flux        = ChargeTransportInSolids.ScharfetterGummelGraded!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
-    reaction    = ChargeTransportInSolids.reactionGraded!,
-    breaction   = ChargeTransportInSolids.breaction!
+    reaction    = ChargeTransportInSolids.reaction!,
+    breaction   = ChargeTransportInSolids.breactionOhmic!
     )
 
     sys         = VoronoiFVM.System(grid,physics,unknown_storage=unknown_storage)
@@ -390,7 +390,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
 
-    control.damp_initial           = 0.1
+    control.damp_initial           = 0.5
     control.damp_growth            = 1.61 # >= 1
     control.max_round              = 5
 
@@ -428,7 +428,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
 
     data.inEquilibrium = false
 
-    control.damp_initial                             = 0.005
+    control.damp_initial                             = 0.5
     control.damp_growth                              = 1.21 # >= 1
     control.max_round                                = 7
 

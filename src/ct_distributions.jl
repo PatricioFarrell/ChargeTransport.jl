@@ -1,26 +1,39 @@
 """
-Distribution integrals
+Distribution integrals.
 """
 
 using ForwardDiff
 
 """
-The Boltzmann approximation exp(x)
+$(TYPEDSIGNATURES)
+
+
+The Boltzmann approximation ``\\exp(x)``.
 """
 function Boltzmann(x::Real)
     exp(x)
 end
 
 """
-The Blakemore approximation 1/(exp(-x) + γ)
+$(TYPEDSIGNATURES)
+
+
+The Blakemore approximation ``1/(\\exp(-x) + γ)`` with variable real scalar ``γ``, see 
+[Blakemore1952, "The parameters of partially degenerate semiconductors"].
+
 """
 function Blakemore(x::Real, γ::Real )
     1/(exp(-x) + γ)
 end
 
+
 """
-The Blakemore approximation 1/(exp(-x) + γ) with
-γ = 0.27.
+$(TYPEDSIGNATURES)
+
+
+The Blakemore approximation ``1/(\\exp(-x) + γ)`` with
+``γ = 0.27``, see 
+[Blakemore1952, "The parameters of partially degenerate semiconductors"].
 """
 function Blakemore(x::Real)
     Blakemore(x, 0.27)
@@ -28,7 +41,11 @@ end
 
 
 """
-The Fermi-Dirac integral of order minus one.
+$(TYPEDSIGNATURES)
+
+
+The Fermi-Dirac integral of order ``-1`` which reads 
+``1/(\\exp(-x) + 1)``, see [Blakemore1982: "Approximations for Fermi-Dirac integrals, especially the function ``F_{1/2} (η)`` used to describe electron density in a semiconductor"].
 """
 function FermiDiracMinusOne(x::Real)
     Blakemore(x, 1.0)
@@ -36,11 +53,14 @@ end
 
 
 """
+$(TYPEDSIGNATURES)
+
+
 The incomplete Fermi-Dirac integral of order 1/2, 
-implemented according to Bednarczyk and Bednarczyk
-"The Approximation of the Fermi-Dirac integral F_1/2()"
+implemented according to [Bednarczyk1978, 
+"The Approximation of the Fermi-Dirac integral ``F_{1/2}()``"].
 """
-function FermiDiracOneHalf(x::Real)
+function FermiDiracOneHalfBednarczyk(x::Real)
 
     a = x^4 + 33.6*x * (1.0 - 0.68*exp(-0.17*(x+1)^2)) + 50
     sqrt(pi) / ( 2 * (3/4*sqrt(pi) * a^(-3/8) + exp(-x) ) )
@@ -48,8 +68,11 @@ function FermiDiracOneHalf(x::Real)
 end
 
 """
+$(TYPEDSIGNATURES)
+
+
 The incomplete Fermi-Dirac integral of order 1/2, 
-implemented according to the software package TeSCA
+implemented according to the software package TeSCA, see https://wias-berlin.de/software/index.jsp?lang=1&id=TeSCA.
 """
 function FermiDiracOneHalfTeSCA(x::Real)
     if x < 1.6107
@@ -67,6 +90,9 @@ end
 
 
 """
+$(TYPEDSIGNATURES)
+
+
 Degenerate limit of incomplete Fermi-Dirac integral of order 1/2.
 """
 function degenerateLimit(x)
@@ -74,7 +100,10 @@ function degenerateLimit(x)
 end
 
 """
-Plot different distribution integrals
+$(TYPEDSIGNATURES)
+
+
+Plot different distribution integrals.
 """
 function plotDistributions(;Plotter=nothing)
 
@@ -89,7 +118,7 @@ function plotDistributions(;Plotter=nothing)
 
     x = -5:0.01:10;
 
-    Plotter.semilogy(x, ChargeTransportInSolids.FermiDiracOneHalf.(x), label="\$F_{1/2}\$");
+    Plotter.semilogy(x, ChargeTransportInSolids.FermiDiracOneHalfBednarczyk.(x), label="\$F_{1/2}\$");
     Plotter.semilogy(x, Boltzmann.(x), label="Boltzmann");
     Plotter.semilogy(x, ones(size(x))/0.27, "--", label="\$1/\\gamma=3.\\overline{703}\$", color=(0.6,0.6,0.6,1));
     Plotter.semilogy(x, Blakemore.(x), label="Blakemore (\$\\gamma=0.27\$)");   
@@ -104,7 +133,10 @@ function plotDistributions(;Plotter=nothing)
 end
 
 """
-Plot diffusion enhancements
+$(TYPEDSIGNATURES)
+
+
+Plot diffusion enhancements.
 """
 function plotDiffusionEnhancements()
 
@@ -116,7 +148,7 @@ function plotDiffusionEnhancements()
 
     x = -5:0.01:10;
 
-    f = ChargeTransportInSolids.FermiDiracOneHalf; df = x -> ForwardDiff.derivative(f,x)
+    f = ChargeTransportInSolids.FermiDiracOneHalfBednarczyk; df = x -> ForwardDiff.derivative(f,x)
     PyPlot.semilogy(x, f.(x)./df.(x), label="\$F_{1/2}\$");
 
     f = ChargeTransportInSolids.Boltzmann; df = x -> ForwardDiff.derivative(f,x)
@@ -138,7 +170,7 @@ end
 
 
 
-export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalf
+export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA
 
 
 
