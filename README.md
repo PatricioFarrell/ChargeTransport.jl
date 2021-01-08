@@ -1,2 +1,2 @@
-# Charge Transport
-Drift diffusion simulator for semiconductor devices
+# ChargeTransportInSolids
+Drift-diffusion simulator for semiconductor devices
