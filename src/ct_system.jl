@@ -414,11 +414,6 @@ function breactionOhmic!(f, u, bnode, data)
     α          = 1.0e-10                          # tiny penalty value
     ipsi       = data.numberOfCarriers + 1        # final index for electrostatic potential
 
-    phi_right  = -4.15 * eV 
-    phi_left   = -5.2 * eV 
-    s_left     = [1.0e8*cm/s 1.0e8*cm/s]
-    s_right    = [1.0e8*cm/s 1.0e8*cm/s]
-
     # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...
     ### TESTEN AUF ÄU?EREN RAND 
     # bnode.coord
@@ -502,7 +497,7 @@ function breactionSchottky!(f, u, bnode, data)
     #     f[ipsi] =  + u[ipsi] - data.λ1 *((data.bFermiLevel[2] - data.bFermiLevel[1])/q ) - data.contactVoltage[bnode.region]  
     # end
 
-    for icc = 1:data.numberOfCarriers
+    for icc = 1:data.numberOfCarriers-1
        
         if bnode.region == 1
             phi = data.bFermiLevel[1]
@@ -695,7 +690,7 @@ function storage!(f, u, node, data)
     for icc = 1:data.numberOfCarriers
 
         eta    = etaFunction(u, node, data, icc, ipsi) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
-        f[icc] = data.chargeNumbers[icc] * data.densityOfStates[icc, node.region] * data.F[icc](eta)
+        f[icc] = q * data.chargeNumbers[icc] * (data.densityOfStates[icc, node.region] + data.densityOfStatesNode[icc, node.index]) * data.F[icc](eta)
     end
 
     f[ipsi] = 0.0
@@ -989,10 +984,10 @@ function KopruckiGaertner!(f, u, edge, data)
         bp, bm              = fbernoulli_pm(Q)
         jInitial            = ( bm * data.F[icc](etal)  - bp * data.F[icc](etak))
 
-        implicitEq(j::Real) = (fbernoulli_pm(data.chargeNumbers[icc] * ((dpsi - bandEdgeDifference/q) /data.UT) - data.γ * j)[2] * exp(etal) - fbernoulli_pm(data.chargeNumbers[icc] * ((dpsi - bandEdgeDifference/q) /data.UT) - data.γ * j)[1] * exp(etak)) - j
+        implicitEq(j::Real) = (fbernoulli_pm(data.chargeNumbers[icc] * ((dpsi - bandEdgeDifference/q)) /data.UT + data.γ * j )[2] * exp(etal) - fbernoulli_pm(data.chargeNumbers[icc] * ((dpsi - bandEdgeDifference/q) /data.UT) - data.γ * j)[1] * exp(etak)) - j
 
         delta               = 1.0e-18 + 1.0e-14 * abs(value(jInitial))
-
+        oldup = 1.0
         while (it < max_iteration)
             Fval     = implicitEq(jInitial)
             dFval    = ForwardDiff.derivative(implicitEq, jInitial)
@@ -1001,17 +996,20 @@ function KopruckiGaertner!(f, u, edge, data)
                 @show value(jInitial), value(Fval), value(dFval)
                 error("singular derivative")
             end
-
+           
             update   = Fval / dFval
             jInitial = jInitial - damp * update
 
             if abs(update) < delta
                 break
             end
+            #@show abs(value(update)/oldup)
+            oldup = value(update)
 
             it       = it + 1
             damp     = min(damp * 1.2, 1.0)
         end
+        #@show  it
         f[icc]       = - j0 * jInitial
     end
 end

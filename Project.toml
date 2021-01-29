@@ -12,7 +12,9 @@ Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 VoronoiFVM = "82b139dc-5afc-11e9-35da-9b9bdfd336f3"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+GridVisualize = "5eed8a63-0fb0-45eb-886d-8d5a387d12b8"
 
 [compat]
 ExtendableGrids = ">=0.3.0"
 VoronoiFVM = ">=0.8"
+GridVisualize = "^0.1"

@@ -13,7 +13,7 @@ index 3: anion vacancies as charge carrier with the corresponding density ``a``,
 
 index 4: cation vacancies as charge carrier with the corresponding density ``c``.
 """
-function plotDensities(Plotter, grid, data, sol, bias)
+function plotDensities(Plotter, grid, data, sol, title)
     Plotter.clf()
 
     if dim_space(grid) > 1
@@ -78,7 +78,7 @@ function plotDensities(Plotter, grid, data, sol, bias)
     Plotter.xlabel("space [\$m\$]")
     Plotter.ylabel("density [\$\\frac{1}{m^3}\$]")
     Plotter.legend(fancybox = true, loc = "best")
-    Plotter.title("bias \$\\Delta u\$ = $bias")
+    Plotter.title(title)
     Plotter.pause(0.00001)
 
 end
@@ -174,7 +174,7 @@ index 3: anion vacancies as charge carrier with the corresponding density ``a``,
 
 index 4: cation vacancies as charge carrier with the corresponding density ``c``.
 """
-function plotEnergies(Plotter, grid, data, sol, Δu)
+function plotEnergies(Plotter, grid, data, sol, title)
     Plotter.clf()
 
     ipsi                = data.numberOfCarriers + 1
@@ -235,7 +235,7 @@ function plotEnergies(Plotter, grid, data, sol, Δu)
    Plotter.ylabel("energies [\$eV\$]")
    Plotter.legend(fancybox = true, loc = "best")
    Plotter.tight_layout()
-   Plotter.title("bias \$\\Delta u\$ = $Δu")
+   Plotter.title(title)
    Plotter.pause(1.0e-5)
 
 end
@@ -477,7 +477,7 @@ index 3: anion vacancies as charge carrier with the corresponding density ``a``,
 
 index 4: cation vacancies as charge carrier with the corresponding density ``c``.
 """
-function plotSolution(Plotter, coord, solution, Eref,  Δu)
+function plotSolution(Plotter, coord, solution, Eref,  title)
 
     ipsi = size(solution)[1] # convention: psi is the last species
 
@@ -496,10 +496,46 @@ function plotSolution(Plotter, coord, solution, Eref,  Δu)
     Plotter.xlabel("space [m]")
     Plotter.ylabel("potential [V]")
     Plotter.legend(fancybox = true, loc = "best")
-    Plotter.title("bias \$\\Delta u\$ = $Δu")
+    Plotter.title(title)
     Plotter.gcf()
 
 end
+
+function plotSolution(Plotter, grid, solution, Eref, agrid, t, Δu)
+
+
+    # Create a visualizer. Works wit Plots (fast once compiled) and PyPlot
+    visualizer = p = GridVisualizer(Plotter = Plotter, layout = (1,1) )
+
+    ipsi = size(solution)[1] # convention: psi is the last species
+
+    colors        = ["green", "red", "gold", "purple"]
+    linestyles    = ["--", "-.", "-", ":"]
+    densityNames  = ["\$\\varphi_n\$", "\$\\varphi_p\$", "\$\\varphi_a\$", "\$\\varphi_c\$"]  
+    
+    Plotter.clf() 
+    scalarplot!(p[1,1], grid, (solution[ipsi,:] + Eref/q*ones(length(solution[ipsi,:]))), label = "\$\\psi\$", color="b",  marker = "x", 
+    title="time \$ t =\$ $t, bias \$\\Delta u\$ = $Δu", clear = true)
+
+    for icc in 1:2
+        scalarplot!(p[1,1], grid, solution[icc,:], label =  densityNames[icc], color= colors[icc], linestyle = linestyles[icc], clear = false)
+    end
+
+    for icc in 3:ipsi-1
+        scalarplot!(p[1,1], agrid , view(solution[icc,:], agrid), label =  densityNames[icc], color= colors[icc], linestyle = linestyles[icc], clear = false)
+    end
+
+    reveal(p)
+
+    Plotter.grid()
+    Plotter.xlabel("space [m]")
+    Plotter.ylabel("potential [V]")
+    Plotter.legend(fancybox = true, loc = "best")
+    Plotter.title("time \$ t =\$ $t, bias \$\\Delta u\$ = $Δu")
+    Plotter.gcf()
+end
+
+
 
 function plotSolutionIKZ(Plotter, coord, solution, Eref,  Δu)
 
