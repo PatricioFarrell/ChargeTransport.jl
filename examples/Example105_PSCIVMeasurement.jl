@@ -417,7 +417,6 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         Δt                    = t - tvalues[istep-1] # Time step size
         
         # Apply new voltage
-        sys.physics.data.contactVoltage[bregionAcceptor] = Δu
         sys.boundary_values[iphin, bregionAcceptor]      = Δu
         sys.boundary_values[iphip, bregionAcceptor]      = Δu
         
