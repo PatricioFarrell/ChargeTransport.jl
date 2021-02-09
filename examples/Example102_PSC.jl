@@ -1,16 +1,16 @@
 """
-Simulating a three layer PSC device with mobile ions modelled with Boltzmann.
+Simulating a three layer PSC device without mobile ions.
 The simulations are performed out of equilibrium and with
-abrupt interfaces. An I-V measurement protocol is included and the corresponding
-solution vectors after the scan can be depicted.
+abrupt interfaces.
 
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
 The paramters can be found here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-comparison/Input_files/IonMonger_default_noIR.csv.
+
 """
 
-module Example105_PSCIVMeasurement
+module Example102_PSC
 
 using VoronoiFVM
 using ChargeTransportInSolids
@@ -18,8 +18,8 @@ using ExtendableGrids
 using Printf
 using GridVisualize
 
-function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:dense)
-    
+function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+
     ################################################################################
     if test == false
         println("Set up grid and regions")
@@ -27,28 +27,26 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     # region numbers
-    regionDonor           = 1                           # n doped region
-    regionIntrinsic       = 2                           # intrinsic region
-    regionAcceptor        = 3                           # p doped region
-    regions               = [regionDonor, regionIntrinsic, regionAcceptor]
+    regionDonor     = 1                           # n doped region
+    regionIntrinsic = 2                           # intrinsic region
+    regionAcceptor  = 3                           # p doped region
+    regions         = [regionDonor, regionIntrinsic, regionAcceptor]
 
     # boundary region numbers
-    bregionDonor          = 1
-    bregionAcceptor       = 2
-    bregions              = [bregionDonor, bregionAcceptor]
+    bregionDonor    = 1
+    bregionAcceptor = 2
+    bregions        = [bregionAcceptor, bregionDonor]
 
     # grid
-    h_ndoping             = 9.90e-6 * cm 
-    h_intrinsic           = 4.00e-5 * cm + 2.0e-7 * cm
-    h_pdoping             = 1.99e-5 * cm
-    heightLayers          = [h_ndoping,
-                             h_ndoping + h_intrinsic,
-                             h_ndoping + h_intrinsic + h_pdoping]
+    # NB: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
+    h_ndoping       = 9.90e-6 * cm 
+    h_intrinsic     = 4.00e-5 * cm + 2.0e-7 * cm # add 2.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_pdoping       = 1.99e-5 * cm
 
     x0              = 0.0 * cm 
-    δ               = 4*n        # the larger, the finer the mesh
+    δ               = 2*n        # the larger, the finer the mesh
     t               = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
-    k               = 1.5        # the closer to 1, the closer to the boundary geomspace
+    k               = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
     coord_n_u       = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
     coord_n_g       = geomspace(h_ndoping/2, 
@@ -80,17 +78,18 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     coord           = glue(coord,    coord_p_u,  tol=10*t)
     grid            = ExtendableGrids.simplexgrid(coord)
     numberOfNodes   = length(coord)
-    
+
     # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-12)       # n-doped region   = 1
-    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-12)   # intrinsic region = 2  
-    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-12)    # p-doped region   = 3  
+    cellmask!(grid, [0.0 * μm],                [h_ndoping],                           regionDonor)     # n-doped region   = 1
+    cellmask!(grid, [h_ndoping],               [h_ndoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
+    cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)  # p-doped region   = 3
 
     if plotting
         GridVisualize.gridplot(grid, Plotter = Plotter)
         Plotter.title("Grid")
+        Plotter.figure()
     end
-
+ 
     if test == false
         println("*** done\n")
     end
@@ -99,50 +98,46 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         println("Define physical parameters and model")
     end
     ################################################################################
-    
+
     # indices
-    iphin, iphip, iphia, ipsi      = 1:4
-    species                        = [iphin, iphip, iphia, ipsi]
-    
+    iphin, iphip, ipsi      = 1:3
+    species                 = [iphin, iphip, ipsi]
+
     # number of (boundary) regions and carriers
     numberOfRegions         = length(regions)
-    numberOfBoundaryRegions = length(bregions) 
+    numberOfBoundaryRegions = length(bregions) #+ length(iregions)
     numberOfCarriers        = length(species) - 1
-    
+
     # temperature
     T               = 300.0                 *  K
-    
+
     # band edge energies    
-    Eref            =  0.0
-    Ec_d            = -4.0                  *  eV + Eref
-    Ev_d            = -6.0                  *  eV + Eref
-    
-    Ec_i            = -3.7                  *  eV + Eref
-    Ev_i            = -5.4                  *  eV + Eref
-    
-    Ea_i            = -4.335                *  eV + Eref # use -4.335 * eV  for unbounded ions in equilibrium and -3.9 * eV for unbounded ones.
-    
-    Ec_a            = -3.1                  *  eV + Eref
-    Ev_a            = -5.1                  *  eV + Eref
-        
+    Eref            = 0.0        # reference energy 
+
+    Ec_d            = -4.0                  *  eV 
+    Ev_d            = -6.0                  *  eV 
+
+    Ec_i            = -3.7                  *  eV 
+    Ev_i            = -5.4                  *  eV 
+
+    Ec_a            = -3.1                  *  eV 
+    Ev_a            = -5.1                  *  eV 
+
     EC              = [Ec_d, Ec_i, Ec_a] 
     EV              = [Ev_d, Ev_i, Ev_a] 
-    EA              = [0.0,  Ea_i,  0.0]
-    
+
     # effective densities of state
     Nc_d            = 5.0e19                / (cm^3)
     Nv_d            = 5.0e19                / (cm^3)
-    
+
     Nc_i            = 8.1e18                / (cm^3)
     Nv_i            = 5.8e18                / (cm^3)
-    Nanion          = 1.6e19                / (cm^3)
 
     Nc_a            = 5.0e19                / (cm^3)
     Nv_a            = 5.0e19                / (cm^3)
 
-    NC              = [Nc_d, Nc_i,  Nc_a]
-    NV              = [Nv_d, Nv_i,  Nv_a]
-    NAnion          = [0.0,  Nanion, 0.0]
+    NC              = [Nc_d, Nc_i, Nc_a]
+    NV              = [Nv_d, Nv_i, Nv_a]
 
     # mobilities 
     μn_d            = 3.89                  * (cm^2) / (V * s)  
@@ -151,16 +146,14 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     μn_i            = 6.62e1                * (cm^2) / (V * s)  
     μp_i            = 6.62e1                * (cm^2) / (V * s)
 
-    μa_i            = 3.93e-12              * (cm^2) / (V * s)
-
     μn_a            = 3.89e-1               * (cm^2) / (V * s) 
-    μp_a            = 3.89e-1               * (cm^2) / (V * s)
-    
+    μp_a            = 3.89e-1               * (cm^2) / (V * s) 
+
     μn              = [μn_d, μn_i, μn_a] 
     μp              = [μp_d, μp_i, μp_a] 
-    μa              = [0.0,  μa_i, 0.0 ] 
 
     # relative dielectric permittivity  
+
     ε_d             = 10.0                  *  1.0  
     ε_i             = 24.1                  *  1.0 
     ε_a             = 3.0                   *  1.0 
@@ -185,7 +178,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     τp_i            = 3.0e-8               * s
     τn_a            = τn_d
     τp_a            = τp_d
-
+        
     τn              = [τn_d, τn_i, τn_a]
     τp              = [τp_d, τp_i, τp_a]
         
@@ -199,18 +192,19 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     # Auger recombination
     Auger           = 0.0
 
-    # doping (doping values are from Driftfusion)
+    # doping (doping values are from Phils paper, not stated in the parameter list online)
     Nd              =   1.03e18             / (cm^3) 
     Na              =   1.03e18             / (cm^3) 
-    C0              =   1.6e19              / (cm^3) 
+    Ni_acceptor     =   8.32e7              / (cm^3) 
 
     # contact voltages
-    voltageAcceptor =  1.2                 * V 
-    voltageDonor    =  0.0                 * V 
+    voltageAcceptor =  1.2                  * V 
+    voltageDonor    =  0.0                  * V 
 
     if test == false
         println("*** done\n")
     end
+
     ################################################################################
     if test == false
         println("Define ChargeTransport data and fill in previously defined data")
@@ -218,22 +212,35 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     # initialize ChargeTransport instance
-    data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes,
-                                                            numberOfRegions,
-                                                            numberOfBoundaryRegions,
-                                                            ;numberOfSpecies = numberOfCarriers + 1)
+    data                                 = ChargeTransportInSolids.ChargeTransportData(numberOfNodes,
+                                                                                       numberOfRegions,
+                                                                                       numberOfBoundaryRegions,
+                                                                                       numberOfSpecies = numberOfCarriers + 1)
 
     # region independent data
-    data.F                               = [Boltzmann, Boltzmann, Boltzmann] # Boltzmann, FermiDiracOneHalf, FermiDiracMinusOne, Blakemore
-    data.temperature                     = T
-    data.UT                              = (kB * data.temperature) / q
-    data.contactVoltage[bregionAcceptor] = voltageAcceptor
-    data.contactVoltage[bregionDonor]    = voltageDonor
-    data.chargeNumbers[iphin]            = -1
-    data.chargeNumbers[iphip]            =  1
-    data.chargeNumbers[iphia]            =  1
-    data.recombinationOn                 = recombinationOn
-    data.Eref                            = Eref
+    data.F                                       .= Boltzmann # Boltzmann, FermiDiracMinusOne,FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA, Blakemore
+    data.temperature                              = T
+    data.UT                                       = (kB * data.temperature) / q
+    data.contactVoltage[bregionAcceptor]          = voltageAcceptor
+    data.contactVoltage[bregionDonor]             = voltageDonor
+    data.chargeNumbers[iphin]                     = -1
+    data.chargeNumbers[iphip]                     =  1
+    data.Eref                                     =  Eref
+
+    data.recombinationOn                          = recombinationOn
+
+    # boundary region data
+    data.bDensityOfStates[iphin, bregionDonor]    = Nc_d
+    data.bDensityOfStates[iphip, bregionDonor]    = Nv_d
+
+    data.bDensityOfStates[iphin, bregionAcceptor] = Nc_a
+    data.bDensityOfStates[iphip, bregionAcceptor] = Nv_a
+
+    data.bBandEdgeEnergy[iphin, bregionDonor]     = Ec_d + data.Eref
+    data.bBandEdgeEnergy[iphip, bregionDonor]     = Ev_d + data.Eref
+
+    data.bBandEdgeEnergy[iphin, bregionAcceptor]  = Ec_a + data.Eref
+    data.bBandEdgeEnergy[iphip, bregionAcceptor]  = Ev_a + data.Eref
 
     # interior region data
     for ireg in 1:numberOfRegions
@@ -243,15 +250,12 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         # dos, band edge energy and mobilities
         data.densityOfStates[iphin, ireg]             = NC[ireg]
         data.densityOfStates[iphip, ireg]             = NV[ireg]
-        data.densityOfStates[iphia, ireg]             = NAnion[ireg]
 
-        data.bandEdgeEnergy[iphin, ireg]              = EC[ireg]
-        data.bandEdgeEnergy[iphip, ireg]              = EV[ireg]
-        data.bandEdgeEnergy[iphia, ireg]              = EA[ireg]
+        data.bandEdgeEnergy[iphin, ireg]              = EC[ireg] + data.Eref
+        data.bandEdgeEnergy[iphip, ireg]              = EV[ireg] + data.Eref
 
         data.mobility[iphin, ireg]                    = μn[ireg]
         data.mobility[iphip, ireg]                    = μp[ireg]
-        data.mobility[iphia, ireg]                    = μa[ireg]
 
         # recombination parameters
         data.recombinationRadiative[ireg]             = r0[ireg]
@@ -263,27 +267,19 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         data.recombinationAuger[iphip, ireg]          = Auger
     end
 
-    # boundary region data
-    data.bDensityOfStates[iphin, bregionDonor]        = Nc_d
-    data.bDensityOfStates[iphip, bregionDonor]        = Nv_d
-
-    data.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
-    data.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
-
-    data.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
-    data.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
-
-    data.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
-    data.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
-
     # interior doping
-    data.doping[iphin, regionDonor]                   = Nd
-    data.doping[iphia, regionIntrinsic]               = C0
-    data.doping[iphip, regionAcceptor]                = Na  
-
+    data.doping[iphin, regionDonor]               = Nd
+    data.doping[iphip, regionIntrinsic]           = Ni_acceptor    
+    data.doping[iphip, regionAcceptor]            = Na     
+                             
     # boundary doping
-    data.bDoping[iphip, bregionAcceptor]              = Na      
-    data.bDoping[iphin, bregionDonor]                 = Nd      
+    data.bDoping[iphip, bregionAcceptor]          = Na        # data.bDoping  = [Na  0.0;
+    data.bDoping[iphin, bregionDonor]             = Nd        #                  0.0  Nd]
+
+    # print data
+    if test == false
+        println(data)
+    end
 
     if test == false
         println("*** done\n")
@@ -298,13 +294,17 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     physics = VoronoiFVM.Physics(
     data        = data,
     num_species = numberOfCarriers + 1,
-    flux        = ChargeTransportInSolids.Sedan!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
+    flux        = ChargeTransportInSolids.ScharfetterGummel!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
     reaction    = ChargeTransportInSolids.reaction!,
-    breaction   = ChargeTransportInSolids.breactionOhmic!,
-    storage     = ChargeTransportInSolids.storage!
+    breaction   = ChargeTransportInSolids.breactionOhmic!
     )
 
     sys         = VoronoiFVM.System(grid,physics,unknown_storage=unknown_storage)
+
+    # enable all three species in all regions
+    enable_species!(sys, ipsi,  regions)
+    enable_species!(sys, iphin, regions)
+    enable_species!(sys, iphip, regions)
 
     sys.boundary_values[iphin,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
     sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
@@ -318,15 +318,10 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     sys.boundary_values[iphip,  bregionDonor]    = data.contactVoltage[bregionDonor]
     sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
 
-    # enable all three species in all regions
-    enable_species!(sys, ipsi,  regions)
-    enable_species!(sys, iphin, regions)
-    enable_species!(sys, iphip, regions)
-    enable_species!(sys, iphia, [regionIntrinsic])
-
     if test == false
         println("*** done\n")
     end
+
     ################################################################################
     if test == false
         println("Define control parameters for Newton solver")
@@ -345,6 +340,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     if test == false
         println("*** done\n")
     end
+
     ################################################################################
     if test == false
         println("Compute solution in thermodynamic equilibrium for Boltzmann")
@@ -359,15 +355,14 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     @views initialGuess[ipsi,  :] .= 0.0
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
-    @views initialGuess[iphia, :] .= 0.0
 
     control.damp_initial      = 0.1
     control.damp_growth       = 1.61 # >= 1
     control.max_round         = 5
 
-    sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
     sys.boundary_values[iphin, bregionAcceptor] = 0.0 * V
     sys.boundary_values[iphip, bregionAcceptor] = 0.0 * V
+    sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
 
     I = collect(20.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 
@@ -381,74 +376,74 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         initialGuess .= solution
     end
 
+    if plotting
+        # ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
+        # Plotter.figure()
+        # ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
+        # Plotter.figure()
+        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "EQULIBRIUM (NO illumination)")
+        Plotter.figure()
+    end
+
     if test == false
         println("*** done\n")
     end
+
     ################################################################################
     if test == false
-        println("IV Measurement loop")
+        println("Bias loop")
     end
     ################################################################################
+    data.inEquilibrium = false
 
-    data.inEquilibrium        = false
+    control.damp_initial                             = 0.005
+    control.damp_growth                              = 1.21 # >= 1
+    control.max_round                                = 7
 
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.61 # >= 1
-    control.max_round         = 7
- 
-    # there are different way to control timestepping
-    # Here we assume these primary data
-    scanrate                  = 1.0 * V/s
-    ntsteps                   = 101
-    vend                      = voltageAcceptor
-    v0                        = 0.0
+    # set non equilibrium boundary conditions
+    sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor
+    sys.physics.data.contactVoltage[bregionAcceptor] = voltageAcceptor
+    sys.boundary_values[iphin, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
+    sys.boundary_values[iphip, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
 
-    # The end time then is calculated here:
-    tend                      = vend/scanrate
+    maxBias    = data.contactVoltage[bregionAcceptor]
+    biasValues = range(0, stop = maxBias, length = 13)
 
-    # with fixed timestep sizes we can calculate the times
-    # a priori
-    tvalues                   = range(0, stop = tend, length = ntsteps)
-
-    for istep = 2:ntsteps
-        
-        t                     = tvalues[istep] # Actual time
-        Δu                    = v0 + t*scanrate # Applied voltage 
-        Δt                    = t - tvalues[istep-1] # Time step size
-        
-        # Apply new voltage
-        sys.boundary_values[iphin, bregionAcceptor]      = Δu
-        sys.boundary_values[iphip, bregionAcceptor]      = Δu
-        
+    for Δu in biasValues
         if test == false
-            println("time value: t = $(t)")
+            println("Bias value: Δu = $(Δu) (no illumination)")
         end
 
-        # Solve time step problems with timestep Δt. initialGuess plays the role of the solution
-        # from last timestep
-        solve!(solution, initialGuess, sys, control = control, tstep = Δt)
+        data.contactVoltage[bregionAcceptor]         = Δu
+        sys.boundary_values[iphin, bregionAcceptor]  = Δu
+        sys.boundary_values[iphip, bregionAcceptor]  = Δu
+
+        solve!(solution, initialGuess, sys, control  = control, tstep = Inf)
+
         initialGuess .= solution
 
-    end # time loop
+    end # bias loop
 
-    if plotting 
-        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(v0+vend), time \$ t = \$ $tend")
-        Plotter.figure()
-        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(v0+vend), time \$ t = \$ $tend")
-        Plotter.figure()
-        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, 0.0, "bias \$\\Delta u\$ = $(v0+vend), time \$ t = \$ $tend")
+    #plotting
+    if plotting
+        # ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "Δu = maxBias")
+        # Plotter.figure()
+        # ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "Δu = maxBias")
+        # Plotter.figure()
+        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "Δu = maxBias")
+    end
+    if test == false
+        println("*** done\n")
     end
 
-    testval = solution[ipsi, 15]
+    testval = solution[ipsi, 20]
     return testval
-    
-    println("*** done\n")
 
 end #  main
 
 function test()
-    testval = -4.100369932212325
-    main(test = true, unknown_storage=:dense) ≈ testval  #&& main(test = true, unknown_storage=:sparse) ≈ testval
+    testval=-4.052650626421281
+    main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 if test == false
