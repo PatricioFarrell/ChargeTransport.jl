@@ -77,7 +77,6 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     numberOfRegions         = length(regions)
     numberOfBoundaryRegions = length(bregions)
     numberOfCarriers        = length(species) - 1
-    println(numberOfCarriers)
 
     # physical data
     Ec                = 1.424                *  eV
@@ -161,7 +160,6 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         data.mobility[iphip, ireg]                    = mup
 
         # recombination parameters
-        data.recombinationRadiative[ireg]             = Radiative
         data.recombinationRadiative[ireg]             = Radiative
         data.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime
         data.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime

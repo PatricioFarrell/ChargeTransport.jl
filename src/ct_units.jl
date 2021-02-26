@@ -27,9 +27,10 @@ nm                 = 1.0e-9 * m
 ms                 = 1.0e-3 * s
 μs                 = 1.0e-6 * s 
 ns                 = 1.0e-9 * s
+ps                 = 1.0e-12 *s
 
 eV                 = q * V
 
-export cm, mm, μm, nm, ms, μs, ns, eV
+export cm, mm, μm, nm, ms, μs, ns, ps, eV
 
 # end

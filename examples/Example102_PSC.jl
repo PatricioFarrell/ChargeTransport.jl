@@ -426,11 +426,11 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
 
     #plotting
     if plotting
-        # ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "Δu = maxBias")
+        # ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias")
         # Plotter.figure()
-        # ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "Δu = maxBias")
+        # ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias")
         # Plotter.figure()
-        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "Δu = maxBias")
+        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "Applied voltage Δu = $maxBias")
     end
     if test == false
         println("*** done\n")
