@@ -71,6 +71,16 @@ mutable struct ChargeTransportData <: VoronoiFVM.AbstractData
     """
     λ2                          ::  Float64
 
+    """
+    An embedding parameter for electrochemical reaction.
+    """
+    λ3                          ::  Float64
+
+    """
+    Prefactor of electro-chemical reaction of internal boundary conditions.
+    """
+    r0                          ::  Float64
+
 
     # booleans
 
@@ -272,6 +282,8 @@ function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, num
     0.27,                                                                     # parameter for Blakemore statistics
     1.0,                                                                      # λ1: embedding parameter for NLP
     0.0,                                                                      # λ2: embedding parameter for G
+    1.0,                                                                      # λ3: embedding parameter for electro chemical reaction
+    0.0,                                                                      # r0 prefactor from electro-chemical reaction
 
     # booleans
     true,                                                                     # inEquilibrium
@@ -569,27 +581,26 @@ function breactionOhmic!(f, u, bnode, data)
         iphiaj1, iphiaj2   = 5:6
         ipsij1, ipsij2     = 7:8
 
-        δ                  = 0.0 # small perturbation
-        E                  = ( - 4.335 *  eV    ) + δ
-        DOS                =   1.6e19  / (cm^3) 
-        C0                 =   1.6e19  / (cm^3) 
+        E                  = data.bBandEdgeEnergy[iphia, 3]
+        DOS                = data.bDensityOfStates[iphia, 3] 
+        C0                 = data.doping[iphia, 3]
 
         β                  = 0.5 # can be between 0 and 1 
         κ                  = 1 # either 0 or 1
-        r0                 = 0.0#1.0e-12
+        r0                 = data.r0
 
         if bnode.region == 3
             etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj1] - u[ipsi]) + E / q )
 
-            f[ipsi]           =  - q * ( data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion) - C0^(2/3) ) # (1.3.3) @ left inner boundary 
+            f[ipsi]        =  - q * ( data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion) - C0^(2/3) ) # (1.3.3) @ left inner boundary 
 
             if data.inEquilibrium == true
-                f[iphia] = u[iphia]
+                f[iphia]   = u[iphia]
                 f[iphiaj1] = u[iphiaj1]
             else
 
-            f[iphia]      =  - ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ) ) # (1.3.6) @ left inner boundary 
-            f[iphiaj1]    = - ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ) ) # (1.3.5) @ left inner boundary (right-hand side of equation)
+            f[iphia]       =   data.λ3 * q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ) ) # (1.3.6) @ left inner boundary 
+            f[iphiaj1]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ) ) # (1.3.5) @ left inner boundary (right-hand side of equation)
 
             end
             
@@ -597,16 +608,16 @@ function breactionOhmic!(f, u, bnode, data)
         else
             etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj2] - u[ipsi]) + E / q )
 
-            f[ipsi]           =  -  q * ( data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion) - C0^(2/3) ) # (1.3.3) @ rigth inner boundary 
+            f[ipsi]        =  -  q * ( data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion) - C0^(2/3) ) # (1.3.3) @ rigth inner boundary 
 
 
             if data.inEquilibrium == true
-                f[iphia] = u[iphia]
+                f[iphia]   = u[iphia]
                 f[iphiaj2] = u[iphiaj2]
             else
 
-            f[iphia]      =  ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ) ) # (1.3.6) @ right inner boundary 
-            f[iphiaj2]    =   - ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ) ) # (1.3.5) @ right inner boundary (right-hand side of equation)
+            f[iphia]       = - data.λ3 *  q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ) ) # (1.3.6) @ right inner boundary 
+            f[iphiaj2]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ) ) # (1.3.5) @ right inner boundary (right-hand side of equation)
             end
         end
 
@@ -618,15 +629,14 @@ end
 
 function electrochemicalReaction(data, u, iphia, ipsi, iphiaJunction, ipsiJunction, β, κ) # (1.3.7)
 
-    δ   = 0.0 # small perturbation
-    E   = ( - 4.335 *  eV    ) + δ
-    DOS = ( 1.6e19  / (cm^3) )
-    C0  =   1.6e19  / (cm^3) 
+    E                    = data.bBandEdgeEnergy[iphia, 3]
+    DOS                  = data.bDensityOfStates[iphia, 3] 
+    C0                   = data.doping[iphia, 3]
 
     etaExp               = data.chargeNumbers[iphia] / data.UT * ( (u[iphia] - u[iphiaJunction]) + E / q ) 
     expTerm              =  exp( β * etaExp ) - exp( (β - 1) * etaExp)
 
-    etaInterfaceAnion    = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaJunction] - u[ipsiJunction]) + E / q ) # welches psi nehmen wir hier?
+    etaInterfaceAnion    = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaJunction] - u[ipsiJunction]) + E / q )
     etaAnion             = data.chargeNumbers[iphia] / data.UT * ( (u[iphia] - u[ipsi]) + E / q )
 
     densFactor           = ( (DOS^(2/3) * data.F[iphia](etaInterfaceAnion) )^(1/2) * (DOS * data.F[iphia](etaAnion) )^(- 1/2) )^κ
@@ -642,22 +652,21 @@ function bstorage!(f, u, bnode, data)
     iphiaj1, iphiaj2  = 5:6
     ipsij1, ipsij2    = 7:8
 
-    δ   = 0.0 # small perturbation
-    E   = ( - 4.335 *  eV    ) + δ
-    DOS = ( 1.6e19  / (cm^3) )
-    C0  =   1.6e19  / (cm^3) 
+    E                  = data.bBandEdgeEnergy[iphia, 3] 
+    DOS                = data.bDensityOfStates[iphia, 3] 
+    C0                 = data.doping[iphia, 3]
 
     if bnode.region == 3
 
         # (1.3.5) @ left inner boundary (left-hand side of equation)
-        etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj1] - u[ipsi]) + E / q ) # welches psi nehmen wir hier?
-        f[iphiaj1]        =  data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion)
+        etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj1] - u[ipsi]) + E / q ) 
+        f[iphiaj1]        = data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion) # times q?
 
     elseif bnode.region == 4
 
         # (1.3.5) @ right inner boundary (left-hand side of equation)
-        etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj2] - u[ipsi]) + E / q ) # welches psi nehmen wir hier?
-        f[iphiaj2]        = data.chargeNumbers[iphia] *  DOS^(2/3) * data.F[iphia](etaInterfaceAnion)
+        etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj2] - u[ipsi]) + E / q )
+        f[iphiaj2]        = data.chargeNumbers[iphia] *  DOS^(2/3) * data.F[iphia](etaInterfaceAnion) # times q?
 
     end
 end
