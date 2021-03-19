@@ -577,38 +577,38 @@ function breactionOhmic!(f, u, bnode, data)
         
     elseif bnode.region == 3 || bnode.region == 4 
         # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...  
-        iphia              = 3
-        iphiaj1, iphiaj2   = 5:6
-        ipsij1, ipsij2     = 7:8
+        iphia             = 3
+        iphiaj1, iphiaj2  = 5:6
 
-        E                  = data.bBandEdgeEnergy[iphia, 3]
-        DOS                = data.bDensityOfStates[iphia, 3] 
-        C0                 = data.doping[iphia, 3]
+        E1                = data.bBandEdgeEnergy[iphia, 3] 
+        E2                = data.bBandEdgeEnergy[iphia, 4] 
+        DOS               = data.bDensityOfStates[iphia, 3] 
+        C0                = data.doping[iphia, 3]
 
-        β                  = 0.5 # can be between 0 and 1 
-        κ                  = 1 # either 0 or 1
-        r0                 = data.r0
+        β                 = 0.5 # can be between 0 and 1 
+        κ                 = 1 # either 0 or 1
+        r0                = data.r0
 
         if bnode.region == 3
-            etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj1] - u[ipsi]) + E / q )
+            etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj1] - u[ipsi]) + E1 / q )
 
-            f[ipsi]        =  - q * ( data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion) - C0^(2/3) ) # (1.3.3) @ left inner boundary 
+            f[ipsi]        =  - q  *  ( data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion) - C0^(2/3) ) # (1.4.5) @ left inner boundary 
 
             if data.inEquilibrium == true
                 f[iphia]   = u[iphia]
                 f[iphiaj1] = u[iphiaj1]
             else
 
-            f[iphia]       =   data.λ3 * q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ) ) # (1.3.6) @ left inner boundary 
-            f[iphiaj1]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ) ) # (1.3.5) @ left inner boundary (right-hand side of equation)
+            f[iphia]       =   data.λ3 * q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ, E1) ) # (1.4.8) @ left inner boundary 
+            f[iphiaj1]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ, E1) ) # (1.4.7) @ left inner boundary (right-hand side of equation)
 
             end
             
 
-        else
-            etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj2] - u[ipsi]) + E / q )
+        elseif bnode.region == 4
+            etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj2] - u[ipsi]) + E2 / q )
 
-            f[ipsi]        =  -  q * ( data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion) - C0^(2/3) ) # (1.3.3) @ rigth inner boundary 
+            f[ipsi]        =  -  q *  ( data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion) - C0^(2/3) ) # (1.4.5) @ rigth inner boundary 
 
 
             if data.inEquilibrium == true
@@ -616,8 +616,8 @@ function breactionOhmic!(f, u, bnode, data)
                 f[iphiaj2] = u[iphiaj2]
             else
 
-            f[iphia]       = - data.λ3 *  q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ) ) # (1.3.6) @ right inner boundary 
-            f[iphiaj2]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ) ) # (1.3.5) @ right inner boundary (right-hand side of equation)
+            f[iphia]       = - data.λ3 *  q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ, E2) ) # (1.4.8) @ right inner boundary 
+            f[iphiaj2]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ, E2) ) # (1.4.7) @ right inner boundary (right-hand side of equation)
             end
         end
 
@@ -627,19 +627,18 @@ function breactionOhmic!(f, u, bnode, data)
 
 end
 
-function electrochemicalReaction(data, u, iphia, ipsi, iphiaJunction, ipsiJunction, β, κ) # (1.3.7)
+function electrochemicalReaction(data, u, iphia, ipsi, iphiaJunction, ipsiJunction, β, κ, E) # (1.4.9)
+ 
+    DOS                = data.bDensityOfStates[iphia, 3] 
+    C0                 = data.doping[iphia, 3]
 
-    E                    = data.bBandEdgeEnergy[iphia, 3]
-    DOS                  = data.bDensityOfStates[iphia, 3] 
-    C0                   = data.doping[iphia, 3]
+    etaExp             = data.chargeNumbers[iphia] / data.UT * ( (u[iphia] - u[iphiaJunction]) + E / q ) 
+    expTerm            =  exp( β * etaExp ) - exp( (β - 1) * etaExp)
 
-    etaExp               = data.chargeNumbers[iphia] / data.UT * ( (u[iphia] - u[iphiaJunction]) + E / q ) 
-    expTerm              =  exp( β * etaExp ) - exp( (β - 1) * etaExp)
+    etaInterfaceAnion  = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaJunction] - u[ipsiJunction]) + E / q )
+    etaAnion           = data.chargeNumbers[iphia] / data.UT * ( (u[iphia] - u[ipsi]) + E / q )
 
-    etaInterfaceAnion    = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaJunction] - u[ipsiJunction]) + E / q )
-    etaAnion             = data.chargeNumbers[iphia] / data.UT * ( (u[iphia] - u[ipsi]) + E / q )
-
-    densFactor           = ( (DOS^(2/3) * data.F[iphia](etaInterfaceAnion) )^(1/2) * (DOS * data.F[iphia](etaAnion) )^(- 1/2) )^κ
+    densFactor         = ( (DOS^(2/3) * data.F[iphia](etaInterfaceAnion) )^(1/2) * (DOS * data.F[iphia](etaAnion) )^(- 1/2) )^κ
 
     return densFactor * expTerm
 
@@ -650,23 +649,23 @@ function bstorage!(f, u, bnode, data)
     iphia             = 3
     ipsi              = data.numberOfCarriers + 1        # final index for electrostatic potential
     iphiaj1, iphiaj2  = 5:6
-    ipsij1, ipsij2    = 7:8
 
-    E                  = data.bBandEdgeEnergy[iphia, 3] 
+    E1                 = data.bBandEdgeEnergy[iphia, 3] 
+    E2                 = data.bBandEdgeEnergy[iphia, 4] 
     DOS                = data.bDensityOfStates[iphia, 3] 
     C0                 = data.doping[iphia, 3]
 
     if bnode.region == 3
 
-        # (1.3.5) @ left inner boundary (left-hand side of equation)
-        etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj1] - u[ipsi]) + E / q ) 
-        f[iphiaj1]        = data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion) # times q?
+        # (1.4.7) @ left inner boundary (left-hand side of equation)
+        etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj1] - u[ipsi]) + E1 / q ) 
+        f[iphiaj1]        = data.chargeNumbers[iphia] * DOS^(2/3) * data.F[iphia](etaInterfaceAnion) 
 
     elseif bnode.region == 4
 
-        # (1.3.5) @ right inner boundary (left-hand side of equation)
-        etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj2] - u[ipsi]) + E / q )
-        f[iphiaj2]        = data.chargeNumbers[iphia] *  DOS^(2/3) * data.F[iphia](etaInterfaceAnion) # times q?
+        # (1.4.7) @ right inner boundary (left-hand side of equation)
+        etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj2] - u[ipsi]) + E2 / q )
+        f[iphiaj2]        = data.chargeNumbers[iphia] *  DOS^(2/3) * data.F[iphia](etaInterfaceAnion)
 
     end
 end

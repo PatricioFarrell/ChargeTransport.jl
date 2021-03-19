@@ -479,7 +479,11 @@ index 4: cation vacancies as charge carrier with the corresponding density ``c``
 """
 function plotSolution(Plotter, coord, solution, Eref,  title)
 
-    ipsi = 4#size(solution)[1] # convention: psi is the last species
+    if size(solution)[1] > 4
+        ipsi = 4
+    else
+        ipsi = size(solution)[1] # convention: psi is the last species
+    end
 
     colors        = ["green", "red", "gold", "purple"]
     linestyles    = ["--", "-.", "-", ":"]
