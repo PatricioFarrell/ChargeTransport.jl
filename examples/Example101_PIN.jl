@@ -376,7 +376,7 @@ function test()
 end
 
 if test == false
-    println("This message should show when the PIN module is successfully recompiled.")
+    println("This message should show when the PIN module has successfully recompiled.")
 end
 
 end # module
