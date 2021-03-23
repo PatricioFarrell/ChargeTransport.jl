@@ -44,7 +44,7 @@ function plotDensities(Plotter, grid, data, sol, title)
 
         label_icc               = densityNames[icc]
         
-        Plotter.semilogy([coordinates[1]./1, coordinates[2]./1], [icc1, icc2], label = label_icc, color = colors[icc], linewidth = 2) 
+        Plotter.semilogy([coordinates[1]./1, coordinates[2]./1], 1.0e-6 .*[icc1, icc2], label = label_icc, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)
 
         for icell in 2:size(cellnodes,2) - 1
             in_region = true
@@ -59,7 +59,7 @@ function plotDensities(Plotter, grid, data, sol, title)
             icc1      = computeDensities(u1, data, i1, ireg, icc, ipsi, in_region)
             icc2      = computeDensities(u2, data, i2, ireg, icc, ipsi, in_region)
         
-            Plotter.semilogy([coordinates[i1]./1, coordinates[i2]./1], [icc1, icc2],  color = colors[icc], linewidth = 2)      
+            Plotter.semilogy([coordinates[i1]./1, coordinates[i2]./1], 1.0e-6 .*[icc1, icc2],  color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)     
         end
 
         # last cell
@@ -71,12 +71,12 @@ function plotDensities(Plotter, grid, data, sol, title)
         icc1          = computeDensities(u1, data, node-1, ireg, icc, ipsi, true)
         icc2          = computeDensities(u2, data, node, 2, icc, ipsi, false) # breg = 2 since we are on the right boundary
 
-        Plotter.semilogy([coordinates[node-1]./1, coordinates[node]./1], [icc1, icc2], color = colors[icc], linewidth = 2) 
+        Plotter.semilogy([coordinates[node-1]./1, coordinates[node]./1], 1.0e-6 .*[icc1, icc2], color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)
     end
 
     Plotter.grid()
     Plotter.xlabel("space [\$m\$]")
-    Plotter.ylabel("density [\$\\frac{1}{m^3}\$]")
+    Plotter.ylabel("density [\$\\frac{1}{cm^3}\$]")
     Plotter.legend(fancybox = true, loc = "best")
     Plotter.title(title)
     Plotter.pause(0.00001)
