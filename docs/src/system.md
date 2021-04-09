@@ -1,8 +1,8 @@
- 
-# System
+## Numerical Techniques
+refer to VoronoiFVM ... 
 
-
-## Types and Constants
+## API for Generating Discrete System
+### Types and Constants
 
 
 ```@autodocs
@@ -20,7 +20,7 @@ Pages = [
     "ct_distributions.jl"]
 Order = [:constant]
 ```
-## Methods
+### Methods
 
 ```@autodocs
 Modules = [ChargeTransportInSolids]

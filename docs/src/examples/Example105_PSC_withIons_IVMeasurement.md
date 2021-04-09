@@ -1,6 +1,5 @@
-#=
 # 105: 1D PSC p-i-n device with ions (linear I-V scan protocol).
-([source code](SOURCE_URL))
+([source code](https://github.com/PatricioFarrell/ChargeTransportInSolids.jl/tree/master/examplesExample105_PSC_withIons_IVMeasurement.jl))
 
 Simulating a three layer PSC device with mobile ions modelled with Boltzmann.
 The simulations are performed out of equilibrium and with
@@ -11,8 +10,8 @@ This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
 The paramters can be found here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-comparison/Input_files/IonMonger_default_noIR.csv.
-=#
 
+```julia
 module Example105_PSC_withIons_IVMeasurement
 
 using VoronoiFVM
@@ -22,72 +21,84 @@ using Printf
 using GridVisualize
 
 function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:dense)
-    
+
     ################################################################################
     if test == false
         println("Set up grid and regions")
     end
     ################################################################################
+```
 
-    # region numbers
+region numbers
+
+```julia
     regionDonor           = 1                           # n doped region
     regionIntrinsic       = 2                           # intrinsic region
     regionAcceptor        = 3                           # p doped region
     regions               = [regionDonor, regionIntrinsic, regionAcceptor]
+```
 
-    # boundary region numbers
+boundary region numbers
+
+```julia
     bregionDonor          = 1
     bregionAcceptor       = 2
     bregions              = [bregionDonor, bregionAcceptor]
+```
 
-    # grid
-    h_ndoping             = 9.90e-6 * cm 
+grid
+
+```julia
+    h_ndoping             = 9.90e-6 * cm
     h_intrinsic           = 4.00e-5 * cm + 2.0e-7 * cm
     h_pdoping             = 1.99e-5 * cm
     heightLayers          = [h_ndoping,
                              h_ndoping + h_intrinsic,
                              h_ndoping + h_intrinsic + h_pdoping]
 
-    x0              = 0.0 * cm 
+    x0              = 0.0 * cm
     δ               = 4*n        # the larger, the finer the mesh
     t               = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
     k               = 1.5        # the closer to 1, the closer to the boundary geomspace
 
     coord_n_u       = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
-    coord_n_g       = geomspace(h_ndoping/2, 
-                                h_ndoping, 
-                                h_ndoping/(1.1*δ), 
-                                h_ndoping/(1.1*δ), 
+    coord_n_g       = geomspace(h_ndoping/2,
+                                h_ndoping,
+                                h_ndoping/(1.1*δ),
+                                h_ndoping/(1.1*δ),
                                 tol=t)
-    coord_i_g1      = geomspace(h_ndoping, 
-                                h_ndoping+h_intrinsic/k, 
-                                h_intrinsic/(2.8*δ), 
-                                h_intrinsic/(2.8*δ), 
+    coord_i_g1      = geomspace(h_ndoping,
+                                h_ndoping+h_intrinsic/k,
+                                h_intrinsic/(2.8*δ),
+                                h_intrinsic/(2.8*δ),
                                 tol=t)
-    coord_i_g2      = geomspace(h_ndoping+h_intrinsic/k, 
-                                h_ndoping+h_intrinsic,               
-                                h_intrinsic/(2.8*δ),    
-                                h_intrinsic/(2.8*δ), 
+    coord_i_g2      = geomspace(h_ndoping+h_intrinsic/k,
+                                h_ndoping+h_intrinsic,
+                                h_intrinsic/(2.8*δ),
+                                h_intrinsic/(2.8*δ),
                                 tol=t)
-    coord_p_g       = geomspace(h_ndoping+h_intrinsic,               
-                                h_ndoping+h_intrinsic+h_pdoping/2, 
-                                h_pdoping/(1.6*δ),   
-                                h_pdoping/(1.6*δ),      
+    coord_p_g       = geomspace(h_ndoping+h_intrinsic,
+                                h_ndoping+h_intrinsic+h_pdoping/2,
+                                h_pdoping/(1.6*δ),
+                                h_pdoping/(1.6*δ),
                                 tol=t)
     coord_p_u       = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(1.3*δ)))
 
-    coord           = glue(coord_n_u,coord_n_g,  tol=10*t) 
+    coord           = glue(coord_n_u,coord_n_g,  tol=10*t)
     coord           = glue(coord,    coord_i_g1, tol=10*t)
-    coord           = glue(coord,    coord_i_g2, tol=10*t) 
+    coord           = glue(coord,    coord_i_g2, tol=10*t)
     coord           = glue(coord,    coord_p_g,  tol=10*t)
     coord           = glue(coord,    coord_p_u,  tol=10*t)
     grid            = ExtendableGrids.simplexgrid(coord)
     numberOfNodes   = length(coord)
-    
-    # set different regions in grid, doping profiles do not intersect
+```
+
+set different regions in grid, doping profiles do not intersect
+
+```julia
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-12)       # n-doped region   = 1
-    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-12)   # intrinsic region = 2  
-    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-12)    # p-doped region   = 3  
+    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-12)   # intrinsic region = 2
+    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-12)    # p-doped region   = 3
 
     if plotting
         GridVisualize.gridplot(grid, Plotter = Plotter)
@@ -102,40 +113,55 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         println("Define physical parameters and model")
     end
     ################################################################################
-    
-    # indices
+```
+
+indices
+
+```julia
     iphin, iphip, iphia, ipsi      = 1:4
     species                        = [iphin, iphip, iphia, ipsi]
-    
-    # number of (boundary) regions and carriers
+```
+
+number of (boundary) regions and carriers
+
+```julia
     numberOfRegions         = length(regions)
-    numberOfBoundaryRegions = length(bregions) 
+    numberOfBoundaryRegions = length(bregions)
     numberOfCarriers        = length(species) - 1
-    
-    # temperature
+```
+
+temperature
+
+```julia
     T               = 300.0                 *  K
-    
-    # band edge energies    
+```
+
+band edge energies
+
+```julia
     Eref            =  0.0
     Ec_d            = -4.0                  *  eV + Eref
     Ev_d            = -6.0                  *  eV + Eref
-    
+
     Ec_i            = -3.7                  *  eV + Eref
     Ev_i            = -5.4                  *  eV + Eref
-    
+
     Ea_i            = -4.335                *  eV + Eref # use -4.335 * eV  for unbounded ions in equilibrium and -3.9 * eV for unbounded ones.
-    
+
     Ec_a            = -3.1                  *  eV + Eref
     Ev_a            = -5.1                  *  eV + Eref
-        
-    EC              = [Ec_d, Ec_i, Ec_a] 
-    EV              = [Ev_d, Ev_i, Ev_a] 
+
+    EC              = [Ec_d, Ec_i, Ec_a]
+    EV              = [Ev_d, Ev_i, Ev_a]
     EA              = [0.0,  Ea_i,  0.0]
-    
-    # effective densities of state
+```
+
+effective densities of state
+
+```julia
     Nc_d            = 5.0e19                / (cm^3)
     Nv_d            = 5.0e19                / (cm^3)
-    
+
     Nc_i            = 8.1e18                / (cm^3)
     Nv_i            = 5.8e18                / (cm^3)
     Nanion          = 1.6e19                / (cm^3)
@@ -146,44 +172,59 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     NC              = [Nc_d, Nc_i,  Nc_a]
     NV              = [Nv_d, Nv_i,  Nv_a]
     NAnion          = [0.0,  Nanion, 0.0]
+```
 
-    # mobilities 
-    μn_d            = 3.89                  * (cm^2) / (V * s)  
-    μp_d            = 3.89                  * (cm^2) / (V * s)  
+mobilities
 
-    μn_i            = 6.62e1                * (cm^2) / (V * s)  
+```julia
+    μn_d            = 3.89                  * (cm^2) / (V * s)
+    μp_d            = 3.89                  * (cm^2) / (V * s)
+
+    μn_i            = 6.62e1                * (cm^2) / (V * s)
     μp_i            = 6.62e1                * (cm^2) / (V * s)
 
     μa_i            = 3.93e-12              * (cm^2) / (V * s)
 
-    μn_a            = 3.89e-1               * (cm^2) / (V * s) 
+    μn_a            = 3.89e-1               * (cm^2) / (V * s)
     μp_a            = 3.89e-1               * (cm^2) / (V * s)
-    
-    μn              = [μn_d, μn_i, μn_a] 
-    μp              = [μp_d, μp_i, μp_a] 
-    μa              = [0.0,  μa_i, 0.0 ] 
 
-    # relative dielectric permittivity  
-    ε_d             = 10.0                  *  1.0  
-    ε_i             = 24.1                  *  1.0 
-    ε_a             = 3.0                   *  1.0 
+    μn              = [μn_d, μn_i, μn_a]
+    μp              = [μp_d, μp_i, μp_a]
+    μa              = [0.0,  μa_i, 0.0 ]
+```
 
-    ε               = [ε_d, ε_i, ε_a] 
+relative dielectric permittivity
 
-    # recombination model
+```julia
+    ε_d             = 10.0                  *  1.0
+    ε_i             = 24.1                  *  1.0
+    ε_a             = 3.0                   *  1.0
+
+    ε               = [ε_d, ε_i, ε_a]
+```
+
+recombination model
+
+```julia
     recombinationOn = true
+```
 
-    # radiative recombination
-    r0_d            = 0.0e+0               * cm^3 / s 
-    r0_i            = 1.0e-12              * cm^3 / s  
+radiative recombination
+
+```julia
+    r0_d            = 0.0e+0               * cm^3 / s
+    r0_i            = 1.0e-12              * cm^3 / s
     r0_a            = 0.0e+0               * cm^3 / s
-        
+
     r0              = [r0_d, r0_i, r0_a]
-        
-    # life times and trap densities 
-    τn_d            = 1.0e100              * s 
+```
+
+life times and trap densities
+
+```julia
+    τn_d            = 1.0e100              * s
     τp_d            = 1.0e100              * s
-        
+
     τn_i            = 3.0e-10              * s
     τp_i            = 3.0e-8               * s
     τn_a            = τn_d
@@ -191,25 +232,37 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
 
     τn              = [τn_d, τn_i, τn_a]
     τp              = [τp_d, τp_i, τp_a]
-        
-    # SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
-    Ei_d            = -5.0                 * eV   
-    Ei_i            = -4.55                * eV   
-    Ei_a            = -4.1                 * eV   
+```
+
+SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
+
+```julia
+    Ei_d            = -5.0                 * eV
+    Ei_i            = -4.55                * eV
+    Ei_a            = -4.1                 * eV
 
     EI              = [Ei_d, Ei_i, Ei_a]
-        
-    # Auger recombination
+```
+
+Auger recombination
+
+```julia
     Auger           = 0.0
+```
 
-    # doping (doping values are from Driftfusion)
-    Nd              =   1.03e18             / (cm^3) 
-    Na              =   1.03e18             / (cm^3) 
-    C0              =   1.6e19              / (cm^3) 
+doping (doping values are from Driftfusion)
 
-    # contact voltages
-    voltageAcceptor =  1.2                 * V 
-    voltageDonor    =  0.0                 * V 
+```julia
+    Nd              =   1.03e18             / (cm^3)
+    Na              =   1.03e18             / (cm^3)
+    C0              =   1.6e19              / (cm^3)
+```
+
+contact voltages
+
+```julia
+    voltageAcceptor =  1.2                 * V
+    voltageDonor    =  0.0                 * V
 
     if test == false
         println("*** done\n")
@@ -219,14 +272,20 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         println("Define ChargeTransport data and fill in previously defined data")
     end
     ################################################################################
+```
 
-    # initialize ChargeTransport instance
+initialize ChargeTransport instance
+
+```julia
     data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes,
                                                             numberOfRegions,
                                                             numberOfBoundaryRegions,
                                                             ;numberOfSpecies = numberOfCarriers + 1)
+```
 
-    # region independent data
+region independent data
+
+```julia
     data.F                               = [Boltzmann, Boltzmann, Boltzmann] # Boltzmann, FermiDiracOneHalf, FermiDiracMinusOne, Blakemore
     data.temperature                     = T
     data.UT                              = (kB * data.temperature) / q
@@ -237,13 +296,19 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     data.chargeNumbers[iphia]            =  1
     data.recombinationOn                 = recombinationOn
     data.Eref                            = Eref
+```
 
-    # interior region data
+interior region data
+
+```julia
     for ireg in 1:numberOfRegions
 
         data.dielectricConstant[ireg]                 = ε[ireg]
+```
 
-        # dos, band edge energy and mobilities
+dos, band edge energy and mobilities
+
+```julia
         data.densityOfStates[iphin, ireg]             = NC[ireg]
         data.densityOfStates[iphip, ireg]             = NV[ireg]
         data.densityOfStates[iphia, ireg]             = NAnion[ireg]
@@ -255,8 +320,11 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         data.mobility[iphin, ireg]                    = μn[ireg]
         data.mobility[iphip, ireg]                    = μp[ireg]
         data.mobility[iphia, ireg]                    = μa[ireg]
+```
 
-        # recombination parameters
+recombination parameters
+
+```julia
         data.recombinationRadiative[ireg]             = r0[ireg]
         data.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
         data.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
@@ -265,8 +333,11 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         data.recombinationAuger[iphin, ireg]          = Auger
         data.recombinationAuger[iphip, ireg]          = Auger
     end
+```
 
-    # boundary region data
+boundary region data
+
+```julia
     data.bDensityOfStates[iphin, bregionDonor]        = Nc_d
     data.bDensityOfStates[iphip, bregionDonor]        = Nv_d
 
@@ -278,15 +349,21 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
 
     data.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
     data.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
+```
 
-    # interior doping
+interior doping
+
+```julia
     data.doping[iphin, regionDonor]                   = Nd
     data.doping[iphia, regionIntrinsic]               = C0
-    data.doping[iphip, regionAcceptor]                = Na  
+    data.doping[iphip, regionAcceptor]                = Na
+```
 
-    # boundary doping
-    data.bDoping[iphip, bregionAcceptor]              = Na      
-    data.bDoping[iphin, bregionDonor]                 = Nd      
+boundary doping
+
+```julia
+    data.bDoping[iphip, bregionAcceptor]              = Na
+    data.bDoping[iphin, bregionDonor]                 = Nd
 
     if test == false
         println("*** done\n")
@@ -297,7 +374,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    ## initializing physics environment ##
+    # initializing physics environment ##
     physics = VoronoiFVM.Physics(
     data        = data,
     num_species = numberOfCarriers + 1,
@@ -320,8 +397,11 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
 
     sys.boundary_values[iphip,  bregionDonor]    = data.contactVoltage[bregionDonor]
     sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
+```
 
-    # enable all three species in all regions
+enable all three species in all regions
+
+```julia
     enable_species!(sys, ipsi,  regions)
     enable_species!(sys, iphin, regions)
     enable_species!(sys, iphip, regions)
@@ -355,8 +435,11 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     data.inEquilibrium             = true
+```
 
-    # initialize solution and starting vectors
+initialize solution and starting vectors
+
+```julia
     initialGuess                   = unknowns(sys)
     solution                       = unknowns(sys)
     @views initialGuess[ipsi,  :] .= 0.0
@@ -373,7 +456,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     sys.boundary_values[iphip, bregionAcceptor] = 0.0 * V
 
     I = collect(20.0:-1:0.0)
-    LAMBDA = 10 .^ (-I) 
+    LAMBDA = 10 .^ (-I)
     prepend!(LAMBDA,0.0)
     for i in 1:length(LAMBDA)
         if test == false
@@ -398,43 +481,58 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     control.damp_initial      = 0.5
     control.damp_growth       = 1.61 # >= 1
     control.max_round         = 7
- 
-    # there are different way to control timestepping
-    # Here we assume these primary data
+```
+
+there are different way to control timestepping
+Here we assume these primary data
+
+```julia
     scanrate                  = 1.0 * V/s
     ntsteps                   = 101
     vend                      = voltageAcceptor
     v0                        = 0.0
+```
 
-    # The end time then is calculated here:
+The end time then is calculated here:
+
+```julia
     tend                      = vend/scanrate
+```
 
-    # with fixed timestep sizes we can calculate the times
-    # a priori
+with fixed timestep sizes we can calculate the times
+a priori
+
+```julia
     tvalues                   = range(0, stop = tend, length = ntsteps)
 
     for istep = 2:ntsteps
-        
+
         t                     = tvalues[istep] # Actual time
-        Δu                    = v0 + t*scanrate # Applied voltage 
+        Δu                    = v0 + t*scanrate # Applied voltage
         Δt                    = t - tvalues[istep-1] # Time step size
-        
-        # Apply new voltage
+```
+
+Apply new voltage
+
+```julia
         sys.boundary_values[iphin, bregionAcceptor]      = Δu
         sys.boundary_values[iphip, bregionAcceptor]      = Δu
-        
+
         if test == false
             println("time value: t = $(t)")
         end
+```
 
-        # Solve time step problems with timestep Δt. initialGuess plays the role of the solution
-        # from last timestep
+Solve time step problems with timestep Δt. initialGuess plays the role of the solution
+from last timestep
+
+```julia
         solve!(solution, initialGuess, sys, control = control, tstep = Δt)
         initialGuess .= solution
 
     end # time loop
 
-    if plotting 
+    if plotting
         ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(v0+vend), time \$ t = \$ $tend")
         Plotter.figure()
         ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(v0+vend), time \$ t = \$ $tend")
@@ -444,7 +542,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
 
     testval = solution[ipsi, 15]
     return testval
-    
+
     println("*** done\n")
 
 end #  main
@@ -459,3 +557,9 @@ if test == false
 end
 
 end # module
+```
+
+---
+
+*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
+

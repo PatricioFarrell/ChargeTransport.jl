@@ -1,19 +1,21 @@
-#=
-# 101: 1D GaAs p-i-n diode.
-([source code](SOURCE_URL))
+# 101: 1D GaAs p-i-n diode
+([source code](https://github.com/PatricioFarrell/ChargeTransportInSolids.jl/tree/master/examplesExample101_PIN.jl))
 
 Simulating charge transport in a GaAs pin diode.
 The simulations are performed out of equilibrium.
-=#
 
+```julia
 module Example101_PIN
 
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using Printf
+```
 
-# function for initializing the grid for a possble extension to other p-i-n devices.
+function for initializing the grid for a possble extension to other p-i-n devices.
+
+```julia
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
     coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 3 * refinementfactor))
     coord_intrinsic  = collect(range(h_ndoping, stop = (h_ndoping + h_intrinsic), length = 3 * refinementfactor))
@@ -32,19 +34,28 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         println("Set up grid and regions")
     end
     ################################################################################
+```
 
-    # region numbers
+region numbers
+
+```julia
     regionAcceptor   = 1                           # p doped region
     regionIntrinsic  = 2                           # intrinsic region
     regionDonor      = 3                           # n doped region
     regions          = [regionAcceptor, regionIntrinsic, regionDonor]
+```
 
-    # boundary region numbers
+boundary region numbers
+
+```julia
     bregionAcceptor  = 1
     bregionDonor     = 2
     bregions         = [bregionAcceptor, bregionDonor]
+```
 
-    # grid
+grid
+
+```julia
     refinementfactor = 2^(n-1)
     h_pdoping        = 2 * μm
     h_intrinsic      = 2 * μm
@@ -56,8 +67,11 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     grid             = VoronoiFVM.Grid(coord)
     numberOfNodes    = length(coord)
+```
 
-    # set different regions in grid, doping profiles do not intersect
+set different regions in grid, doping profiles do not intersect
+
+```julia
     cellmask!(grid, [0.0 * μm], [h_pdoping], regionAcceptor)        # p-doped region = 1
     cellmask!(grid, [h_pdoping], [h_pdoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
@@ -70,18 +84,28 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         println("Define physical parameters and model")
     end
     ################################################################################
-    # indices
+```
+
+indices
+
+```julia
     iphin                   = 1
     iphip                   = 2
     ipsi                    = 3
     species                 = [iphin, iphip, ipsi]
+```
 
-    # number of (boundary) regions and carriers
+number of (boundary) regions and carriers
+
+```julia
     numberOfRegions         = length(regions)
     numberOfBoundaryRegions = length(bregions)
     numberOfCarriers        = length(species) - 1
+```
 
-    # physical data
+physical data
+
+```julia
     Ec                = 1.424                *  eV
     Ev                = 0.0                  *  eV
     Nc                = 4.351959895879690e17 / (cm^3)
@@ -90,27 +114,41 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     mup               = 400.0                * (cm^2) / (V * s)
     εr                = 12.9                 *  1.0              # relative dielectric permittivity of GAs
     T                 = 300.0                *  K
+```
 
+recombination model
 
-    # recombination model
+```julia
     recombinationOn = true
+```
 
-    # recombination parameters
+recombination parameters
+
+```julia
     Auger             = 1.0e-29   * cm^6 / s          # 1.0e-41
     SRH_TrapDensity   = 1.0e10    / cm^3              # 1.0e16
     SRH_LifeTime      = 1.0       * ns                # 1.0e10
     Radiative         = 1.0e-10   * cm^3 / s          # 1.0e-16
+```
 
-    # doping
+doping
+
+```julia
     dopingFactorNd    =   1.0
     dopingFactorNa    =   0.46
     Nd                =   dopingFactorNd * Nc
     Na                =   dopingFactorNa * Nv
+```
 
-    # intrinsic concentration (not doping!)
-    ni                =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) 
+intrinsic concentration (not doping!)
 
-    # contact voltages
+```julia
+    ni                =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T))
+```
+
+contact voltages
+
+```julia
     voltageAcceptor   = 1.5 * V
     voltageDonor      = 0.0 * V
 
@@ -122,14 +160,20 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         println("Define ChargeTransport data and fill in previously defined data")
     end
     ################################################################################
+```
 
-    # initialize ChargeTransport instance
+initialize ChargeTransport instance
+
+```julia
     data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes,
                                                             numberOfRegions,
                                                             numberOfBoundaryRegions,
                                                             numberOfSpecies = numberOfCarriers + 1)
+```
 
-    # region independent data
+region independent data
+
+```julia
     data.F                                           .= Boltzmann # Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.temperature                                  = T
     data.UT                                           = (kB * data.temperature) / q
@@ -139,8 +183,11 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     data.chargeNumbers[iphip]                         =  1
 
     data.recombinationOn                              = recombinationOn
+```
 
-    # boundary region data
+boundary region data
+
+```julia
     for ibreg in 1:numberOfBoundaryRegions
 
         data.bDensityOfStates[iphin, ibreg]           = Nc
@@ -148,21 +195,30 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         data.bBandEdgeEnergy[iphin, ibreg]            = Ec
         data.bBandEdgeEnergy[iphip, ibreg]            = Ev
     end
+```
 
-    # interior region data
+interior region data
+
+```julia
     for ireg in 1:numberOfRegions
 
         data.dielectricConstant[ireg]                 = εr
+```
 
-        # dos, band edge energy and mobilities
+dos, band edge energy and mobilities
+
+```julia
         data.densityOfStates[iphin, ireg]             = Nc
         data.densityOfStates[iphip, ireg]             = Nv
         data.bandEdgeEnergy[iphin, ireg]              = Ec
         data.bandEdgeEnergy[iphip, ireg]              = Ev
         data.mobility[iphin, ireg]                    = mun
         data.mobility[iphip, ireg]                    = mup
+```
 
-        # recombination parameters
+recombination parameters
+
+```julia
         data.recombinationRadiative[ireg]             = Radiative
         data.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime
         data.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime
@@ -172,19 +228,29 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         data.recombinationAuger[iphip, ireg]          = Auger
 
     end
+```
 
-    # interior doping
+interior doping
+
+```julia
     data.doping[iphin, regionDonor]                   = Nd        # data.doping   = [0.0  Na;
     data.doping[iphin, regionIntrinsic]               = ni        #                  ni   ni;
     data.doping[iphip, regionIntrinsic]               = 0.0        #                  Nd  0.0]
     data.doping[iphip, regionAcceptor]                = Na
+```
 
-    # boundary doping
+boundary doping
+
+```julia
     data.bDoping[iphin, bregionDonor]                 = Nd        # data.bDoping  = [0.0  Na;
     data.bDoping[iphip, bregionAcceptor]              = Na        #                  Nd  0.0]
 
     data.γ                                            = 1.0
-    # print data
+```
+
+print data
+
+```julia
     if test == false
         println(data)
     end
@@ -209,7 +275,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    ## initializing physics environment ##
+    # initializing physics environment ##
     physics = VoronoiFVM.Physics(
     data        = data,
     num_species = numberOfCarriers + 1,
@@ -219,8 +285,11 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     )
 
     sys         = VoronoiFVM.System(grid,physics,unknown_storage=unknown_storage)
+```
 
-    # enable all three species in all regions
+enable all three species in all regions
+
+```julia
     enable_species!(sys, ipsi,  regions)
     enable_species!(sys, iphin, regions)
     enable_species!(sys, iphip, regions)
@@ -269,14 +338,17 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     data.inEquilibrium             = true
+```
 
-    # initialize solution and starting vectors
+initialize solution and starting vectors
+
+```julia
     initialGuess                   = unknowns(sys)
     solution                       = unknowns(sys)
-    @views initialGuess[ipsi,  :] .= 0.0 
+    @views initialGuess[ipsi,  :] .= 0.0
     @views initialGuess[iphin, :] .= 0.0
     @views initialGuess[iphip, :] .= 0.0
-    
+
     function pre(u,lambda)
         sys.physics.data.λ1                         = lambda
         sys.boundary_values[iphin, bregionAcceptor] = 0.0
@@ -292,7 +364,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
 
     I = collect(20.0:-1:0.0)
-    LAMBDA = 10 .^ (-I) 
+    LAMBDA = 10 .^ (-I)
     prepend!(LAMBDA,0.0)
 
 
@@ -315,8 +387,11 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     data.inEquilibrium = false
+```
 
-    # set non equilibrium boundary conditions
+set non equilibrium boundary conditions
+
+```julia
     sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor
     sys.physics.data.contactVoltage[bregionAcceptor] = voltageAcceptor
     sys.boundary_values[iphin, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
@@ -344,22 +419,35 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         solve!(solution, initialGuess, sys, control = control, tstep = Inf)
 
         initialGuess .= solution
+```
 
-        # get IV curve
+get IV curve
+
+```julia
         factory = VoronoiFVM.TestFunctionFactory(sys)
+```
 
-        # testfunction zero in bregionAcceptor and one in bregionDonor
+testfunction zero in bregionAcceptor and one in bregionDonor
+
+```julia
         tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])
         I      = integrate(sys, tf, solution)
 
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
+```
 
-        # plot solution and IV curve
+plot solution and IV curve
+
+```julia
         if plotting
             #ChargeTransportInSolids.plotEnergies(Plotter, grid, data, sol, Δu)
             #ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref)
             ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, Δu)
-            # Plotter.figure()
+```
+
+Plotter.figure()
+
+```julia
             #ChargeTransportInSolids.plotIV(Plotter, biasValues,IV)
         end
 
@@ -383,3 +471,9 @@ if test == false
 end
 
 end # module
+```
+
+---
+
+*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
+

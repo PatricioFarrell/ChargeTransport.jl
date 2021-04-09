@@ -1,10 +1,9 @@
-#=
 # 104: 1D PSC p-i-n device with graded interfaces.
-([source code](SOURCE_URL))
+([source code](https://github.com/PatricioFarrell/ChargeTransportInSolids.jl/tree/master/examplesExample104_PSC_GradedFlux.jl))
 
 Simulating a three layer PSC device without mobile ions.
 The simulations are performed out of equilibrium and with
-two junctions between perovskite layer and transport layers, to 
+two junctions between perovskite layer and transport layers, to
 which we refer as graded interfaces.
 Hence, a graded flux discretizations with space dependent
 band-edge energies and density of states are tested here.
@@ -13,8 +12,8 @@ This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
 The paramters can be found here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-comparison/Input_files/IonMonger_default_noIR.csv.
-=#
 
+```julia
 module Example104_PSC_GradedFlux
 
 using VoronoiFVM
@@ -30,10 +29,10 @@ function gradingParameter(physicalParameter, coord, regionTransportLayers, regio
 
     end
 
-    for ireg in regionJunctions 
+    for ireg in regionJunctions
 
-        xcoord   = lengthLayers[ireg]:lengthLayers[ireg+1] 
-        left     = lengthLayers[ireg]-3  
+        xcoord   = lengthLayers[ireg]:lengthLayers[ireg+1]
+        left     = lengthLayers[ireg]-3
         junction = h[ireg]
         right    = lengthLayers[ireg+2]-3
 
@@ -55,8 +54,11 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
         println("Set up grid and regions")
     end
     ################################################################################
+```
 
-    # region numbers
+region numbers
+
+```julia
     regionDonor           = 1                           # n doped region
     regionJunction1       = 2
     regionIntrinsic       = 3                           # intrinsic region
@@ -65,14 +67,20 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     regions               = [regionDonor, regionJunction1, regionIntrinsic, regionJunction2, regionAcceptor]
     regionTransportLayers = [regionDonor, regionIntrinsic, regionAcceptor]
     regionJunctions       = [regionJunction1, regionJunction2]
+```
 
-    # boundary region numbers
+boundary region numbers
+
+```julia
     bregionDonor          = 1
     bregionAcceptor       = 2
     bregions              = [bregionDonor, bregionAcceptor]
+```
 
-    # grid
-    h_ndoping             = 9.90e-6 * cm 
+grid
+
+```julia
+    h_ndoping             = 9.90e-6 * cm
     h_junction1           = 1.0e-7  * cm
     h_intrinsic           = 4.00e-5 * cm
     h_junction2           = 1.0e-7  * cm
@@ -111,16 +119,19 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     grid                  = ExtendableGrids.simplexgrid(coord)
     numberOfNodes         = length(coord)
     lengthLayers          = [1, length_n, length_j1, length_i, length_j2, numberOfNodes]
+```
 
-    # set different regions in grid, doping profiles do not intersect
+set different regions in grid, doping profiles do not intersect
+
+```julia
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor)       # n-doped region   = 1
-    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionJunction1)   # first junction   = 2  
-    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionIntrinsic)   # intrinsic region = 3  
+    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionJunction1)   # first junction   = 2
+    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionIntrinsic)   # intrinsic region = 3
     cellmask!(grid, [heightLayers[3]], [heightLayers[4]], regionJunction2)   # sec. junction    = 4
-    cellmask!(grid, [heightLayers[4]], [heightLayers[5]], regionAcceptor)    # p-doped region   = 5  
+    cellmask!(grid, [heightLayers[4]], [heightLayers[5]], regionAcceptor)    # p-doped region   = 5
 
     if plotting
-        ExtendableGrids.plot(grid, Plotter = Plotter, p = Plotter.plot()) 
+        ExtendableGrids.plot(grid, Plotter = Plotter, p = Plotter.plot())
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -133,37 +144,55 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
         println("Define physical parameters and model")
     end
     ################################################################################
+```
 
-    # indices
+indices
+
+```julia
     iphin, iphip, ipsi      = 1:3
     species                 = [iphin, iphip, ipsi]
+```
 
-    # number of (boundary) regions and carriers
+number of (boundary) regions and carriers
+
+```julia
     numberOfRegions         = length(regions)
-    numberOfBoundaryRegions = length(bregions) 
+    numberOfBoundaryRegions = length(bregions)
     numberOfCarriers        = length(species) - 1
+```
 
-    # temperature
+temperature
+
+```julia
     T                       = 300.0                 *  K
+```
 
-    # band edge energies    
-    Ec_d                    = -4.0                  *  eV 
-    Ev_d                    = -6.0                  *  eV 
-        
-    Ec_i                    = -3.7                  *  eV 
-    Ev_i                    = -5.4                  *  eV 
-        
-    Ec_a                    = -3.1                  *  eV 
-    Ev_a                    = -5.1                  *  eV 
-    
-    # these parameters at the junctions for E_\alpha and N_\alpha will be overwritten.
+band edge energies
+
+```julia
+    Ec_d                    = -4.0                  *  eV
+    Ev_d                    = -6.0                  *  eV
+
+    Ec_i                    = -3.7                  *  eV
+    Ev_i                    = -5.4                  *  eV
+
+    Ec_a                    = -3.1                  *  eV
+    Ev_a                    = -5.1                  *  eV
+```
+
+these parameters at the junctions for E_\alpha and N_\alpha will be overwritten.
+
+```julia
     Ec_j1                   = Ec_d;     Ec_j2     = Ec_i
     Ev_j1                   = Ev_d;     Ev_j2     = Ev_i
-          
-    EC                      = [Ec_d, Ec_j1, Ec_i, Ec_j2, Ec_a] 
-    EV                      = [Ev_d, Ev_j1, Ev_i, Ev_j2, Ev_a] 
 
-    # effective densities of state
+    EC                      = [Ec_d, Ec_j1, Ec_i, Ec_j2, Ec_a]
+    EV                      = [Ev_d, Ev_j1, Ev_i, Ev_j2, Ev_a]
+```
+
+effective densities of state
+
+```julia
     Nc_d                   = 5.0e19                / (cm^3)
     Nv_d                   = 5.0e19                / (cm^3)
 
@@ -178,48 +207,63 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
 
     NC                     = [Nc_d, Nc_j1, Nc_i, Nc_j2, Nc_a]
     NV                     = [Nv_d, Nv_j1, Nv_i, Nv_j2, Nv_a]
- 
-    # mobilities 
-    μn_d                   = 3.89                  * (cm^2) / (V * s)  
-    μp_d                   = 3.89                  * (cm^2) / (V * s)  
+```
 
-    μn_i                   = 6.62e1                * (cm^2) / (V * s)  
+mobilities
+
+```julia
+    μn_d                   = 3.89                  * (cm^2) / (V * s)
+    μp_d                   = 3.89                  * (cm^2) / (V * s)
+
+    μn_i                   = 6.62e1                * (cm^2) / (V * s)
     μp_i                   = 6.62e1                * (cm^2) / (V * s)
 
-    μn_a                   = 3.89e-1               * (cm^2) / (V * s) 
+    μn_a                   = 3.89e-1               * (cm^2) / (V * s)
     μp_a                   = 3.89e-1               * (cm^2) / (V * s)
-    
+
     μn_j1                  = μn_d;     μn_j2      = μn_i
     μp_j1                  = μp_d;     μp_j2      = μp_i
 
-    μn                     = [μn_d, μn_j1, μn_i, μn_j2, μn_a] 
-    μp                     = [μp_d, μp_j1, μp_i, μp_j2, μp_a] 
+    μn                     = [μn_d, μn_j1, μn_i, μn_j2, μn_a]
+    μp                     = [μp_d, μp_j1, μp_i, μp_j2, μp_a]
+```
 
-    # relative dielectric permittivity  
-    ε_d                    = 10.0                  *  1.0  
-    ε_i                    = 24.1                  *  1.0 
-    ε_a                    = 3.0                   *  1.0 
+relative dielectric permittivity
+
+```julia
+    ε_d                    = 10.0                  *  1.0
+    ε_i                    = 24.1                  *  1.0
+    ε_a                    = 3.0                   *  1.0
 
     ε_j1                   = ε_d;       ε_j2      = ε_a
 
-    ε                      = [ε_d, ε_j1, ε_i, ε_j2, ε_a] 
+    ε                      = [ε_d, ε_j1, ε_i, ε_j2, ε_a]
+```
 
-    # recombination model
+recombination model
+
+```julia
     recombinationOn        = true
+```
 
-    # radiative recombination
-    r0_d                   = 0.0e+0               * cm^3 / s 
-    r0_i                   = 1.0e-12              * cm^3 / s  
+radiative recombination
+
+```julia
+    r0_d                   = 0.0e+0               * cm^3 / s
+    r0_i                   = 1.0e-12              * cm^3 / s
     r0_a                   = 0.0e+0               * cm^3 / s
 
     r0_j1                  = r0_i;      r0_j2     = r0_i
-        
+
     r0                     = [r0_d, r0_j1, r0_i, r0_j2, r0_a]
-        
-    # life times and trap densities 
-    τn_d                   = 1.0e100              * s 
+```
+
+life times and trap densities
+
+```julia
+    τn_d                   = 1.0e100              * s
     τp_d                   = 1.0e100              * s
-        
+
     τn_i                   = 3.0e-10              * s
     τp_i                   = 3.0e-8               * s
     τn_a                   = τn_d
@@ -227,30 +271,42 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
 
     τn_j1                  = τn_i;     τn_j2      = τn_a
     τp_j1                  = τp_i;     τp_j2      = τp_a
-        
+
     τn                     = [τn_d, τn_j1, τn_i, τn_j2, τn_a]
     τp                     = [τp_d, τp_j1, τp_i, τp_j2, τp_a]
-        
-    # SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
-    Ei_d                   = -5.0                 * eV   
-    Ei_i                   = -4.55                * eV   
-    Ei_a                   = -4.1                 * eV   
+```
+
+SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
+
+```julia
+    Ei_d                   = -5.0                 * eV
+    Ei_i                   = -4.55                * eV
+    Ei_a                   = -4.1                 * eV
 
     Ei_j1                  = Ei_i;      Ei_j2     = Ei_a
 
     EI                     = [Ei_d, Ei_j1, Ei_i, Ei_j2, Ei_a]
-        
-    # Auger recombination
+```
+
+Auger recombination
+
+```julia
     Auger                  = 0.0
+```
 
-    # doping (doping values are from Driftfusion)
-    Nd                     =   1.03e18             / (cm^3) 
-    Na                     =   1.03e18             / (cm^3) 
-    Ni_acceptor            =   8.32e7              / (cm^3) 
+doping (doping values are from Driftfusion)
 
-    # contact voltages
-    voltageAcceptor        =  1.2                 * V 
-    voltageDonor           =  0.0                 * V 
+```julia
+    Nd                     =   1.03e18             / (cm^3)
+    Na                     =   1.03e18             / (cm^3)
+    Ni_acceptor            =   8.32e7              / (cm^3)
+```
+
+contact voltages
+
+```julia
+    voltageAcceptor        =  1.2                 * V
+    voltageDonor           =  0.0                 * V
 
     if test == false
         println("*** done\n")
@@ -261,14 +317,20 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
         println("Define ChargeTransport data and fill in previously defined data")
     end
     ################################################################################
+```
 
-    # initialize ChargeTransport instance
+initialize ChargeTransport instance
+
+```julia
     data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes,
                                                             numberOfRegions,
                                                             numberOfBoundaryRegions,
                                                             ;numberOfSpecies = numberOfCarriers + 1)
+```
 
-    # region independent data
+region independent data
+
+```julia
     data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.temperature                     = T
     data.UT                              = (kB * data.temperature) / q
@@ -277,30 +339,48 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     data.chargeNumbers[iphin]            = -1
     data.chargeNumbers[iphip]            =  1
     data.recombinationOn                 = recombinationOn
+```
 
-    # band-edge energies
+band-edge energies
+
+```julia
     data.bandEdgeEnergyNode[iphin, :]    = gradingParameter(data.bandEdgeEnergyNode[iphin, :],
                                                             coord, regionTransportLayers, regionJunctions, h,
                                                             heightLayers, lengthLayers, EC)
     data.bandEdgeEnergyNode[iphip, :]    = gradingParameter(data.bandEdgeEnergyNode[iphip, :],
                                                             coord, regionTransportLayers, regionJunctions, h,
                                                             heightLayers, lengthLayers, EV)
-    # # density of states
+```
+
+# density of states
+
+```julia
     data.densityOfStatesNode[iphin, :]   = gradingParameter(data.densityOfStatesNode[iphin, :],
                                                             coord, regionTransportLayers, regionJunctions, h,
                                                             heightLayers, lengthLayers, NC)
     data.densityOfStatesNode[iphip, :]   = gradingParameter(data.densityOfStatesNode[iphip, :],
                                                             coord, regionTransportLayers, regionJunctions, h,
                                                             heightLayers, lengthLayers, NV)
-    # region dependent data
-    for ireg in 1:numberOfRegions
+```
 
-        # mobility
+region dependent data
+
+```julia
+    for ireg in 1:numberOfRegions
+```
+
+mobility
+
+```julia
         data.mobility[iphin, ireg]                    = μn[ireg]
         data.mobility[iphip, ireg]                    = μp[ireg]
 
         data.dielectricConstant[ireg]                 = ε[ireg]
-        # recombination parameters
+```
+
+recombination parameters
+
+```julia
         data.recombinationRadiative[ireg]             = r0[ireg]
         data.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
         data.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
@@ -308,14 +388,20 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
         data.recombinationSRHTrapDensity[iphip, ireg] = ChargeTransportInSolids.trapDensity(iphip, ireg, data, EI[ireg])
         data.recombinationAuger[iphin, ireg]          = Auger
         data.recombinationAuger[iphip, ireg]          = Auger
-    end           
-    
-    # interior doping
+    end
+```
+
+interior doping
+
+```julia
     data.doping[iphin, regionDonor]               = Nd
-    data.doping[iphip, regionIntrinsic]           = Ni_acceptor    
-    data.doping[iphip, regionAcceptor]            = Na     
-                             
-    # boundary doping
+    data.doping[iphip, regionIntrinsic]           = Ni_acceptor
+    data.doping[iphip, regionAcceptor]            = Na
+```
+
+boundary doping
+
+```julia
     data.bDoping[iphip, bregionAcceptor]          = Na        # data.bDoping  = [Na  0.0;
     data.bDoping[iphin, bregionDonor]             = Nd        #                  0.0  Nd]
 
@@ -328,7 +414,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    ## initializing physics environment ##
+    # initializing physics environment ##
     physics = VoronoiFVM.Physics(
     data        = data,
     num_species = numberOfCarriers + 1,
@@ -338,8 +424,11 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     )
 
     sys         = VoronoiFVM.System(grid,physics,unknown_storage=unknown_storage)
+```
 
-    # enable all three species in all regions
+enable all three species in all regions
+
+```julia
     enable_species!(sys, ipsi,  regions)
     enable_species!(sys, iphin, regions)
     enable_species!(sys, iphip, regions)
@@ -384,8 +473,11 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     data.inEquilibrium             = true
+```
 
-    # initialize solution and starting vectors
+initialize solution and starting vectors
+
+```julia
     initialGuess                   = unknowns(sys)
     solution                       = unknowns(sys)
     @views initialGuess[ipsi,  :] .= 0.0
@@ -401,7 +493,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
 
     I = collect(20.0:-1:0.0)
-    LAMBDA = 10 .^ (-I) 
+    LAMBDA = 10 .^ (-I)
     prepend!(LAMBDA,0.0)
     for i in 1:length(LAMBDA)
         if test == false
@@ -433,8 +525,11 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     control.damp_initial                             = 0.5
     control.damp_growth                              = 1.21 # >= 1
     control.max_round                                = 7
+```
 
-    # set non equilibrium boundary conditions
+set non equilibrium boundary conditions
+
+```julia
     sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor
     sys.physics.data.contactVoltage[bregionAcceptor] = voltageAcceptor
     sys.boundary_values[iphin, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
@@ -483,3 +578,9 @@ if test == false
 end
 
 end # module
+```
+
+---
+
+*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
+
