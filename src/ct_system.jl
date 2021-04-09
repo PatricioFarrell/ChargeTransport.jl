@@ -381,7 +381,7 @@ for edges.
 """
 
 function etaFunction(u, edge::VoronoiFVM.Edge, data::VoronoiFVM.AbstractData, icc::Int64, ipsi::Int64)
-    E  = data.bandEdgeEnergy[icc, edge.region] + data.bandEdgeEnergyNode[icc, edge.index+1] # icell: Number of discretization cell the edge is invoked from
+    E  = data.bandEdgeEnergy[icc, edge.region] + data.bandEdgeEnergyNode[icc, edge.index+1] # if I do not put +1, I run into bounds error. It seems that VoronoiFVM allows edge.index = 0?
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 
@@ -1166,8 +1166,13 @@ Compute the electro-neutral solution for the Boltzmann approximation.
 It is obtained by setting the left-hand side in
 the Poisson equation equal to zero and solving for ``\\psi``.
 The charge carriers may obey different statitics functions.
+Currently, this one is not well tested for the case of charge carriers beyond electrons and holes.
 """
 function electroNeutralSolution!(data, grid; Newton=false)
+
+    if data.numberOfCarriers > 2
+        error("this method is currently only working for electrons and holes")
+    end
 
     solution        = zeros(length(grid[Coordinates]))
     iccVector       = collect(1:data.numberOfCarriers)

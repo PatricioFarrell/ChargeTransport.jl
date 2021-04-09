@@ -4,7 +4,7 @@
 
 Simulating a three layer PSC device without mobile ions.
 The simulations are performed out of equilibrium and with
-abrupt interfaces.
+abrupt interfaces. Currently, the generation is off.
 
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
@@ -379,11 +379,11 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     end
 
     if plotting
-        # ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
-        # Plotter.figure()
-        # ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
-        # Plotter.figure()
-        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "EQULIBRIUM (NO illumination)")
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "Equilibrium")
+        Plotter.figure()
+        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "Equilibrium")
+        Plotter.figure()
+        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "Equilibrium")
         Plotter.figure()
     end
 
@@ -428,10 +428,10 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
 
     #plotting
     if plotting
-        # ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias")
-        # Plotter.figure()
-        # ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias")
-        # Plotter.figure()
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias")
+        Plotter.figure()
+        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias")
+        Plotter.figure()
         ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "Applied voltage Δu = $maxBias")
     end
     if test == false

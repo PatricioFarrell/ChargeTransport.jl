@@ -1,4 +1,4 @@
-# 101: 1D GaAs p-i-n diode
+# 101: 1D GaAs p-i-n diode.
 ([source code](https://github.com/PatricioFarrell/ChargeTransportInSolids.jl/tree/master/examplesExample101_PIN.jl))
 
 Simulating charge transport in a GaAs pin diode.

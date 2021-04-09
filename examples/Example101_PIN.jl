@@ -12,6 +12,7 @@ using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using Printf
+using GridVisualize
 
 # function for initializing the grid for a possble extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
@@ -61,6 +62,12 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     cellmask!(grid, [0.0 * μm], [h_pdoping], regionAcceptor)        # p-doped region = 1
     cellmask!(grid, [h_pdoping], [h_pdoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
+
+    if plotting
+        GridVisualize.gridplot(grid, Plotter = Plotter)
+        Plotter.title("Grid")
+        Plotter.figure()
+    end
 
     if test == false
         println("*** done\n")
@@ -183,23 +190,23 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     data.bDoping[iphin, bregionDonor]                 = Nd        # data.bDoping  = [0.0  Na;
     data.bDoping[iphip, bregionAcceptor]              = Na        #                  Nd  0.0]
 
-    data.γ                                            = 1.0
-    # print data
     if test == false
+        # print data
         println(data)
-    end
-
-    if test == false
         println("*** done\n")
     end
 
     if plotting == true
         ################################################################################
-        println("Plot electroneutral potential and doping")
+        println("Plot electroneutral potential, band-edge energies and doping")
         ################################################################################
+        psi0 = ChargeTransportInSolids.electroNeutralSolution!(data, grid)
         ChargeTransportInSolids.plotEnergies(Plotter, grid, data)
+        Plotter.figure()
         ChargeTransportInSolids.plotDoping(Plotter, grid, data)
-
+        Plotter.figure()
+        ChargeTransportInSolids.plotElectroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=true)
+        Plotter.figure()
         println("*** done\n")
     end
 
@@ -354,16 +361,18 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 
-        # plot solution and IV curve
-        if plotting
-            #ChargeTransportInSolids.plotEnergies(Plotter, grid, data, sol, Δu)
-            #ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref)
-            ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, Δu)
-            # Plotter.figure()
-            #ChargeTransportInSolids.plotIV(Plotter, biasValues,IV)
-        end
-
     end # bias loop
+
+    # plot solution and IV curve
+    if plotting
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = false)
+        Plotter.figure()
+        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, 0.0, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
+        Plotter.figure()
+        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
+        Plotter.figure()
+        ChargeTransportInSolids.plotIV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+    end
     testval = solution[15]
     return testval
 

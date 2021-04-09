@@ -5,6 +5,7 @@ using ExtendableGrids
 using Printf
 using DocStringExtensions
 using SparseArrays
+using Roots
 
 include("ct_constants.jl")
 include("ct_units.jl")
