@@ -103,6 +103,7 @@ set different regions in grid, doping profiles do not intersect
     if plotting
         GridVisualize.gridplot(grid, Plotter = Plotter)
         Plotter.title("Grid")
+        Plotter.figure()
     end
 
     if test == false
@@ -366,6 +367,17 @@ boundary doping
     data.bDoping[iphin, bregionDonor]                 = Nd
 
     if test == false
+        println("*** done\n")
+    end
+
+    if plotting == true
+        ################################################################################
+        println("Plot electroneutral potential, band-edge energies and doping")
+        ################################################################################
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data)
+        Plotter.figure()
+        ChargeTransportInSolids.plotDoping(Plotter, grid, data)
+        Plotter.figure()
         println("*** done\n")
     end
     ################################################################################

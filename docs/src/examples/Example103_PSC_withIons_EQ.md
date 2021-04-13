@@ -4,7 +4,7 @@
 Simulating a three layer PSC device with mobile anion vacancies
 which obey a Fermi-Dirac of order minus 1 relation.
 The simulations are performed in equilibrium and with
-abrupt interfaces.
+abrupt interfaces. Currently, the generation is off.
 
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
@@ -17,6 +17,7 @@ module Example103_PSC_withIons_EQ
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
+using GridVisualize
 using Printf
 
 function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:dense)
@@ -98,9 +99,9 @@ set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)  # p-doped region   = 3
 
     if plotting
-       ExtendableGrids.plot(grid, Plotter = Plotter, p = Plotter.plot())
-       Plotter.title("Grid")
-       Plotter.figure()
+        GridVisualize.gridplot(grid, Plotter = Plotter)
+        Plotter.title("Grid")
+        Plotter.figure()
     end
 
     if test == false
@@ -336,6 +337,17 @@ print data
         println("*** done\n")
     end
 
+    if plotting == true
+        ################################################################################
+        println("Plot electroneutral potential, band-edge energies and doping")
+        ################################################################################
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data)
+        Plotter.figure()
+        ChargeTransportInSolids.plotDoping(Plotter, grid, data)
+        Plotter.figure()
+        println("*** done\n")
+    end
+
     ################################################################################
     if test == false
         println("Define physics and system")
@@ -439,11 +451,11 @@ initialize solution and starting vectors
     end
 
     if plotting
-        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "Equilibrium")
         Plotter.figure()
-        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
+        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "Equilibrium")
         Plotter.figure()
-        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "EQULIBRIUM (NO illumination)")
+        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, data.Eref, "Equilibrium")
     end
 
     if test == false

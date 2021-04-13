@@ -20,6 +20,7 @@ using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using Printf
+using GridVisualize
 
 function gradingParameter(physicalParameter, coord, regionTransportLayers, regionJunctions, h, heightLayers, lengthLayers, values)
     for ireg in regionTransportLayers
@@ -131,10 +132,11 @@ set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [heightLayers[4]], [heightLayers[5]], regionAcceptor)    # p-doped region   = 5
 
     if plotting
-        ExtendableGrids.plot(grid, Plotter = Plotter, p = Plotter.plot())
+        GridVisualize.gridplot(grid, Plotter = Plotter)
         Plotter.title("Grid")
         Plotter.figure()
     end
+
     if test == false
         println("*** done\n")
     end
@@ -505,9 +507,9 @@ initialize solution and starting vectors
     end
 
     if plotting
-        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "Equilibrium")
         Plotter.figure()
-        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "EQULIBRIUM (NO illumination)")
+        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "Equilibrium")
         Plotter.figure()
     end
 
