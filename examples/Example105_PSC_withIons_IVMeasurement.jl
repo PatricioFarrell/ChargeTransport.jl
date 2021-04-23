@@ -362,7 +362,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
     if test == false
-        println("Compute solution in thermodynamic equilibrium for Boltzmann")
+        println("Compute solution in thermodynamic equilibrium")
     end
     ################################################################################
 
