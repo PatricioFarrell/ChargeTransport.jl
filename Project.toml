@@ -17,4 +17,4 @@ GridVisualize = "5eed8a63-0fb0-45eb-886d-8d5a387d12b8"
 [compat]
 ExtendableGrids = ">=0.3.0"
 VoronoiFVM = ">=0.8"
-GridVisualize = "^0.1"
+GridVisualize = ">=0.1"
