@@ -94,6 +94,11 @@ mutable struct ChargeTransportData <: VoronoiFVM.AbstractData
     """
     recombinationOn             ::  Bool
 
+    """
+    A boolean, which is true in case of additionally defining conditions at the inner interfaces.
+    """
+    innerInterfaces             ::  Bool
+
 
     # number of boundary regions
 
@@ -288,6 +293,7 @@ function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, num
     # booleans
     true,                                                                     # inEquilibrium
     true,                                                                     # recombinationOn
+    false,                                                                    # innerInterfaces
 
     # number of boundary regions
     Array{Float64,1}(undef, numberOfBoundaryRegions),                         # contactVoltage
@@ -380,8 +386,8 @@ The argument of the distribution function
 for edges.
 """
 
-function etaFunction(u, edge::VoronoiFVM.Edge, data::VoronoiFVM.AbstractData, icc::Int64, ipsi::Int64)
-    E  = data.bandEdgeEnergy[icc, edge.region] + data.bandEdgeEnergyNode[icc, edge.index+1] # if I do not put +1, I run into bounds error. It seems that VoronoiFVM allows edge.index = 0?
+function etaFunction(u, edge::VoronoiFVM.Edge, data::VoronoiFVM.AbstractData, icc::Int64, ipsi::Int64, nodeEdge)
+    E  = data.bandEdgeEnergy[icc, edge.region] + data.bandEdgeEnergyNode[icc, nodeEdge] # if I do not put +1, I run into bounds error. It seems that VoronoiFVM allows edge.index = 0?
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 
@@ -444,54 +450,55 @@ function breactionOhmic!(f, u, bnode, data)
             f[icc]  = 0.0
 
         end
-        
-    elseif bnode.region == 3 || bnode.region == 4 
-        # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...  
-        iphia             = 3
-        iphiaj1, iphiaj2  = 5:6
+    if data.innerInterfaces == true
+        elseif bnode.region == 3 || bnode.region == 4 
+            # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...  
+            iphia             = 3
+            iphiaj1, iphiaj2  = 5:6
 
-        E1                = data.bBandEdgeEnergy[iphia, 3] 
-        E2                = data.bBandEdgeEnergy[iphia, 4] 
-        DOS1              = data.bDensityOfStates[iphia, 3] 
-        DOS2              = data.bDensityOfStates[iphia, 4] 
-        C01               = data.bDoping[iphia, 3]
-        C02               = data.bDoping[iphia, 4]
+            E1                = data.bBandEdgeEnergy[iphia, 3] 
+            E2                = data.bBandEdgeEnergy[iphia, 4] 
+            DOS1              = data.bDensityOfStates[iphia, 3] 
+            DOS2              = data.bDensityOfStates[iphia, 4] 
+            C01               = data.bDoping[iphia, 3]
+            C02               = data.bDoping[iphia, 4]
 
-        β                 = 0.5 # can be between 0 and 1 
-        κ                 = 1 # either 0 or 1
-        r0                = data.r0
+            β                 = 0.5 # can be between 0 and 1 
+            κ                 = 1 # either 0 or 1
+            r0                = data.r0
 
-        if bnode.region == 3
-            etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj1] - u[ipsi]) + E1 / q )
+            if bnode.region == 3
+                etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj1] - u[ipsi]) + E1 / q )
+    
+                f[ipsi]        =  - q  *  ( data.chargeNumbers[iphia] * DOS1^(2/3) * data.F[iphia](etaInterfaceAnion) - C01^(2/3) ) # (1.4.5) @ left inner boundary 
+    
+                if data.inEquilibrium == true
+                    f[iphia]   = u[iphia]
+                    f[iphiaj1] = u[iphiaj1]
+                else
+    
+                f[iphia]       =   data.λ3 * q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ, DOS1, E1) ) # (1.4.8) @ left inner boundary 
+                f[iphiaj1]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ, DOS1, E1) ) # (1.4.7) @ left inner boundary (right-hand side of equation)
+    
+                end
 
-            f[ipsi]        =  - q  *  ( data.chargeNumbers[iphia] * DOS1^(2/3) * data.F[iphia](etaInterfaceAnion) - C01^(2/3) ) # (1.4.5) @ left inner boundary 
-
-            if data.inEquilibrium == true
-                f[iphia]   = u[iphia]
-                f[iphiaj1] = u[iphiaj1]
-            else
-
-            f[iphia]       =   data.λ3 * q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ, DOS1, E1) ) # (1.4.8) @ left inner boundary 
-            f[iphiaj1]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ, DOS1, E1) ) # (1.4.7) @ left inner boundary (right-hand side of equation)
-
+            elseif bnode.region == 4
+                etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj2] - u[ipsi]) + E2 / q )
+    
+                f[ipsi]        =  -  q *  ( data.chargeNumbers[iphia] * DOS2^(2/3) * data.F[iphia](etaInterfaceAnion) - C02^(2/3) ) # (1.4.5) @ rigth inner boundary 
+    
+    
+                if data.inEquilibrium == true
+                    f[iphia]   = u[iphia]
+                    f[iphiaj2] = u[iphiaj2]
+                else
+    
+                f[iphia]       = - data.λ3 *  q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ, DOS2, E2) ) # (1.4.8) @ right inner boundary 
+                f[iphiaj2]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ, DOS2, E2) ) # (1.4.7) @ right inner boundary (right-hand side of equation)
+                end
             end
-            
 
-        elseif bnode.region == 4
-            etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj2] - u[ipsi]) + E2 / q )
-
-            f[ipsi]        =  -  q *  ( data.chargeNumbers[iphia] * DOS2^(2/3) * data.F[iphia](etaInterfaceAnion) - C02^(2/3) ) # (1.4.5) @ rigth inner boundary 
-
-
-            if data.inEquilibrium == true
-                f[iphia]   = u[iphia]
-                f[iphiaj2] = u[iphiaj2]
-            else
-
-            f[iphia]       = - data.λ3 *  q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ, DOS2, E2) ) # (1.4.8) @ right inner boundary 
-            f[iphiaj2]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ, DOS2, E2) ) # (1.4.7) @ right inner boundary (right-hand side of equation)
-            end
-        end
+        end # if clause for inner interface       
 
     end
 
@@ -751,6 +758,8 @@ function ScharfetterGummel!(f, u, edge, data)
     
     ipsi     = data.numberOfCarriers + 1
     ireg     = edge.region
+    nodel    = edge.node[2]
+    nodek    = edge.node[1]
     
     dpsi     = ul[ipsi] - uk[ipsi]
     f[ipsi]  = - data.dielectricConstant[ireg] * ε0 * dpsi
@@ -763,18 +772,15 @@ function ScharfetterGummel!(f, u, edge, data)
 
         j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
-        etak               = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi)
-        etal               = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi)
+        etak               = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge)
+        etal               = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge)
 
-        nodel              = edge.node[2]
-        nodek              = edge.node[1]
         bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
 
         bp, bm             = fbernoulli_pm(data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / data.UT)
         f[icc]             = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
     
     end
-
 
 end
 
@@ -842,6 +848,8 @@ function Sedan!(f, u, edge, data)
     
     ipsi     = data.numberOfCarriers + 1
     ireg     = edge.region
+    nodel    = edge.node[2]
+    nodek    = edge.node[1]
     
     dpsi     = ul[ipsi] - uk[ipsi]
     f[ipsi]  = - data.dielectricConstant[ireg] * ε0 * dpsi
@@ -854,11 +862,9 @@ function Sedan!(f, u, edge, data)
 
         j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
-        etak               = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u, edge, data, icc, ipsi)
-        etal               = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u, edge, data, icc, ipsi)
+        etak               = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u, edge, data, icc, ipsi, nodeEdge)
+        etal               = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u, edge, data, icc, ipsi, nodeEdge)
 
-        nodel              = edge.node[2]
-        nodek              = edge.node[1]
         bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
 
         Q                  = data.chargeNumbers[icc]*( (dpsi - bandEdgeDifference/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
@@ -938,6 +944,8 @@ function diffusionEnhanced!(f, u, edge, data)
     
     ipsi    = data.numberOfCarriers + 1
     ireg    = edge.region
+    nodel   = edge.node[2]
+    nodek   = edge.node[1]
     
     dpsi    = ul[ipsi] - uk[ipsi]
     f[ipsi] = - data.dielectricConstant[ireg] * ε0 * dpsi
@@ -950,8 +958,8 @@ function diffusionEnhanced!(f, u, edge, data)
 
         j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
-        etak               = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
-        etal               = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
+        etak               = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
+        etal               = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
 
         if abs( (etal - etak)/(etak + etal) ) > tolReg
             g  = (etal - etak ) / ( log(data.F[icc](etal)) - log(data.F[icc](etak)) )
@@ -962,8 +970,6 @@ function diffusionEnhanced!(f, u, edge, data)
             g  = 0.5 * ( gk + gl )
         end
 
-        nodel              = edge.node[2]
-        nodek              = edge.node[1]
         bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
 
         bp, bm             = fbernoulli_pm(data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / (data.UT * g))
@@ -987,6 +993,8 @@ function KopruckiGaertner!(f, u, edge, data)
     
     uk            = viewK(edge, u)
     ul            = viewL(edge, u)
+    nodel         = edge.node[2]
+    nodek         = edge.node[1]
     
     ipsi          = data.numberOfCarriers + 1
     ireg          = edge.region
@@ -1002,15 +1010,12 @@ function KopruckiGaertner!(f, u, edge, data)
 
         j0                  = data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
 
-        etak                = etaFunction(uk, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
-        etal                = etaFunction(ul, edge, data, icc, ipsi) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi)
+        etak                = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
+        etal                = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
 
-        # use Sedan flux as starting guess
-
-        nodel               = edge.node[2]
-        nodek               = edge.node[1]
         bandEdgeDifference  = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
 
+        # use Sedan flux as starting guess
         Q                   = data.chargeNumbers[icc]*( (dpsi - bandEdgeDifference/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
         bp, bm              = fbernoulli_pm(Q)
         jInitial            = ( bm * data.F[icc](etal)  - bp * data.F[icc](etak))
