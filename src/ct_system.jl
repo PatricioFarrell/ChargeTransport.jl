@@ -296,7 +296,7 @@ function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, num
     false,                                                                    # innerInterfaces
 
     # number of boundary regions
-    Array{Float64,1}(undef, numberOfBoundaryRegions),                         # contactVoltage
+    spzeros(Float64, numberOfBoundaryRegions),                         # contactVoltage
     Array{Float64,1}(undef, numberOfBoundaryRegions),                         # Fermi level at boundary
 
     # number of charge carriers = number of species - 1
@@ -387,7 +387,7 @@ for edges.
 """
 
 function etaFunction(u, edge::VoronoiFVM.Edge, data::VoronoiFVM.AbstractData, icc::Int64, ipsi::Int64, nodeEdge)
-    E  = data.bandEdgeEnergy[icc, edge.region] + data.bandEdgeEnergyNode[icc, nodeEdge] # if I do not put +1, I run into bounds error. It seems that VoronoiFVM allows edge.index = 0?
+    E  = data.bandEdgeEnergy[icc, edge.region] + data.bandEdgeEnergyNode[icc, nodeEdge]
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 

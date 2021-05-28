@@ -12,7 +12,7 @@ band-edge energies and density of states are tested here.
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
 The paramters can be found here:
-https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-comparison/Input_files/IonMonger_default_noIR.csv.
+https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv.
 =#
 
 module Example104_PSC_GradedFlux
@@ -250,9 +250,9 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     Na                     =   1.03e18             / (cm^3) 
     Ni_acceptor            =   8.32e7              / (cm^3) 
 
-    # contact voltages
+    # contact voltages: we impose an applied voltage only on one boundary.
+    # At the other boundary the applied voltage is zero.
     voltageAcceptor        =  1.2                 * V 
-    voltageDonor           =  0.0                 * V 
 
     if test == false
         println("*** done\n")
@@ -274,8 +274,6 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.temperature                     = T
     data.UT                              = (kB * data.temperature) / q
-    data.contactVoltage[bregionAcceptor] = voltageAcceptor
-    data.contactVoltage[bregionDonor]    = voltageDonor
     data.chargeNumbers[iphin]            = -1
     data.chargeNumbers[iphip]            =  1
     data.recombinationOn                 = recombinationOn
@@ -398,9 +396,17 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     control.damp_growth            = 1.61 # >= 1
     control.max_round              = 5
 
-    sys.boundary_values[iphin, bregionAcceptor] = 0.0 * V
-    sys.boundary_values[iphip, bregionAcceptor] = 0.0 * V
-    sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
+    # set Dirichlet boundary conditions (Ohmic contacts), in Equilibrium we impose homogeneous Dirichlet conditions,
+    # i.e. the boundary values at outer boundaries are zero.
+    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphin,  bregionDonor]    = 0.0 * V
+    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphin,  bregionAcceptor] = 0.0 * V
+
+    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphip,  bregionDonor]    = 0.0 * V
+    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphip,  bregionAcceptor] = 0.0 * V
 
     I = collect(20.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 
@@ -436,13 +442,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     control.damp_growth                              = 1.21 # >= 1
     control.max_round                                = 7
 
-    # set non equilibrium boundary conditions
-    sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor
-    sys.physics.data.contactVoltage[bregionAcceptor] = voltageAcceptor
-    sys.boundary_values[iphin, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
-    sys.boundary_values[iphip, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
-
-    maxBias    = data.contactVoltage[bregionAcceptor]
+    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 13)
 
     for Δu in biasValues
@@ -450,7 +450,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
             println("Bias value: Δu = $(Δu) (no illumination)")
         end
 
-        data.contactVoltage[bregionAcceptor]         = Δu
+        # set non equilibrium boundary conditions
         sys.boundary_values[iphin, bregionAcceptor]  = Δu
         sys.boundary_values[iphip, bregionAcceptor]  = Δu
 

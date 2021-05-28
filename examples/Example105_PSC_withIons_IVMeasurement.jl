@@ -10,7 +10,7 @@ solution vectors after the scan can be depicted.
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
 The paramters can be found here:
-https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-comparison/Input_files/IonMonger_default_noIR.csv.
+https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv.
 =#
 
 module Example105_PSC_withIons_IVMeasurement
@@ -208,9 +208,9 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     Na              =   1.03e18             / (cm^3) 
     C0              =   1.6e19              / (cm^3) 
 
-    # contact voltages
-    voltageAcceptor =  1.2                 * V 
-    voltageDonor    =  0.0                 * V 
+    # contact voltages: we impose an applied voltage only on one boundary.
+    # At the other boundary the applied voltage is zero.
+    voltageAcceptor =  1.2                  * V 
 
     if test == false
         println("*** done\n")
@@ -231,8 +231,6 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     data.F                               = [Boltzmann, Boltzmann, Boltzmann] # Boltzmann, FermiDiracOneHalf, FermiDiracMinusOne, Blakemore
     data.temperature                     = T
     data.UT                              = (kB * data.temperature) / q
-    data.contactVoltage[bregionAcceptor] = voltageAcceptor
-    data.contactVoltage[bregionDonor]    = voltageDonor
     data.chargeNumbers[iphin]            = -1
     data.chargeNumbers[iphip]            =  1
     data.chargeNumbers[iphia]            =  1
@@ -321,18 +319,6 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
 
     sys         = VoronoiFVM.System(grid,physics,unknown_storage=unknown_storage)
 
-    sys.boundary_values[iphin,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphin,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphip,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphip,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
-
     # enable all three species in all regions
     enable_species!(sys, ipsi,  regions)
     enable_species!(sys, iphin, regions)
@@ -380,9 +366,17 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     control.damp_growth       = 1.61 # >= 1
     control.max_round         = 5
 
-    sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
-    sys.boundary_values[iphin, bregionAcceptor] = 0.0 * V
-    sys.boundary_values[iphip, bregionAcceptor] = 0.0 * V
+    # set Dirichlet boundary conditions (Ohmic contacts), in Equilibrium we impose homogeneous Dirichlet conditions,
+    # i.e. the boundary values at outer boundaries are zero.
+    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphin,  bregionDonor]    = 0.0 * V
+    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphin,  bregionAcceptor] = 0.0 * V
+
+    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphip,  bregionDonor]    = 0.0 * V
+    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphip,  bregionAcceptor] = 0.0 * V
 
     I = collect(20.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 
@@ -415,8 +409,10 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     # Here we assume these primary data
     scanrate                  = 1.0 * V/s
     ntsteps                   = 101
-    vend                      = voltageAcceptor
+    vend                      = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     v0                        = 0.0
+    IV                        = zeros(0) # for IV values
+    biasValues                = zeros(0) # for bias values
 
     # The end time then is calculated here:
     tend                      = vend/scanrate
@@ -442,9 +438,25 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         # Solve time step problems with timestep Δt. initialGuess plays the role of the solution
         # from last timestep
         solve!(solution, initialGuess, sys, control = control, tstep = Δt)
+        
+        # get IV curve
+        factory = VoronoiFVM.TestFunctionFactory(sys)
+
+        # testfunction zero in bregionAcceptor and one in bregionDonor
+        tf     = testfunction(factory, [bregionDonor], [bregionAcceptor])
+        I      = integrate(sys, tf, solution, initialGuess, Δt)
+
+        current = I[ipsi] + I[iphin] + I[iphip] + I[iphia]
+
+        push!(IV,  current)
+        push!(biasValues, Δu)
+
         initialGuess .= solution
 
     end # time loop
+
+    # here in res the biasValues and the corresponding current are stored.
+    res = [biasValues IV];
 
     if plotting 
         ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(v0+vend), time \$ t = \$ $tend")

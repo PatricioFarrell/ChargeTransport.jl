@@ -10,7 +10,7 @@ abrupt interfaces. Currently, the generation is off.
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
 The paramters can be found here:
-https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-comparison/Input_files/IonMonger_default_noIR.csv.
+https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv.
 =#
 
 
@@ -181,11 +181,6 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     Ni_acceptor     =   8.32e7              / (cm^3) 
 
     C0              =   1.6e19              / (cm^3) 
-    
-
-    # contact voltages
-    voltageAcceptor =  1.05                 * V 
-    voltageDonor    =  0.0                  * V 
 
     if test == false
         println("*** done\n")
@@ -207,8 +202,6 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     data.F                                        = [Boltzmann, Boltzmann, FermiDiracMinusOne] # Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.temperature                              = T
     data.UT                                       = (kB * data.temperature) / q
-    data.contactVoltage[bregionAcceptor]          = voltageAcceptor
-    data.contactVoltage[bregionDonor]             = voltageDonor
     data.chargeNumbers[iphin]                     = -1
     data.chargeNumbers[iphip]                     =  1
     data.chargeNumbers[iphia]                     =  1
@@ -308,18 +301,6 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     enable_species!(sys, iphip, regions)
     enable_species!(sys, iphia, [regionIntrinsic])
 
-    sys.boundary_values[iphin,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphin,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphip,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphip,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
-
     if test == false
         println("*** done\n")
     end
@@ -363,9 +344,17 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     control.damp_growth                         = 1.61 # >= 1
     control.max_round                           = 5
 
-    sys.boundary_values[iphin, bregionAcceptor] = 0.0 * V
-    sys.boundary_values[iphip, bregionAcceptor] = 0.0 * V
-    sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
+    # set Dirichlet boundary conditions (Ohmic contacts), in Equilibrium we impose homogeneous Dirichlet conditions,
+    # i.e. the boundary values at outer boundaries are zero.
+    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphin,  bregionDonor]    = 0.0 * V
+    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphin,  bregionAcceptor] = 0.0 * V
+
+    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphip,  bregionDonor]    = 0.0 * V
+    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphip,  bregionAcceptor] = 0.0 * V
 
     I = collect(20.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 

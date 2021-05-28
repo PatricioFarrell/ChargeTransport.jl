@@ -117,9 +117,9 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     # intrinsic concentration (not doping!)
     ni                =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) 
 
-    # contact voltages
+    # contact voltages: we impose an applied voltage only on one boundary.
+    # At the other boundary the applied voltage is zero.
     voltageAcceptor   = 1.5 * V
-    voltageDonor      = 0.0 * V
 
     if test == false
         println("*** done\n")
@@ -140,8 +140,6 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     data.F                                           .= Boltzmann # Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.temperature                                  = T
     data.UT                                           = (kB * data.temperature) / q
-    data.contactVoltage[bregionDonor]                 = voltageDonor
-    data.contactVoltage[bregionAcceptor]              = voltageAcceptor
     data.chargeNumbers[iphin]                         = -1
     data.chargeNumbers[iphip]                         =  1
 
@@ -232,19 +230,6 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     enable_species!(sys, iphin, regions)
     enable_species!(sys, iphip, regions)
 
-
-    sys.boundary_values[iphin,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphin,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphip,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphip,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
-
     if test == false
         println("*** done\n")
     end
@@ -294,14 +279,21 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     control.damp_growth       = 1.2 # >= 1
     control.max_round         = 3
 
-    sys.boundary_values[iphin, bregionAcceptor] = 0.0*V
-    sys.boundary_values[iphip, bregionAcceptor] = 0.0*V
-    sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
+    # set Dirichlet boundary conditions (Ohmic contacts), in Equilibrium we impose homogeneous Dirichlet conditions,
+    # i.e. the boundary values at outer boundaries are zero.
+    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphin,  bregionDonor]    = 0.0 * V
+    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphin,  bregionAcceptor] = 0.0 * V
+
+    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphip,  bregionDonor]    = 0.0 * V
+    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphip,  bregionAcceptor] = 0.0 * V
 
     I = collect(20.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 
     prepend!(LAMBDA,0.0)
-
 
     for i in 1:length(LAMBDA)
         if test == false
@@ -323,19 +315,13 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     data.inEquilibrium = false
 
-    # set non equilibrium boundary conditions
-    sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor
-    sys.physics.data.contactVoltage[bregionAcceptor] = voltageAcceptor
-    sys.boundary_values[iphin, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
-    sys.boundary_values[iphip, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
-
     if !(data.F == ChargeTransportInSolids.Boltzmann) # adjust control, when not using Boltzmann
         control.damp_initial      = 0.5
         control.damp_growth       = 1.2
         control.max_iterations    = 30
     end
 
-    maxBias    = data.contactVoltage[bregionAcceptor]
+    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 16)
     IV         = zeros(0)
 
@@ -343,8 +329,8 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     z_device = 1.0e-4 * cm  # depth of device
 
     for Δu in biasValues
-        data.contactVoltage[bregionAcceptor] = Δu
 
+        # set non equilibrium boundary conditions
         sys.boundary_values[iphin, bregionAcceptor] = Δu
         sys.boundary_values[iphip, bregionAcceptor] = Δu
 

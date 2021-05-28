@@ -19,8 +19,8 @@ which indicate where the nodes are located.
 function plotDensities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
     Plotter.clf()
 
-    if dim_space(grid) > 1
-        error("ComputeDensities is so far only tested in 1D")
+    if dim_space(grid) > 2
+        error("ComputeDensities is so far only tested in 1D and 2D")
     end
 
     if plotGridpoints == true
@@ -36,8 +36,11 @@ function plotDensities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
     ipsi                        = data.numberOfCarriers + 1
 
     cellnodes                   = grid[CellNodes]
+    bfacenodes                  = grid[BFaceNodes]
     cellregions                 = grid[CellRegions]
+    bfaceregions                = grid[BFaceRegions]
     coordinates                 = grid[Coordinates]
+    
     for icc in 1:data.numberOfCarriers
 
         # first cell
@@ -50,43 +53,67 @@ function plotDensities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
 
         label_icc               = densityNames[icc]
 
-        Plotter.semilogy([coordinates[1]./1, coordinates[2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, label = label_icc, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)
+        if dim_space(grid) == 1
+            
+            Plotter.semilogy([coordinates[1]./1, coordinates[2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, label = label_icc, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)
+    
+            for icell in 2:size(cellnodes,2) - 1
+                in_region = true
+                i1        = cellnodes[1,icell]
+                i2        = cellnodes[2,icell]
+                ireg      = cellregions[icell]
+                node      = i1 
 
-        for icell in 2:size(cellnodes,2) - 1
-            in_region = true
-            i1        = cellnodes[1,icell]
-            i2        = cellnodes[2,icell]
-            ireg      = cellregions[icell]
-            node      = i1 
-
-            u1        = sol[:, i1]
-            u2        = sol[:, i2]
+                u1        = sol[:, i1]
+                u2        = sol[:, i2]
      
-            icc1      = computeDensities(u1, data, i1, ireg, icc, ipsi, in_region)
-            icc2      = computeDensities(u2, data, i2, ireg, icc, ipsi, in_region)
+                icc1      = computeDensities(u1, data, i1, ireg, icc, ipsi, in_region)
+                icc2      = computeDensities(u2, data, i2, ireg, icc, ipsi, in_region)
         
-            Plotter.semilogy([coordinates[i1]./1, coordinates[i2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)     
+                Plotter.semilogy([coordinates[i1]./1, coordinates[i2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)     
+            end
+
+            # last cell
+            u1            = sol[:, end-1]
+            u2            = sol[:, end]
+            ireg          = cellregions[end]
+            node          = cellnodes[2, end]
+
+            icc1          = computeDensities(u1, data, node-1, ireg, icc, ipsi, true)
+            icc2          = computeDensities(u2, data, node, 2, icc, ipsi, false) # breg = 2 since we are on the right boundary
+
+            Plotter.semilogy([coordinates[node-1]./1, coordinates[node]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)
+
+        elseif dim_space(grid) == 2
+
+            # inner regions
+            for ibcell in 1:length(bfaceregions)
+
+                in_region = false
+                i1        = bfacenodes[1,ibcell]
+                i2        = bfacenodes[2,ibcell]
+                ibreg      = bfaceregions[ibcell]
+
+                u1        = sol[:, i1]
+                u2        = sol[:, i2]
+     
+                icc1      = computeDensities(u1, data, i1, ibreg, icc, ipsi, in_region)
+                icc2      = computeDensities(u2, data, i2, ibreg, icc, ipsi, in_region)
+    
+                Plotter.surf([grid[XCoordinates][i1], grid[XCoordinates][i2]], [grid[YCoordinates][i1], grid[YCoordinates][i2]], [log(icc1), log(icc2)] );
+            end
+        
         end
 
-        # last cell
-        u1            = sol[:, end-1]
-        u2            = sol[:, end]
-        ireg          = cellregions[end]
-        node          = cellnodes[2, end]
-
-        icc1          = computeDensities(u1, data, node-1, ireg, icc, ipsi, true)
-        icc2          = computeDensities(u2, data, node, 2, icc, ipsi, false) # breg = 2 since we are on the right boundary
-
-        Plotter.semilogy([coordinates[node-1]./1, coordinates[node]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)
     end
 
-    Plotter.grid()
-    Plotter.xlabel("space [\$m\$]")
-    Plotter.ylabel("density [\$\\frac{1}{cm^3}\$]")
-    Plotter.legend(fancybox = true, loc = "best", fontsize=11)
-    Plotter.title(title)
-    Plotter.tight_layout()
-    Plotter.pause(0.001)
+    # Plotter.grid()
+    # Plotter.xlabel("space [\$m\$]")
+    # Plotter.ylabel("density [\$\\frac{1}{cm^3}\$]")
+    # Plotter.legend(fancybox = true, loc = "best", fontsize=11)
+    # Plotter.title(title)
+    # Plotter.tight_layout()
+    # Plotter.pause(0.001)
 
 end
 
@@ -367,7 +394,7 @@ which indicate where the nodes are located.
 """
 function plotSolution(Plotter, coord, solution, Eref, title, ;plotGridpoints=false)
 
-    if size(solution)[1] > 4
+    if size(solution)[1] > 4 # in case we have additional boundary species
         ipsi = 4
     else
         ipsi = size(solution)[1] # convention: psi is the last species
