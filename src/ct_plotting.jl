@@ -107,13 +107,13 @@ function plotDensities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
 
     end
 
-    # Plotter.grid()
-    # Plotter.xlabel("space [\$m\$]")
-    # Plotter.ylabel("density [\$\\frac{1}{cm^3}\$]")
-    # Plotter.legend(fancybox = true, loc = "best", fontsize=11)
-    # Plotter.title(title)
-    # Plotter.tight_layout()
-    # Plotter.pause(0.001)
+    Plotter.grid()
+    Plotter.xlabel("space [\$m\$]")
+    Plotter.ylabel("density [\$\\frac{1}{cm^3}\$]")
+    Plotter.legend(fancybox = true, loc = "best", fontsize=11)
+    Plotter.title(title)
+    Plotter.tight_layout()
+    Plotter.pause(0.001)
 
 end
 
@@ -294,9 +294,9 @@ function plotDoping(Plotter, g::ExtendableGrid, data)
         error("plotDoping is so far only implemented in 1D")
     end
 
-    rcParams                    = Plotter.PyDict(Plotter.matplotlib."rcParams")
-    rcParams["font.size"]       = 12
-    rcParams["font.sans-serif"] = "Arial"
+    # rcParams                    = Plotter.PyDict(Plotter.matplotlib."rcParams")
+    # rcParams["font.size"]       = 12
+    # rcParams["font.sans-serif"] = "Arial"
     colors                      = ["green", "red", "gold", "purple"]
     styles                      = ["-",":", "--", "-."]
     densityNames                = ["n", "p", "a", "c"]
