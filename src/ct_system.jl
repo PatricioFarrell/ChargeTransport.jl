@@ -7,7 +7,7 @@ correspond to the charge carriers with a density ``n_\\alpha``. The final specie
 
 $(TYPEDFIELDS)
 """
-mutable struct ChargeTransportData <: VoronoiFVM.AbstractData
+mutable struct ChargeTransportData
 
     # integer numbers
 
@@ -249,7 +249,7 @@ mutable struct ChargeTransportData <: VoronoiFVM.AbstractData
     bandEdgeEnergyNode          ::  Array{Float64,2}
 
     # standard constructor
-    # ChargeTransportData(... all args ...) = new(... all args ...)
+    ChargeTransportData() = new()
 
 end
 
@@ -271,69 +271,71 @@ Almost all physical parameters can be chosen region or node dependent.
 function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, numberOfBoundaryRegions=2::Int64, ;numberOfSpecies=3 ::Int64)
     # DA: Currently, we just initialize node and region dependent data with spzero and the user is setting one of them in the main file.
     # Could this be implemented better or is this idea enough?
-    ChargeTransportData(
+
+    chargetransportdata = ChargeTransportData()
 
     # integer numbers
-    numberOfNodes,
-    numberOfRegions,
-    numberOfBoundaryRegions,
-    numberOfSpecies - 1,                                                      # number of carriers
-    0,                                                                        # numberOfInterfaceSpecies
+    chargetransportdata.numberOfNodes            = numberOfNodes
+    chargetransportdata.numberOfRegions          = numberOfRegions
+    chargetransportdata.numberOfBoundaryRegions  = numberOfBoundaryRegions
+    chargetransportdata.numberOfCarriers         = numberOfSpecies - 1     # number of carriers
+    chargetransportdata.numberOfInterfaceSpecies = 0                       # numberOfInterfaceSpecies
 
     # real numbers
-    300 * K,                                                                  # temperature
-    (kB * 300 * K ) / q,                                                      # thermal voltage
-    0.0,                                                                      # reference energy
-    0.27,                                                                     # parameter for Blakemore statistics
-    1.0,                                                                      # λ1: embedding parameter for NLP
-    0.0,                                                                      # λ2: embedding parameter for G
-    1.0,                                                                      # λ3: embedding parameter for electro chemical reaction
-    0.0,                                                                      # r0 prefactor from electro-chemical reaction
+    chargetransportdata.temperature              = 300 * K                 # temperature
+    chargetransportdata.UT                       = (kB * 300 * K ) / q     # thermal voltage
+    chargetransportdata.Eref                     = 0.0                     # reference energy
+    chargetransportdata.γ                        = 0.27                    # parameter for Blakemore statistics
+    chargetransportdata.λ1                       = 1.0                     # λ1: embedding parameter for NLP
+    chargetransportdata.λ2                       = 0.0                     # λ2: embedding parameter for G
+    chargetransportdata.λ3                       = 0.0                     # λ3: embedding parameter for electro chemical reaction
+    chargetransportdata.r0                       = 0.0                     # r0 prefactor electro-chemical reaction
 
     # booleans
-    true,                                                                     # inEquilibrium
-    true,                                                                     # recombinationOn
-    false,                                                                    # innerInterfaces
+    chargetransportdata.inEquilibrium            = true                                                                          # inEquilibrium
+    chargetransportdata.recombinationOn          = true                                                                          # recombinationOn
+    chargetransportdata.innerInterfaces          = false                                                                         # innerInterfaces
 
     # number of boundary regions
-    spzeros(Float64, numberOfBoundaryRegions),                         # contactVoltage
-    Array{Float64,1}(undef, numberOfBoundaryRegions),                         # Fermi level at boundary
+    chargetransportdata.contactVoltage           = spzeros(Float64, numberOfBoundaryRegions)                                     # contactVoltage
+    chargetransportdata.bFermiLevel              = Array{Float64,1}(undef, numberOfBoundaryRegions)                              # Fermi level at boundary
 
     # number of charge carriers = number of species - 1
-    Array{Float64,1}(undef, numberOfSpecies-1),                               # chargeNumbers
-    fill!(similar(Array{Function,1}(undef, numberOfSpecies-1),Function),exp), # F (Boltzmann)
+    chargetransportdata.chargeNumbers            = Array{Float64,1}(undef, numberOfSpecies - 1)                                  # chargeNumbers
+    chargetransportdata.F                           = fill!(similar(Array{Function,1}(undef, numberOfSpecies - 1),Function),exp) # F (Boltzmann)
 
     # number of carriers x number of boundary regions
-    spzeros(Float64,  numberOfSpecies-1, numberOfBoundaryRegions),            # bBandEdgeEnergy
-    spzeros(Float64,  numberOfSpecies-1, numberOfBoundaryRegions),            # bDensityOfStates
-    spzeros(Float64,  numberOfSpecies-1, numberOfBoundaryRegions),            # bDoping
-    spzeros(Float64,  numberOfSpecies-1, numberOfBoundaryRegions),            # velocity at boundary; Schottky contacts
+    chargetransportdata.bBandEdgeEnergy             = spzeros(Float64, numberOfSpecies - 1, numberOfBoundaryRegions)             # bBandEdgeEnergy
+    chargetransportdata.bDensityOfStates            = spzeros(Float64, numberOfSpecies - 1, numberOfBoundaryRegions)             # bDensityOfStates
+    chargetransportdata.bDoping                     = spzeros(Float64, numberOfSpecies - 1, numberOfBoundaryRegions)             # bDoping
+    chargetransportdata.bVelocity                   = spzeros(Float64, numberOfSpecies - 1, numberOfBoundaryRegions)             # velocity at boundary; SchottkyContacts
 
     # number of charge carriers x number of regions
-    spzeros(Float64,  numberOfSpecies-1,numberOfRegions),                     # doping  
-    spzeros(Float64, numberOfSpecies-1,numberOfRegions),                      # densityOfStates
-    spzeros(Float64, numberOfSpecies-1,numberOfRegions),                      # bandEdgeEnergy
-    spzeros(Float64, numberOfSpecies-1,numberOfRegions),                      # mobility
-    Array{Float64,2}(undef,2, numberOfRegions),                               # recombinationSRHLifetime
-    Array{Float64,2}(undef,2, numberOfRegions),                               # recombinationSRHTrapDensity
-    Array{Float64,2}(undef,2, numberOfRegions),                               # recombinationAuger
+    chargetransportdata.doping                      = spzeros(Float64, numberOfSpecies - 1, numberOfRegions)                     # doping  
+    chargetransportdata.densityOfStates             = spzeros(Float64, numberOfSpecies - 1, numberOfRegions)                     # densityOfStates
+    chargetransportdata.bandEdgeEnergy              = spzeros(Float64, numberOfSpecies - 1, numberOfRegions)                     # bandEdgeEnergy
+    chargetransportdata.mobility                    = spzeros(Float64, numberOfSpecies - 1, numberOfRegions)                     # mobility
+    chargetransportdata.recombinationSRHLifetime    = Array{Float64,2}(undef, 2, numberOfRegions)                                # recombinationSRHLifetime
+    chargetransportdata.recombinationSRHTrapDensity = Array{Float64,2}(undef, 2, numberOfRegions)                                # recombinationSRHTrapDensity
+    chargetransportdata.recombinationAuger          = Array{Float64,2}(undef, 2, numberOfRegions)                                # recombinationAuger
 
     # number of regions
-    spzeros(Float64, numberOfRegions),                                        # dielectricConstant
-    spzeros(Float64, numberOfRegions),                                        # generationEmittedLight
-    spzeros(Float64, numberOfRegions),                                        # generationPrefactor
-    spzeros(Float64, numberOfRegions),                                        # generationAbsorption
-    spzeros(Float64, numberOfRegions),                                        # recombinationRadiative
+    chargetransportdata.dielectricConstant          = spzeros(Float64, numberOfRegions)                                          # dielectricConstant
+    chargetransportdata.generationEmittedLight      = spzeros(Float64, numberOfRegions)                                          # generationEmittedLight
+    chargetransportdata.generationPrefactor         = spzeros(Float64, numberOfRegions)                                          # generationPrefactor
+    chargetransportdata.generationAbsorption        = spzeros(Float64, numberOfRegions)                                          # generationAbsorption
+    chargetransportdata.recombinationRadiative      = spzeros(Float64, numberOfRegions)                                          # recombinationRadiative
 
     # number of nodes
-    spzeros(Float64, numberOfNodes),                                          # dielectricConstantNode  
+    chargetransportdata.dielectricConstantNode      = spzeros(Float64, numberOfNodes)                                            # dielectricConstantNode  
 
     # number of carriers x number of nodes
-    spzeros(Float64, numberOfSpecies-1,numberOfNodes),                        # mobilityNode
-    spzeros(Float64, numberOfSpecies-1,numberOfNodes),                        # dopingNode
-    spzeros(Float64, numberOfSpecies-1,numberOfNodes),                        # densityOfStatesNode
-    spzeros(Float64, numberOfSpecies-1,numberOfNodes)                         # bandEdgeEnergyNode
-    )    
+    chargetransportdata.mobilityNode                = spzeros(Float64, numberOfSpecies - 1,numberOfNodes)                        # mobilityNode
+    chargetransportdata.dopingNode                  = spzeros(Float64, numberOfSpecies - 1,numberOfNodes)                        # dopingNode
+    chargetransportdata.densityOfStatesNode         = spzeros(Float64, numberOfSpecies - 1,numberOfNodes)                        # densityOfStatesNode
+    chargetransportdata.bandEdgeEnergyNode          = spzeros(Float64, numberOfSpecies - 1,numberOfNodes)                        # bandEdgeEnergyNode 
+
+    return chargetransportdata
     
 end
 
@@ -355,7 +357,7 @@ The argument of the distribution function
 
 for interior nodes.
 """
-function etaFunction(u, node::VoronoiFVM.Node, data::VoronoiFVM.AbstractData, icc::Int64, ipsi::Int64)
+function etaFunction(u, node::VoronoiFVM.Node, data, icc::Int64, ipsi::Int64)
     E  = data.bandEdgeEnergy[icc, node.region] + data.bandEdgeEnergyNode[icc, node.index]
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
@@ -369,7 +371,7 @@ The argument of the distribution function
 
 for boundary nodes.
 """
-function etaFunction(u, bnode::VoronoiFVM.BNode, data::VoronoiFVM.AbstractData, icc::Int64, ipsi::Int64)
+function etaFunction(u, bnode::VoronoiFVM.BNode, data, icc::Int64, ipsi::Int64)
     # bnode.index refers to index in overall mesh
     E  = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
@@ -386,7 +388,7 @@ The argument of the distribution function
 for edges.
 """
 
-function etaFunction(u, edge::VoronoiFVM.Edge, data::VoronoiFVM.AbstractData, icc::Int64, ipsi::Int64, nodeEdge)
+function etaFunction(u, edge::VoronoiFVM.Edge, data, icc::Int64, ipsi::Int64, nodeEdge)
     E  = data.bandEdgeEnergy[icc, edge.region] + data.bandEdgeEnergyNode[icc, nodeEdge]
     data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
@@ -1059,7 +1061,7 @@ The argument of the distribution function
 
 for floats.
 """
-function etaFunction(u, data::VoronoiFVM.AbstractData, node, region, icc::Int64, ipsi::Int64, in_region::Bool)
+function etaFunction(u, data, node, region, icc::Int64, ipsi::Int64, in_region::Bool)
 
     if in_region == true
         E  = data.bandEdgeEnergy[icc, region] + data.bandEdgeEnergyNode[icc, node]
@@ -1077,7 +1079,7 @@ $(TYPEDSIGNATURES)
 For given potentials, compute corresponding densities.
 
 """
-function computeDensities(u, data::VoronoiFVM.AbstractData, node, region, icc::Int, ipsi::Int, in_region::Bool)
+function computeDensities(u, data, node, region, icc::Int, ipsi::Int, in_region::Bool)
 
     if in_region == false
         (data.bDensityOfStates[icc, region] + data.densityOfStatesNode[icc, node] ) * data.F[icc](etaFunction(u, data, node, region, icc, ipsi, in_region::Bool))
