@@ -1,26 +1,26 @@
 #=
-# 104: 1D PSC p-i-n device with graded interfaces.
+# 103: 1D PSC p-i-n device with graded interfaces.
 ([source code](SOURCE_URL))
 
-Simulating a three layer PSC device without mobile ions.
-The simulations are performed out of equilibrium and with
+Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions.
+The simulations are performed out of equilibrium, stationary and with
 two junctions between perovskite layer and transport layers, to 
 which we refer as graded interfaces.
-Hence, a graded flux discretizations with space dependent
-band-edge energies and density of states are tested here.
+Hence, a graded flux discretization with space dependent
+band-edge energies and density of states is tested here.
 
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
-The paramters can be found here:
-https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv.
+The paramters can be found in Table S.13 or slightly modified than the one
+in the publication here:
+https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 =#
 
-module Example104_PSC_GradedFlux
+module Example103_PSC_gradedFlux
 
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
-using Printf
 using GridVisualize
 
 function gradingParameter(physicalParameter, coord, regionTransportLayers, regionJunctions, h, heightLayers, lengthLayers, values)

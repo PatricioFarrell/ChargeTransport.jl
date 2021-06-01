@@ -1,10 +1,11 @@
 #=
-# 105: 1D PSC p-i-n device with ions (linear I-V scan protocol).
+# 104: 1D PSC p-i-n device with ions (linear I-V scan protocol).
 ([source code](SOURCE_URL))
 
-Simulating a three layer PSC device with mobile ions modelled with Boltzmann.
-The simulations are performed out of equilibrium and with
-abrupt interfaces. An I-V measurement protocol is included and the corresponding
+Simulating a three layer PSC device SiO2| MAPI | SiO2 with mobile ions 
+where the ion vacancy accumulation is limited by the Fermi-Dirac integral of order -1.
+The simulations are performed out of equilibrium, time-dependent and with
+abrupt interfaces. An linear I-V measurement protocol is included and the corresponding
 solution vectors after the scan can be depicted.
 
 This simulation coincides with the one made in Section 4.3
@@ -13,12 +14,11 @@ The paramters can be found here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv.
 =#
 
-module Example105_PSC_withIons_IVMeasurement
+module Example104_PSC_withIons_IVMeasurement
 
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
-using Printf
 using GridVisualize
 
 function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:dense)
@@ -117,17 +117,22 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     T               = 300.0                 *  K
     
     # band edge energies    
-    Eref            =  0.0
-    Ec_d            = -4.0                  *  eV + Eref
-    Ev_d            = -6.0                  *  eV + Eref
+    Ec_d            = -4.0                  *  eV 
+    Ev_d            = -5.8                  *  eV 
     
-    Ec_i            = -3.7                  *  eV + Eref
-    Ev_i            = -5.4                  *  eV + Eref
+    Ec_i            = -3.7                  *  eV 
+    Ev_i            = -5.4                  *  eV 
     
-    Ea_i            = -4.335                *  eV + Eref # use -4.335 * eV  for unbounded ions in equilibrium and -3.9 * eV for unbounded ones.
-    
-    Ec_a            = -3.1                  *  eV + Eref
-    Ev_a            = -5.1                  *  eV + Eref
+    Ec_a            = -3.4                  *  eV 
+    Ev_a            = -5.1                  *  eV 
+
+    ###################### adjust Na, Ea here #####################
+    Nanion          = 1.0e21                / (cm^3)
+    Ea_i            = -4.45                 *  eV 
+    # for the labels in the figures
+    textEa          = Ea_i./eV
+    textNa          = Nanion.*cm^3
+    ###################### adjust Na, Ea here #####################
         
     EC              = [Ec_d, Ec_i, Ec_a] 
     EV              = [Ev_d, Ev_i, Ev_a] 
@@ -139,7 +144,6 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     
     Nc_i            = 8.1e18                / (cm^3)
     Nv_i            = 5.8e18                / (cm^3)
-    Nanion          = 1.6e19                / (cm^3)
 
     Nc_a            = 5.0e19                / (cm^3)
     Nv_a            = 5.0e19                / (cm^3)
@@ -228,14 +232,13 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
                                                             ;numberOfSpecies = numberOfCarriers + 1)
 
     # region independent data
-    data.F                               = [Boltzmann, Boltzmann, Boltzmann] # Boltzmann, FermiDiracOneHalf, FermiDiracMinusOne, Blakemore
+    data.F                               = [Boltzmann, Boltzmann,FermiDiracMinusOne] # Boltzmann, FermiDiracOneHalf, FermiDiracMinusOne, Blakemore
     data.temperature                     = T
     data.UT                              = (kB * data.temperature) / q
     data.chargeNumbers[iphin]            = -1
     data.chargeNumbers[iphip]            =  1
     data.chargeNumbers[iphia]            =  1
     data.recombinationOn                 = recombinationOn
-    data.Eref                            = Eref
 
     # interior region data
     for ireg in 1:numberOfRegions
@@ -390,6 +393,14 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         initialGuess .= solution
     end
 
+    if plotting 
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        Plotter.figure()
+        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        Plotter.figure()
+        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, 0.0, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+    end
+
     if test == false
         println("*** done\n")
     end
@@ -456,14 +467,14 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     end # time loop
 
     # here in res the biasValues and the corresponding current are stored.
-    res = [biasValues IV];
+    #res = [biasValues IV];
 
     if plotting 
-        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(v0+vend), time \$ t = \$ $tend")
+        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(v0+vend); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
         Plotter.figure()
-        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(v0+vend), time \$ t = \$ $tend")
+        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(v0+vend); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
         Plotter.figure()
-        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, 0.0, "bias \$\\Delta u\$ = $(v0+vend), time \$ t = \$ $tend")
+        ChargeTransportInSolids.plotSolution(Plotter, coord, solution, 0.0, "bias \$\\Delta u\$ = $(v0+vend); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
     end
 
     testval = solution[ipsi, 15]
@@ -474,7 +485,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
 end #  main
 
 function test()
-    testval = -4.100369932212325
+    testval = -4.100369963410221
     main(test = true, unknown_storage=:dense) ≈ testval  #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
