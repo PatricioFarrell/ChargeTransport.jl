@@ -2,8 +2,11 @@
 # 101: 1D GaAs p-i-n diode.
 ([source code](SOURCE_URL))
 
-Simulating charge transport in a GaAs pin diode.
-The simulations are performed out of equilibrium.
+Simulating charge transport in a GaAs pin diode. This means
+the corresponding PDE problem corresponds to the van Roosbroeck
+system of equations.
+The simulations are performed out of equilibrium and for the
+stationary problem.
 =#
 
 module Example101_PIN
@@ -11,7 +14,6 @@ module Example101_PIN
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
-using Printf
 using GridVisualize
 
 # function for initializing the grid for a possble extension to other p-i-n devices.
