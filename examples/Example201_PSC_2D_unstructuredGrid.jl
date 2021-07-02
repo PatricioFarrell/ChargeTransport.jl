@@ -22,8 +22,12 @@ using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
-using SimplexGridFactory
-using Triangulate
+
+# For using this example one additionally needs to add Triangulate. SimplexGridFactory is a wrapper for using this meshgenerator.
+#using SimplexGridFactory
+# using Triangulate
+
+
 # problem with linux, when including PyPlot not until the end: "ERROR: LoadError: InitError: could not load library "/home/abdel/.julia/artifacts/8cc532f6a1ace8d1b756fc413f4ab340195ec3c3/lib/libgio-2.0.so"/home/abdel/.julia/artifacts/8cc532f6a1ace8d1b756fc413f4ab340195ec3c3/lib/libgobject-2.0.so.0: undefined symbol: g_uri_ref"
 # It seems that this problem is common: https://discourse.julialang.org/t/could-not-load-library-librsvg-very-strange-error/21276
 
