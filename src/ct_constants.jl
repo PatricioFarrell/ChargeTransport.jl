@@ -37,5 +37,3 @@ function set_TeSCA_constants()
     global ε0 = 8.85419e-12
     global eV = q * V
 end
-
-export kB, Planck_constant, mₑ, q, ε0

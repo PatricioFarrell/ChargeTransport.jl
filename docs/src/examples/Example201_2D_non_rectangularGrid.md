@@ -1,10 +1,10 @@
-#=
 # 201: Example code for a 2D non rectangular grid.
-([source code](SOURCE_URL))
+([source code](https://github.com/PatricioFarrell/ChargeTransportInSolids.jl/tree/master/examplesExample201_2D_non_rectangularGrid.jl))
 
 This code provides an unstructured grid for a non rectangular two-dimensional
 domain. The grid is produced with Triangulate.jl.
-=#
+
+```julia
 ENV["LC_NUMERIC"]="C"
 
 module Example201_2D_non_rectangularGrid
@@ -12,32 +12,40 @@ module Example201_2D_non_rectangularGrid
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
-# For using this example, one additionally needs to add Triangulate. SimplexGridFactory is a wrapper for using this meshgenerator.
 using SimplexGridFactory
 using Triangulate
 
 function main(;Plotter = nothing, plotting = false)
+```
 
-    # region numbers
+region numbers
+
+```julia
     regionDonor      = 1                           # n doped region
     regionIntrinsic  = 2                           # intrinsic region
     regionAcceptor   = 3                           # p doped region
     regions          = [regionDonor, regionIntrinsic, regionAcceptor]
-    
-    # boundary region numbers
+```
+
+boundary region numbers
+
+```julia
     bregionDonor     = 1
     bregionAcceptor  = 2
     bregionJunction1 = 3
     bregionJunction2 = 4
     bregionNoFlux    = 5
     bregions         = [bregionDonor, bregionAcceptor, bregionJunction1, bregionJunction2, bregionNoFlux]
-    
-    # grid
-    h_ndoping        = 9.90e-6 * cm 
+```
+
+grid
+
+```julia
+    h_ndoping        = 9.90e-6 * cm
     h_intrinsic      = 4.00e-5 * cm + 2.0e-7 * cm
     h_pdoping        = 1.99e-5 * cm
     height           = 3.00e-5 * cm
-    
+
     function unsuitable(x1,y1,x2,y2,x3,y3,area)
         bary_x=(x1+x2+x3)/3.0
         bary_y=(y1+y2+y3)/3.0
@@ -46,31 +54,44 @@ function main(;Plotter = nothing, plotting = false)
         qdist=dx^2+dy^2
         area>0.1*max(8.0e-16,qdist)
     end
-    
-    b                = SimplexGridBuilder(Generator=Triangulate)
 
-    # specify boundary nodes
+    b                = SimplexGridBuilder(Generator=Triangulate)
+```
+
+specify boundary nodes
+
+```julia
     length_0   = point!(b, 0.0, 0.0)
     length_n   = point!(b, h_ndoping, 0.0)
     length_ni  = point!(b, h_ndoping + h_intrinsic, 0.0)
     length_nip = point!(b, h_ndoping + h_intrinsic + h_pdoping, 0.0)
     height_0   = point!(b, 0.0, height)
     height_n   = point!(b, h_ndoping, height)
-    
-    # for L shape
+```
+
+for L shape
+
+```julia
     height_ni12  = point!(b, h_ndoping + h_intrinsic/2, height)
     height_ni2  = point!(b, h_ndoping + h_intrinsic/2, height/2)
     height_ni  = point!(b, h_ndoping + h_intrinsic, height/2)
     height_nip = point!(b, h_ndoping + h_intrinsic + h_pdoping, height/2)
-    
-    ## specify boundary regions
-    # metal interface
+
+    # specify boundary regions
+```
+
+metal interface
+
+```julia
     facetregion!(b, bregionDonor)
     facet!(b, length_0, height_0)
     facetregion!(b, bregionAcceptor)
-    facet!(b, length_nip, height_nip) 
-          
-    # no flux
+    facet!(b, length_nip, height_nip)
+```
+
+no flux
+
+```julia
     facetregion!(b, bregionNoFlux)
     facet!(b, length_0, length_nip)
     facetregion!(b, bregionNoFlux)
@@ -81,36 +102,50 @@ function main(;Plotter = nothing, plotting = false)
     facet!(b, height_ni12, height_ni2)
     facetregion!(b, bregionNoFlux)
     facet!(b, height_ni2, height_nip)
-  
-    # inner interface
+```
+
+inner interface
+
+```julia
     facetregion!(b, bregionJunction1)
     facet!(b, length_n, height_n)
     facetregion!(b, bregionJunction2)
     facet!(b, length_ni, height_ni)
 
     refinement_center = [h_ndoping + h_intrinsic/2, height/2]
-    # Activate unsuitable callback
+```
+
+Activate unsuitable callback
+
+```julia
     options!(b,unsuitable=unsuitable)
-    
-    # cell regions
+```
+
+cell regions
+
+```julia
     cellregion!(b, regionDonor)
-    regionpoint!(b, h_ndoping-1.0e-6*cm, height/2-1.0e-6*cm) 
+    regionpoint!(b, h_ndoping-1.0e-6*cm, height/2-1.0e-6*cm)
     cellregion!(b,regionIntrinsic)
-    regionpoint!(b, h_ndoping + h_intrinsic -1.0e-6*cm, height/2-1.0e-6*cm) 
+    regionpoint!(b, h_ndoping + h_intrinsic -1.0e-6*cm, height/2-1.0e-6*cm)
     cellregion!(b,regionAcceptor)
-    regionpoint!(b, h_ndoping + h_intrinsic + h_pdoping -1.0e-6*cm, height/2-1.0e-6*cm) 
+    regionpoint!(b, h_ndoping + h_intrinsic + h_pdoping -1.0e-6*cm, height/2-1.0e-6*cm)
 
     options!(b,maxvolume=7.0e-16)
 
     grid = simplexgrid(b;maxvolume=7.0e-16)
 
     numberOfNodes   = size(grid[Coordinates])[2]
-    
+
     if plotting
-        # GridVisualize.gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.6)
-        # Plotter.xlabel("length [m]")
-        # Plotter.ylabel("height [m]")
-        # Plotter.tight_layout()
+```
+
+GridVisualize.gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.6)
+Plotter.xlabel("length [m]")
+Plotter.ylabel("height [m]")
+Plotter.tight_layout()
+
+```julia
         builderplot(b,Plotter=Plotter,resolution=(750,700))
 end
 
@@ -120,3 +155,9 @@ end # main
 
 
 end # module
+```
+
+---
+
+*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
+

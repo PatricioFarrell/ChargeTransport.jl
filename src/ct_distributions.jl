@@ -175,7 +175,3 @@ end
 
 
 
-export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA
-
-
-

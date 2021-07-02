@@ -16,7 +16,6 @@ s                  = 1.0                      # seconds
 C                  = A * s                    # Coulomb
 kg                 = 1.0                      # kilogramm
 
-export K, J, A, V, m, s, C, kg
 
 # scaled SI units
 cm                 = 1.0e-2 * m
@@ -31,6 +30,5 @@ ps                 = 1.0e-12 *s
 
 eV                 = q * V
 
-export cm, mm, μm, nm, ms, μs, ns, ps, eV
 
 # end

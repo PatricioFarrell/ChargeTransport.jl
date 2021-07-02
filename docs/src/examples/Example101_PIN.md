@@ -1,8 +1,11 @@
 # 101: 1D GaAs p-i-n diode.
 ([source code](https://github.com/PatricioFarrell/ChargeTransportInSolids.jl/tree/master/examplesExample101_PIN.jl))
 
-Simulating charge transport in a GaAs pin diode.
-The simulations are performed out of equilibrium.
+Simulating charge transport in a GaAs pin diode. This means
+the corresponding PDE problem corresponds to the van Roosbroeck
+system of equations.
+The simulations are performed out of equilibrium and for the
+stationary problem.
 
 ```julia
 module Example101_PIN
@@ -10,7 +13,6 @@ module Example101_PIN
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
-using Printf
 using GridVisualize
 ```
 
@@ -66,7 +68,7 @@ grid
                        h_intrinsic,
                        h_ndoping)
 
-    grid             = VoronoiFVM.Grid(coord)
+    grid             = ExtendableGrids.simplexgrid(coord)
     numberOfNodes    = length(coord)
 ```
 
@@ -153,11 +155,11 @@ intrinsic concentration (not doping!)
     ni                =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T))
 ```
 
-contact voltages
+contact voltages: we impose an applied voltage only on one boundary.
+At the other boundary the applied voltage is zero.
 
 ```julia
     voltageAcceptor   = 1.5 * V
-    voltageDonor      = 0.0 * V
 
     if test == false
         println("*** done\n")
@@ -184,8 +186,6 @@ region independent data
     data.F                                           .= Boltzmann # Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.temperature                                  = T
     data.UT                                           = (kB * data.temperature) / q
-    data.contactVoltage[bregionDonor]                 = voltageDonor
-    data.contactVoltage[bregionAcceptor]              = voltageAcceptor
     data.chargeNumbers[iphin]                         = -1
     data.chargeNumbers[iphip]                         =  1
 
@@ -301,19 +301,6 @@ enable all three species in all regions
     enable_species!(sys, iphin, regions)
     enable_species!(sys, iphip, regions)
 
-
-    sys.boundary_values[iphin,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphin,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphip,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphip,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
-
     if test == false
         println("*** done\n")
     end
@@ -325,7 +312,7 @@ enable all three species in all regions
 
     control = VoronoiFVM.NewtonControl()
     control.verbose           = verbose
-    control.damp_initial      = 0.001
+    control.damp_initial      = 0.5
     control.damp_growth       = 1.21
     control.max_iterations    = 250
     control.tol_absolute      = 1.0e-14
@@ -340,7 +327,7 @@ enable all three species in all regions
 
     ################################################################################
     if test == false
-        println("Compute solution in thermodynamic equilibrium for Boltzmann")
+        println("Compute solution in thermodynamic equilibrium")
     end
     ################################################################################
 
@@ -365,15 +352,25 @@ initialize solution and starting vectors
     control.damp_initial      = 0.01
     control.damp_growth       = 1.2 # >= 1
     control.max_round         = 3
+```
 
-    sys.boundary_values[iphin, bregionAcceptor] = 0.0*V
-    sys.boundary_values[iphip, bregionAcceptor] = 0.0*V
-    sys.physics.data.contactVoltage             = 0.0 * sys.physics.data.contactVoltage
+set Dirichlet boundary conditions (Ohmic contacts), in Equilibrium we impose homogeneous Dirichlet conditions,
+i.e. the boundary values at outer boundaries are zero.
+
+```julia
+    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphin,  bregionDonor]    = 0.0 * V
+    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphin,  bregionAcceptor] = 0.0 * V
+
+    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphip,  bregionDonor]    = 0.0 * V
+    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
+    sys.boundary_values[iphip,  bregionAcceptor] = 0.0 * V
 
     I = collect(20.0:-1:0.0)
     LAMBDA = 10 .^ (-I)
     prepend!(LAMBDA,0.0)
-
 
     for i in 1:length(LAMBDA)
         if test == false
@@ -394,15 +391,6 @@ initialize solution and starting vectors
     ################################################################################
 
     data.inEquilibrium = false
-```
-
-set non equilibrium boundary conditions
-
-```julia
-    sys.physics.data.contactVoltage[bregionDonor]    = voltageDonor
-    sys.physics.data.contactVoltage[bregionAcceptor] = voltageAcceptor
-    sys.boundary_values[iphin, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
-    sys.boundary_values[iphip, bregionAcceptor]      = data.contactVoltage[bregionAcceptor]
 
     if !(data.F == ChargeTransportInSolids.Boltzmann) # adjust control, when not using Boltzmann
         control.damp_initial      = 0.5
@@ -410,7 +398,7 @@ set non equilibrium boundary conditions
         control.max_iterations    = 30
     end
 
-    maxBias    = data.contactVoltage[bregionAcceptor]
+    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 16)
     IV         = zeros(0)
 
@@ -418,8 +406,11 @@ set non equilibrium boundary conditions
     z_device = 1.0e-4 * cm  # depth of device
 
     for Δu in biasValues
-        data.contactVoltage[bregionAcceptor] = Δu
+```
 
+set non equilibrium boundary conditions
+
+```julia
         sys.boundary_values[iphin, bregionAcceptor] = Δu
         sys.boundary_values[iphip, bregionAcceptor] = Δu
 

@@ -15,12 +15,17 @@ index 4: cation vacancies as charge carrier with the corresponding density ``c``
 
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
+
 """
-function plotDensities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
+function plot_densities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
+
+    params      = data.params
+    paramsnodal = data.paramsnodal
+
     Plotter.clf()
 
     if dim_space(grid) > 2
-        error("ComputeDensities is so far only tested in 1D and 2D")
+        error("plot_densities! is so far only tested in 1D and 2D")
     end
 
     if plotGridpoints == true
@@ -33,7 +38,7 @@ function plotDensities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
     linestyles                  = ["-", ":", "--", "-."]
     densityNames                = ["n", "p", "a", "c"]
 
-    ipsi                        = data.numberOfCarriers + 1
+    ipsi                        = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
 
     cellnodes                   = grid[CellNodes]
     bfacenodes                  = grid[BFaceNodes]
@@ -41,15 +46,15 @@ function plotDensities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
     bfaceregions                = grid[BFaceRegions]
     coordinates                 = grid[Coordinates]
     
-    for icc in 1:data.numberOfCarriers
+    for icc in 1:params.numberOfCarriers
 
         # first cell
         u1                      = sol[:, 1]
         u2                      = sol[:, 2]
         ireg                    = cellregions[1]
 
-        icc1                    = computeDensities(u1, data, 1, 1, icc, ipsi, false) # breg = 1 since we are on the left boundary
-        icc2                    = computeDensities(u2, data, 2, ireg, icc, ipsi, true) 
+        icc1                    = compute_densities!(u1, data, 1, 1, icc, ipsi, false) # breg = 1 since we are on the left boundary
+        icc2                    = compute_densities!(u2, data, 2, ireg, icc, ipsi, true) 
 
         label_icc               = densityNames[icc]
 
@@ -67,8 +72,8 @@ function plotDensities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
                 u1        = sol[:, i1]
                 u2        = sol[:, i2]
      
-                icc1      = computeDensities(u1, data, i1, ireg, icc, ipsi, in_region)
-                icc2      = computeDensities(u2, data, i2, ireg, icc, ipsi, in_region)
+                icc1      = compute_densities!(u1, data, i1, ireg, icc, ipsi, in_region)
+                icc2      = compute_densities!(u2, data, i2, ireg, icc, ipsi, in_region)
         
                 Plotter.semilogy([coordinates[i1]./1, coordinates[i2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)     
             end
@@ -79,8 +84,8 @@ function plotDensities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
             ireg          = cellregions[end]
             node          = cellnodes[2, end]
 
-            icc1          = computeDensities(u1, data, node-1, ireg, icc, ipsi, true)
-            icc2          = computeDensities(u2, data, node, 2, icc, ipsi, false) # breg = 2 since we are on the right boundary
+            icc1          = compute_densities!(u1, data, node-1, ireg, icc, ipsi, true)
+            icc2          = compute_densities!(u2, data, node, 2, icc, ipsi, false) # breg = 2 since we are on the right boundary
 
             Plotter.semilogy([coordinates[node-1]./1, coordinates[node]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)
 
@@ -97,8 +102,8 @@ function plotDensities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
                 u1        = sol[:, i1]
                 u2        = sol[:, i2]
      
-                icc1      = computeDensities(u1, data, i1, ibreg, icc, ipsi, in_region)
-                icc2      = computeDensities(u2, data, i2, ibreg, icc, ipsi, in_region)
+                icc1      = compute_densities!(u1, data, i1, ibreg, icc, ipsi, in_region)
+                icc2      = compute_densities!(u2, data, i2, ibreg, icc, ipsi, in_region)
     
                 Plotter.surf([grid[XCoordinates][i1], grid[XCoordinates][i2]], [grid[YCoordinates][i1], grid[YCoordinates][i2]], [log(icc1), log(icc2)] );
             end
@@ -138,11 +143,16 @@ index 4: cation vacancies as charge carrier with the corresponding density ``c``
 
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
+
 """
-function plotEnergies(Plotter, grid, data, sol, title, ;plotGridpoints=false)
+function plot_energies(Plotter, grid, data, sol, title, ;plotGridpoints=false)
+
+    params      = data.params
+    paramsnodal = data.paramsnodal
+
     Plotter.clf()
 
-    ipsi                = data.numberOfCarriers + 1
+    ipsi                = params.numberOfCarriers  + params.numberOfInterfaceCarriers + 1
 
     cellnodes           = grid[CellNodes]
     cellregions         = grid[CellRegions]
@@ -166,8 +176,8 @@ function plotEnergies(Plotter, grid, data, sol, title, ;plotGridpoints=false)
     for icc in 1:2
         # first cell
         ireg         = cellregions[1]
-        E1           = data.bBandEdgeEnergy[icc, 1] + data.bandEdgeEnergyNode[icc, 1] # left boundary
-        E2           = data.bandEdgeEnergy[icc, 1]  + data.bandEdgeEnergyNode[icc, 2] 
+        E1           = params.bBandEdgeEnergy[icc, 1] + paramsnodal.bandEdgeEnergy[icc, 1] # left boundary
+        E2           = params.bandEdgeEnergy[icc, 1]  + paramsnodal.bandEdgeEnergy[icc, 2] 
         energy_icc1  = E1 - q * sol[ipsi, 1]
         energy_icc2  = E2 - q * sol[ipsi, 2]
         label_energy = labelBandEdgeEnergy[icc]
@@ -179,8 +189,8 @@ function plotEnergies(Plotter, grid, data, sol, title, ;plotGridpoints=false)
             i2          = cellnodes[2,icell]
             ireg        = cellregions[icell]
 
-            E1          = data.bandEdgeEnergy[icc, ireg] + data.bandEdgeEnergyNode[icc, i1]
-            E2          = data.bandEdgeEnergy[icc, ireg] + data.bandEdgeEnergyNode[icc, i2]
+            E1          = params.bandEdgeEnergy[icc, ireg] + paramsnodal.bandEdgeEnergy[icc, i1]
+            E2          = params.bandEdgeEnergy[icc, ireg] + paramsnodal.bandEdgeEnergy[icc, i2]
 
             energy_icc1 = E1 - q * sol[ipsi, i1]
             energy_icc2 = E2 - q * sol[ipsi, i2]
@@ -190,8 +200,8 @@ function plotEnergies(Plotter, grid, data, sol, title, ;plotGridpoints=false)
 
         ireg        = cellregions[end]
         node        = cellnodes[2, end]
-        E1          = data.bandEdgeEnergy[icc, ireg] + data.bandEdgeEnergyNode[icc, node-1] 
-        E2          = data.bBandEdgeEnergy[icc, 2] + data.bandEdgeEnergyNode[icc, end] # right boundary
+        E1          = params.bandEdgeEnergy[icc, ireg] + paramsnodal.bandEdgeEnergy[icc, node-1] 
+        E2          = params.bBandEdgeEnergy[icc, 2] + paramsnodal.bandEdgeEnergy[icc, end] # right boundary
         energy_icc1 = E1 - q * sol[ipsi, end-1]
         energy_icc2 = E2 - q * sol[ipsi, end]
 
@@ -215,13 +225,17 @@ end
 $(SIGNATURES)
 With this method it is possible to depict the band-edge energies ``E_\\alpha ``. 
 This can be useful for debugging when dealing with heterojunctions.
+
 """
-function plotEnergies(Plotter, grid::ExtendableGrid, data)
+function plot_energies(Plotter, grid::ExtendableGrid, data)
+
+    params      = data.params
+    paramsnodal = data.paramsnodal 
+
     coord       = grid[Coordinates]
     cellregions = grid[CellRegions]
     cellnodes   = grid[CellNodes]
 
-    #if length(coord[1]) != 1
     if length(coord[1]) != 1
         error("plotEnergies is so far only implemented in 1D")
     end
@@ -231,10 +245,10 @@ function plotEnergies(Plotter, grid::ExtendableGrid, data)
     EnergyNames = ["\$ E_c\$", "\$ E_v \$", " \$ E_a \$", " \$ E_{cat}\$"]
 
     # plot different band-edge energies values in interior
-    for icc = 1:data.numberOfCarriers
+    for icc = 1:params.numberOfCarriers
         for i in 1:length(cellregions)
             # determine band-edge energy value in cell and number of cell nodes
-            cellValue            = ( data.bandEdgeEnergy[icc, cellregions[i]] + data.bandEdgeEnergyNode[icc, i] )/q
+            cellValue            = ( params.bandEdgeEnergy[icc, cellregions[i]] + paramsnodal.bandEdgeEnergy[icc, i] )/q
             numberLocalCellNodes = length(cellnodes[:,i])
             # patch together cells
             Plotter.plot(coord[cellnodes[:,i]],
@@ -252,11 +266,11 @@ function plotEnergies(Plotter, grid::ExtendableGrid, data)
     bfaceregions = grid[BFaceRegions]
     bfacenodes   = grid[BFaceNodes]
 
-    for icc = 1: data.numberOfCarriers
+    for icc = 1: params.numberOfCarriers
 
         for i in 1:length(bfaceregions)
             # determine band-edge energy value in cell and number of cell nodes
-            cellValue            = (data.bBandEdgeEnergy[icc, bfaceregions[i]] + data.bandEdgeEnergyNode[icc, bfacenodes[i]])/q
+            cellValue            = (params.bBandEdgeEnergy[icc, bfaceregions[i]] + paramsnodal.bandEdgeEnergy[icc, bfacenodes[i]])/q
             numberLocalCellNodes = length(bfacenodes[:,i])
 
             # patch together cells
@@ -282,8 +296,12 @@ end
 $(TYPEDSIGNATURES)
 Possibility to plot the considered doping. This is especially useful 
 for making sure that the interior and the boundary doping agree.
+
 """
-function plotDoping(Plotter, g::ExtendableGrid, data)
+function plot_doping(Plotter, g::ExtendableGrid, data)
+
+    params      = data.params
+    paramsnodal = data.paramsnodal
 
     coord       = g[Coordinates]
     cellregions = g[CellRegions]
@@ -294,9 +312,6 @@ function plotDoping(Plotter, g::ExtendableGrid, data)
         error("plotDoping is so far only implemented in 1D")
     end
 
-    # rcParams                    = Plotter.PyDict(Plotter.matplotlib."rcParams")
-    # rcParams["font.size"]       = 12
-    # rcParams["font.sans-serif"] = "Arial"
     colors                      = ["green", "red", "gold", "purple"]
     styles                      = ["-",":", "--", "-."]
     densityNames                = ["n", "p", "a", "c"]
@@ -304,11 +319,11 @@ function plotDoping(Plotter, g::ExtendableGrid, data)
 
     # plot different doping values in interior
 
-    for icc = 1:data.numberOfCarriers
+    for icc = 1:params.numberOfCarriers
 
         for i in 1:length(cellregions)
             # determine doping value in cell and number of cell nodes
-            cellValue            = data.doping[icc, cellregions[i]]
+            cellValue            = params.doping[icc, cellregions[i]]
             numberLocalCellNodes = length(cellnodes[:,i])
 
             # patch together cells
@@ -326,11 +341,11 @@ function plotDoping(Plotter, g::ExtendableGrid, data)
     bfaceregions = g[BFaceRegions]
     bfacenodes   = g[BFaceNodes]
 
-    for icc = 1: data.numberOfCarriers
+    for icc = 1: params.numberOfCarriers
 
         for i in 1:length(bfaceregions)
             # determine doping value in cell and number of cell nodes
-            cellValue            = data.bDoping[icc, bfaceregions[i]]
+            cellValue            = params.bDoping[icc, bfaceregions[i]]
             numberLocalCellNodes = length(bfacenodes[:,i])
 
             # patch together cells
@@ -348,7 +363,7 @@ function plotDoping(Plotter, g::ExtendableGrid, data)
     Plotter.title("Doping values for charge carriers")
     Plotter.legend(fancybox = true, loc = "best")
     Plotter.tight_layout()
-    #Plotter.show();
+
 end
 
 """
@@ -357,7 +372,7 @@ Plotting routine for depicting the electroneutral potential.
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
 """
-function plotElectroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=false)
+function plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=false)
 
     if plotGridpoints == true
         marker = "o"
@@ -392,14 +407,11 @@ index 4: cation vacancies as charge carrier with the corresponding density ``c``
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
 """
-function plotSolution(Plotter, coord, solution, Eref, title, ;plotGridpoints=false)
+function plot_solution(Plotter, grid, data, solution, title, ;plotGridpoints=false)
 
-    if size(solution)[1] > 4 # in case we have additional boundary species
-        ipsi = 4
-    else
-        ipsi = size(solution)[1] # convention: psi is the last species
-    end
-
+    coord                 = grid[Coordinates]'
+    ipsi                  = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1
+    
     if plotGridpoints == true
         marker = "o"
     else
@@ -412,9 +424,9 @@ function plotSolution(Plotter, coord, solution, Eref, title, ;plotGridpoints=fal
     densityNames  = ["\$\\varphi_n\$", "\$\\varphi_p\$", "\$\\varphi_a\$", "\$\\varphi_c\$"]  
 
     Plotter.clf() 
-    Plotter.plot(coord, (solution[ipsi,:] + Eref/q*ones(length(solution[ipsi,:]))), marker = marker, label = "\$\\psi\$", color="b")
+    Plotter.plot(coord, (solution[ipsi,:] + data.params.Eref/q*ones(length(solution[ipsi,:]))), marker = marker, label = "\$\\psi\$", color="b")
 
-    for icc in 1:ipsi-1
+    for icc in 1:data.params.numberOfCarriers
         Plotter.plot(coord./1, solution[icc,:], label =  densityNames[icc], marker = marker, color= colors[icc], linestyle = linestyles[icc])
     end
             
@@ -428,13 +440,13 @@ function plotSolution(Plotter, coord, solution, Eref, title, ;plotGridpoints=fal
 
 end
 
-function plotSolution(Plotter, grid, solution, Eref, agrid, t, Δu)
+function plot_solution(Plotter, grid, solution, Eref, agrid, t, Δu)
 
 
     # Create a visualizer. Works with Plots (fast once compiled) and PyPlot
-    visualizer = p = GridVisualizer(Plotter = Plotter, layout = (1,1) )
+    p = GridVisualizer(Plotter = Plotter, layout = (1,1) )
 
-    ipsi = size(solution)[1] # convention: psi is the last species
+    ipsi = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1
 
     colors        = ["green", "red", "gold", "purple"]
     linestyles    = ["--", "-.", "-", ":"]
@@ -448,7 +460,7 @@ function plotSolution(Plotter, grid, solution, Eref, agrid, t, Δu)
         scalarplot!(p[1,1], grid, solution[icc,:], label =  densityNames[icc], color= colors[icc], linestyle = linestyles[icc], clear = false)
     end
 
-    for icc in 3:ipsi-1
+    for icc in 3:data.params.numberOfCarriers
         scalarplot!(p[1,1], agrid , view(solution[icc,:], agrid), label =  densityNames[icc], color= colors[icc], linestyle = linestyles[icc], clear = false)
     end
 
@@ -469,7 +481,7 @@ Method for showing the total current in dependence of the applied voltage.
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
 """
-function plotIV(Plotter, biasValues,IV, Δu, ;plotGridpoints=false)
+function plot_IV(Plotter, biasValues,IV, Δu, ;plotGridpoints=false)
 
     if plotGridpoints == true
         marker = "o"

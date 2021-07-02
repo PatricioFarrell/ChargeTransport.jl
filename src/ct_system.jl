@@ -1,51 +1,60 @@
+##########################################################
+##########################################################
+
 """
 $(TYPEDEF)
 
-A struct holding the physical data for a drift-diffusion simulation of a semiconductor device.
-If there are ``N`` number of species ``\\alpha`` with ``\\alpha = 1, ..., N`` it is assumed that the first ``N-1`` species
-correspond to the charge carriers with a density ``n_\\alpha``. The final species corresponds to the electrostatic potential ``\\psi``.
+A struct holding the physical region dependent parameters for
+a drift-diffusion simulation of a semiconductor device.
 
 $(TYPEDFIELDS)
+
 """
-mutable struct ChargeTransportData
+mutable struct ChargeTransportParams
 
-    # integer numbers
-
+    ###############################################################
+    ####                   integer numbers                     ####
+    ###############################################################
     """
     number of nodes used for the disretization of the domain ``\\mathbf{\\Omega}``.
     """
-    numberOfNodes               ::  Int64
+    numberOfNodes                ::  Int64
 
     """
     number of regions ``\\mathbf{\\Omega}_k`` within the domain ``\\mathbf{\\Omega}``.
     """
-    numberOfRegions             ::  Int64
+    numberOfRegions              ::  Int64
 
     """
     number of boundary regions ``(\\partial \\mathbf{\\Omega})_k`` such that 
     `` \\partial \\mathbf{\\Omega} = \\cup_k (\\partial \\mathbf{\\Omega})_k``.
     """
-    numberOfBoundaryRegions     ::  Int64
+    numberOfBoundaryRegions      ::  Int64
 
     """
-    number of carriers, which corresponds to the number of species ``-1``.
+    number of moving charge carriers.
+    """ 
+    numberOfCarriers             ::  Int64
+
+
     """
-    numberOfCarriers            ::  Int64
+    number of present inner interface carriers.
+    """ 
+    numberOfInterfaceCarriers    :: Int64
 
-    numberOfInterfaceSpecies    ::  Int64
 
-
-    # real numbers
-
+    ###############################################################
+    ####                     real numbers                      ####
+    ###############################################################
     """
     A given constant temperature.
     """
-    temperature                 ::  Float64
+    temperature                  ::  Float64
 
     """
     The thermal voltage, which reads  ``U_T = k_B T / q``.
     """
-    UT                          ::  Float64
+    UT                           ::  Float64
 
     """
     A reference energy, which is only used for numerical computations.
@@ -53,1025 +62,627 @@ mutable struct ChargeTransportData
     # DA: I think that, when using Schottky contacts we need to set the reference
     # energy to the Fermi Level to get a physical reasonable electrostatic potential,
     # but I am not sure yet and did not test it well ...
-    Eref                        ::  Float64
+    Eref                         ::  Float64
 
     """
     The parameter of the Blakemore statistics.
     """
-    γ                           ::  Float64
+    γ                            ::  Float64
+
+    """
+    Prefactor of electro-chemical reaction of internal boundary conditions.
+    """
+    r0                           ::  Float64
+
+
+    ###############################################################
+    ####              number of boundary regions               ####
+    ###############################################################
+    """
+    An array for the given applied voltages at the contacts.
+    """
+    contactVoltage               ::  Array{Float64,1}
+
+    """
+    An array for the given Fermi level at the contacts.
+    """
+    bFermiLevel                  ::  Array{Float64,1}
+
+
+    ###############################################################
+    ####                  number of carriers                   ####
+    ###############################################################
+    """
+    An array with the corresponding charge numbers
+    ``z_\\alpha`` for all carriers ``\\alpha``.
+    """
+    chargeNumbers                ::  Array{Float64,1}
+    
+
+    ###############################################################
+    ####    number of boundary regions x number of carriers    ####
+    ###############################################################
+    """
+    A 2D array with the corresponding boundary band-edge energy values
+    ``E_\\alpha`` for each carrier ``\\alpha``.
+    """
+    bBandEdgeEnergy              ::  Array{Float64,2}
+ 
+    """
+    A 2D array with the corresponding boundary effective density of states values
+    ``N_\\alpha`` for each carrier ``\\alpha``.
+    """
+    bDensityOfStates             ::  Array{Float64,2}
+
+    """
+    A 2D array with the corresponding boundary doping values for each carrier ``\\alpha``.
+    """
+    bDoping                      ::  Array{Float64,2}
+ 
+    """
+    A 2D array with the corresponding boundary velocity values for each carrier ``\\alpha``,
+    when assuming Schottky contacts.
+    """
+    bVelocity                    ::  Array{Float64,2}
+
+
+    ###############################################################
+    ####   number of bregions x 2 (for electrons and holes!)   ####
+    ############################################################### 
+    """
+    A 2D array with the corresponding recombination surface boundary velocity values
+    for electrons and holes.
+    """
+    recombinationSRHvelocity     ::  Array{Float64,2}
+    """
+    A 2D array with the corresponding recombination surface boundary density values
+    for electrons and holes.
+    """
+    brecombinationSRHTrapDensity ::  Array{Float64,2}
+ 
+
+    ###############################################################
+    ####        number of regions x number of carriers         ####
+    ###############################################################
+    """
+    A 2D array with the corresponding doping values for each carrier ``\\alpha`` on each region.
+    """
+    doping                       ::  Array{Float64,2}
+ 
+    """
+    A 2D array with the corresponding effective density of states values ``N_\\alpha``
+    for each carrier ``\\alpha`` on each region.
+    """
+    densityOfStates              ::  Array{Float64,2}
+
+    """
+    A 2D array with the corresponding band-edge energy values ``E_\\alpha``
+    for each carrier ``\\alpha`` on each region.
+    """
+    bandEdgeEnergy               ::  Array{Float64,2}
+
+    """
+    A 2D array with the corresponding mobility values ``\\mu_\\alpha``
+    for each carrier ``\\alpha`` on each region.
+    """
+    mobility                     ::  Array{Float64,2}
+
+
+    ###############################################################
+    #### number of regions x 2 (for electrons and holes only!) ####
+    ############################################################### 
+    """
+    A 2D array with the corresponding SRH lifetimes ``\\tau_n, \\tau_p`` for electrons and holes.
+    """
+    recombinationSRHLifetime     ::  Array{Float64,2}
+
+    """
+    A 2D array with the corresponding SRH trap densities ``n_{\\tau}, p_{\\tau}`` for electrons and holes.
+    """
+    recombinationSRHTrapDensity  ::  Array{Float64,2}
+
+    """
+    A 2D array with the corresponding Auger coefficients for electrons and holes.
+    """
+    recombinationAuger           ::  Array{Float64,2}
+
+
+    ###############################################################
+    ####                   number of regions                   ####
+    ############################################################### 
+    """
+    A region dependent dielectric constant.
+    """
+    dielectricConstant           ::  Array{Float64,1}
+
+    """
+    A region dependent array for the prefactor in the generation process which is the
+    incident photon flux.
+    """
+    generationIncidentPhotonFlux ::  Array{Float64,1}
+    """
+    A region dependent array for an uniform generation rate.
+    """
+    generationUniform            ::  Array{Float64,1}
+
+    """
+    A region dependent array for the absorption coefficient in the generation process.
+    """
+    generationAbsorption         ::  Array{Float64,1}
+
+    """
+    A region dependent array for the radiative recombination rate.
+    """
+    recombinationRadiative       ::  Array{Float64,1}
+    
+    ###############################################################
+    ChargeTransportParams() = new() # standard constructor
+
+end
+
+
+"""
+$(TYPEDEF)
+
+A struct holding the physical nodal, i.e. space, dependent parameters for
+a drift-diffusion simulation of a semiconductor device.
+
+$(TYPEDFIELDS)
+
+"""
+mutable struct ChargeTransportParamsNodal
+    
+    ###############################################################
+    ####                    number of nodes                    ####
+    ###############################################################
+    """
+    A node dependent dielectric constant.
+    """
+    dielectricConstant           ::  Array{Float64,1}
+ 
+ 
+    ###############################################################
+    ####          number of nodes x number of carriers         ####
+    ###############################################################
+    """
+    A 2D array with the corresponding mobility values ``\\mu_\\alpha`` for each carrier ``\\alpha`` on each node.
+    """
+    mobility                     ::  Array{Float64,2}
+ 
+    """
+    A 2D array with the corresponding doping values for each carrier ``\\alpha`` on each node.
+    """
+    doping                       ::  Array{Float64,2}
+ 
+    """
+    A 2D array with the corresponding effective density of states values ``N_\\alpha`` for each carrier ``\\alpha`` on each node.
+    """
+    densityOfStates              ::  Array{Float64,2}
+ 
+    """
+    A 2D array with the corresponding band-edge energy values ``E_\\alpha`` for each carrier ``\\alpha`` on each node.
+    """
+    bandEdgeEnergy               ::  Array{Float64,2}
+
+    ###############################################################
+    ChargeTransportParamsNodal() = new()
+
+end
+
+"""
+$(TYPEDEF)
+
+A struct holding all data information including model and numerics information,
+but also all physical parameters for a drift-diffusion simulation of a semiconductor device.
+
+$(TYPEDFIELDS)
+
+"""
+mutable struct ChargeTransportData
+
+    ###############################################################
+    ####                   model information                   ####
+    ###############################################################
+    """
+    An array with the corresponding distribution function ``\\mathcal{F}_\\alpha`` for all carriers ``\\alpha``.
+    """
+    F                            ::  Array{Function,1}
+
+    """
+    An array of DataTypes with the type of boundary model for each boundary (interior and exterior).
+    """
+    boundary_type                ::  Array{DataType, 1}  
+
+    """
+    A DataType for the bulk recombination model.
+    """
+    bulk_recombination_model     ::  DataType   
+
+
+    ###############################################################
+    ####                 Numerics information                  ####
+    ###############################################################
+    """
+    A DataType for the flux discretization method.
+    """
+    flux_approximation           ::  DataType
+
+    """
+    A DataType for equilibrium or out of equilibrium calculations.
+    """
+    calculation_type             :: DataType
+
+    """
+    A DataType for transient or stationary calculations.
+    """
+    model_type                   :: DataType
 
     """
     An embedding parameter used to solve the nonlinear Poisson problem, which results
     in the case of thermodynamic equilibrium and electrocharge neutrality.
     """
-    λ1                          ::  Float64
+    λ1                           ::  Float64
 
     """
     An embedding parameter for turning the generation rate ``G`` on.
     """
-    λ2                          ::  Float64
+    λ2                           ::  Float64
 
     """
     An embedding parameter for electrochemical reaction.
     """
-    λ3                          ::  Float64
-
-    """
-    Prefactor of electro-chemical reaction of internal boundary conditions.
-    """
-    r0                          ::  Float64
+    λ3                           ::  Float64
 
 
-    # booleans
+    ###############################################################
+    ####          Physical parameters as own structs           ####
+    ###############################################################
+    """
+    A struct holding all region dependent parameter information. For more information see
+    struct ChargeTransportParams.
+    """
+    params                       :: ChargeTransportParams
 
     """
-    A boolean, which is true in case of assuming equilibrium and false otherwise.
+    A struct holding all space dependent parameter information. For more information see
+    struct ChargeTransportParamsNodal.
     """
-    inEquilibrium               ::  Bool
+    paramsnodal                  :: ChargeTransportParamsNodal
 
-    """
-    A boolean, which is true in case of assuming recombination processes and false otherwise.
-    """
-    recombinationOn             ::  Bool
-
-    """
-    A boolean, which is true in case of additionally defining conditions at the inner interfaces.
-    """
-    innerInterfaces             ::  Bool
-
-
-    # number of boundary regions
-
-    """
-    An array for the given applied voltages at the contacts.
-    """
-    contactVoltage              ::  Array{Float64,1}
-
-    """
-    An array for the given Fermi level at the contacts.
-    """
-    bFermiLevel                 ::  Array{Float64,1}
-
-
-    # number of carriers
-
-    """
-    An array with the corresponding charge numbers ``z_\\alpha`` for all carriers ``\\alpha``.
-    """
-    chargeNumbers               ::  Array{Float64,1}
-
-    """
-    An array with the corresponding distribution function ``\\mathcal{F}_\\alpha`` for all carriers ``\\alpha``.
-    """
-    F                           ::  Array{Function,1}
-
-
-    # number of boundary regions x number of carriers
-
-    """
-    A 2D array with the corresponding boundary band-edge energy values ``E_\\alpha`` for each carrier ``\\alpha``.
-    """
-    bBandEdgeEnergy             ::  Array{Float64,2}
-
-    """
-    A 2D array with the corresponding boundary effective density of states values ``N_\\alpha`` for each carrier ``\\alpha``.
-    """
-    bDensityOfStates            ::  Array{Float64,2}
-
-    """
-    A 2D array with the corresponding boundary doping values for each carrier ``\\alpha``.
-    """
-    bDoping                     ::  Array{Float64,2}
-
-    """
-    A 2D array with the corresponding boundary velocity values for each carrier ``\\alpha``,
-    when assuming Schottky contacts.
-    """
-    bVelocity                   ::  Array{Float64,2}
-
-
-    # number of regions x number of carriers
-    
-    """
-    A 2D array with the corresponding doping values for each carrier ``\\alpha`` on each region.
-    """
-    doping                      ::  Array{Float64,2}
-
-    """
-    A 2D array with the corresponding effective density of states values ``N_\\alpha`` for each carrier ``\\alpha`` on each region.
-    """
-    densityOfStates             ::  Array{Float64,2}
-
-    """
-    A 2D array with the corresponding band-edge energy values ``E_\\alpha`` for each carrier ``\\alpha`` on each region.
-    """
-    bandEdgeEnergy              ::  Array{Float64,2}
-
-    """
-    A 2D array with the corresponding mobility values ``\\mu_\\alpha`` for each carrier ``\\alpha`` on each region.
-    """
-    mobility                    ::  Array{Float64,2}
-
-
-    # number of regions x 2 (for electrons and holes only!)
-
-    """
-    A 2D array with the corresponding SRH lifetimes ``\\tau_n, \\tau_p`` for electrons and holes.
-    """
-    recombinationSRHLifetime    ::  Array{Float64,2}
-
-    """
-    A 2D array with the corresponding SRH trap densities ``n_{\\tau}, p_{\\tau}`` for electrons and holes.
-    """
-    recombinationSRHTrapDensity ::  Array{Float64,2}
-
-    """
-    A 2D array with the corresponding Auger coefficients for electrons and holes.
-    """
-    recombinationAuger          ::  Array{Float64,2}
-
-
-    # number of regions
-
-    """
-    A region dependent dielectric constant.
-    """
-    dielectricConstant          ::  Array{Float64,1}
-
-    """
-    A region dependent array for the emitted light in the generation process.
-    """
-    generationEmittedLight      ::  Array{Float64,1}
-
-    """
-    A region dependent array for the prefactor in the generation process.
-    """
-    generationPrefactor         ::  Array{Float64,1}
-
-    """
-    A region dependent array for the absorption coefficient in the generation process.
-    """
-    generationAbsorption        ::  Array{Float64,1}
-
-    """
-    A region dependent array for the radiative recombination rate.
-    """
-    recombinationRadiative      ::  Array{Float64,1}
-    
-
-    # number of nodes
-    """
-    A node dependent dielectric constant.
-    """
-    dielectricConstantNode      ::  Array{Float64,1}
-
-
-    # number of nodes x number of carriers
-
-    """
-    A 2D array with the corresponding mobility values ``\\mu_\\alpha`` for each carrier ``\\alpha`` on each node.
-    """
-    mobilityNode                ::  Array{Float64,2}
-
-    """
-    A 2D array with the corresponding doping values for each carrier ``\\alpha`` on each node.
-    """
-    dopingNode                  ::  Array{Float64,2}
-
-    """
-    A 2D array with the corresponding effective density of states values ``N_\\alpha`` for each carrier ``\\alpha`` on each node.
-    """
-    densityOfStatesNode         ::  Array{Float64,2}
-
-    """
-    A 2D array with the corresponding band-edge energy values ``E_\\alpha`` for each carrier ``\\alpha`` on each node.
-    """
-    bandEdgeEnergyNode          ::  Array{Float64,2}
-
-    # standard constructor
+    ###############################################################
     ChargeTransportData() = new()
 
 end
 
 
+"""
+$(TYPEDEF)
 
-function emptyFunction()
+A struct holding all information necessary for a drift-diffusion type system.
+
+$(TYPEDFIELDS)
+
+"""
+mutable struct ChargeTransportSystem
+
+    """
+    A struct holding all data information, see ChargeTransportData
+    """
+    data                         :: ChargeTransportData
+
+    """
+    A struct holding system information for the finite volume system.
+    """
+    fvmsys                       :: VoronoiFVM.AbstractSystem
+
+    ###############################################################
+    ChargeTransportSystem() = new()
+
+end
+
+
+##########################################################
+##########################################################
+
+"""
+$(TYPEDSIGNATURES)
+
+Simplified constructor for ChargeTransportParams which only takes the grid
+and the numberOfCarriers as argument.
+    
+"""
+function ChargeTransportParams(grid, numberOfCarriers)
+
+    numberOfNodes           = length(grid[Coordinates])
+    numberOfRegions         = grid[NumCellRegions]
+    numberOfBoundaryRegions = grid[NumBFaceRegions]
+    ###############################################################
+
+    params = ChargeTransportParams()
+
+    ###############################################################
+    ####                   integer numbers                     ####
+    ###############################################################
+    params.numberOfNodes                = numberOfNodes
+    params.numberOfRegions              = numberOfRegions
+    params.numberOfBoundaryRegions      = numberOfBoundaryRegions
+    params.numberOfCarriers             = numberOfCarriers
+    params.numberOfInterfaceCarriers    = 0
+
+    ###############################################################
+    ####                     real numbers                      ####
+    ###############################################################
+    params.temperature                  = 300 * K                 
+    params.UT                           = (kB * 300 * K ) / q     # thermal voltage
+    params.Eref                         = 0.0                     # reference energy
+    params.γ                            = 0.27                    # parameter for Blakemore statistics
+    params.r0                           = 0.0                     # r0 prefactor electro-chemical reaction
+
+    ###############################################################
+    ####              number of boundary regions               ####
+    ###############################################################
+    params.contactVoltage               = spzeros(Float64, numberOfBoundaryRegions)
+    params.bFermiLevel                  = spzeros(Float64, numberOfBoundaryRegions)    # Fermi level at boundary
+    
+    ###############################################################
+    ####                  number of carriers                   ####
+    ###############################################################
+    params.chargeNumbers                = spzeros(Float64, numberOfCarriers) 
+
+    ###############################################################
+    ####    number of boundary regions x number of carriers    ####
+    ###############################################################
+    params.bBandEdgeEnergy              = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    params.bDensityOfStates             = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    params.bDoping                      = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)  # velocity at boundary; SchottkyContacts
+
+    ###############################################################
+    ####   number of bregions x 2 (for electrons and holes!)   ####
+    ############################################################### 
+    params.brecombinationSRHTrapDensity = spzeros(Float64, 2, numberOfBoundaryRegions)                 # for surface reco
+    params.recombinationSRHvelocity     = spzeros(Float64, 2, numberOfBoundaryRegions)                 # for surface reco
+
+    ###############################################################
+    ####        number of regions x number of carriers         ####
+    ###############################################################
+    params.doping                       = spzeros(Float64, numberOfCarriers, numberOfRegions)
+    params.densityOfStates              = spzeros(Float64, numberOfCarriers, numberOfRegions)
+    params.bandEdgeEnergy               = spzeros(Float64, numberOfCarriers, numberOfRegions)
+    params.mobility                     = spzeros(Float64, numberOfCarriers, numberOfRegions)
+
+    ###############################################################
+    #### number of regions x 2 (for electrons and holes only!) ####
+    ###############################################################
+    params.recombinationSRHLifetime     = Array{Float64,2}(undef, 2, numberOfRegions)
+    params.recombinationSRHTrapDensity  = Array{Float64,2}(undef, 2, numberOfRegions)
+    params.recombinationAuger           = Array{Float64,2}(undef, 2, numberOfRegions)
+
+    ###############################################################
+    ####                   number of regions                   ####
+    ############################################################### 
+    params.dielectricConstant           = spzeros(Float64, numberOfRegions)
+    params.generationUniform            = spzeros(Float64, numberOfRegions)
+    params.generationIncidentPhotonFlux = spzeros(Float64, numberOfRegions)
+    params.generationAbsorption         = spzeros(Float64, numberOfRegions)
+    params.recombinationRadiative       = spzeros(Float64, numberOfRegions)
+
+    ###############################################################
+    return params
+
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+Simplified constructor for ChargeTransportParamsNodal which only takes the grid
+and the numberOfCarriers as argument.
+    
+"""
+function ChargeTransportParamsNodal(grid, numberOfCarriers)
+
+    numberOfNodes                       = length(grid[Coordinates])
+
+    ###############################################################
+
+    paramsnodal                         = ChargeTransportParamsNodal()
+
+    ###############################################################
+    ####                    number of nodes                    ####
+    ###############################################################
+    paramsnodal.dielectricConstant      = spzeros(Float64, numberOfNodes) 
+ 
+ 
+    ###############################################################
+    ####          number of nodes x number of carriers         ####
+    ###############################################################
+    paramsnodal.mobility                = spzeros(Float64, numberOfCarriers, numberOfNodes)
+    paramsnodal.doping                  = spzeros(Float64, numberOfCarriers, numberOfNodes)
+    paramsnodal.densityOfStates         = spzeros(Float64, numberOfCarriers, numberOfNodes)
+    paramsnodal.bandEdgeEnergy          = spzeros(Float64, numberOfCarriers, numberOfNodes)
+
+    ###############################################################
+    return paramsnodal
+
 end
 
 
 """
 $(TYPEDSIGNATURES)
 
-Simplified constructors for ChargeTransportData which only take the
-number of regions, number of boundary regions and the number
-of charge carriers as input.
-Note that with these constructors it is also possible to simulate graded interfaces.
-Almost all physical parameters can be chosen region or node dependent.
-"""
-function ChargeTransportData(numberOfNodes::Int64, numberOfRegions=3::Int64, numberOfBoundaryRegions=2::Int64, ;numberOfSpecies=3 ::Int64)
-    # DA: Currently, we just initialize node and region dependent data with spzero and the user is setting one of them in the main file.
-    # Could this be implemented better or is this idea enough?
-
-    chargetransportdata = ChargeTransportData()
-
-    # integer numbers
-    chargetransportdata.numberOfNodes            = numberOfNodes
-    chargetransportdata.numberOfRegions          = numberOfRegions
-    chargetransportdata.numberOfBoundaryRegions  = numberOfBoundaryRegions
-    chargetransportdata.numberOfCarriers         = numberOfSpecies - 1     # number of carriers
-    chargetransportdata.numberOfInterfaceSpecies = 0                       # numberOfInterfaceSpecies
-
-    # real numbers
-    chargetransportdata.temperature              = 300 * K                 # temperature
-    chargetransportdata.UT                       = (kB * 300 * K ) / q     # thermal voltage
-    chargetransportdata.Eref                     = 0.0                     # reference energy
-    chargetransportdata.γ                        = 0.27                    # parameter for Blakemore statistics
-    chargetransportdata.λ1                       = 1.0                     # λ1: embedding parameter for NLP
-    chargetransportdata.λ2                       = 0.0                     # λ2: embedding parameter for G
-    chargetransportdata.λ3                       = 0.0                     # λ3: embedding parameter for electro chemical reaction
-    chargetransportdata.r0                       = 0.0                     # r0 prefactor electro-chemical reaction
-
-    # booleans
-    chargetransportdata.inEquilibrium            = true                                                                          # inEquilibrium
-    chargetransportdata.recombinationOn          = true                                                                          # recombinationOn
-    chargetransportdata.innerInterfaces          = false                                                                         # innerInterfaces
-
-    # number of boundary regions
-    chargetransportdata.contactVoltage           = spzeros(Float64, numberOfBoundaryRegions)                                     # contactVoltage
-    chargetransportdata.bFermiLevel              = Array{Float64,1}(undef, numberOfBoundaryRegions)                              # Fermi level at boundary
-
-    # number of charge carriers = number of species - 1
-    chargetransportdata.chargeNumbers            = Array{Float64,1}(undef, numberOfSpecies - 1)                                  # chargeNumbers
-    chargetransportdata.F                           = fill!(similar(Array{Function,1}(undef, numberOfSpecies - 1),Function),exp) # F (Boltzmann)
-
-    # number of carriers x number of boundary regions
-    chargetransportdata.bBandEdgeEnergy             = spzeros(Float64, numberOfSpecies - 1, numberOfBoundaryRegions)             # bBandEdgeEnergy
-    chargetransportdata.bDensityOfStates            = spzeros(Float64, numberOfSpecies - 1, numberOfBoundaryRegions)             # bDensityOfStates
-    chargetransportdata.bDoping                     = spzeros(Float64, numberOfSpecies - 1, numberOfBoundaryRegions)             # bDoping
-    chargetransportdata.bVelocity                   = spzeros(Float64, numberOfSpecies - 1, numberOfBoundaryRegions)             # velocity at boundary; SchottkyContacts
-
-    # number of charge carriers x number of regions
-    chargetransportdata.doping                      = spzeros(Float64, numberOfSpecies - 1, numberOfRegions)                     # doping  
-    chargetransportdata.densityOfStates             = spzeros(Float64, numberOfSpecies - 1, numberOfRegions)                     # densityOfStates
-    chargetransportdata.bandEdgeEnergy              = spzeros(Float64, numberOfSpecies - 1, numberOfRegions)                     # bandEdgeEnergy
-    chargetransportdata.mobility                    = spzeros(Float64, numberOfSpecies - 1, numberOfRegions)                     # mobility
-    chargetransportdata.recombinationSRHLifetime    = Array{Float64,2}(undef, 2, numberOfRegions)                                # recombinationSRHLifetime
-    chargetransportdata.recombinationSRHTrapDensity = Array{Float64,2}(undef, 2, numberOfRegions)                                # recombinationSRHTrapDensity
-    chargetransportdata.recombinationAuger          = Array{Float64,2}(undef, 2, numberOfRegions)                                # recombinationAuger
-
-    # number of regions
-    chargetransportdata.dielectricConstant          = spzeros(Float64, numberOfRegions)                                          # dielectricConstant
-    chargetransportdata.generationEmittedLight      = spzeros(Float64, numberOfRegions)                                          # generationEmittedLight
-    chargetransportdata.generationPrefactor         = spzeros(Float64, numberOfRegions)                                          # generationPrefactor
-    chargetransportdata.generationAbsorption        = spzeros(Float64, numberOfRegions)                                          # generationAbsorption
-    chargetransportdata.recombinationRadiative      = spzeros(Float64, numberOfRegions)                                          # recombinationRadiative
-
-    # number of nodes
-    chargetransportdata.dielectricConstantNode      = spzeros(Float64, numberOfNodes)                                            # dielectricConstantNode  
-
-    # number of carriers x number of nodes
-    chargetransportdata.mobilityNode                = spzeros(Float64, numberOfSpecies - 1,numberOfNodes)                        # mobilityNode
-    chargetransportdata.dopingNode                  = spzeros(Float64, numberOfSpecies - 1,numberOfNodes)                        # dopingNode
-    chargetransportdata.densityOfStatesNode         = spzeros(Float64, numberOfSpecies - 1,numberOfNodes)                        # densityOfStatesNode
-    chargetransportdata.bandEdgeEnergyNode          = spzeros(Float64, numberOfSpecies - 1,numberOfNodes)                        # bandEdgeEnergyNode 
-
-    return chargetransportdata
+Simplified constructor for ChargeTransportData which only takes the grid
+and the numberOfCarriers as argument. Here all necessary information
+including the physical parameters are located.
     
+"""
+function ChargeTransportData(grid, numberOfCarriers)
+
+    numberOfBoundaryRegions = grid[NumBFaceRegions]
+
+    ###############################################################
+    data = ChargeTransportData()
+
+    ###############################################################
+    ####                   model information                   ####
+    ###############################################################
+    #data.indexSet  = set_indices(grid, numberOfCarriers, interface_model_none) # without interface model 
+
+    data.F                        = fill!(similar(Array{Function,1}(undef, numberOfCarriers),Function), Boltzmann)
+    data.boundary_type            = Array{DataType,1}(undef, numberOfBoundaryRegions)
+    data.bulk_recombination_model = bulk_recombination_none
+
+    for ii in 1:numberOfBoundaryRegions # as default all boundaries are set to an ohmic contact model.
+        data.boundary_type[ii] = ohmic_contact
+    end
+
+    ###############################################################
+    ####                 Numerics information                  ####
+    ###############################################################
+    data.flux_approximation       = ScharfetterGummel
+    data.calculation_type         = inEquilibrium           # do performances inEquilibrium or outOfEquilibrium
+    data.model_type               = model_stationary        # indicates if we need additional time dependent part
+    data.λ1                       = 0.0                     # λ1: embedding parameter for NLP
+    data.λ2                       = 0.0                     # λ2: embedding parameter for G
+    data.λ3                       = 0.0                     # λ3: embedding parameter for electro chemical reaction
+
+    
+    ###############################################################
+    ####          Physical parameters as own structs           ####
+    ###############################################################
+    data.params                   = ChargeTransportParams(grid, numberOfCarriers)
+    data.paramsnodal              = ChargeTransportParamsNodal(grid, numberOfCarriers)
+ 
+    ###############################################################
+
+    return data
+
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+Simplified constructor for ChargeTransportSystem. This is the main
+struct in which all information is stored and with which the calculations
+are performed.
+    
+"""
+function ChargeTransportSystem(grid, data ;unknown_storage)
+
+    ctsys        = ChargeTransportSystem()
+
+    ctsys.data   = data
+
+    physics      = VoronoiFVM.Physics(data        = data,
+                                      num_species = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1,
+                                      flux        = flux!,
+                                      reaction    = reaction!,
+                                      breaction   = breaction!,
+                                      storage     = storage!,
+                                      bstorage    = bstorage!
+                                      )
+
+    ctsys.fvmsys = VoronoiFVM.System(grid, physics, unknown_storage = unknown_storage)
+
+    return ctsys
+
 end
 
 
-function Base.show(io::IO, this::ChargeTransportData)
-    for name in fieldnames(typeof(this))[1:end-5] # exclude the nodal dependent values
+
+function Base.show(io::IO, this::ChargeTransportParams)
+    for name in fieldnames(typeof(this))[1:end] 
         @printf("%30s = ",name)
         println(io,getfield(this,name))
     end
 end
 
-
+###########################################################
+###########################################################
 """
 $(TYPEDSIGNATURES)
 
-The argument of the distribution function
-
-``z_\\alpha / U_T  ( (\\varphi_\\alpha - \\psi) + E_\\alpha / q )``
-
-for interior nodes.
-"""
-function etaFunction(u, node::VoronoiFVM.Node, data, icc::Int64, ipsi::Int64)
-    E  = data.bandEdgeEnergy[icc, node.region] + data.bandEdgeEnergyNode[icc, node.index]
-    data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-The argument of the distribution function
-
-``z_\\alpha / U_T  ( (\\varphi_\\alpha - \\psi) + E_\\alpha / q )``
-
-for boundary nodes.
-"""
-function etaFunction(u, bnode::VoronoiFVM.BNode, data, icc::Int64, ipsi::Int64)
-    # bnode.index refers to index in overall mesh
-    E  = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
-    data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
-end
-
-
-"""
-$(TYPEDSIGNATURES)
-
-The argument of the distribution function
-
-``z_\\alpha / U_T  ( (\\varphi_\\alpha - \\psi) + E_\\alpha / q )``
-
-for edges.
-"""
-
-function etaFunction(u, edge::VoronoiFVM.Edge, data, icc::Int64, ipsi::Int64, nodeEdge)
-    E  = data.bandEdgeEnergy[icc, edge.region] + data.bandEdgeEnergyNode[icc, nodeEdge]
-    data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
-end
-
-
-"""
-$(TYPEDSIGNATURES)
-
-The argument of the distribution function for given ``\\varphi_\\alpha``
-and ``\\psi``
-
-``z_\\alpha / U_T  ( (\\varphi_\\alpha - \\psi) + E_\\alpha / q ).``
-
-The parameters ``E_\\alpha`` and ``z_\\alpha`` are given as vectors.
-This function may be used to compute the charge density, i.e. the
-right-hand side of the Poisson equation.   
-"""
-function etaFunction(psi, phi, UT, E::Array, z::Array)
-    z ./ UT .* ( (phi - psi) .+ E / q )
-end
-
-
-"""
-$(TYPEDSIGNATURES)
-
-Creates ohmic boundary conditions via a penalty approach with penalty parameter ``\\delta``.
-For example, the right-hand side for the electrostatic potential ``\\psi`` is implemented as
-
-``f[\\psi]  = -q/\\delta   ( (p - N_a) - (n - N_d) )``,
-
-assuming a bipolar semiconductor. In general, we have for some given charge number ``z_\\alpha``
-
-``f[\\psi] =  -q/\\delta  \\sum_\\alpha{ z_\\alpha  (n_\\alpha - C_\\alpha) },``
-
-where ``C_\\alpha`` corresponds to some doping w.r.t. the species ``\\alpha``.
-
-The boundary conditions for the charge carriers are set in the main file. Hence,
-
-``f[n_\\alpha] = 0```
-
-for all charge carriers ``\\alpha``.
-"""
-function breactionOhmic!(f, u, bnode, data)
-
-    # parameters
-    α          = 1.0 / VoronoiFVM.Dirichlet       # tiny penalty value
-    α          = 1.0e-10                          # tiny penalty value
-    ipsi       = data.numberOfCarriers + 1        # final index for electrostatic potential
-
-    if bnode.region == 1 || bnode.region == 2  # need to handle this way since interior and outerior bnodes are both bnodes.
-
-        for icc = 1:data.numberOfCarriers
-
-            eta     = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
-
-            f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * (data.bDoping[icc, bnode.region] + data.dopingNode[icc, bnode.index])                             # subtract doping
-            f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * (data.bDensityOfStates[icc, bnode.region] + data.densityOfStatesNode[icc, bnode.index]) * data.F[icc](eta)  # add charge carrier
-
-            # boundary conditions for charge carriers are set in main program
-            f[icc]  = 0.0
-
-        end
-    end # end outer interface
+Functions which sets for given charge carrier at a given boundary
+a given value.
     
-    if data.innerInterfaces == true # convention: inner interfaces are boundary 3 and 4
-            
-        # NICHT SCHÖN: Problem interior and boundary nodes sind beide bnodes...  
-        iphia             = 3
-        iphiaj1, iphiaj2  = 5:6
-
-        E1                = data.bBandEdgeEnergy[iphia, 3] 
-        E2                = data.bBandEdgeEnergy[iphia, 4] 
-        DOS1              = data.bDensityOfStates[iphia, 3] 
-        DOS2              = data.bDensityOfStates[iphia, 4] 
-        C01               = data.bDoping[iphia, 3]
-        C02               = data.bDoping[iphia, 4]
-
-        β                 = 0.5 # can be between 0 and 1 
-        κ                 = 1 # either 0 or 1
-        r0                = data.r0
-
-        if bnode.region == 3
-            etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj1] - u[ipsi]) + E1 / q )
-    
-            f[ipsi]        =  - q  *  ( data.chargeNumbers[iphia] * DOS1^(2/3) * data.F[iphia](etaInterfaceAnion) - C01^(2/3) ) # (1.4.5) @ left inner boundary 
-    
-            if data.inEquilibrium == true
-                f[iphia]   = u[iphia]
-                f[iphiaj1] = u[iphiaj1]
-            else
-    
-            f[iphia]       =   data.λ3 * q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ, DOS1, E1) ) # (1.4.8) @ left inner boundary 
-            f[iphiaj1]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ, DOS1, E1) ) # (1.4.7) @ left inner boundary (right-hand side of equation)
-    
-            end
-
-        elseif bnode.region == 4
-            etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj2] - u[ipsi]) + E2 / q )
-    
-            f[ipsi]        =  -  q *  ( data.chargeNumbers[iphia] * DOS2^(2/3) * data.F[iphia](etaInterfaceAnion) - C02^(2/3) ) # (1.4.5) @ rigth inner boundary 
-    
-    
-            if data.inEquilibrium == true
-                f[iphia]   = u[iphia]
-                f[iphiaj2] = u[iphiaj2]
-            else
-    
-                f[iphia]       = - data.λ3 *  q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ, DOS2, E2) ) # (1.4.8) @ right inner boundary 
-                f[iphiaj2]     = - data.λ3 * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ, DOS2, E2) ) # (1.4.7) @ right inner boundary (right-hand side of equation)
-            end
-        end    
-
-    end
-
-    f[ipsi] = -1 / α *  q * data.λ1 * f[ipsi]
-
-end
-
-function electrochemicalReaction(data, u, iphia, ipsi, iphiaJunction, ipsiJunction, β, κ, DOS, E) # (1.4.9)
+"""
+function set_ohmic_contact!(ctsys, icc, ibreg, contact_val)
  
-
-    etaExp             = data.chargeNumbers[iphia] / data.UT * ( (u[iphia] - u[iphiaJunction]) + E / q ) 
-    expTerm            =  exp( β * etaExp ) - exp( (β - 1) * etaExp)
-
-    etaInterfaceAnion  = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaJunction] - u[ipsiJunction]) + E / q )
-    etaAnion           = data.chargeNumbers[iphia] / data.UT * ( (u[iphia] - u[ipsi]) + E / q )
-
-    densFactor         = ( (DOS^(2/3) * data.F[iphia](etaInterfaceAnion) )^(1/2) * (DOS * data.F[iphia](etaAnion) )^(- 1/2) )^κ
-
-    return densFactor * expTerm
-
+    ctsys.fvmsys.boundary_factors[icc, ibreg] = VoronoiFVM.Dirichlet
+    ctsys.fvmsys.boundary_values[icc, ibreg]  = contact_val
+ 
 end
 
-function bstorage!(f, u, bnode, data)
+###########################################################
+###########################################################
+# Wrappers for methods of VoronoiFVM
 
-    iphia             = 3
-    ipsi              = data.numberOfCarriers + 1        # final index for electrostatic potential
-    iphiaj1, iphiaj2  = 5:6
+ct_enable_species!(ctsys::ChargeTransportSystem, ispecies, regions)   = VoronoiFVM.enable_species!(ctsys.fvmsys, ispecies, regions)
 
-    E1                = data.bBandEdgeEnergy[iphia, 3] 
-    E2                = data.bBandEdgeEnergy[iphia, 4] 
-    DOS1              = data.bDensityOfStates[iphia, 3] 
-    DOS2              = data.bDensityOfStates[iphia, 4] 
+ct_enable_boundary_species!(ctsys::ChargeTransportSystem, ispecies, regions)   = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
 
-    if bnode.region == 3
+ct_unknowns(ctsys::ChargeTransportSystem)                             = VoronoiFVM.unknowns(ctsys.fvmsys)
 
-        # (1.4.7) @ left inner boundary (left-hand side of equation)
-        etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj1] - u[ipsi]) + E1 / q ) 
-        f[iphiaj1]        = data.chargeNumbers[iphia] * DOS1^(2/3) * data.F[iphia](etaInterfaceAnion) 
+ct_solve!(solution, initialGuess, ctsys, ;control=control, tstep=Inf) = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
 
-    elseif bnode.region == 4
+###########################################################
+###########################################################
+function set_indices!(grid, numberOfCarriers, ::Type{interface_model_none}) # we are in most classical setting
 
-        # (1.4.7) @ right inner boundary (left-hand side of equation)
-        etaInterfaceAnion = data.chargeNumbers[iphia] / data.UT * ( (u[iphiaj2] - u[ipsi]) + E2 / q )
-        f[iphiaj2]        = data.chargeNumbers[iphia] *  DOS2^(2/3) * data.F[iphia](etaInterfaceAnion)
+    indexSet = Dict()
+
+    indexSet["iphin"] = 1
+    indexSet["iphip"] = 2
+
+    if numberOfCarriers == 3
+
+        indexSet["iphia"] = 3
 
     end
+    
+    indexSet["ipsi"]  = numberOfCarriers + 1
+
+    return indexSet
 end
 
-"""
-$(TYPEDSIGNATURES)
+function set_indices!(grid, numberOfCarriers, ::Type{interface_model_ion_charge})
 
-Creates Schottky boundary conditions in a first attempt. For the electrostatic potential we assume 
+    bcellregions = grid[NumBFaceRegions]
+    indexSet = Dict()
 
-``\\psi = \\psi_S + U, ``
+    indexSet["iphin"] = 1
+    indexSet["iphip"] = 2
+    indexSet["iphia"] = 3
 
-where  ``\\psi_S`` corresponds to a given value and ``U`` to the applied voltage. For now,
-the quantitity ``\\psi_S`` needs to be specified in the main file.
-For the charge carriers we assume the following
 
-``f[n_\\alpha]  =  z_\\alpha q v_\\alpha (n_\\alpha - n_{\\alpha, 0})``,
-
-where ``v_{\\alpha}`` can be treated as a surface recombination mechanism and is given. The parameter
-``n_{\\alpha, 0}`` is a given value, calculated by the statistical relation, when assuming 
-no electrical field and a quasi Fermi level equal to the metal work function ``\\phi``, i.e.
-    
-``n_{\\alpha, 0}= z_\\alpha/ U_T (E_\\alpha - \\phi) / q. ``
-
-[Note that this way of implementation is not well tested yet.]
-"""
-function breactionSchottky!(f, u, bnode, data)
-    # DA: Still need to be well tested!!
-
-    ipsi          = data.numberOfCarriers + 1        # final index for electrostatic potential
-
-    # bnode.coord
-    # if bnode.region == 1
-    #     f[ipsi] = -u[ipsi] 
-    # elseif bnode.region == 2
-    #     f[ipsi] =  + u[ipsi] - data.λ1 *((data.bFermiLevel[2] - data.bFermiLevel[1])/q ) - data.contactVoltage[bnode.region]  
-    # end
-
-    for icc = 1:data.numberOfCarriers-1
-       
-        if bnode.region == 1
-            phi = data.bFermiLevel[1]
-        elseif bnode.region == 2
-            phi = data.bFermiLevel[2]
-        end
-        if bnode.region == 1 || bnode.region == 2
-            E          = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
-        etaFix = data.chargeNumbers[icc] / data.UT * (  (-phi + E ) / q  )
-        eta    = data.chargeNumbers[icc] / data.UT * (  (u[icc]  - u[ipsi]) + E / q )
-
-        f[icc] =  data.chargeNumbers[icc] * q * data.λ1* data.bVelocity[icc, bnode.region] * (  (data.bDensityOfStates[icc, bnode.region] + data.densityOfStatesNode[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
-        end
-
-        # if icc == 3
-        #     if bnode.region == 4
-        #         E          = data.bBandEdgeEnergy[icc, bnode.region] + data.bandEdgeEnergyNode[icc, bnode.index]
-        #         phi = phi_right
-        #     etaFix = data.chargeNumbers[icc] / data.UT * (  (-phi + E ) / q  )
-        #     eta    = data.chargeNumbers[icc] / data.UT * (  (u[icc]  - u[ipsi]) + E / q )
-    
-        #     f[icc] =  data.chargeNumbers[icc] * q * data.λ1* 0.0 * (  (data.bDensityOfStates[icc, bnode.region] + data.densityOfStatesNode[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
-        #     end
-    
-        # end
-
-    end
-
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-The generation rate ``G``, which occurs in the right-hand side of the
-continuity equations. Currently, we assume a region dependent constant value.
-"""
-function generation(data, ireg)
-
-    return data.λ2 * data.generationEmittedLight[ireg]    # Phil considers a uniform generation rate (but only in the intrinsic layer)
-
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-Sets up the right-hand sides. Assuming a bipolar semiconductor
-the right-hand side for the electrostatic potential becomes
-
-  ``f[ψ]  = - q ((p - N_a) - (n - N_d) ) = - q  \\sum  n_\\alpha  (n_\\alpha - C_\\alpha) ``
-
-for some doping ``C_\\alpha`` w.r.t. to the species ``\\alpha``.
-The right-hand sides for the charge carriers read as
-
-``f[n_\\alpha] =  - z_\\alpha  q (G -  R) ``
-
-for all charge carriers ``n_\\alpha``.
-The recombination includes radiative, Auger and Shockley-Read-Hall
-recombination. For latter recombination process the stationary simplification is implemented.
-
-The recombination is only implemented for electron and holes and assumes
-that the electron index is 1 and the hole index is 2. 
-
-"""
-function reaction!(f, u, node, data)
-
-    # indices
-    iphin                 = 1
-    iphip                 = 2
-    ipsi                  = data.numberOfCarriers + 1            # final index for electrostatic potential
-    ireg                  = node.region
-    inode                 = node.index
-
-    # rhs of NLP (charge density)
-    for icc = 1:data.numberOfCarriers
+    indexSet["iphiaJunction"] = 4:5
+    indexSet["ipsi"] = 3 + length( indexSet["iphiaJunction"] ) + 1
         
-        eta     = etaFunction(u, node, data, icc, ipsi) 
-        f[ipsi] = f[ipsi] - data.chargeNumbers[icc] * (data.doping[icc, node.region] + data.dopingNode[icc, node.index])  # subtract doping
-        f[ipsi] = f[ipsi] + data.chargeNumbers[icc] * (data.densityOfStates[icc, node.region] + data.densityOfStatesNode[icc, node.index]) * data.F[icc](eta)   # add charge carrier
-
-    end
-
-    # rhs of continuity equations for electron and holes (bipolar reaction)
-    
-    if data.inEquilibrium == true 
-
-        for icc = 1:data.numberOfCarriers
-         f[icc] = u[icc] - 0.0
-        end
-
-    else
-        if data.recombinationOn == true  
-            n                     = computeDensities(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
-            p                     = computeDensities(u, data, inode, ireg, iphip, ipsi, true) 
-            exponentialTerm       = exp((q *u[iphin] - q  * u[iphip]) / (kB*data.temperature))
-            excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
-
-            for icc in [iphin, iphip] 
-
-             
-                # radiative recombination
-                kernelRadiative = data.recombinationRadiative[ireg]
-                
-                # Auger recombination
-                kernelAuger     = (data.recombinationAuger[iphin, ireg] * n + data.recombinationAuger[iphip, ireg] * p)
-                
-                # SRH recombination
-                kernelSRH       = 1.0 / (  data.recombinationSRHLifetime[iphip, ireg] * (n + data.recombinationSRHTrapDensity[iphin, ireg]) + data.recombinationSRHLifetime[iphin, ireg] * (p + data.recombinationSRHTrapDensity[iphip, ireg]) )
-                
-                # full recombination
-                f[icc]          = q* data.chargeNumbers[icc]* (kernelRadiative + kernelAuger + kernelSRH)*  excessCarrierDensTerm  - q * data.chargeNumbers[icc] * generation(data, ireg)
-            end
-
-        else
-            for icc = 1: data.numberOfCarriers
-                f[icc]          = 0.0 #- q * data.chargeNumbers[icc] * generation(data, ireg) 
-            end
-        end
-
-        for icc in iphip+1:data.numberOfCarriers
-            f[icc]              = u[icc] - 0.0
-        end
-    
-    end
-    
-    f[ipsi]                     = - q * data.λ1 * f[ipsi]
-end
-
-
-"""
-$(TYPEDSIGNATURES)
-
-The storage term for time-dependent problems.
-Currently, for the time-dependent current densities the implicit Euler scheme is used.
-Hence, we have 
-
-``f[n_\\alpha] =  z_\\alpha  q ∂_t n_\\alpha`` 
-
-and for the electrostatic potential
-``f[ψ] = 0``.
-[Note that this method is not tested yet!]
-"""
-function storage!(f, u, node, data)
-    ipsi       = data.numberOfCarriers + 1
-    
-    for icc = 1:data.numberOfCarriers
-
-        eta    = etaFunction(u, node, data, icc, ipsi) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
-        f[icc] = q * data.chargeNumbers[icc] * (data.densityOfStates[icc, node.region] + data.densityOfStatesNode[icc, node.index]) * data.F[icc](eta)
-    end
-
-    f[ipsi] = 0.0
-end
-
-"""
-$(SIGNATURES)
-
-Compute trap densities for a given trap energy.
-[Currently, only done for the Boltzmann statistics.]
-
-"""
-function trapDensity(icc, ireg, data, Et) 
-    data.densityOfStates[icc, ireg] * exp( data.chargeNumbers[icc] * (data.bandEdgeEnergy[icc, ireg] - Et) / (kB * data.temperature)) # need to subtract Eref
-end
-
-
-"""
-$(TYPEDSIGNATURES)
-
-The classical Scharfetter-Gummel flux scheme.
-
-"""
-function ScharfetterGummel!(f, u, edge, data)
-    uk       = viewK(edge, u)
-    ul       = viewL(edge, u)
-    
-    ipsi     = data.numberOfCarriers + 1
-    ireg     = edge.region
-    nodel    = edge.node[2]
-    nodek    = edge.node[1]
-    
-    dpsi     = ul[ipsi] - uk[ipsi]
-    f[ipsi]  = - data.dielectricConstant[ireg] * ε0 * dpsi
-    
-    if data.inEquilibrium == true # return zero flux in equilibrium
-        return
-    end
-    
-    for icc = 1:data.numberOfCarriers
-
-        j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
-
-        etak               = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge)
-        etal               = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge)
-
-        bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
-
-        bp, bm             = fbernoulli_pm(data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / data.UT)
-        f[icc]             = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
-    
-    end
+    return indexSet
 
 end
 
-"""
-$(TYPEDSIGNATURES)
 
-The classical Scharfetter-Gummel flux scheme for 
-possible space-dependent DOS and band-edge energies. For these parameters
-the discretization scheme is modified. [insert continuous flux etc ...]
+function set_indices!(grid, numberOfCarriers, ::Type{interface_model_surface_recombination})
 
-"""
-function ScharfetterGummelGraded!(f, u, edge, data)
-    uk       = viewK(edge, u)
-    ul       = viewL(edge, u)
-    
-    ipsi     = data.numberOfCarriers + 1
-    ireg     = edge.region
-    nodel    = edge.node[2]
-    nodek    = edge.node[1]
-    
-    dpsi     = ul[ipsi] - uk[ipsi]
-    dpsiEps  = (data.dielectricConstant[ireg]  + (data.dielectricConstantNode[nodel] + data.dielectricConstantNode[nodek])/2) * dpsi
-    f[ipsi]  = - ε0 * dpsiEps
-    
-    if data.inEquilibrium == true # return zero flux in equilibrium
-        return
+    cellregions = grid[NumCellRegions]
+    indexSet = Dict()
+
+    indexSet["iphin"] = collect(1:cellregions)
+    indexSet["iphip"] = collect(cellregions+1:2*cellregions)
+
+    if numberOfCarriers == 3
+        indexSet["iphia"] = 2*cellregions+1
+    elseif numberOfCarriers < 2 || numberOfCarriers > 3
+        println("Case of more than three carriers not tested yet. Hence, only electrons and holes are assumed.")
     end
-    
-    for icc = 1:data.numberOfCarriers
 
-        j0                 =  data.chargeNumbers[icc] * q * data.UT
-
-        etak               = data.chargeNumbers[icc] / data.UT * ( (uk[icc] - uk[ipsi]) + (data.bandEdgeEnergyNode[icc, nodek] + data.bandEdgeEnergy[icc, ireg]) / q )
-        etal               = data.chargeNumbers[icc] / data.UT * ( (ul[icc] - ul[ipsi]) + (data.bandEdgeEnergyNode[icc, nodel] + data.bandEdgeEnergy[icc, ireg]) / q )
-
-
-        bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
-        mobility           = data.mobility[icc, ireg] + (data.mobilityNode[icc, nodel] + data.mobilityNode[icc, nodek])/2
-        densityOfStatesl   = (data.densityOfStates[icc, ireg] + data.densityOfStatesNode[icc,nodel])
-        densityOfStatesk   = (data.densityOfStates[icc, ireg] + data.densityOfStatesNode[icc,nodek])
+    indexSet["ipsi"] = ( numberOfCarriers+1 ) + 2 * (cellregions-1)
         
-        if data.densityOfStatesNode[icc, nodel] ≈ 0.0 || data.densityOfStatesNode[icc, nodek] ≈ 0.0
-            bp, bm         = fbernoulli_pm( data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / data.UT ) 
-        else
-            bp, bm         = fbernoulli_pm( data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / data.UT - (log(data.densityOfStatesNode[icc, nodel]) -log(data.densityOfStatesNode[icc,nodek])) ) 
-        end
-
-        f[icc]             =  -j0  * mobility * ( bm  * densityOfStatesl * data.F[icc](etal) - bp *  densityOfStatesk * data.F[icc](etak) )
-
-    end
+    return indexSet
 
 end
-
-
-"""
-$(TYPEDSIGNATURES)
-
-The Sedan flux scheme.
-
-"""
-function Sedan!(f, u, edge, data)
-    
-    uk       = viewK(edge, u)
-    ul       = viewL(edge, u)
-    
-    ipsi     = data.numberOfCarriers + 1
-    ireg     = edge.region
-    nodel    = edge.node[2]
-    nodek    = edge.node[1]
-    
-    dpsi     = ul[ipsi] - uk[ipsi]
-    f[ipsi]  = - data.dielectricConstant[ireg] * ε0 * dpsi
-    
-    if data.inEquilibrium == true # return zero flux in equilibrium
-        return
-    end
-    
-    for icc = 1:data.numberOfCarriers
-
-        j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
-
-        etak               = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u, edge, data, icc, ipsi, nodeEdge)
-        etal               = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u, edge, data, icc, ipsi, nodeEdge)
-
-        bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
-
-        Q                  = data.chargeNumbers[icc]*( (dpsi - bandEdgeDifference/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
-        bp, bm             = fbernoulli_pm(Q)
-
-        f[icc] = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
-end
-
-end
-
-
-"""
-$(TYPEDSIGNATURES)
-
-The Sedan flux scheme for 
-possible space-dependent DOS and band-edge energies. For these parameters
-the discretization scheme is modified. [insert continuous flux etc ...]
-
-"""
-function SedanGraded!(f, u, edge, data)
-
-    uk       = viewK(edge, u)
-    ul       = viewL(edge, u)
-    
-    ipsi     = data.numberOfCarriers + 1
-    ireg     = edge.region
-    nodel    = edge.node[2]
-    nodek    = edge.node[1]
-    
-    dpsi     = ul[ipsi] - uk[ipsi]
-    dpsiEps  = (data.dielectricConstant[ireg]  + data.dielectricConstantNode[nodel]) * ul[ipsi] - (data.dielectricConstant[ireg] + data.dielectricConstantNode[nodek]) * uk[ipsi]
-    f[ipsi]  = - ε0 * dpsiEps
-    
-    if data.inEquilibrium == true # return zero flux in equilibrium
-        return
-    end
-    
-    for icc = 1:data.numberOfCarriers
-
-        j0                 = data.chargeNumbers[icc] * q * data.UT
-        etak               = data.chargeNumbers[icc] / data.UT * ( (uk[icc] - uk[ipsi]) + (data.bandEdgeEnergyNode[icc, nodek] + data.bandEdgeEnergy[icc, ireg]) / q )
-        etal               = data.chargeNumbers[icc] / data.UT * ( (ul[icc] - ul[ipsi]) + (data.bandEdgeEnergyNode[icc, nodel] + data.bandEdgeEnergy[icc, ireg]) / q )
-
-        bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
-        mobilityl          = (data.mobility[icc, ireg] + data.mobilityNode[icc, nodel])
-        mobilityk          = (data.mobility[icc, ireg] + data.mobilityNode[icc, nodek])
-        densityOfStatesl   = (data.densityOfStates[icc, ireg] + data.densityOfStatesNode[icc,nodel])
-        densityOfStatesk   = (data.densityOfStates[icc, ireg] + data.densityOfStatesNode[icc,nodek])
-
-        if data.densityOfStatesNode[icc, nodel] ≈ 0.0 || data.densityOfStatesNode[icc, nodek] ≈ 0.0
-            Q              = data.chargeNumbers[icc]*( (dpsi - bandEdgeDifference/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
-
-        else
-            Q              = data.chargeNumbers[icc]*( (dpsi - bandEdgeDifference/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) - (log(data.densityOfStatesNode[icc, nodel]) -log(data.densityOfStatesNode[icc,nodek])) )
-
-        end
-
-        bp, bm         = fbernoulli_pm(Q)
-        f[icc]         = - j0  * ( bm  * mobilityl * densityOfStatesl * data.F[icc](etal) - bp * mobilityk * densityOfStatesk * data.F[icc](etak) )
-end
-
-end
-
-
-"""
-$(TYPEDSIGNATURES)
-
-The diffusion enhanced scheme by Bessemoulin-Chatard. Currently, the Pietra-Jüngel scheme is 
-used for the regularization of the removable singularity.
-
-"""
-function diffusionEnhanced!(f, u, edge, data)
-    tolReg  = 1.0e-13;
-    
-    uk      = viewK(edge, u)
-    ul      = viewL(edge, u)
-    
-    ipsi    = data.numberOfCarriers + 1
-    ireg    = edge.region
-    nodel   = edge.node[2]
-    nodek   = edge.node[1]
-    
-    dpsi    = ul[ipsi] - uk[ipsi]
-    f[ipsi] = - data.dielectricConstant[ireg] * ε0 * dpsi
-    
-    if data.inEquilibrium == true # return zero flux in equilibrium
-        return
-    end
-    
-    for icc = 1:data.numberOfCarriers
-
-        j0                 =  data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
-
-        etak               = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
-        etal               = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
-
-        if abs( (etal - etak)/(etak + etal) ) > tolReg
-            g  = (etal - etak ) / ( log(data.F[icc](etal)) - log(data.F[icc](etak)) )
-        else
-            # regularization idea coming from Pietra-Jüngel scheme
-            gk = exp(etak) / data.F[icc](etak)
-            gl = exp(etal) / data.F[icc](etal)
-            g  = 0.5 * ( gk + gl )
-        end
-
-        bandEdgeDifference = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
-
-        bp, bm             = fbernoulli_pm(data.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / (data.UT * g))
-        f[icc]             = - j0 * g * (  bm * data.F[icc](etal) - bp * data.F[icc](etak))
-    end
-
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-The Koprucki-Gärtner scheme. This scheme is calculated by solving a fixed point equation which arise
-when considering the generalized Scharfetter-Gummel scheme in case of Blakemore statistics.
-Hence, it should be exclusively worked with, when considering the Blakemore distribution.
-
-"""
-function KopruckiGaertner!(f, u, edge, data)
-    max_iteration = 200          # for Newton solver
-    it            = 0            # number of iterations (newton)
-    damp          = 0.1          # damping factor
-    
-    uk            = viewK(edge, u)
-    ul            = viewL(edge, u)
-    nodel         = edge.node[2]
-    nodek         = edge.node[1]
-    
-    ipsi          = data.numberOfCarriers + 1
-    ireg          = edge.region
-    
-    dpsi          = ul[ipsi] - uk[ipsi]
-    f[ipsi]        =  - data.dielectricConstant[ireg] * ε0 * dpsi
-    
-    if data.inEquilibrium == true # return zero flux in equilibrium
-        return
-    end
-    
-    for icc = 1:data.numberOfCarriers 
-
-        j0                  = data.chargeNumbers[icc] * q * data.mobility[icc, ireg] * data.UT * data.densityOfStates[icc, ireg]
-
-        etak                = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
-        etal                = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
-
-        bandEdgeDifference  = data.bandEdgeEnergyNode[icc, nodel] - data.bandEdgeEnergyNode[icc, nodek]
-
-        # use Sedan flux as starting guess
-        Q                   = data.chargeNumbers[icc]*( (dpsi - bandEdgeDifference/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
-        bp, bm              = fbernoulli_pm(Q)
-        jInitial            = ( bm * data.F[icc](etal)  - bp * data.F[icc](etak))
-
-        implicitEq(j::Real) = (fbernoulli_pm(data.chargeNumbers[icc] * ((dpsi - bandEdgeDifference/q)) /data.UT + data.γ * j )[2] * exp(etal) - fbernoulli_pm(data.chargeNumbers[icc] * ((dpsi - bandEdgeDifference/q) /data.UT) - data.γ * j)[1] * exp(etak)) - j
-
-        delta               = 1.0e-18 + 1.0e-14 * abs(value(jInitial))
-        oldup = 1.0
-        while (it < max_iteration)
-            Fval     = implicitEq(jInitial)
-            dFval    = ForwardDiff.derivative(implicitEq, jInitial)
-
-            if isnan(value(dFval)) || value(abs(dFval)) < delta
-                @show value(jInitial), value(Fval), value(dFval)
-                error("singular derivative")
-            end
-           
-            update   = Fval / dFval
-            jInitial = jInitial - damp * update
-
-            if abs(update) < delta
-                break
-            end
-            #@show abs(value(update)/oldup)
-            oldup = value(update)
-
-            it       = it + 1
-            damp     = min(damp * 1.2, 1.0)
-        end
-        #@show  it
-        f[icc]       = - j0 * jInitial
-    end
-end
-
-
-"""
-$(TYPEDSIGNATURES)
-
-The argument of the distribution function
-
-``z_\\alpha / U_T  ( (\\varphi_\\alpha - \\psi) + E_\\alpha / q )``
-
-for floats.
-"""
-function etaFunction(u, data, node, region, icc::Int64, ipsi::Int64, in_region::Bool)
-
-    if in_region == true
-        E  = data.bandEdgeEnergy[icc, region] + data.bandEdgeEnergyNode[icc, node]
-    elseif in_region == false
-        E  = data.bBandEdgeEnergy[icc, region] + data.bandEdgeEnergyNode[icc, node]
-    end
-
-    data.chargeNumbers[icc] / data.UT * ( (u[icc] - u[ipsi]) + E / q )
-end
-
+###########################################################
+###########################################################
 """
 
 $(TYPEDSIGNATURES)
@@ -1079,12 +690,15 @@ $(TYPEDSIGNATURES)
 For given potentials, compute corresponding densities.
 
 """
-function computeDensities(u, data, node, region, icc::Int, ipsi::Int, in_region::Bool)
+function compute_densities!(u, data, node, region, icc::Int, ipsi::Int, in_region::Bool)
+
+    params      = data.params
+    paramsnodal = data.paramsnodal 
 
     if in_region == false
-        (data.bDensityOfStates[icc, region] + data.densityOfStatesNode[icc, node] ) * data.F[icc](etaFunction(u, data, node, region, icc, ipsi, in_region::Bool))
+        (params.bDensityOfStates[icc, region] + paramsnodal.densityOfStates[icc, node] ) * data.F[icc](etaFunction(u, data, node, region, icc, ipsi, in_region::Bool))
     elseif in_region == true
-        (data.densityOfStates[icc, region] + data.densityOfStatesNode[icc, node])* data.F[icc](etaFunction(u, data, node, region, icc, ipsi, in_region::Bool)) 
+        (params.densityOfStates[icc, region] + paramsnodal.densityOfStates[icc, node])* data.F[icc](etaFunction(u, data, node, region, icc, ipsi, in_region::Bool)) 
     end
         
 end
@@ -1097,8 +711,11 @@ $(TYPEDSIGNATURES)
 For given potentials in vector form, compute corresponding vectorized densities.
 [Caution: this was not tested for multidimensions.]
 """
-function computeDensities(grid, data, sol)
-    ipsi         = data.numberOfCarriers + 1 
+function compute_densities!(grid, data, sol)
+    params       = data.params
+    paramsnodal  = data.paramsnodal
+
+    ipsi         = params.numberOfCarriers + 1 
     densities    = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
         
     bfacenodes   = grid[BFaceNodes]
@@ -1107,12 +724,12 @@ function computeDensities(grid, data, sol)
     cellRegions  = push!(cellRegions, grid[CellRegions][end]) #  enlarge region by final cell
     
     if dim_space(grid) > 1
-        println("ComputeDensities is so far only tested in 1D")
+        println("compute_densities! is so far only tested in 1D")
     end
     
-    for icc in 1:data.numberOfCarriers
+    for icc in 1:params.numberOfCarriers
 
-        for node in 1:data.numberOfNodes
+        for node in 1:params.numberOfNodes
             in_region = true
             u         = sol[:, node]
             region    = cellRegions[node]
@@ -1123,7 +740,7 @@ function computeDensities(grid, data, sol)
                 region    = bfaceregions[indexNode]                      # since the corresponding region number is at the same index
             end
 
-            densities[icc, node] = computeDensities(u, data, node, region, icc, ipsi, in_region)
+            densities[icc, node] = compute_densities!(u, data, node, region, icc, ipsi, in_region)
         end
     
     end
@@ -1140,19 +757,22 @@ $(SIGNATURES)
 For given solution in vector form, compute corresponding vectorized band-edge energies and Fermi level.
 [Caution: this was not tested for multidimensions.]
 """
-function computeEnergies(grid, data, sol)
+function compute_energies!(grid, data, sol)
+
+    params       = data.params
+    paramsnodal  = data.paramsnodal
     
-    ipsi         = data.numberOfCarriers + 1
+    ipsi         = params.numberOfCarriers + 1
     energies     = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
     fermiLevel   = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
     
     cellregions  = grid[CellRegions]
     cellregions  = push!(cellregions, cellregions[end])
     
-    for icc in 1:data.numberOfCarriers
+    for icc in 1:params.numberOfCarriers
 
-        for inode in 1:data.numberOfNodes
-             E                      = data.bandEdgeEnergy[icc, cellregions[inode]] + data.bandEdgeEnergyNode[icc, inode]
+        for inode in 1:params.numberOfNodes
+             E                      = params.bandEdgeEnergy[icc, cellregions[inode]] + paramsnodal.bandEdgeEnergy[icc, inode]
              energies[icc, inode]   = E - q * sol[ipsi, inode]
              fermiLevel[icc, inode] = -q * sol[icc, inode]
         end
@@ -1174,15 +794,18 @@ the Poisson equation equal to zero and solving for ``\\psi``.
 The charge carriers may obey different statitics functions.
 Currently, this one is not well tested for the case of charge carriers beyond electrons and holes.
 """
-function electroNeutralSolution!(data, grid; Newton=false)
+function electroNeutralSolution!(grid, data; Newton=false)
 
-    if data.numberOfCarriers > 2
+    params          = data.params
+    paramsnodal     = data.paramsnodal
+
+    if params.numberOfCarriers > 2
         error("this method is currently only working for electrons and holes")
     end
 
     solution        = zeros(length(grid[Coordinates]))
-    iccVector       = collect(1:data.numberOfCarriers)
-    zVector         = data.chargeNumbers[iccVector]
+    iccVector       = collect(1:params.numberOfCarriers)
+    zVector         = params.chargeNumbers[iccVector]
     FVector         = data.F[iccVector]
     regionsAllCells = copy(grid[CellRegions])
     regionsAllCells = push!(regionsAllCells, grid[CellRegions][end]) #  enlarge region by final cell
@@ -1192,20 +815,20 @@ function electroNeutralSolution!(data, grid; Newton=false)
     for index = 1:length(regionsAllCells) - 1
         
         ireg          = regionsAllCells[index]
-        zVector       = data.chargeNumbers[iccVector]
+        zVector       = params.chargeNumbers[iccVector]
         FVector       = data.F[iccVector]
         regionsOfCell = regionsAllCells[grid[CellNodes][:,index]]   # all regions of nodes belonging to cell for given index
 
         # average following quantities if needed among all regions
         EVector = Float64[]; CVector = Float64[]; NVector = Float64[]
 
-        for icc = 1:data.numberOfCarriers
-            push!(EVector, sum(data.bandEdgeEnergy[icc, regionsOfCell])  / length(regionsOfCell) + data.bandEdgeEnergyNode[icc,index])
-            push!(CVector, sum(data.doping[icc, regionsOfCell])          / length(regionsOfCell) + data.dopingNode[icc, index])
-            push!(NVector, sum(data.densityOfStates[icc, regionsOfCell]) / length(regionsOfCell) + data.densityOfStatesNode[icc, index])
+        for icc = 1:params.numberOfCarriers
+            push!(EVector, sum(params.bandEdgeEnergy[icc, regionsOfCell])  / length(regionsOfCell) + paramsnodal.bandEdgeEnergy[icc,index])
+            push!(CVector, sum(params.doping[icc, regionsOfCell])          / length(regionsOfCell) + paramsnodal.doping[icc, index])
+            push!(NVector, sum(params.densityOfStates[icc, regionsOfCell]) / length(regionsOfCell) + paramsnodal.densityOfStates[icc, index])
         end
         # rhs of Poisson's equation as anonymous function depending on psi0
-        f = psi0 -> chargeDensity(psi0, phi, data.UT, EVector, zVector, CVector, NVector, FVector)
+        f = psi0 -> chargeDensity(psi0, phi, params.UT, EVector, zVector, CVector, NVector, FVector)
 
         if !Newton
             try

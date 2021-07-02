@@ -23,6 +23,8 @@ using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
 
+
+# function for grading the physical parameters 
 function gradingParameter(physicalParameter, coord, regionTransportLayers, regionJunctions, h, heightLayers, lengthLayers, values)
     for ireg in regionTransportLayers
 
@@ -58,60 +60,62 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     # region numbers
-    regionDonor           = 1                           # n doped region
-    regionJunction1       = 2
-    regionIntrinsic       = 3                           # intrinsic region
-    regionJunction2       = 4
-    regionAcceptor        = 5                           # p doped region
-    regions               = [regionDonor, regionJunction1, regionIntrinsic, regionJunction2, regionAcceptor]
-    regionTransportLayers = [regionDonor, regionIntrinsic, regionAcceptor]
-    regionJunctions       = [regionJunction1, regionJunction2]
+    regionDonor             = 1                           # n doped region
+    regionJunction1         = 2
+    regionIntrinsic         = 3                           # intrinsic region
+    regionJunction2         = 4
+    regionAcceptor          = 5                           # p doped region
+    regions                 = [regionDonor, regionJunction1, regionIntrinsic, regionJunction2, regionAcceptor]
+    regionTransportLayers   = [regionDonor, regionIntrinsic, regionAcceptor]
+    regionJunctions         = [regionJunction1, regionJunction2]
+    numberOfRegions         = length(regions)
 
     # boundary region numbers
-    bregionDonor          = 1
-    bregionAcceptor       = 2
-    bregions              = [bregionDonor, bregionAcceptor]
+    bregionDonor            = 1
+    bregionAcceptor         = 2
+    bregions                = [bregionDonor, bregionAcceptor]
+    numberOfBoundaryRegions = length(bregions)
 
     # grid
-    h_ndoping             = 9.90e-6 * cm 
-    h_junction1           = 1.0e-7  * cm
-    h_intrinsic           = 4.00e-5 * cm
-    h_junction2           = 1.0e-7  * cm
-    h_pdoping             = 1.99e-5 * cm
-    h                     = [h_ndoping, h_junction1, h_intrinsic, h_junction2, h_pdoping]
-    heightLayers          = [h_ndoping,
-                             h_ndoping + h_junction1,
-                             h_ndoping + h_junction1 + h_intrinsic,
-                             h_ndoping + h_junction1 + h_intrinsic + h_junction2,
-                             h_ndoping + h_junction1 + h_intrinsic + h_junction2 + h_pdoping]
-    refinementfactor      = 2^(n-1)
+    h_ndoping               = 9.90e-6 * cm 
+    h_junction1             = 1.0e-7  * cm
+    h_intrinsic             = 4.00e-5 * cm
+    h_junction2             = 1.0e-7  * cm
+    h_pdoping               = 1.99e-5 * cm
+    h                       = [h_ndoping, h_junction1, h_intrinsic, h_junction2, h_pdoping]
+    heightLayers            = [h_ndoping,
+                               h_ndoping + h_junction1,
+                               h_ndoping + h_junction1 + h_intrinsic,
+                               h_ndoping + h_junction1 + h_intrinsic + h_junction2,
+                               h_ndoping + h_junction1 + h_intrinsic + h_junction2 + h_pdoping]
+    refinementfactor        = 2^(n-1)
 
-    coord_ndoping         = collect(range(0.0, stop = h_ndoping, length = 4 * refinementfactor))
-    length_n              = length(coord_ndoping)
-    coord_junction1       = collect(range(h_ndoping,
-                                        stop = h_ndoping + h_junction1,
-                                        length = 3 * refinementfactor))
-    coord_intrinsic       = collect(range(h_ndoping + h_junction1,
-                                        stop = (h_ndoping + h_junction1 + h_intrinsic),
-                                        length = 10 * refinementfactor))
-    coord_junction2       = collect(range(h_ndoping + h_junction1 + h_intrinsic,
-                                        stop = (h_ndoping + h_junction1 + h_intrinsic + h_junction2),
-                                        length = 3 * refinementfactor))
-    coord_pdoping         = collect(range((h_ndoping + h_junction1 + h_intrinsic + h_junction2),
-                                        stop = (h_ndoping + h_junction1 + h_intrinsic + h_junction2 + h_pdoping),
-                                        length = 4 * refinementfactor))
+    coord_ndoping           = collect(range(0.0, stop = h_ndoping, length = 4 * refinementfactor))
+    length_n                = length(coord_ndoping)
+    coord_junction1         = collect(range(h_ndoping,
+                                           stop = h_ndoping + h_junction1,
+                                           length = 3 * refinementfactor))
+    coord_intrinsic         = collect(range(h_ndoping + h_junction1,
+                                           stop = (h_ndoping + h_junction1 + h_intrinsic),
+                                           length = 10 * refinementfactor))
+    coord_junction2         = collect(range(h_ndoping + h_junction1 + h_intrinsic,
+                                           stop = (h_ndoping + h_junction1 + h_intrinsic + h_junction2),
+                                           length = 3 * refinementfactor))
+    coord_pdoping           = collect(range((h_ndoping + h_junction1 + h_intrinsic + h_junction2),
+                                            stop = (h_ndoping + h_junction1 + h_intrinsic + h_junction2 + h_pdoping),
+                                            length = 4 * refinementfactor))
 
-    coord                 = glue(coord_ndoping, coord_junction1)
-    length_j1             = length(coord)
-    coord                 = glue(coord, coord_intrinsic)
-    length_i              = length(coord)
-    coord                 = glue(coord, coord_junction2)
-    length_j2             = length(coord)
-    coord                 = glue(coord, coord_pdoping)
+    coord                   = glue(coord_ndoping, coord_junction1)
+    length_j1               = length(coord)
+    coord                   = glue(coord, coord_intrinsic)
+    length_i                = length(coord)
+    coord                   = glue(coord, coord_junction2)
+    length_j2               = length(coord)
+    coord                   = glue(coord, coord_pdoping)
 
-    grid                  = ExtendableGrids.simplexgrid(coord)
-    numberOfNodes         = length(coord)
-    lengthLayers          = [1, length_n, length_j1, length_i, length_j2, numberOfNodes]
+    grid                    = ExtendableGrids.simplexgrid(coord)
+    numberOfNodes           = length(coord)
+    lengthLayers            = [1, length_n, length_j1, length_i, length_j2, numberOfNodes]
 
     # set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor)       # n-doped region   = 1
@@ -136,15 +140,9 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    # indices
-    iphin, iphip, ipsi      = 1:3
-    species                 = [iphin, iphip, ipsi]
+    numberOfCarriers  = 2 # electrons and holes
 
-    # number of (boundary) regions and carriers
-    numberOfRegions         = length(regions)
-    numberOfBoundaryRegions = length(bregions) 
-    numberOfCarriers        = length(species) - 1
-
+    ##########      physical data      ##########
     # temperature
     T                       = 300.0                 *  K
 
@@ -166,48 +164,48 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     EV                      = [Ev_d, Ev_j1, Ev_i, Ev_j2, Ev_a] 
 
     # effective densities of state
-    Nc_d                   = 5.0e19                / (cm^3)
-    Nv_d                   = 5.0e19                / (cm^3)
+    Nc_d                    = 5.0e19                / (cm^3)
+    Nv_d                    = 5.0e19                / (cm^3)
 
-    Nc_i                   = 8.1e18                / (cm^3)
-    Nv_i                   = 5.8e18                / (cm^3)
+    Nc_i                    = 8.1e18                / (cm^3)
+    Nv_i                    = 5.8e18                / (cm^3)
 
-    Nc_a                   = 5.0e19                / (cm^3)
-    Nv_a                   = 5.0e19                / (cm^3)
+    Nc_a                    = 5.0e19                / (cm^3)
+    Nv_a                    = 5.0e19                / (cm^3)
 
-    Nc_j1                  = Nc_d;     Nc_j2      = Nc_i
-    Nv_j1                  = Nv_d;     Nv_j2      = Nv_i
+    Nc_j1                   = Nc_d;     Nc_j2      = Nc_i
+    Nv_j1                   = Nv_d;     Nv_j2      = Nv_i
 
-    NC                     = [Nc_d, Nc_j1, Nc_i, Nc_j2, Nc_a]
-    NV                     = [Nv_d, Nv_j1, Nv_i, Nv_j2, Nv_a]
+    NC                      = [Nc_d, Nc_j1, Nc_i, Nc_j2, Nc_a]
+    NV                      = [Nv_d, Nv_j1, Nv_i, Nv_j2, Nv_a]
  
     # mobilities 
-    μn_d                   = 3.89                  * (cm^2) / (V * s)  
-    μp_d                   = 3.89                  * (cm^2) / (V * s)  
+    μn_d                    = 3.89                  * (cm^2) / (V * s)  
+    μp_d                    = 3.89                  * (cm^2) / (V * s)  
 
-    μn_i                   = 6.62e1                * (cm^2) / (V * s)  
-    μp_i                   = 6.62e1                * (cm^2) / (V * s)
+    μn_i                    = 6.62e1                * (cm^2) / (V * s)  
+    μp_i                    = 6.62e1                * (cm^2) / (V * s)
 
-    μn_a                   = 3.89e-1               * (cm^2) / (V * s) 
-    μp_a                   = 3.89e-1               * (cm^2) / (V * s)
+    μn_a                    = 3.89e-1               * (cm^2) / (V * s) 
+    μp_a                    = 3.89e-1               * (cm^2) / (V * s)
     
-    μn_j1                  = μn_d;     μn_j2      = μn_i
-    μp_j1                  = μp_d;     μp_j2      = μp_i
+    μn_j1                   = μn_d;     μn_j2      = μn_i
+    μp_j1                   = μp_d;     μp_j2      = μp_i
 
-    μn                     = [μn_d, μn_j1, μn_i, μn_j2, μn_a] 
-    μp                     = [μp_d, μp_j1, μp_i, μp_j2, μp_a] 
+    μn                      = [μn_d, μn_j1, μn_i, μn_j2, μn_a] 
+    μp                      = [μp_d, μp_j1, μp_i, μp_j2, μp_a] 
 
     # relative dielectric permittivity  
-    ε_d                    = 10.0                  *  1.0  
-    ε_i                    = 24.1                  *  1.0 
-    ε_a                    = 3.0                   *  1.0 
+    ε_d                     = 10.0                  *  1.0  
+    ε_i                     = 24.1                  *  1.0 
+    ε_a                     = 3.0                   *  1.0 
 
-    ε_j1                   = ε_d;       ε_j2      = ε_a
-
-    ε                      = [ε_d, ε_j1, ε_i, ε_j2, ε_a] 
+    ε_j1                    = ε_d;       ε_j2      = ε_a
+ 
+    ε                       = [ε_d, ε_j1, ε_i, ε_j2, ε_a] 
 
     # recombination model
-    recombinationOn        = true
+    bulk_recombination = bulk_recombination_full
 
     # radiative recombination
     r0_d                   = 0.0e+0               * cm^3 / s 
@@ -233,7 +231,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     τn                     = [τn_d, τn_j1, τn_i, τn_j2, τn_a]
     τp                     = [τp_d, τp_j1, τp_i, τp_j2, τp_a]
         
-    # SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
+    # SRH trap energies (needed for calculation of trap_density! (SRH))
     Ei_d                   = -5.0                 * eV   
     Ei_i                   = -4.55                * eV   
     Ei_a                   = -4.1                 * eV   
@@ -254,107 +252,149 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     # At the other boundary the applied voltage is zero.
     voltageAcceptor        =  1.2                 * V 
 
+    # interface model (this is needed for giving the user the correct index set)
+    interface_reaction = interface_model_none
+
+    # set the correct indices for each species (this is needed for giving the user the correct index set)
+    # but likewise it is possible to define one owns index set, i.e. iphin, iphin, iphip = 1:3
+    indexSet         = set_indices!(grid, numberOfCarriers, interface_reaction)
+
+    iphin           = indexSet["iphin"]
+    iphip           = indexSet["iphip"]
+    ipsi            = indexSet["ipsi" ]
+
     if test == false
         println("*** done\n")
     end
 
     ################################################################################
     if test == false
-        println("Define ChargeTransport data and fill in previously defined data")
+        println("Define ChargeTransportSystem and fill in information about model")
     end
     ################################################################################
 
-    # initialize ChargeTransport instance
-    data      = ChargeTransportInSolids.ChargeTransportData(numberOfNodes,
-                                                            numberOfRegions,
-                                                            numberOfBoundaryRegions,
-                                                            ;numberOfSpecies = numberOfCarriers + 1)
+    # initialize ChargeTransportData instance and fill in data
+    data                                = ChargeTransportData(grid, numberOfCarriers)
 
-    # region independent data
-    data.F                              .= Boltzmann # Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
-    data.temperature                     = T
-    data.UT                              = (kB * data.temperature) / q
-    data.chargeNumbers[iphin]            = -1
-    data.chargeNumbers[iphip]            =  1
-    data.recombinationOn                 = recombinationOn
+    #### declare here all necessary information concerning the model ###
 
-    # band-edge energies
-    data.bandEdgeEnergyNode[iphin, :]    = gradingParameter(data.bandEdgeEnergyNode[iphin, :],
-                                                            coord, regionTransportLayers, regionJunctions, h,
-                                                            heightLayers, lengthLayers, EC)
-    data.bandEdgeEnergyNode[iphip, :]    = gradingParameter(data.bandEdgeEnergyNode[iphip, :],
-                                                            coord, regionTransportLayers, regionJunctions, h,
-                                                            heightLayers, lengthLayers, EV)
-    # # density of states
-    data.densityOfStatesNode[iphin, :]   = gradingParameter(data.densityOfStatesNode[iphin, :],
-                                                            coord, regionTransportLayers, regionJunctions, h,
-                                                            heightLayers, lengthLayers, NC)
-    data.densityOfStatesNode[iphip, :]   = gradingParameter(data.densityOfStatesNode[iphip, :],
-                                                            coord, regionTransportLayers, regionJunctions, h,
-                                                            heightLayers, lengthLayers, NV)
+    # Following variable declares, if we want to solve stationary or transient problem
+    data.model_type                     = model_stationary
+    
+    # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    data.F                             .= Boltzmann
+
+    # Following choices are possible for recombination model: bulk_recombination_model_none, bulk_recombination_model_trap_assisted, bulk_recombination_radiative, bulk_recombination_full <: bulk_recombination_model 
+    data.bulk_recombination_model       = bulk_recombination
+
+    # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
+    # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
+    # (distinguish between left and right).
+    data.boundary_type[bregionDonor]    = ohmic_contact  
+    data.boundary_type[bregionAcceptor] = ohmic_contact                       
+     
+    # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
+    # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
+    data.flux_approximation             = ScharfetterGummel_Graded
+    
+    ################################################################################
+    if test == false
+        println("Define ChargeTransportParams and fill in physical parameters")
+    end
+    ################################################################################
+
+    # for region dependent parameters
+    params                                              = ChargeTransportParams(grid, numberOfCarriers)
+    # for space dependent parameters
+    paramsnodal                                         = ChargeTransportParamsNodal(grid, numberOfCarriers)
+
+
+    params.temperature                                  = T
+    params.UT                                           = (kB * params.temperature) / q
+    params.chargeNumbers[iphin]                         = -1
+    params.chargeNumbers[iphip]                         =  1
+
+    # nodal band-edge energies
+    paramsnodal.bandEdgeEnergy[iphin, :]  = gradingParameter(paramsnodal.bandEdgeEnergy[iphin, :],
+                                                             coord, regionTransportLayers, regionJunctions, h,
+                                                             heightLayers, lengthLayers, EC)
+    paramsnodal.bandEdgeEnergy[iphip, :]  = gradingParameter(paramsnodal.bandEdgeEnergy[iphip, :],
+                                                             coord, regionTransportLayers, regionJunctions, h,
+                                                             heightLayers, lengthLayers, EV)
+    # nodal effective density of states
+    paramsnodal.densityOfStates[iphin, :] = gradingParameter(paramsnodal.densityOfStates[iphin, :],
+                                                             coord, regionTransportLayers, regionJunctions, h,
+                                                             heightLayers, lengthLayers, NC)
+    paramsnodal.densityOfStates[iphip, :] = gradingParameter(paramsnodal.densityOfStates[iphip, :],
+                                                             coord, regionTransportLayers, regionJunctions, h,
+                                                             heightLayers, lengthLayers, NV)
     # region dependent data
     for ireg in 1:numberOfRegions
 
         # mobility
-        data.mobility[iphin, ireg]                    = μn[ireg]
-        data.mobility[iphip, ireg]                    = μp[ireg]
+        params.mobility[iphin, ireg]                    = μn[ireg]
+        params.mobility[iphip, ireg]                    = μp[ireg]
 
-        data.dielectricConstant[ireg]                 = ε[ireg]
+        params.dielectricConstant[ireg]                 = ε[ireg]
         # recombination parameters
-        data.recombinationRadiative[ireg]             = r0[ireg]
-        data.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
-        data.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
-        data.recombinationSRHTrapDensity[iphin, ireg] = ChargeTransportInSolids.trapDensity(iphin, ireg, data, EI[ireg])
-        data.recombinationSRHTrapDensity[iphip, ireg] = ChargeTransportInSolids.trapDensity(iphip, ireg, data, EI[ireg])
-        data.recombinationAuger[iphin, ireg]          = Auger
-        data.recombinationAuger[iphip, ireg]          = Auger
+        params.recombinationRadiative[ireg]             = r0[ireg]
+        params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
+        params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
+        params.recombinationSRHTrapDensity[iphin, ireg] = trap_density!(iphin, ireg, data, EI[ireg])
+        params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, data, EI[ireg])
+        params.recombinationAuger[iphin, ireg]          = Auger
+        params.recombinationAuger[iphip, ireg]          = Auger
+
     end           
     
     # interior doping
-    data.doping[iphin, regionDonor]               = Nd
-    data.doping[iphip, regionIntrinsic]           = Ni_acceptor    
-    data.doping[iphip, regionAcceptor]            = Na     
+    params.doping[iphin, regionDonor]               = Nd
+    params.doping[iphip, regionIntrinsic]           = Ni_acceptor    
+    params.doping[iphip, regionAcceptor]            = Na     
                              
     # boundary doping
-    data.bDoping[iphip, bregionAcceptor]          = Na        # data.bDoping  = [Na  0.0;
-    data.bDoping[iphin, bregionDonor]             = Nd        #                  0.0  Nd]
+    params.bDoping[iphip, bregionAcceptor]          = Na        # data.bDoping  = [Na  0.0;
+    params.bDoping[iphin, bregionDonor]             = Nd        #                  0.0  Nd]
+
+    # in the last step, with all data and parameter we initialize our system 
+    # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on this data.
+    ctsys                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
+    # the initialized data is dependent on the initialized sys
+    ctsys.data                          = data
+    # Region dependent params is now a substruct of data which is again a substruct of the system.
+    ctsys.data.params                   = params
+    # same holds true for space dependent params
+    ctsys.data.paramsnodal              = paramsnodal
+
+    ########### It is also possible to print the nodal dependent data, but for the sake of readibility
+    ########### we neglect this here.
+    # print data
+    if test == false
+        println(ctsys.data.params)
+    end
 
     if test == false
         println("*** done\n")
     end
     ################################################################################
     if test == false
-        println("Define physics and system")
+        println("Define boundary conditions and enabled layers")
     end
     ################################################################################
 
-    ## initializing physics environment ##
-    physics = VoronoiFVM.Physics(
-    data        = data,
-    num_species = numberOfCarriers + 1,
-    flux        = ChargeTransportInSolids.ScharfetterGummelGraded!, #Sedan!, ScharfetterGummel!, diffusionEnhanced!, KopruckiGaertner!
-    reaction    = ChargeTransportInSolids.reaction!,
-    breaction   = ChargeTransportInSolids.breactionOhmic!
-    )
-
-    sys         = VoronoiFVM.System(grid,physics,unknown_storage=unknown_storage)
+    # set ohmic contacts for each charge carrier at all outerior boundaries. First, 
+    # we compute equilibrium solutions. Hence the boundary values at the ohmic contacts
+    # are zero.
+    set_ohmic_contact!(ctsys, iphin, bregionDonor, 0.0)
+    set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
+    set_ohmic_contact!(ctsys, iphin, bregionAcceptor, 0.0)
+    set_ohmic_contact!(ctsys, iphip, bregionAcceptor, 0.0)
 
     # enable all three species in all regions
-    enable_species!(sys, ipsi,  regions)
-    enable_species!(sys, iphin, regions)
-    enable_species!(sys, iphip, regions)
-
-    sys.boundary_values[iphin,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphin,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphip,  bregionAcceptor] = data.contactVoltage[bregionAcceptor]
-    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
-
-    sys.boundary_values[iphip,  bregionDonor]    = data.contactVoltage[bregionDonor]
-    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
+    # entweder ct_enable_species! oder ChargeTransportInSolids.enable_species!
+    ct_enable_species!(ctsys, ipsi,  regions)
+    ct_enable_species!(ctsys, iphin, regions)
+    ct_enable_species!(ctsys, iphip, regions)
 
     if test == false
         println("*** done\n")
@@ -383,47 +423,38 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    data.inEquilibrium             = true
+    ctsys.data.calculation_type    = inEquilibrium
 
     # initialize solution and starting vectors
-    initialGuess                   = unknowns(sys)
-    solution                       = unknowns(sys)
-    @views initialGuess[ipsi,  :] .= 0.0
-    @views initialGuess[iphin, :] .= 0.0
-    @views initialGuess[iphip, :] .= 0.0
+    initialGuess                   = ct_unknowns(ctsys)
+    solution                       = ct_unknowns(ctsys)
+    initialGuess                  .= 0.0
 
     control.damp_initial           = 0.5
     control.damp_growth            = 1.61 # >= 1
     control.max_round              = 5
 
-    # set Dirichlet boundary conditions (Ohmic contacts), in Equilibrium we impose homogeneous Dirichlet conditions,
-    # i.e. the boundary values at outer boundaries are zero.
-    sys.boundary_factors[iphin, bregionDonor]    = VoronoiFVM.Dirichlet
-    sys.boundary_values[iphin,  bregionDonor]    = 0.0 * V
-    sys.boundary_factors[iphin, bregionAcceptor] = VoronoiFVM.Dirichlet
-    sys.boundary_values[iphin,  bregionAcceptor] = 0.0 * V
-
-    sys.boundary_factors[iphip, bregionDonor]    = VoronoiFVM.Dirichlet
-    sys.boundary_values[iphip,  bregionDonor]    = 0.0 * V
-    sys.boundary_factors[iphip, bregionAcceptor] = VoronoiFVM.Dirichlet
-    sys.boundary_values[iphip,  bregionAcceptor] = 0.0 * V
-
-    I = collect(20.0:-1:0.0)
+    # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
+    I      = collect(20.0:-1:0.0)
     LAMBDA = 10 .^ (-I) 
-    prepend!(LAMBDA,0.0)
+    prepend!(LAMBDA, 0.0)
+
     for i in 1:length(LAMBDA)
         if test == false
             println("λ1 = $(LAMBDA[i])")
         end
-        sys.physics.data.λ1 = LAMBDA[i]
-        solve!(solution, initialGuess, sys, control = control, tstep=Inf)
+        ctsys.fvmsys.physics.data.λ1 = LAMBDA[i]     # DA: das hier ist noch unschön und müssen wir extrahieren!!!!!
+        ct_solve!(solution, initialGuess, ctsys, control = control, tstep=Inf)
+
         initialGuess .= solution
     end
 
     if plotting
-        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, "Equilibrium")
+        plot_energies(Plotter, grid, data, solution, "Equilibrium")
         Plotter.figure()
-        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, "Equilibrium")
+        plot_densities(Plotter, grid, data, solution, "Equilibrium")
+        Plotter.figure()
+        plot_solution(Plotter, grid, data, solution, "Equilibrium")
         Plotter.figure()
     end
 
@@ -436,10 +467,10 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    data.inEquilibrium = false
+    ctsys.data.calculation_type                      = outOfEquilibrium
 
-    control.damp_initial                             = 0.5
-    control.damp_growth                              = 1.21 # >= 1
+    control.damp_initial                             = 0.9
+    control.damp_growth                              = 1.61 # >= 1
     control.max_round                                = 7
 
     maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
@@ -451,19 +482,22 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
         end
 
         # set non equilibrium boundary conditions
-        sys.boundary_values[iphin, bregionAcceptor]  = Δu
-        sys.boundary_values[iphip, bregionAcceptor]  = Δu
+        set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
+        set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
 
-        solve!(solution, initialGuess, sys, control  = control, tstep = Inf)
+        ct_solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 
         initialGuess .= solution
+
     end # bias loop
 
     #plotting
     if plotting
-        ChargeTransportInSolids.plotEnergies(Plotter, grid, data, solution, maxBias)
+        plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias")
         Plotter.figure()
-        ChargeTransportInSolids.plotDensities(Plotter, grid, data, solution, maxBias)
+        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias")
+        Plotter.figure()
+        plot_solution(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias")
     end
 
     if test == false

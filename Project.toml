@@ -1,7 +1,7 @@
 name = "ChargeTransportInSolids"
 uuid = "25c3eafe-d88c-11e9-3031-f396758f002a"
 authors = ["Patricio Farrell <patricio.farrell@wias-berlin.de>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
@@ -14,8 +14,6 @@ VoronoiFVM = "82b139dc-5afc-11e9-35da-9b9bdfd336f3"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 GridVisualize = "5eed8a63-0fb0-45eb-886d-8d5a387d12b8"
 SimplexGridFactory = "57bfcd06-606e-45d6-baf4-4ba06da0efd5"
-TetGen = "c5d3f3f7-f850-59f6-8a2e-ffc6dc1317ea"
-Triangulate = "f7e6ffb2-c36d-4f8f-a77e-16e897189344"
 
 [compat]
 ExtendableGrids = ">=0.3.0"
