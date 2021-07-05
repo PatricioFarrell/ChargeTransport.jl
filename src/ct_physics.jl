@@ -240,6 +240,42 @@ abstract type outOfEquilibrium <: calculation_type end
 
 ##########################################################
 ##########################################################
+"""
+$(TYPEDEF)
+
+Abstract type for generation model.
+
+"""
+abstract type generation_model end
+
+
+"""
+$(TYPEDEF)
+
+Abstract type for uniform generation.
+
+"""
+abstract type generation_uniform <: generation_model end
+
+
+"""
+$(TYPEDEF)
+
+Abstract type for Beer-Lambert generation.
+
+"""
+abstract type generation_beer_lambert <: generation_model end
+
+
+"""
+$(TYPEDEF)
+
+Abstract type for no generation model.
+
+"""
+abstract type generation_none <: generation_model end
+##########################################################
+##########################################################
 
 """
 $(TYPEDSIGNATURES)
@@ -362,9 +398,8 @@ $(TYPEDSIGNATURES)
 This breaction! function is chosen when no interface model is chosen.
 
 """
-function breaction!(f, u, bnode, data, ::Type{interface_model_none})
-    return
-end
+breaction!(f, u, bnode, data, ::Type{interface_model_none}) = emptyFunction()
+
 
 
 """
@@ -446,8 +481,8 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_ion_charge_left})
     
     # DA: das kann noch besser gemacht werden ....
     if data.calculation_type == inEquilibrium
-        f[iphia]   = u[iphia]
-        f[iphiaj1] = u[iphiaj1]
+        f[iphia]       = u[iphia]
+        f[iphiaj1]     = u[iphiaj1]
      else
     
         f[iphia]       =   data.λ3 * q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj1, ipsi, β, κ, DOS1, E1) ) # (1.4.8) @ left inner boundary 
@@ -487,8 +522,8 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_ion_charge_right})
 
 
     if data.calculation_type == inEquilibrium
-        f[iphia]   = u[iphia]
-        f[iphiaj2] = u[iphiaj2]
+        f[iphia]       = u[iphia]
+        f[iphiaj2]     = u[iphiaj2]
     else
 
         f[iphia]       = - data.λ3 *  q * ( r0 * electrochemicalReaction(data, u, iphia, ipsi, iphiaj2, ipsi, β, κ, DOS2, E2) ) # (1.4.8) @ right inner boundary 
@@ -542,18 +577,14 @@ $(TYPEDSIGNATURES)
 No bstorage! is used, if no interface model is chosen.
 
 """
-function bstorage!(f, u, bnode, data, ::Type{interface_model_none})
-    return
-end
+bstorage!(f, u, bnode, data, ::Type{interface_model_none}) = emptyFunction()
 
 """
 $(TYPEDSIGNATURES)
 No bstorage! is used, if an ohmic contact model is chosen.
 
 """
-function bstorage!(f, u, bnode, data, ::Type{ohmic_contact})
-    return
-end
+bstorage!(f, u, bnode, data, ::Type{ohmic_contact}) = emptyFunction()
 
 
 """
@@ -626,6 +657,80 @@ reaction terms for concrete calculation type and bulk recombination model.
 """
 reaction!(f, u, node, data) = reaction!(f, u, node, data, data.calculation_type)
 
+"""
+$(TYPEDSIGNATURES)
+Reaction in case of equilibrium, i.e. no generation and recombination is considered.
+
+"""
+function reaction!(f, u, node, data, ::Type{inEquilibrium})
+
+    params      = data.params
+    paramsnodal = data.paramsnodal
+
+    # indices
+    ipsi                  = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1            # final index for electrostatic potential
+    ireg                  = node.region
+    inode                 = node.index
+
+    # rhs of NLP (charge density)
+    for icc = 1:params.numberOfCarriers
+        
+        eta     = etaFunction(u, node, data, icc, ipsi) 
+        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * (params.doping[icc, ireg] + paramsnodal.doping[icc, inode])  # subtract doping
+        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.densityOfStates[icc, ireg] + paramsnodal.densityOfStates[icc, inode]) * data.F[icc](eta)   # add charge carrier
+
+    end
+
+    f[ipsi]                     = - data.λ1 * q * f[ipsi]
+
+    for icc = 1:params.numberOfCarriers
+        f[icc] = u[icc] - 0.0
+    end
+
+    return f
+
+end
+
+recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recombination_none}) = 0.0
+
+
+function recombination_kernel(data, ireg, iphin, iphip,  n, p, ::Type{bulk_recombination_radiative})
+
+    params = data.params
+
+    return params.recombinationRadiative[ireg]
+
+end
+
+
+function recombination_kernel(data, ireg, iphin, iphip, n, p,::Type{bulk_recombination_trap_assisted})
+
+    params = data.params
+
+    kernelSRH = 1.0 / (  params.recombinationSRHLifetime[iphip, ireg] * (n + params.recombinationSRHTrapDensity[iphin, ireg]) + params.recombinationSRHLifetime[iphin, ireg] * (p + params.recombinationSRHTrapDensity[iphip, ireg]) )
+
+    return kernelSRH
+
+end
+
+
+function recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recombination_full})
+
+    params = data.params
+
+    # radiative recombination
+    kernelRadiative = recombination_kernel(data, ireg, iphin, iphip, n, p, bulk_recombination_radiative)
+
+    # SRH recombination
+    kernelSRH       = recombination_kernel(data, ireg, iphin, iphip, n, p, bulk_recombination_trap_assisted)
+
+    # Auger recombination
+    kernelAuger     = (params.recombinationAuger[iphin, ireg] * n + params.recombinationAuger[iphip, ireg] * p)
+
+
+    return kernelRadiative + kernelAuger + kernelSRH
+
+end
 
 """
 $(TYPEDSIGNATURES)
@@ -670,39 +775,24 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     end
 
     # rhs of continuity equations for electron and holes (bipolar reaction)
-    
+    n                     = compute_densities!(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
+    p                     = compute_densities!(u, data, inode, ireg, iphip, ipsi, true) 
+    exponentialTerm       = exp((q *u[iphin] - q  * u[iphip]) / (kB*params.temperature))
+    excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
 
-        if data.bulk_recombination_model == bulk_recombination_full  
-            n                     = compute_densities!(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
-            p                     = compute_densities!(u, data, inode, ireg, iphip, ipsi, true) 
-            exponentialTerm       = exp((q *u[iphin] - q  * u[iphip]) / (kB*params.temperature))
-            excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
+    for icc in [iphin, iphip] 
 
-            for icc in [iphin, iphip] 
-
-             
-                # radiative recombination
-                kernelRadiative = params.recombinationRadiative[ireg]
+        # gives you the recombination kernel based on choice of user
+        kernel = recombination_kernel(data, ireg, iphin, iphip, n, p, data.bulk_recombination_model)
                 
-                # Auger recombination
-                kernelAuger     = (params.recombinationAuger[iphin, ireg] * n + params.recombinationAuger[iphip, ireg] * p)
-                
-                # SRH recombination
-                kernelSRH       = 1.0 / (  params.recombinationSRHLifetime[iphip, ireg] * (n + params.recombinationSRHTrapDensity[iphin, ireg]) + params.recombinationSRHLifetime[iphin, ireg] * (p + params.recombinationSRHTrapDensity[iphip, ireg]) )
-                
-                # full recombination
-                f[icc]          = q * params.chargeNumbers[icc] *  (kernelRadiative + kernelAuger + kernelSRH)*  excessCarrierDensTerm  - q * params.chargeNumbers[icc] * generation(data, ireg,  node.coord[node.index])
-            end
+        f[icc]          = q * params.chargeNumbers[icc] *  kernel *  excessCarrierDensTerm  - q * params.chargeNumbers[icc] * generation(data, ireg,  node.coord[node.index], data.generation_model)
+    end
 
-        else
-            for icc = 1: (params.numberOfCarriers+params.numberOfInterfaceCarriers)
-                f[icc]          = 0.0 #- q * data.chargeNumbers[icc] * generation(data, ireg) 
-            end
-        end
+    # vorsicht bei diesem part! hat auswirkungen auf tier 0
+    for icc in iphip+1:params.numberOfCarriers
+        f[icc]              = u[icc] - 0.0
+    end
 
-        for icc in iphip+1:params.numberOfCarriers
-            f[icc]              = u[icc] - 0.0
-        end
     
     f[ipsi]                     = - q * data.λ1 * f[ipsi]
 
@@ -711,39 +801,6 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
 end
 
 
-"""
-$(TYPEDSIGNATURES)
-Reaction in case of equilibrium, i.e. no generation and recombination is considered.
-
-"""
-function reaction!(f, u, node, data, ::Type{inEquilibrium})
-
-    params      = data.params
-    paramsnodal = data.paramsnodal
-
-    # indices
-    ipsi                  = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1            # final index for electrostatic potential
-    ireg                  = node.region
-    inode                 = node.index
-
-    # rhs of NLP (charge density)
-    for icc = 1:params.numberOfCarriers
-        
-        eta     = etaFunction(u, node, data, icc, ipsi) 
-        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * (params.doping[icc, ireg] + paramsnodal.doping[icc, inode])  # subtract doping
-        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.densityOfStates[icc, ireg] + paramsnodal.densityOfStates[icc, inode]) * data.F[icc](eta)   # add charge carrier
-
-    end
-
-    f[ipsi]                     = - data.λ1 * q * f[ipsi]
-
-    for icc = 1:params.numberOfCarriers
-        f[icc] = u[icc] - 0.0
-    end
-
-    return f
-
-end
 """
 $(SIGNATURES)
 
@@ -763,21 +820,31 @@ end
 $(TYPEDSIGNATURES)
 
 The generation rate ``G``, which occurs in the right-hand side of the
-continuity equations. Currently, we assume a region dependent constant value.
+continuity equations with a uniform generation rate.
 """
-function generation(data, ireg, node) # only works in 1D till now; adjust node, when multidimensions
+function generation(data, ireg, node, ::Type{generation_uniform}) # only works in 1D till now; adjust node, when multidimensions
 
-    params      = data.params
-    paramsnodal = data.paramsnodal
+    params = data.params
 
-    if params.generationUniform[ireg] == 0.0
-        return data.λ2 * params.generationIncidentPhotonFlux[ireg] * params.generationAbsorption[ireg] * exp( - params.generationAbsorption[ireg] * node )
-    else
+    return data.λ2 * params.generationUniform[ireg]
+end
 
-        return data.λ2 * params.generationUniform[ireg]
-    end
+
+"""
+$(TYPEDSIGNATURES)
+
+The generation rate ``G``, which occurs in the right-hand side of the
+continuity equations obeying the Beer-Lambert law.
+"""
+function generation(data, ireg, node, ::Type{generation_beer_lambert}) # only works in 1D till now; adjust node, when multidimensions
+
+    params = data.params
+
+    return data.λ2 * params.generationIncidentPhotonFlux[ireg] * params.generationAbsorption[ireg] * exp( - params.generationAbsorption[ireg] * node )
 
 end
+
+generation(data, ireg, node, ::Type{generation_none}) = 0.0
 
 ##########################################################
 ##########################################################
@@ -790,9 +857,8 @@ a storage term, if we consider transient problem.
 """
 storage!(f, u, node, data) = storage!(f, u, node, data, data.model_type)
 
-function storage!(f, u, node, data, ::Type{model_stationary})
-    return
-end
+storage!(f, u, node, data, ::Type{model_stationary})  = emptyFunction()
+
 
 """
 $(TYPEDSIGNATURES)
@@ -857,9 +923,7 @@ end
 flux!(f, u, edge, data, ::Type{outOfEquilibrium}) = flux!(f, u, edge, data, data.flux_approximation)
 
 
-function flux!(f, u, edge, data, ::Type{flux_approximation}) 
-    return
-end
+flux!(f, u, edge, data, ::Type{flux_approximation}) = emptyFunction()
 
 """
 $(TYPEDSIGNATURES)

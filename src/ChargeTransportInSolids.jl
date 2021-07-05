@@ -31,6 +31,7 @@ export bulk_recombination_model, bulk_recombination_none, bulk_recombination_tra
 export ScharfetterGummel, excessChemicalPotential, diffusionEnhanced, generalized_SG 
 export inEquilibrium, outOfEquilibrium
 export ScharfetterGummel_Graded, excessChemicalPotential_Graded
+export generation_model, generation_none, generation_beer_lambert, generation_uniform
 export breaction!, bstorage!, reaction!, storage!, flux!
 
 include("ct_system.jl")

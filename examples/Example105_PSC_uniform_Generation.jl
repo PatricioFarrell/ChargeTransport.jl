@@ -204,6 +204,8 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
     Auger               = 0.0
 
     # generation
+
+    generation_model    = generation_uniform
     generation_a        = 0.0
     generation_i        = 2.64e21 / (cm^3 * s)
     generation_d        = 0.0
@@ -254,6 +256,9 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
 
     # Following choices are possible for recombination model: bulk_recombination_model_none, bulk_recombination_model_trap_assisted, bulk_recombination_radiative, bulk_recombination_full <: bulk_recombination_model 
     data.bulk_recombination_model       = bulk_recombination
+
+    # Following choices are possibile for generation: generation_none, generation_uniform, generation_beer_lambert. No generation is default; beer-lambert not properly tested yet.
+    data.generation_model               = generation_uniform
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
