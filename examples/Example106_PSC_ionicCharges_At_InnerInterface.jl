@@ -357,11 +357,13 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     params.bDoping[iphip, bregionAcceptor]              = Na      
     params.bDoping[iphin, bregionDonor]                 = Nd   
 
-    # Region dependent params is now a substruct of data which is again a substruct of the system.
+    # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
+    # in next step.
     data.params                                         = params
 
-    # in the last step, with all data and parameter we initialize our system 
-    # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on this data.
+    # in the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
+    # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
+    # but rather on default data.
     ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
 
     # print data
@@ -609,7 +611,6 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
         
         initialGuess .= solution
     end # time loop
-
 
     #resForward = [biasValuesForward IVForward]
     #writedlm("jl-IV-forward-Na-$(textNa)-Ea-$(textEa)-r0-$textr0-delta1-$(textdelta1)-delta2-$(textdelta2).dat",resForward)

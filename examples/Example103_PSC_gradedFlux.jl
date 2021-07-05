@@ -356,15 +356,18 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     params.bDoping[iphip, bregionAcceptor]          = Na        # data.bDoping  = [Na  0.0;
     params.bDoping[iphin, bregionDonor]             = Nd        #                  0.0  Nd]
 
-    # in the last step, with all data and parameter we initialize our system 
-    # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on this data.
-    ctsys                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
-    # the initialized data is dependent on the initialized sys
-    ctsys.data                          = data
-    # Region dependent params is now a substruct of data which is again a substruct of the system.
-    ctsys.data.params                   = params
+    # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
+    # in next step.
+    data.params                                     = params
+
     # same holds true for space dependent params
-    ctsys.data.paramsnodal              = paramsnodal
+    data.paramsnodal                                = paramsnodal
+
+    # in the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
+    # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
+    # but rather on default data.
+    ctsys                                           = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
+    
 
     ########### It is also possible to print the nodal dependent data, but for the sake of readibility
     ########### we neglect this here.

@@ -325,13 +325,14 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     params.bDoping[iphip, bregionAcceptor]              = Na      
     params.bDoping[iphin, bregionDonor]                 = Nd     
     
-    # in the last step, with all data and parameter we initialize our system 
-    # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on this data.
-    ctsys                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
-    # the initialized data is dependent on the initialized sys
-    ctsys.data                          = data
-    # Region dependent params is now a substruct of data which is again a substruct of the system.
-    ctsys.data.params                   = params
+    # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
+    # in next step.
+    data.params                                         = params
+
+    # in the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
+    # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
+    # but rather on default data.
+    ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
 
     if test == false
         # print region dependent physical parameters

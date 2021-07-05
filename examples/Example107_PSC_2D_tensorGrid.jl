@@ -221,13 +221,13 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     Auger               = 0.0
 
     # doping (doping values are from Phils paper, not stated in the parameter list online)
-    Nd                  =   2.089649130192123e17 / (cm^3) 
-    Na                  =   4.529587947185444e18 / (cm^3) 
-    C0                  =   1.0e18               / (cm^3) 
+    Nd                  = 2.089649130192123e17 / (cm^3) 
+    Na                  = 4.529587947185444e18 / (cm^3) 
+    C0                  = 1.0e18               / (cm^3) 
 
     # contact voltages: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
-    voltageAcceptor     =  1.2                  * V 
+    voltageAcceptor     = 1.2                  * V 
 
     # interface model (this is needed for giving the user the correct index set)
     interface_reaction  = interface_model_none
@@ -343,12 +343,13 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     params.bDoping[iphip, bregionAcceptor]              = Na      
     params.bDoping[iphin, bregionDonor]                 = Nd 
 
-
-    # Region dependent params is now a substruct of data which is again a substruct of the system.
+    # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
+    # in next step.
     data.params                                         = params
 
-    # in the last step, with all data and parameter we initialize our system 
-    # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on this data.
+    # in the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
+    # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
+    # but rather on default data.
     ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
 
     if test == false
