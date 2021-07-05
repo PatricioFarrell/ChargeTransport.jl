@@ -12,9 +12,10 @@ module Example201_2D_non_rectangularGrid
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
+
 # For using this example, one additionally needs to add Triangulate. SimplexGridFactory is a wrapper for using this meshgenerator.
-using SimplexGridFactory
-using Triangulate
+#using SimplexGridFactory
+#using Triangulate
 
 function main(;Plotter = nothing, plotting = false)
 

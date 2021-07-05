@@ -15,8 +15,8 @@ using ExtendableGrids
 using GridVisualize
 
 # For using this example, one additionally needs to add TetGen. SimplexGridFactory is a wrapper for using this meshgenerator.
-using SimplexGridFactory
-using TetGen
+#using SimplexGridFactory
+#using TetGen
 
 
 function main(;Plotter = nothing, plotting = false) # plotting is currently only tested with GLMakie and PyPlot
