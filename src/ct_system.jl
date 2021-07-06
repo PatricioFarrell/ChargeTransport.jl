@@ -609,7 +609,7 @@ function show_params(ctsys::ChargeTransportSystem)
 end
 
 
-function Base.show(io::IO, this)
+function Base.show(io::IO, this::ChargeTransportParamsNodal)
     for name in fieldnames(typeof(this))[1:end] 
         @printf("%30s = ",name)
         println(io,getfield(this,name))
