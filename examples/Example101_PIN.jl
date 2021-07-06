@@ -302,33 +302,17 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    ctsys.data.calculation_type      = inEquilibrium
+    control.damp_initial  = 0.5
+    control.damp_growth   = 1.2 # >= 1
+    control.max_round     = 3
 
-    # initialize solution and starting vectors
-    initialGuess                   = ct_unknowns(ctsys)
-    solution                       = ct_unknowns(ctsys)
-    @views initialGuess[ipsi,  :] .= 0.0 
-    @views initialGuess[iphin, :] .= 0.0
-    @views initialGuess[iphip, :] .= 0.0
+    initialGuess          = ct_unknowns(ctsys)
+    solution              = ct_unknowns(ctsys)
 
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.2 # >= 1
-    control.max_round         = 3
+    solution              = ct_equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
-    I      = collect(20.0:-1:0.0)
-    LAMBDA = 10 .^ (-I) 
-    prepend!(LAMBDA, 0.0)
+    initialGuess         .= solution 
 
-    for i in 1:length(LAMBDA)
-        if test == false
-            println("λ1 = $(LAMBDA[i])")
-        end
-        ctsys.fvmsys.physics.data.λ1 = LAMBDA[i]     # DA: das hier ist noch unschön und müssen wir extrahieren!!!!!
-        ct_solve!(solution, initialGuess, ctsys, control = control, tstep=Inf)
-        
-        initialGuess = solution
-    end
 
     if test == false
         println("*** done\n")
@@ -374,6 +358,10 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 
     end # bias loop
+
+    if test == false
+        println("*** done\n")
+    end
 
     # plot solution and IV curve
     if plotting

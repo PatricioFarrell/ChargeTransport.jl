@@ -632,6 +632,52 @@ ct_solve!(solution, initialGuess, ctsys, ;control=control, tstep=Inf) = VoronoiF
 
 ###########################################################
 ###########################################################
+"""
+$(TYPEDSIGNATURES)
+
+Functions which sets for given charge carrier at a given boundary
+a given value.
+    
+"""
+
+function ct_equilibrium_solve!(ctsys::ChargeTransportSystem; control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0)
+
+    ctsys.data.calculation_type    = inEquilibrium
+
+    # initialize solution and starting vectors
+    initialGuess                   = ct_unknowns(ctsys)
+    solution                       = ct_unknowns(ctsys)
+    @views initialGuess           .= 0.0 
+
+    # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
+    I      = collect(nonlinear_steps:-1:0.0)
+    LAMBDA = 10 .^ (-I) 
+    prepend!(LAMBDA, 0.0)
+
+    for i in 1:length(LAMBDA)
+
+        if control.verbose
+            println("λ1 = $(LAMBDA[i])")
+        end
+        ctsys.fvmsys.physics.data.λ1 = LAMBDA[i] 
+        try
+
+            ct_solve!(solution, initialGuess, ctsys, control = control, tstep=Inf)
+
+        catch
+            if (control.handle_exceptions)
+                error("try to adjust nonlinear_steps, currently set to $(nonlinear_steps) or adjust Newton control parameters.")
+            end
+        end
+    
+        initialGuess = solution
+    end
+
+    return solution
+
+end
+###########################################################
+###########################################################
 function set_indices!(grid, numberOfCarriers, ::Type{interface_model_none}) # we are in most classical setting
 
     indexSet = Dict()
@@ -651,7 +697,8 @@ function set_indices!(grid, numberOfCarriers, ::Type{interface_model_none}) # we
 end
 
 function set_indices!(grid, numberOfCarriers, ::Type{interface_model_ion_charge})
-
+# DA: generalizing to arbitrary domains is a bit difficult since we do not know which ones 
+# are the active perovskite layers. Thus, we additionally need them here as input argument?
     bcellregions = grid[NumBFaceRegions]
     indexSet = Dict()
 
