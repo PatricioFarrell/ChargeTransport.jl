@@ -467,9 +467,9 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_ion_charge_left})
     iphiaj1, iphiaj2  = 4:5
     ipsi              = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
 
-    E1                = params.bBandEdgeEnergy[iphia, bnode.region] 
-    DOS1              = params.bDensityOfStates[iphia, bnode.region] 
-    C01               = params.bDoping[iphia, bnode.region]
+    E1                = params.bBandEdgeEnergy[iphia, bnode.region]  + paramsnodal.bandEdgeEnergy[iphia, bnode.index]
+    DOS1              = params.bDensityOfStates[iphia, bnode.region] + paramsnodal.densityOfStates[iphia, bnode.index]
+    C01               = params.bDoping[iphia, bnode.region]          + paramsnodal.doping[iphia, bnode.index]
 
     β                 = 0.5     # can be between 0 and 1 
     κ                 = 1       # either 0 or 1
@@ -508,9 +508,9 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_ion_charge_right})
     iphiaj1, iphiaj2  = 4:5
     ipsi              = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
 
-    E2                = params.bBandEdgeEnergy[iphia, bnode.region] 
-    DOS2              = params.bDensityOfStates[iphia, bnode.region] 
-    C02               = params.bDoping[iphia, bnode.region]
+    E2                = params.bBandEdgeEnergy[iphia, bnode.region]  + paramsnodal.bandEdgeEnergy[iphia, bnode.index]
+    DOS2              = params.bDensityOfStates[iphia, bnode.region] + paramsnodal.densityOfStates[iphia, bnode.index]
+    C02               = params.bDoping[iphia, bnode.region]          + paramsnodal.doping[iphia, bnode.index]
 
     β                 = 0.5     # can be between 0 and 1 
     κ                 = 1       # either 0 or 1
@@ -546,7 +546,6 @@ in case of an ion charge interface model.
 function electrochemicalReaction(data, u, iphia, ipsi, iphiaJunction, ipsiJunction, β, κ, DOS, E) # (1.4.9)
 
     params             = data.params
-    paramsnodal        = data.paramsnodal
  
 
     etaExp             = params.chargeNumbers[iphia] / params.UT * ( (u[iphia] - u[iphiaJunction]) + E / q ) 
@@ -597,14 +596,14 @@ function bstorage!(f, u, bnode, data, ::Type{interface_model_ion_charge_left})
 # But need to fix use of interface charges (done by indices)!
 
     params            = data.params
-    paramnodal        = data.paramsnodal
+    paramsnodal        = data.paramsnodal
 
     iphia             = 3
     iphiaj1, iphiaj2  = 4:5
     ipsi              = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1        # final index for electrostatic potential
 
-    E1                = params.bBandEdgeEnergy[iphia, bnode.region] 
-    DOS1              = params.bDensityOfStates[iphia, bnode.region]
+    E1                = params.bBandEdgeEnergy[iphia, bnode.region]  + paramsnodal.bandEdgeEnergy[iphia, bnode.index]
+    DOS1              = params.bDensityOfStates[iphia, bnode.region] + paramsnodal.densityOfStates[iphia, bnode.index]
 
     # (1.4.7) @ left inner boundary (left-hand side of equation)
     etaInterfaceAnion = params.chargeNumbers[iphia] / params.UT * ( (u[iphiaj1] - u[ipsi]) + E1 / q ) 
@@ -625,15 +624,15 @@ Time-dependent part in case of present ion charges at inner interfaces (right).
 function bstorage!(f, u, bnode, data, ::Type{interface_model_ion_charge_right})
 
     params            = data.params
-    paramnodal        = data.paramsnodal
+    paramsnodal        = data.paramsnodal
 
     iphia             = 3
     iphiaj1, iphiaj2  = 4:5
     ipsi              = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1        # final index for electrostatic potential
 
     
-    E2                = params.bBandEdgeEnergy[iphia, bnode.region] 
-    DOS2              = params.bDensityOfStates[iphia, bnode.region] 
+    E2                = params.bBandEdgeEnergy[iphia, bnode.region]  + paramsnodal.bandEdgeEnergy[iphia, bnode.index]
+    DOS2              = params.bDensityOfStates[iphia, bnode.region] + paramsnodal.densityOfStates[iphia, bnode.index]
 
     # (1.4.7) @ right inner boundary (left-hand side of equation)
     etaInterfaceAnion = params.chargeNumbers[iphia] / params.UT * ( (u[iphiaj2] - u[ipsi]) + E2 / q )
@@ -805,12 +804,11 @@ end
 $(SIGNATURES)
 
 Compute trap densities for a given trap energy.
-[Currently, only done for the Boltzmann statistics.]
+[Currently, only done for the Boltzmann statistics and for region dependent parameters.]
 
 """
 function trap_density!(icc, ireg, data, Et) 
     params      = data.params
-    paramsnodal = data.paramsnodal
 
     params.densityOfStates[icc, ireg] * exp( params.chargeNumbers[icc] * (params.bandEdgeEnergy[icc, ireg] - Et) / (kB * params.temperature)) # need to subtract Eref
 end
@@ -871,7 +869,6 @@ Hence, we have
 
 and for the electrostatic potential
 ``f[ψ] = 0``.
-[Note that this method is not tested yet!]
 
 """
 function storage!(f, u, node, data, ::Type{model_transient})
@@ -908,15 +905,18 @@ flux!(f, u, edge, data) = flux!(f, u, edge, data, data.calculation_type)
 function flux!(f, u, edge, data, ::Type{inEquilibrium})
 
     params      = data.params
+    paramsnodal  = data.paramsnodal
 
     uk          = viewK(edge, u)
     ul          = viewL(edge, u)
+    nodel       = edge.node[2]
+    nodek       = edge.node[1]
     
     ipsi        = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
     ireg        = edge.region
 
     dpsi        =   ul[ipsi] - uk[ipsi]
-    f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
+    f[ipsi]     = - (params.dielectricConstant[ireg] + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2) * ε0 * dpsi
     
 end
 
