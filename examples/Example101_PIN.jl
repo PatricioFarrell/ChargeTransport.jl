@@ -233,8 +233,10 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
 
     if test == false
-        # print region dependent physical parameters
-        println(ctsys.data.params)
+        # show region dependent physical parameters. show_params() only supports region dependent parameters, but, if one wishes to
+        # print nodal dependent parameters, currently this is possible with println(ctsys.data.paramsnodal). We neglected here, since
+        # in most applications where the numberOfNodes is >> 10 this would results in a large output in the terminal.
+        show_params(ctsys)
         println("*** done\n")
     end
 
@@ -364,7 +366,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     end
 
     # plot solution and IV curve
-    if plotting
+    if verbose
         plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = false)
         Plotter.figure()
         plot_solution(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)

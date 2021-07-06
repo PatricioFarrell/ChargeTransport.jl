@@ -14,8 +14,8 @@ using ExtendableGrids
 using GridVisualize
 
 # For using this example, one additionally needs to add Triangulate. SimplexGridFactory is a wrapper for using this meshgenerator.
-#using SimplexGridFactory
-#using Triangulate
+# using SimplexGridFactory
+# using Triangulate
 
 function main(;Plotter = nothing, plotting = false)
 
@@ -103,7 +103,7 @@ function main(;Plotter = nothing, plotting = false)
 
     options!(b,maxvolume=7.0e-16)
 
-    grid = simplexgrid(b;maxvolume=7.0e-16)
+    grid = simplexgrid(b)
 
     numberOfNodes   = size(grid[Coordinates])[2]
     

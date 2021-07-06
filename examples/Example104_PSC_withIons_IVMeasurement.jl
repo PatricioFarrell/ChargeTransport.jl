@@ -335,8 +335,10 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
 
     if test == false
-        # print region dependent physical parameters
-        println(ctsys.data.params)
+        # show region dependent physical parameters. show_params() only supports region dependent parameters, but, if one wishes to
+        # print nodal dependent parameters, currently this is possible with println(ctsys.data.paramsnodal). We neglected here, since
+        # in most applications where the numberOfNodes is >> 10 this would results in a large output in the terminal.
+        show_params(ctsys)
         println("*** done\n")
     end
 
@@ -415,7 +417,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     prepend!(LAMBDA, 0.0)
 
     for i in 1:length(LAMBDA)
-        if test == false
+        if verbose
             println("λ1 = $(LAMBDA[i])")
         end
         ctsys.fvmsys.physics.data.λ1 = LAMBDA[i]     # DA: das hier ist noch unschön und müssen wir extrahieren!!!!!
@@ -474,7 +476,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
         set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
 
-        if test == false
+        if verbose
             println("time value: t = $(t)")
         end
 
@@ -497,6 +499,10 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         initialGuess .= solution
 
     end # time loop
+
+    if test == false
+        println("*** done\n")
+    end
 
     # here in res the biasValues and the corresponding current are stored.
     #res = [biasValues IV];

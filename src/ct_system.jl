@@ -593,15 +593,23 @@ function ChargeTransportSystem(grid, data ;unknown_storage)
 
 end
 
+function show_params(ctsys::ChargeTransportSystem)
+
+    params = ctsys.data.params
+    for name in fieldnames(typeof(params))[1:end] 
+        @printf("%30s = ",name)
+        println(getfield(params,name))
+    end
+
+end
 
 
-function Base.show(io::IO, this::ChargeTransportParams)
+function Base.show(io::IO, this)
     for name in fieldnames(typeof(this))[1:end] 
         @printf("%30s = ",name)
         println(io,getfield(this,name))
     end
 end
-
 ###########################################################
 ###########################################################
 """

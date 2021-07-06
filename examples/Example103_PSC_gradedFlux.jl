@@ -373,7 +373,10 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     ########### we neglect this here.
     # print data
     if test == false
-        println(ctsys.data.params)
+        # show region dependent physical parameters. show_params() only supports region dependent parameters, but, if one wishes to
+        # print nodal dependent parameters, currently this is possible with println(ctsys.data.paramsnodal). We neglected here, since
+        # in most applications where the numberOfNodes is >> 10 this would results in a large output in the terminal.
+        show_params(ctsys)
     end
 
     if test == false
@@ -443,7 +446,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     prepend!(LAMBDA, 0.0)
 
     for i in 1:length(LAMBDA)
-        if test == false
+        if verbose
             println("λ1 = $(LAMBDA[i])")
         end
         ctsys.fvmsys.physics.data.λ1 = LAMBDA[i]     # DA: das hier ist noch unschön und müssen wir extrahieren!!!!!
@@ -480,7 +483,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     biasValues = range(0, stop = maxBias, length = 13)
 
     for Δu in biasValues
-        if test == false
+        if verbose
             println("Bias value: Δu = $(Δu) (no illumination)")
         end
 

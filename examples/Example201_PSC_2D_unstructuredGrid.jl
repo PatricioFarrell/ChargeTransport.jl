@@ -104,7 +104,7 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
 
     options!(b,maxvolume=1.0e-16)
 
-    grid           = simplexgrid(b;maxvolume=1.0e-16)
+    grid           = simplexgrid(b)
     numberOfNodes  = size(grid[Coordinates])[2]
 
     if plotting
@@ -358,7 +358,10 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
 
     # print data
     if test == false
-        println(ctsys.data.params)
+        # show region dependent physical parameters. show_params() only supports region dependent parameters, but, if one wishes to
+        # print nodal dependent parameters, currently this is possible with println(ctsys.data.paramsnodal). We neglected here, since
+        # in most applications where the numberOfNodes is >> 10 this would results in a large output in the terminal.
+        show_params(ctsys)
         println("*** done\n")
     end
     
@@ -425,7 +428,7 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
     prepend!(LAMBDA, 0.0)
 
     for i in 1:length(LAMBDA)
-        if test == false
+        if verbose
             println("λ1 = $(LAMBDA[i])")
         end
         ctsys.fvmsys.physics.data.λ1 = LAMBDA[i]     # DA: das hier ist noch unschön und müssen wir extrahieren!!!!!
@@ -468,11 +471,6 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
     ################################################################################
     ctsys.data.calculation_type  = outOfEquilibrium
 
-    # control.damp_initial      = 0.1
-    # control.damp_growth       = 1.21 # >= 1
-    # control.max_round         = 5
-
-
     # there are different way to control timestepping
     # Here we assume these primary data
     scanrate                     = 0.04 * V/s
@@ -501,7 +499,7 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
         set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
         set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
         
-        if test == false
+        if verbose
             println("time value: t = $(t)")
         end
 
@@ -524,8 +522,9 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
         initialGuess .= solution
     end # time loop
 
-    testval = solution[ipsi, 42]
-    return testval
+    if test == false
+        println("*** done\n")
+    end
 
     if plotting
         Plotter.figure()
@@ -549,10 +548,13 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
         Plotter.xlabel("Applied Voltage [V]")
     end
 
+    testval = solution[ipsi, 42]
+    return testval
+
 end #  main
 
 function test()
-    testval = -4.0688862213372134
+    testval = -4.068873400363844
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

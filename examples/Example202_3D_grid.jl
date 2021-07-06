@@ -147,7 +147,7 @@ function main(;Plotter = nothing, plotting = false) # plotting is currently only
     
     end;
 
-    grid = simplexgrid(builder3d,maxvolume=1.0e-24)
+    grid = simplexgrid(builder3d)
 
     if plotting == true # plotting is currently only tested with GLMakie
         gridplot(Plotter = Plotter, grid,zplane=1.50e-7,azim=20,elev=60,linewidth=0.5, legend=:lt)

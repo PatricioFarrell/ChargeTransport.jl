@@ -350,8 +350,10 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
     ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
 
     if test == false
-        # print region dependent physical parameters
-        println(ctsys.data.params)
+        # show region dependent physical parameters. show_params() only supports region dependent parameters, but, if one wishes to
+        # print nodal dependent parameters, currently this is possible with println(ctsys.data.paramsnodal). We neglected here, since
+        # in most applications where the numberOfNodes is >> 10 this would results in a large output in the terminal.
+        show_params(ctsys)
         println("*** done\n")
     end
 
@@ -420,7 +422,7 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
     prepend!(LAMBDA, 0.0)
 
     for i in 1:length(LAMBDA)
-        if test == false
+        if verbose
             println("λ1 = $(LAMBDA[i])")
         end
 
@@ -442,7 +444,6 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
     if test == false
         println("*** done\n")
     end
-
 
     ################################################################################
     if test == false
@@ -482,7 +483,7 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
         # turn slowly generation on
         ctsys.fvmsys.physics.data.λ2   = LAMBDA[istep + 1]
 
-        if test == false
+        if verbose
             println("generation on: λ2 = $(ctsys.data.λ2)")
             println("time value: t = $(t)")
         end
@@ -494,6 +495,10 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
         initialGuess .= solution
 
     end # time loop
+
+    if test == false
+        println("*** done\n")
+    end
     ################################################################################
     if test == false
         println("Reverse IV Scan Protocol")
@@ -510,7 +515,7 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
         set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
         set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
  
-        if test == false
+        if verbose
             println("time value: t = $(t)")
         end
  
@@ -519,6 +524,10 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
         initialGuess .= solution
  
     end # time loop
+
+    if test == false
+        println("*** done\n")
+    end
     
     ################################################################################
     if test == false
@@ -544,7 +553,7 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
         set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
         set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
         
-        if test == false
+        if verbose
             println("time value: t = $(t)")
         end
     
@@ -565,6 +574,10 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
         initialGuess .= solution
 
     end # time loop
+
+    if test == false
+        println("*** done\n")
+    end
 
     #resForward = [biasValuesForward IVForward]
  
