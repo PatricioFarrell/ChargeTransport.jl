@@ -16,6 +16,6 @@ GridVisualize = "5eed8a63-0fb0-45eb-886d-8d5a387d12b8"
 SimplexGridFactory = "57bfcd06-606e-45d6-baf4-4ba06da0efd5"
 
 [compat]
-ExtendableGrids = ">=0.3.0"
-VoronoiFVM = ">=0.8"
-GridVisualize = ">=0.1"
+ExtendableGrids = ">=0.7.8"
+VoronoiFVM = ">=0.12"
+GridVisualize = ">=0.2.9"
