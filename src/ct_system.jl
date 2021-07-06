@@ -574,12 +574,14 @@ are performed.
 """
 function ChargeTransportSystem(grid, data ;unknown_storage)
 
+    num_species  = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1
+
     ctsys        = ChargeTransportSystem()
 
     ctsys.data   = data
-
+    
     physics      = VoronoiFVM.Physics(data        = data,
-                                      num_species = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1,
+                                      num_species = num_species,
                                       flux        = flux!,
                                       reaction    = reaction!,
                                       breaction   = breaction!,
@@ -588,6 +590,9 @@ function ChargeTransportSystem(grid, data ;unknown_storage)
                                       )
 
     ctsys.fvmsys = VoronoiFVM.System(grid, physics, unknown_storage = unknown_storage)
+
+    # for detection of number of species. In following versions we can simply delete num_species from physics initialization. 
+    VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species) 
 
     return ctsys
 
