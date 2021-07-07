@@ -37,7 +37,7 @@ export breaction!, bstorage!, reaction!, storage!, flux!
 include("ct_system.jl")
 
 export ChargeTransportParams, ChargeTransportParamsNodal, ChargeTransportData, ChargeTransportSystem
-export ct_enable_species!, ct_enable_boundary_species!, ct_unknowns, ct_solve!, ct_equilibrium_solve!
+export equilibrium_solve!
 export set_ohmic_contact!, set_indices!, compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
 export show_params, trap_density!
 

@@ -397,10 +397,9 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     set_ohmic_contact!(ctsys, iphip, bregionAcceptor, 0.0)
 
     # enable all three species in all regions
-    # entweder ct_enable_species! oder ChargeTransportInSolids.enable_species!
-    ct_enable_species!(ctsys, ipsi,  regions)
-    ct_enable_species!(ctsys, iphin, regions)
-    ct_enable_species!(ctsys, iphip, regions)
+    enable_species!(ctsys, ipsi,  regions)
+    enable_species!(ctsys, iphin, regions)
+    enable_species!(ctsys, iphip, regions)
 
     if test == false
         println("*** done\n")
@@ -429,31 +428,16 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    ctsys.data.calculation_type    = inEquilibrium
-
-    # initialize solution and starting vectors
-    initialGuess                   = ct_unknowns(ctsys)
-    solution                       = ct_unknowns(ctsys)
-    initialGuess                  .= 0.0
-
     control.damp_initial           = 0.5
     control.damp_growth            = 1.61 # >= 1
     control.max_round              = 5
 
-    # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
-    I      = collect(20.0:-1:0.0)
-    LAMBDA = 10 .^ (-I) 
-    prepend!(LAMBDA, 0.0)
+    initialGuess          = unknowns(ctsys)
+    solution              = unknowns(ctsys)
 
-    for i in 1:length(LAMBDA)
-        if verbose
-            println("λ1 = $(LAMBDA[i])")
-        end
-        ctsys.fvmsys.physics.data.λ1 = LAMBDA[i]     # DA: das hier ist noch unschön und müssen wir extrahieren!!!!!
-        ct_solve!(solution, initialGuess, ctsys, control = control, tstep=Inf)
+    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-        initialGuess .= solution
-    end
+    initialGuess         .= solution 
 
     if plotting
         plot_energies(Plotter, grid, data, solution, "Equilibrium")
@@ -491,7 +475,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
         set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
         set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
 
-        ct_solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 
         initialGuess .= solution
 

@@ -635,13 +635,13 @@ end
 ###########################################################
 # Wrappers for methods of VoronoiFVM
 
-ct_enable_species!(ctsys::ChargeTransportSystem, ispecies, regions)   = VoronoiFVM.enable_species!(ctsys.fvmsys, ispecies, regions)
+VoronoiFVM.enable_species!(ctsys::ChargeTransportSystem, ispecies, regions)            = VoronoiFVM.enable_species!(ctsys.fvmsys, ispecies, regions)
 
-ct_enable_boundary_species!(ctsys::ChargeTransportSystem, ispecies, regions)   = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
+VoronoiFVM.enable_boundary_species!(ctsys::ChargeTransportSystem, ispecies, regions)   = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
 
-ct_unknowns(ctsys::ChargeTransportSystem)                             = VoronoiFVM.unknowns(ctsys.fvmsys)
+VoronoiFVM.unknowns(ctsys::ChargeTransportSystem)                                      = VoronoiFVM.unknowns(ctsys.fvmsys)
 
-ct_solve!(solution, initialGuess, ctsys, ;control=control, tstep=Inf) = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
+VoronoiFVM.solve!(solution, initialGuess, ctsys, ;control=control, tstep=tstep)          = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
 
 ###########################################################
 ###########################################################
@@ -653,13 +653,13 @@ a given value.
     
 """
 
-function ct_equilibrium_solve!(ctsys::ChargeTransportSystem; control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0)
+function equilibrium_solve!(ctsys::ChargeTransportSystem; control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0)
 
     ctsys.data.calculation_type    = inEquilibrium
 
     # initialize solution and starting vectors
-    initialGuess                   = ct_unknowns(ctsys)
-    solution                       = ct_unknowns(ctsys)
+    initialGuess                   = unknowns(ctsys)
+    solution                       = unknowns(ctsys)
     @views initialGuess           .= 0.0 
 
     # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
@@ -675,7 +675,7 @@ function ct_equilibrium_solve!(ctsys::ChargeTransportSystem; control = VoronoiFV
         ctsys.fvmsys.physics.data.λ1 = LAMBDA[i] 
         try
 
-            ct_solve!(solution, initialGuess, ctsys, control = control, tstep=Inf)
+            VoronoiFVM.solve!(solution, initialGuess, ctsys, control = control, tstep=Inf)
 
         catch
             if (control.handle_exceptions)
@@ -940,8 +940,8 @@ This is only done for the one dimensional case so far.
 [insert some information about VoronoiFVM]
 """
 function printJacobi(node, sys)
-    ct_data = data(sys)
-    numberOfNodes = ct_data.numberOfNodes
+    ctdata = data(sys)
+    numberOfNodes = ctdata.numberOfNodes
     if node == 1
         println(sys.matrix[1:3, 1:9])
     elseif node == numberOfNodes

@@ -269,10 +269,9 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
 
     # enable all three species in all regions
-    # entweder ct_enable_species! oder ChargeTransportInSolids.enable_species!
-    ct_enable_species!(ctsys, ipsi,  regions)
-    ct_enable_species!(ctsys, iphin, regions)
-    ct_enable_species!(ctsys, iphip, regions)
+    enable_species!(ctsys, ipsi,  regions)
+    enable_species!(ctsys, iphin, regions)
+    enable_species!(ctsys, iphip, regions)
 
     if test == false
         println("*** done\n")
@@ -308,13 +307,13 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     control.damp_growth   = 1.2 # >= 1
     control.max_round     = 3
 
-    initialGuess          = ct_unknowns(ctsys)
-    solution              = ct_unknowns(ctsys)
+    # initialize solution and starting vectors
+    initialGuess          = unknowns(ctsys)
+    solution              = unknowns(ctsys)
 
-    solution              = ct_equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
+    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
     initialGuess         .= solution 
-
 
     if test == false
         println("*** done\n")
@@ -346,7 +345,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
         set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
 
-        ct_solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
+        solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
 
         initialGuess .= solution
 

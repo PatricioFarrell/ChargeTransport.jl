@@ -368,11 +368,10 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
 
     # enable all three species in all regions
-    # entweder ct_enable_species! oder ChargeTransportInSolids.enable_species!
-    ct_enable_species!(ctsys, ipsi,  regions)
-    ct_enable_species!(ctsys, iphin, regions)
-    ct_enable_species!(ctsys, iphip, regions)
-    ct_enable_species!(ctsys, iphia, [regionIntrinsic]) # ions restricted to active layer
+    enable_species!(ctsys, ipsi,  regions)
+    enable_species!(ctsys, iphin, regions)
+    enable_species!(ctsys, iphip, regions)
+    enable_species!(ctsys, iphia, [regionIntrinsic]) # ions restricted to active layer
 
     if test == false
         println("*** done\n")
@@ -401,30 +400,13 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    ctsys.data.calculation_type    = inEquilibrium
-
     # initialize solution and starting vectors
-    initialGuess                   = ct_unknowns(ctsys)
-    solution                       = ct_unknowns(ctsys)
-    @views initialGuess[ipsi,  :] .= 0.0
-    @views initialGuess[iphin, :] .= 0.0
-    @views initialGuess[iphip, :] .= 0.0
-    @views initialGuess[iphia, :] .= 0.0
+    initialGuess          = unknowns(ctsys)
+    solution              = unknowns(ctsys)
 
-    # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
-    I      = collect(20.0:-1:0.0)
-    LAMBDA = 10 .^ (-I) 
-    prepend!(LAMBDA, 0.0)
+    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    for i in 1:length(LAMBDA)
-        if verbose
-            println("λ1 = $(LAMBDA[i])")
-        end
-        ctsys.fvmsys.physics.data.λ1 = LAMBDA[i]     # DA: das hier ist noch unschön und müssen wir extrahieren!!!!!
-        ct_solve!(solution, initialGuess, ctsys, control = control, tstep=Inf)
-
-        initialGuess .= solution
-    end
+    initialGuess         .= solution 
 
     if plotting 
         plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
@@ -482,7 +464,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
 
         # Solve time step problems with timestep Δt. initialGuess plays the role of the solution
         # from last timestep
-        ct_solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
         
         # get IV curve
         factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
