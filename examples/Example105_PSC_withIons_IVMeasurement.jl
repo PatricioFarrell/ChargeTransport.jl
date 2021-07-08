@@ -14,7 +14,7 @@ The paramters can be found here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv.
 =#
 
-module Example104_PSC_withIons_IVMeasurement
+module Example105_PSC_withIons_IVMeasurement
 
 using VoronoiFVM
 using ChargeTransportInSolids
@@ -348,7 +348,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         ################################################################################
         plot_energies(Plotter, grid, data)
         Plotter.figure()
-        plot_doping(Plotter, grid, data)
+        plot_doping(Plotter, grid, params)
         Plotter.figure()
         println("*** done\n")
     end

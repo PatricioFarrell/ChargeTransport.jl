@@ -174,7 +174,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     # Params is a struct which contains all necessary physical parameters. If one wants to simulate
-    # space-dependent variable, one additionally needs to generate a ParamsNodal struct, see Example_103.
+    # space-dependent variable, one additionally needs to generate a ParamsNodal struct, see Example102.
     params                                              = ChargeTransportParams(grid, numberOfCarriers)
 
     params.temperature                                  = T

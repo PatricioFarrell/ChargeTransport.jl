@@ -14,7 +14,7 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 (with adjustments on layer lengths)
 =#
 
-module Example107_PSC_2D_tensorGrid
+module Example108_PSC_2D_tensorGrid
 
 using VoronoiFVM
 using ChargeTransportInSolids

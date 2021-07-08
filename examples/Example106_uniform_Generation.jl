@@ -14,7 +14,7 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 (with adjustments on layer lengths)
 =#
 
-module Example105_PSC_uniform_Generation
+module Example106_PSC_uniform_Generation
 
 using VoronoiFVM
 using ChargeTransportInSolids
