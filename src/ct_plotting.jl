@@ -282,6 +282,8 @@ function plot_energies(Plotter, grid::ExtendableGrid, data)
         end
 
     end
+
+    Plotter.grid()
     Plotter.xlabel("space [\$m\$]")
     Plotter.ylabel("energies [\$eV\$]")
     Plotter.title("Band-edge energies \$ E_α\$")
@@ -298,10 +300,7 @@ Possibility to plot the considered doping. This is especially useful
 for making sure that the interior and the boundary doping agree.
 
 """
-function plot_doping(Plotter, g::ExtendableGrid, data)
-
-    params      = data.params
-    paramsnodal = data.paramsnodal
+function plot_doping(Plotter, g::ExtendableGrid, params::ChargeTransportParams)
 
     coord       = g[Coordinates]
     cellregions = g[CellRegions]
@@ -357,12 +356,33 @@ function plot_doping(Plotter, g::ExtendableGrid, data)
         end
 
     end
+
+    Plotter.grid()
     Plotter.yscale("symlog")
     Plotter.xlabel("space [\$m\$]")
     Plotter.ylabel("Doping [\$\\frac{1}{cm^3}\$]")
     Plotter.title("Doping values for charge carriers")
     Plotter.legend(fancybox = true, loc = "best")
     Plotter.tight_layout()
+
+end
+
+"""
+Plot doping for nodal dependent doping
+"""
+function plot_doping(Plotter, g::ExtendableGrid, paramsnodal::ChargeTransportParamsNodal)
+
+    coord  = g[Coordinates]
+
+    Plotter.plot(coord[:], 1.0e-6 .*paramsnodal.doping[:], color = "green", marker = "x")
+
+    Plotter.grid()
+    Plotter.yscale("symlog")
+    Plotter.xlabel("space [\$m\$]")
+    Plotter.ylabel("Doping [\$\\frac{1}{cm^3}\$]")
+    Plotter.title("Doping values for charge carriers")
+    Plotter.tight_layout()
+
 
 end
 
@@ -381,6 +401,8 @@ function plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoin
     end
 
     coord = grid[Coordinates]
+    
+    Plotter.grid()
     Plotter.plot(coord[:],psi0, label = "electroneutral potential \$ ψ_0 \$", color="b", marker= marker)
     Plotter.xlabel("space [m]")
     Plotter.ylabel("potential [V]")

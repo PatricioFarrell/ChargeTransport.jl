@@ -43,6 +43,12 @@ mutable struct ChargeTransportParams
     numberOfInterfaceCarriers    :: Int64
 
 
+    """
+    number of species we need for the numerics system.
+    """ 
+    numberOfSpeciesSystem        :: Int64
+
+
     ###############################################################
     ####                     real numbers                      ####
     ###############################################################
@@ -240,7 +246,10 @@ mutable struct ChargeTransportParamsNodal
     """
     dielectricConstant           ::  Array{Float64,1}
  
- 
+    """
+    A 1D array with the corresponding doping values on each node.
+    """
+    doping                       ::  Array{Float64,1}
     ###############################################################
     ####          number of nodes x number of carriers         ####
     ###############################################################
@@ -248,11 +257,6 @@ mutable struct ChargeTransportParamsNodal
     A 2D array with the corresponding mobility values ``\\mu_\\alpha`` for each carrier ``\\alpha`` on each node.
     """
     mobility                     ::  Array{Float64,2}
- 
-    """
-    A 2D array with the corresponding doping values for each carrier ``\\alpha`` on each node.
-    """
-    doping                       ::  Array{Float64,2}
  
     """
     A 2D array with the corresponding effective density of states values ``N_\\alpha`` for each carrier ``\\alpha`` on each node.
@@ -296,7 +300,7 @@ mutable struct ChargeTransportData
     """
     A DataType for the bulk recombination model.
     """
-    bulk_recombination_model     ::  DataType   
+    bulk_recombination_model     ::  DataType  
 
 
     ###############################################################
@@ -413,6 +417,7 @@ function ChargeTransportParams(grid, numberOfCarriers)
     params.numberOfBoundaryRegions      = numberOfBoundaryRegions
     params.numberOfCarriers             = numberOfCarriers
     params.numberOfInterfaceCarriers    = 0
+    params.numberOfSpeciesSystem        = numberOfCarriers + 1
 
     ###############################################################
     ####                     real numbers                      ####
@@ -496,13 +501,13 @@ function ChargeTransportParamsNodal(grid, numberOfCarriers)
     ####                    number of nodes                    ####
     ###############################################################
     paramsnodal.dielectricConstant      = spzeros(Float64, numberOfNodes) 
+    paramsnodal.doping                  = spzeros(Float64, numberOfNodes)
  
  
     ###############################################################
     ####          number of nodes x number of carriers         ####
     ###############################################################
     paramsnodal.mobility                = spzeros(Float64, numberOfCarriers, numberOfNodes)
-    paramsnodal.doping                  = spzeros(Float64, numberOfCarriers, numberOfNodes)
     paramsnodal.densityOfStates         = spzeros(Float64, numberOfCarriers, numberOfNodes)
     paramsnodal.bandEdgeEnergy          = spzeros(Float64, numberOfCarriers, numberOfNodes)
 
@@ -581,7 +586,6 @@ function ChargeTransportSystem(grid, data ;unknown_storage)
     ctsys.data   = data
     
     physics      = VoronoiFVM.Physics(data        = data,
-                                      num_species = num_species,
                                       flux        = flux!,
                                       reaction    = reaction!,
                                       breaction   = breaction!,
@@ -890,7 +894,7 @@ function electroNeutralSolution!(grid, data; Newton=false)
 
         for icc = 1:params.numberOfCarriers
             push!(EVector, sum(params.bandEdgeEnergy[icc, regionsOfCell])  / length(regionsOfCell) + paramsnodal.bandEdgeEnergy[icc,index])
-            push!(CVector, sum(params.doping[icc, regionsOfCell])          / length(regionsOfCell) + paramsnodal.doping[icc, index])
+            push!(CVector, sum(params.doping[icc, regionsOfCell])          / length(regionsOfCell) + paramsnodal.doping[index])
             push!(NVector, sum(params.densityOfStates[icc, regionsOfCell]) / length(regionsOfCell) + paramsnodal.densityOfStates[icc, index])
         end
         # rhs of Poisson's equation as anonymous function depending on psi0

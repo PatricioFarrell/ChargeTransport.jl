@@ -436,13 +436,14 @@ function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
  
         eta     = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
  
-        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * (params.bDoping[icc, bnode.region] + paramsnodal.doping[icc, bnode.index])                             # subtract doping
+        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )                    # subtract doping
         f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.bDensityOfStates[icc, bnode.region] + paramsnodal.densityOfStates[icc, bnode.index]) * data.F[icc](eta)  # add charge carrier
  
         # boundary conditions for charge carriers are set in main program
         f[icc]  = 0.0
  
     end
+    f[ipsi] = f[ipsi] - paramsnodal.doping[bnode.index]
 
     f[ipsi] = - data.λ1 * 1 / α *  q * f[ipsi]
 
@@ -469,7 +470,7 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_ion_charge_left})
 
     E1                = params.bBandEdgeEnergy[iphia, bnode.region]  + paramsnodal.bandEdgeEnergy[iphia, bnode.index]
     DOS1              = params.bDensityOfStates[iphia, bnode.region] + paramsnodal.densityOfStates[iphia, bnode.index]
-    C01               = params.bDoping[iphia, bnode.region]          + paramsnodal.doping[iphia, bnode.index]
+    C01               = params.bDoping[iphia, bnode.region]  
 
     β                 = 0.5     # can be between 0 and 1 
     κ                 = 1       # either 0 or 1
@@ -510,7 +511,7 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_ion_charge_right})
 
     E2                = params.bBandEdgeEnergy[iphia, bnode.region]  + paramsnodal.bandEdgeEnergy[iphia, bnode.index]
     DOS2              = params.bDensityOfStates[iphia, bnode.region] + paramsnodal.densityOfStates[iphia, bnode.index]
-    C02               = params.bDoping[iphia, bnode.region]          + paramsnodal.doping[iphia, bnode.index]
+    C02               = params.bDoping[iphia, bnode.region]         
 
     β                 = 0.5     # can be between 0 and 1 
     κ                 = 1       # either 0 or 1
@@ -580,10 +581,18 @@ bstorage!(f, u, bnode, data, ::Type{interface_model_none}) = emptyFunction()
 
 """
 $(TYPEDSIGNATURES)
+No bstorage! is used, if surface recombination model is chosen.
+
+"""
+bstorage!(f, u, bnode, data, ::Type{interface_model_surface_recombination}) = emptyFunction()
+
+"""
+$(TYPEDSIGNATURES)
 No bstorage! is used, if an ohmic contact model is chosen.
 
 """
 bstorage!(f, u, bnode, data, ::Type{ohmic_contact}) = emptyFunction()
+
 
 
 """
@@ -675,10 +684,11 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
     for icc = 1:params.numberOfCarriers
         
         eta     = etaFunction(u, node, data, icc, ipsi) 
-        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * (params.doping[icc, ireg] + paramsnodal.doping[icc, inode])  # subtract doping
+        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, ireg] )   # subtract doping
         f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.densityOfStates[icc, ireg] + paramsnodal.densityOfStates[icc, inode]) * data.F[icc](eta)   # add charge carrier
 
     end
+    f[ipsi] = f[ipsi] - paramsnodal.doping[inode]
 
     f[ipsi]                     = - data.λ1 * q * f[ipsi]
 
@@ -768,10 +778,11 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     for icc = 1:params.numberOfCarriers
         
         eta     = etaFunction(u, node, data, icc, ipsi) 
-        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * (params.doping[icc, node.region] + paramsnodal.doping[icc, node.index])  # subtract doping
+        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, node.region] )  # subtract doping
         f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.densityOfStates[icc, node.region] + paramsnodal.densityOfStates[icc, node.index]) * data.F[icc](eta)   # add charge carrier
 
     end
+    f[ipsi] = f[ipsi] - paramsnodal.doping[inode]
 
     # rhs of continuity equations for electron and holes (bipolar reaction)
     n                     = compute_densities!(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
@@ -1330,7 +1341,7 @@ function breactionOhmicSurfaceReco!(f, u, bnode, data)
 
             eta     = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
 
-            f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * (params.bDoping[icc, bnode.region] + paramsnodal.doping[icc, bnode.index])                             # subtract doping
+            f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )  # subtract doping
             f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.bDensityOfStates[icc, bnode.region] + paramsnodal.densityOfStates[icc, bnode.index]) * data.F[icc](eta)  # add charge carrier
 
             # boundary conditions for charge carriers are set in main program
@@ -1338,6 +1349,8 @@ function breactionOhmicSurfaceReco!(f, u, bnode, data)
 
         end
     end # end outer interface
+
+    f[ipsi] = f[ipsi] - paramsnodal.doping[bnode.index]
     
     if data.innerInterfaces == true # convention: inner interfaces are boundary 3 and 4
         iphin = 1

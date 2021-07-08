@@ -1,5 +1,5 @@
 #=
-# 101: 1D GaAs p-i-n diode.
+# 102: 1D GaAs p-i-n diode with spacially varying doping.
 ([source code](SOURCE_URL))
 
 Simulating charge transport in a GaAs pin diode. This means
@@ -9,26 +9,14 @@ The simulations are performed out of equilibrium and for the
 stationary problem.
 =#
 
-module Example101_PIN
+module Example102_PIN_nodal_doping
 
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
 
-# function for initializing the grid for a possble extension to other p-i-n devices.
-function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
-    coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 3 * refinementfactor))
-    coord_intrinsic  = collect(range(h_ndoping, stop = (h_ndoping + h_intrinsic), length = 3 * refinementfactor))
-    coord_pdoping    = collect(range((h_ndoping + h_intrinsic), stop = (h_ndoping + h_intrinsic + h_pdoping), length = 3 * refinementfactor))
-    coord            = glue(coord_ndoping, coord_intrinsic)
-    coord            = glue(coord, coord_pdoping)
-
-    return coord
-end
-
-
-function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -49,27 +37,23 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     bregions                = [bregionAcceptor, bregionDonor]
     numberOfBoundaryRegions = length(bregions)
 
-    # grid
-    refinementfactor        = 2^(n-1)
-    h_pdoping               = 2 * μm
-    h_intrinsic             = 2 * μm
-    h_ndoping               = 2 * μm
-    coord                   = initialize_pin_grid(refinementfactor,
-                                                  h_pdoping,
-                                                  h_intrinsic,
-                                                  h_ndoping)
+    h_pdoping              = 0.1 * μm
+    h_intrinsic            = 0.1 * μm
+    h_ndoping              = 0.1 * μm
 
-    grid                    = ExtendableGrids.simplexgrid(coord)
+    coord                  = range(0.0, stop = h_ndoping + h_intrinsic + h_pdoping, length = 25)
+    coord                  = collect(coord)
+    grid                   = simplexgrid(coord)
+    numberOfNodes          = length(coord)
 
     # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm], [h_pdoping], regionAcceptor)        # p-doped region = 1
-    cellmask!(grid, [h_pdoping], [h_pdoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
-    cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
+    cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor,  tol = 1.0e-15)    # p-doped region = 1
+    cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic],            regionIntrinsic, tol = 1.0e-15)    # intrinsic region = 2
+    cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor,     tol = 1.0e-15)    # n-doped region = 3
 
     if plotting
-        GridVisualize.gridplot(grid, Plotter = Plotter, legend=:lt)
+        gridplot(grid, Plotter = Plotter)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -95,26 +79,15 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
 
     # recombination model
-    bulk_recombination = bulk_recombination_full
+    bulk_recombination = bulk_recombination_trap_assisted
 
     # recombination parameters
-    Auger             = 1.0e-29   * cm^6 / s          # 1.0e-41
-    SRH_TrapDensity   = 1.0e10    / cm^3              # 1.0e16
-    SRH_LifeTime      = 1.0       * ns                # 1.0e10
-    Radiative         = 1.0e-10   * cm^3 / s          # 1.0e-16
+    SRH_TrapDensity_n = 4.760185435081902e5    / cm^3       
+    SRH_TrapDensity_p = 9.996936448738406e6    / cm^3
+    SRH_LifeTime      = 1.0                    * ps   
 
-    # doping
-    dopingFactorNd    =   1.0
-    dopingFactorNa    =   0.46
-    Nd                =   dopingFactorNd * Nc
-    Na                =   dopingFactorNa * Nv
-
-    # intrinsic concentration (not doping!)
-    ni                =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) 
-
-    # contact voltages: we impose an applied voltage only on one boundary.
-    # At the other boundary the applied voltage is zero.
-    voltageAcceptor   = 1.5 * V
+    # contact voltages
+    voltageAcceptor   = 1.4 * V
 
     # interface model
     interface_reaction = interface_model_none
@@ -128,10 +101,10 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     iphip           = indexSet["iphip"]
     ipsi            = indexSet["ipsi" ]
 
-
     if test == false
         println("*** done\n")
     end
+
     ################################################################################
     if test == false
         println("Define ChargeTransportSystem and fill in information about model")
@@ -140,7 +113,6 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     # initialize ChargeTransportData instance and fill in data
     data                                = ChargeTransportData(grid, numberOfCarriers)
-
 
     #### declare here all necessary information concerning the model ###
 
@@ -161,11 +133,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     
     # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
     # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
-    data.flux_approximation             = excessChemicalPotential
-    
-    if test == false
-        println("*** done\n")
-    end
+    data.flux_approximation             = ScharfetterGummel
 
     ################################################################################
     if test == false
@@ -174,8 +142,9 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     # Params is a struct which contains all necessary physical parameters. If one wants to simulate
-    # space-dependent variable, one additionally needs to generate a ParamsNodal struct, see Example_103.
+    # space-dependent variable, one additionally needs to generate a ParamsNodal struct as done here for the doping.
     params                                              = ChargeTransportParams(grid, numberOfCarriers)
+    paramsnodal                                         = ChargeTransportParamsNodal(grid, numberOfCarriers)
 
     params.temperature                                  = T
     params.UT                                           = (kB * params.temperature) / q
@@ -203,29 +172,26 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         params.mobility[iphip, ireg]                    = mup
 
         # recombination parameters
-        params.recombinationRadiative[ireg]             = Radiative
         params.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime
         params.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime
-        params.recombinationSRHTrapDensity[iphin, ireg] = SRH_TrapDensity
-        params.recombinationSRHTrapDensity[iphip, ireg] = SRH_TrapDensity
-        params.recombinationAuger[iphin, ireg]          = Auger
-        params.recombinationAuger[iphip, ireg]          = Auger
+        params.recombinationSRHTrapDensity[iphin, ireg] = SRH_TrapDensity_n
+        params.recombinationSRHTrapDensity[iphip, ireg] = SRH_TrapDensity_p
 
     end
 
-    # interior doping
-    params.doping[iphin, regionDonor]                   = Nd        # data.doping   = [0.0  Na;
-    params.doping[iphin, regionIntrinsic]               = ni        #                  ni   0.0;
-    params.doping[iphip, regionIntrinsic]               = 0.0        #                  Nd  0.0]
-    params.doping[iphip, regionAcceptor]                = Na
-
-    # boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd        # data.bDoping  = [0.0  Na;
-    params.bDoping[iphip, bregionAcceptor]              = Na        #                  Nd  0.0]
+    # initialize the space dependent doping
+    # doping
+    NDoping           =   1.0e17  / cm^3
+    κ = 500.0
+    for icoord = 1:numberOfNodes
+        paramsnodal.doping[icoord] = NDoping * 0.5 * ( 1.0  +  tanh( (0.1 - coord[icoord]/μm) *κ )  - ( 1.0 + tanh( (coord[icoord]/μm - 0.2) * κ )) )
+    end
 
     # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
     # in next step.
     data.params                                         = params
+    # same holds for space dependent params, i.e. the doping
+    data.paramsnodal                                    = paramsnodal
 
     # in the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
     # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
@@ -233,27 +199,25 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
 
     if test == false
-        # show region dependent physical parameters. show_params() only supports region dependent parameters, but, if one wishes to
-        # print nodal dependent parameters, currently this is possible with println(ctsys.data.paramsnodal). We neglected here, since
-        # in most applications where the numberOfNodes is >> 10 this would results in a large output in the terminal.
-        show_params(ctsys)
         println("*** done\n")
+    end
+
+    # show region dependent physical parameters. show_params() only supports region dependent parameters, but, if one wishes to
+    # print nodal dependent parameters, currently this is possible with println(ctsys.data.paramsnodal). We neglected here, since
+    # in most applications where the numberOfNodes is >> 10 this would results in a large output in the terminal.
+    if test == false
+        show_params(ctsys)
     end
 
     if plotting == true
         ################################################################################
-        println("Plot electroneutral potential, band-edge energies and doping")
+        println("Plot doping")
         ################################################################################
-        psi0 = electroNeutralSolution!(grid, data)
-        plot_energies(Plotter, grid, data)
         Plotter.figure()
-        plot_doping(Plotter, grid, params)
-        Plotter.figure()
-        plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=true)
-        Plotter.figure()
+        plot_doping(Plotter, grid, paramsnodal)
         println("*** done\n")
     end
-
+    
     ################################################################################
     if test == false
         println("Define outerior boundary conditions and enabled layers")
@@ -282,9 +246,8 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    control                   = VoronoiFVM.NewtonControl()
+    control = VoronoiFVM.NewtonControl()
     control.verbose           = verbose
-    control.damp_initial      = 0.5
     control.damp_growth       = 1.21
     control.max_iterations    = 250
     control.tol_absolute      = 1.0e-14
@@ -299,13 +262,13 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     ################################################################################
     if test == false
-        println("Compute solution in thermodynamic equilibrium")
+        println("Compute solution in thermodynamic equilibrium for Boltzmann")
     end
     ################################################################################
 
-    control.damp_initial  = 0.5
-    control.damp_growth   = 1.2 # >= 1
-    control.max_round     = 3
+    # control.damp_initial      = 0.001
+    # control.damp_growth       = 1.21 # >= 1
+    # control.max_round         = 4
 
     # initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
@@ -315,7 +278,16 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     initialGuess         .= solution 
 
-    
+    if plotting
+        Plotter.figure()
+        plot_energies(Plotter, grid, data, solution, "Equilibrium")
+        Plotter.figure()
+        plot_densities(Plotter, grid, data, solution, "Equilibrium")
+        Plotter.figure()
+        plot_solution(Plotter, grid, data, solution, "Equilibrium")
+        Plotter.figure()
+    end
+
     if test == false
         println("*** done\n")
     end
@@ -326,19 +298,13 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     ctsys.data.calculation_type      = outOfEquilibrium
+     
+    maxBias                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    biasValues                       = range(0, stop = maxBias, length = 41)
+    IV                               = zeros(0)
 
-    if !(data.F == Boltzmann) # adjust control, when not using Boltzmann
-        control.damp_initial      = 0.5
-        control.damp_growth       = 1.2
-        control.max_iterations    = 30
-    end
-
-    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 16)
-    IV         = zeros(0)
-
-    w_device = 0.5    * μm  # width of device
-    z_device = 1.0e-4 * cm  # depth of device
+    w_device                         = 0.1    * μm  # width of device
+    z_device                         = 1.0e-5 * cm  # depth of device
 
     for Δu in biasValues
 
@@ -361,12 +327,8 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     end # bias loop
 
-    if test == false
-        println("*** done\n")
-    end
-
-    # plot solution and IV curve
-    if plotting
+    
+    if plotting # plot solution and IV curve
         plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = false)
         Plotter.figure()
         plot_solution(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
@@ -379,19 +341,15 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     testval = solution[15]
     return testval
 
-    if test == false
-        println("*** done\n")
-    end
-
 end #  main
 
 function test()
-    testval = 1.5068426773059806
+    testval = 1.4676876302354516
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 if test == false
-    println("This message should show when the PIN module has successfully recompiled.")
+    println("This message should show when the PIN module is successfully recompiled.")
 end
 
 end # module
