@@ -81,8 +81,7 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
     coord                   = glue(coord,     coord_i_g2, tol=10*t) 
     coord                   = glue(coord,     coord_n_g,  tol=10*t)
     coord                   = glue(coord,     coord_n_u,  tol=10*t)
-    grid                    = ExtendableGrids.simplexgrid(coord)
-    numberOfNodes           = length(coord)
+    grid                    = simplexgrid(coord)
 
     # set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor, tol = 1.0e-18)     # n-doped region   = 1
@@ -90,7 +89,7 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor, tol = 1.0e-18)  # p-doped region   = 3
 
     if plotting
-        GridVisualize.gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter)
         Plotter.title("Grid")
         Plotter.figure()
     end

@@ -92,7 +92,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-12)    # p-doped region   = 3  
 
     if plotting
-        GridVisualize.gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -382,7 +382,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    control                   = VoronoiFVM.NewtonControl()
+    control                   = NewtonControl()
     control.verbose           = verbose
     control.max_iterations    = 300
     control.tol_absolute      = 1.0e-13

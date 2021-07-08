@@ -246,7 +246,7 @@ function main(;Plotter = nothing, plotting = false, verbose = false, test = fals
     end
     ################################################################################
 
-    control = VoronoiFVM.NewtonControl()
+    control                   = NewtonControl()
     control.verbose           = verbose
     control.damp_growth       = 1.21
     control.max_iterations    = 250

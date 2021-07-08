@@ -113,7 +113,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     length_j2               = length(coord)
     coord                   = glue(coord, coord_pdoping)
 
-    grid                    = ExtendableGrids.simplexgrid(coord)
+    grid                    = simplexgrid(coord)
     numberOfNodes           = length(coord)
     lengthLayers            = [1, length_n, length_j1, length_i, length_j2, numberOfNodes]
 
@@ -125,7 +125,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     cellmask!(grid, [heightLayers[4]], [heightLayers[5]], regionAcceptor)    # p-doped region   = 5  
 
     if plotting
-        GridVisualize.gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -410,7 +410,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    control                   = VoronoiFVM.NewtonControl()
+    control                   = NewtonControl()
     control.verbose           = verbose
     control.max_iterations    = 300
     control.tol_absolute      = 1.0e-13

@@ -59,7 +59,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
                                                   h_intrinsic,
                                                   h_ndoping)
 
-    grid                    = ExtendableGrids.simplexgrid(coord)
+    grid                    = simplexgrid(coord)
 
     # set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm], [h_pdoping], regionAcceptor)        # p-doped region = 1
@@ -67,7 +67,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
 
     if plotting
-        GridVisualize.gridplot(grid, Plotter = Plotter, legend=:lt)
+        gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -282,7 +282,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    control                   = VoronoiFVM.NewtonControl()
+    control                   = NewtonControl()
     control.verbose           = verbose
     control.damp_initial      = 0.5
     control.damp_growth       = 1.21
