@@ -7,6 +7,7 @@ using DocStringExtensions
 using SparseArrays
 using Roots
 
+
 include("ct_constants.jl")
 
 export kB, Planck_constant, mₑ, q, ε0
@@ -41,9 +42,17 @@ export equilibrium_solve!
 export set_ohmic_contact!, set_indices!, compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
 export show_params, trap_density!
 
+##################################################################
+include("ct_system_quantities.jl")
+
+export ChargeTransportSystem2
+##################################################################
+
 include("ct_plotting.jl")
 
 export plot_densities, plot_energies, plot_doping, plot_electroNeutralSolutionBoltzmann, plot_solution, plot_IV
+
+
 
 
 

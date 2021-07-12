@@ -342,6 +342,16 @@ mutable struct ChargeTransportData
     """
     λ3                           ::  Float64
 
+    ###############################################################
+    ####        Quantities (for discontinuous solving)         ####
+    ###############################################################
+    
+    iphin                        :: VoronoiFVM.AbstractQuantity
+
+    iphip                        :: VoronoiFVM.AbstractQuantity
+
+    ipsi                         :: VoronoiFVM.AbstractQuantity
+
 
     ###############################################################
     ####          Physical parameters as own structs           ####
@@ -556,7 +566,11 @@ function ChargeTransportData(grid, numberOfCarriers)
     data.λ2                       = 0.0                     # λ2: embedding parameter for G
     data.λ3                       = 0.0                     # λ3: embedding parameter for electro chemical reaction
 
-    
+    data.iphin                    = ContinuousQuantity(1)
+
+    data.iphip                    = ContinuousQuantity(2)
+
+    data.ipsi                     = ContinuousQuantity(3)
     ###############################################################
     ####          Physical parameters as own structs           ####
     ###############################################################
