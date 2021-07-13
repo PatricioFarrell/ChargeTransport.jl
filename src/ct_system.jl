@@ -649,6 +649,41 @@ function set_ohmic_contact!(ctsys, icc, ibreg, contact_val)
  
 end
 
+function set_ohmic_contact!(ctsys, ibreg, contact_val)
+
+    interface_model       = inner_interface_model(ctsys)
+
+    set_ohmic_contact!(ctsys, ibreg, contact_val, interface_model)
+ 
+end
+
+function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_none})
+
+    for icc = 1:ctsys.data.numberOfCarriers
+        ctsys.fvmsys.boundary_factors[icc, ibreg] = VoronoiFVM.Dirichlet
+        ctsys.fvmsys.boundary_values[icc, ibreg]  = contact_val
+    end
+
+end
+
+function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_surface_recombination})
+
+    if ibreg == 1
+        ctsys.fvmsys.boundary_factors[ctsys.data.iphin.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
+        ctsys.fvmsys.boundary_factors[ctsys.data.iphip.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
+
+        ctsys.fvmsys.boundary_values[ ctsys.data.iphin.regionspec[ibreg], ibreg] = contact_val
+        ctsys.fvmsys.boundary_values[ ctsys.data.iphip.regionspec[ibreg], ibreg] = contact_val
+    else
+        ctsys.fvmsys.boundary_factors[ctsys.data.iphin.regionspec[ctsys.data.params.numberOfRegions], ibreg] = VoronoiFVM.Dirichlet
+        ctsys.fvmsys.boundary_factors[ctsys.data.iphip.regionspec[ctsys.data.params.numberOfRegions], ibreg] = VoronoiFVM.Dirichlet
+
+        ctsys.fvmsys.boundary_values[ ctsys.data.iphin.regionspec[ctsys.data.params.numberOfRegions], ibreg] = contact_val
+        ctsys.fvmsys.boundary_values[ ctsys.data.iphip.regionspec[ctsys.data.params.numberOfRegions], ibreg] = contact_val
+    end
+
+end
+
 ###########################################################
 ###########################################################
 # Wrappers for methods of VoronoiFVM

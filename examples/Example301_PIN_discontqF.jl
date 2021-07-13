@@ -265,10 +265,8 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     # we compute equilibrium solutions. Hence the boundary values at the ohmic contacts
     # are zero.
 
-    set_ohmic_contact!(ctsys, data.iphin.regionspec[1], bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, data.iphip.regionspec[1], bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, data.iphin.regionspec[3], bregionDonor, 0.0)
-    set_ohmic_contact!(ctsys, data.iphip.regionspec[3], bregionDonor, 0.0)
+    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
+    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
 
     if test == false
         println("*** done\n")
@@ -335,8 +333,7 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     for Δu in biasValues
 
         # set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, data.iphin.regionspec[1], bregionAcceptor, Δu)
-        set_ohmic_contact!(ctsys, data.iphip.regionspec[1], bregionAcceptor, Δu)
+        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
 
         println("Bias value: Δu = $(Δu) (no illumination)")
 
@@ -391,8 +388,8 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.5114645419805477 # without reco
-    #testval = 1.5068426773059806
+    testval = 0.1119804993106007 # without reco
+
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

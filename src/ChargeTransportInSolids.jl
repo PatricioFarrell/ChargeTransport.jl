@@ -45,7 +45,7 @@ export show_params, trap_density!
 ##################################################################
 include("ct_system_quantities.jl")
 
-export ChargeTransportSystem2
+export ChargeTransportSystem2, inner_interface_model
 ##################################################################
 
 include("ct_plotting.jl")
