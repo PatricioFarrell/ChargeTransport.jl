@@ -203,12 +203,112 @@ function breactionDiscontqF!(f, u, bnode, data, ::Type{interface_model_surface_r
         return emptyFunction()
 
     else
-        
+        params      = data.params
+        paramsnodal = data.paramsnodal
+
+
+        # Ei_a                = -4.05                 * eV   
+        # Ei_i                = -4.60                 * eV   
+        # Ei_d                = -5.00                 * eV   
+    
+        # EI                  = [Ei_a, Ei_i, Ei_d]
+    
+        # recombinationVelocity    = [1.0e1 1.0e7;
+        #                             1.0e5 1.0e1]
+        # recombinationTrapDensity = 0.5.* [trap_density!(1, 1, data, EI[1]) + trap_density!(1, 2, data, EI[2])   trap_density!(1, 2, data, EI[2]) + trap_density!(1, 3, data, EI[3]);
+        # trap_density!(2, 1, data, EI[1]) + trap_density!(2, 2, data, EI[2])   trap_density!(2, 2, data, EI[2]) + trap_density!(2, 3, data, EI[3])]
+                                
+
+        # iphin = data.speciesQuantities[1]
+        # iphip = data.speciesQuantities[2]
+    
+        ####################### idea 1 ###########################
+        # for icc in data.speciesQuantities[1:2] # list of our charge carrier quantities
+
+        #     etan1  = params.chargeNumbers[iphin.id] / params.UT * ( (u[iphin, 1] - u[ipsi]) + params.bandEdgeEnergy[iphin.id, bnode.cellregions[1]] / q ) # left
+        #     etan2  = params.chargeNumbers[iphin.id] / params.UT * ( (u[iphin, 2] - u[ipsi]) + params.bandEdgeEnergy[iphin.id, bnode.cellregions[2]] / q ) # right
+
+        #     etap1  = params.chargeNumbers[iphip.id] / params.UT * ( (u[iphip, 1] - u[ipsi]) + params.bandEdgeEnergy[iphip.id, bnode.cellregions[1]] / q ) # left
+        #     etap2  = params.chargeNumbers[iphip.id] / params.UT * ( (u[iphip, 2] - u[ipsi]) + params.bandEdgeEnergy[iphip.id, bnode.cellregions[2]] / q ) # right
+
+        #     n1     = (params.densityOfStates[iphin.id, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphin.id, bnode.index])* data.F[iphin.id](etan1)
+        #     n2     = (params.densityOfStates[iphin.id, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphin.id, bnode.index])* data.F[iphin.id](etan2)
+
+        #     p1     = (params.densityOfStates[iphip.id, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphip.id, bnode.index])* data.F[iphip.id](etap1)
+        #     p2     = (params.densityOfStates[iphip.id, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphip.id, bnode.index])* data.F[iphip.id](etap2)
+            
+        #     average_n    = 0.5 * (n1 + n2)^(2/3)
+        #     average_p    = 0.5 * (p1 + p2)^(2/3)
+        #     average_phin = 0.5 * ( u[iphin, 1] - u[iphin, 2] )
+        #     average_phip = 0.5 * ( u[iphip, 1] - u[iphip, 2] )
+
+        #     exponentialTerm       = exp((q * average_phin - q  * average_phip ) / (kB * params.temperature))
+        #     excessCarrierDensTerm = average_n * average_p * (1.0 - exponentialTerm)
+
+
+        #     kernelSRH = 1.0 / (  1.0/recombinationVelocity[iphip.id, bnode.region-2] * (average_n + recombinationTrapDensity[iphin.id, bnode.region-2]) + 1.0/recombinationVelocity[iphin.id, bnode.region-2] * (average_p + recombinationTrapDensity[iphip.id, bnode.region-2]) )
+
+        #     react2     = q * params.chargeNumbers[icc.id] *  kernelSRH *  excessCarrierDensTerm 
+
+        #     f[icc, 1] =   react2
+        #     f[icc, 2] = - react2
+        #end
+
+        ####################### idea 1 ###########################
+        ##########################################################
+        ####################### idea 2 ###########################
+
+        # for icc in data.speciesQuantities[1:2] # list of our charge carrier quantities
+
+        #     etan1  = params.chargeNumbers[iphin.id] / params.UT * ( (u[iphin, 1] - u[ipsi]) + params.bandEdgeEnergy[iphin.id, bnode.cellregions[1]] / q ) # left
+        #     etan2  = params.chargeNumbers[iphin.id] / params.UT * ( (u[iphin, 2] - u[ipsi]) + params.bandEdgeEnergy[iphin.id, bnode.cellregions[2]] / q ) # right
+
+        #     etap1  = params.chargeNumbers[iphip.id] / params.UT * ( (u[iphip, 1] - u[ipsi]) + params.bandEdgeEnergy[iphip.id, bnode.cellregions[1]] / q ) # left
+        #     etap2  = params.chargeNumbers[iphip.id] / params.UT * ( (u[iphip, 2] - u[ipsi]) + params.bandEdgeEnergy[iphip.id, bnode.cellregions[2]] / q ) # right
+
+        #     n1     = (params.densityOfStates[iphin.id, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphin.id, bnode.index])* data.F[iphin.id](etan1)
+        #     n2     = (params.densityOfStates[iphin.id, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphin.id, bnode.index])* data.F[iphin.id](etan2)
+
+        #     p1     = (params.densityOfStates[iphip.id, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphip.id, bnode.index])* data.F[iphip.id](etap1)
+        #     p2     = (params.densityOfStates[iphip.id, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphip.id, bnode.index])* data.F[iphip.id](etap2)
+            
+
+        #     exponentialTerm1       = exp((q * u[iphin, 1] - q  * u[iphip, 1] ) / (kB * params.temperature))
+        #     exponentialTerm2       = exp((q * u[iphin, 2] - q  * u[iphip, 2] ) / (kB * params.temperature))
+        #     excessCarrierDensTerm1 = n1 * p1 * (1.0 - exponentialTerm1)
+        #     excessCarrierDensTerm2 = n2 * p2 * (1.0 - exponentialTerm2)
+
+
+        #     kernelSRH1 = 1.0 / (  1.0/recombinationVelocity[iphip.id, bnode.region-2] * (n1 + recombinationTrapDensity[iphin.id, bnode.region-2]) + 1.0/recombinationVelocity[iphin.id, bnode.region-2] * (p1 + recombinationTrapDensity[iphip.id, bnode.region-2]) )
+        #     kernelSRH2 = 1.0 / (  1.0/recombinationVelocity[iphip.id, bnode.region-2] * (n2 + recombinationTrapDensity[iphin.id, bnode.region-2]) + 1.0/recombinationVelocity[iphin.id, bnode.region-2] * (p2 + recombinationTrapDensity[iphip.id, bnode.region-2]) )
+
+        #     react1     = q * params.chargeNumbers[icc.id] *  kernelSRH1 *  excessCarrierDensTerm1 
+        #     react2     = q * params.chargeNumbers[icc.id] *  kernelSRH2 *  excessCarrierDensTerm2 
+
+        #     f[icc, 1] =   react1
+        #     f[icc, 2] = - react2
+        # end
+        ####################### idea 2 ###########################
+
         for icc in data.speciesQuantities[1:2]
 
-            # adjust this value, if you want to see the discontinuity
-            d         = 1.0e5
-            react     = d * (u[icc, 1] - u[icc, 2])
+            eta1 = params.chargeNumbers[icc.id] / params.UT * ( (u[icc, 1] - u[ipsi]) + params.bandEdgeEnergy[icc.id, bnode.cellregions[1]] / q )
+            eta2 = params.chargeNumbers[icc.id] / params.UT * ( (u[icc, 2] - u[ipsi]) + params.bandEdgeEnergy[icc.id, bnode.cellregions[2]] / q )
+
+            dens1 = (params.densityOfStates[icc.id, bnode.cellregions[1] ] * data.F[icc.id](eta1))^(2/3)
+            dens2 = (params.densityOfStates[icc.id, bnode.cellregions[2] ] * data.F[icc.id](eta2))^(2/3)
+
+
+            # qF potentials 
+            d         = [1.0e1 1.0e3;
+                        1.0e7 1.0e1]
+            react     = d[icc.id, bnode.region-2] * (u[icc, 1] - u[icc, 2])
+
+
+            # densities 
+            # d         = [1.0e-10 1.0e-10;
+            #              1.0e-30 1.0e-15]
+            # react     =  d[icc.id, bnode.region-2] * q * params.chargeNumbers[icc.id] * (dens1 - dens2)
 
             f[icc, 1] =   react
             f[icc, 2] = - react
