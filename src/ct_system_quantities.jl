@@ -105,7 +105,8 @@ function ChargeTransportSystem2(grid, data ;unknown_storage)
     ctsys                 = ChargeTransportSystem()
 
     interface_model       = inner_interface_model(data)
-    ctsys                 = build_system(grid, data, unknown_storage, interface_model) 
+    # here at this point a quantity based solving is built or not
+    ctsys                 = build_system(grid, data, unknown_storage, interface_model)
     
     return ctsys
 
@@ -153,27 +154,26 @@ surface recombination at inner interfaces is build.
 """
 function build_system(grid, data, unknown_storage, ::Type{interface_model_surface_recombination})
 
-    #num_species  = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1
-
     ctsys        = ChargeTransportSystem()
 
     fvmsys = VoronoiFVM.System(grid, unknown_storage=unknown_storage)
 
-    data.iphin = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions) # iphin
-    data.iphip = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions) # iphip
+    data.speciesQuantities[1] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions; id = 1) # iphin
+    data.speciesQuantities[2] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions; id = 2) # iphip
 
-    for ii = 3:data.params.numberOfCarriers
-        ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions) # if ion vacancies are present
+    for icc in 3:data.params.numberOfCarriers
+        data.speciesQuantities[icc] = ContinuousQuantity(fvmsys, data.enable_ion_vacancies; id = icc) # if ion vacancies are present
     end
 
-    data.ipsi  = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)    # last quantitiy is psi
+    data.speciesQuantities[data.params.numberOfCarriers+1] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)    # last quantitiy is psi
 
-    physics      = VoronoiFVM.Physics(data        = data,
-                                      flux        = fluxDiscont!,
-                                      reaction    = reactionDiscont!,
-                                      breaction   = breactionDiscont!
-                                      ### DA: insert additionally storage and bstorage
-                                      )
+    physics    = VoronoiFVM.Physics(data        = data,
+                                    flux        = fluxDiscontqF!,
+                                    reaction    = reactionDiscontqF!,
+                                    breaction   = breactionDiscontqF!,
+                                    storage     = storageDiscontqF!
+                                    ### DA: insert additionally bstorage
+                                    )
 
     # add the defined physics to system
     physics!(fvmsys, physics)
@@ -191,10 +191,12 @@ end
 ##########################################################
 ##########################################################
 
-breactionDiscont!(f, u, bnode, data) = breactionDiscont!(f, u, bnode, data, data.boundary_type[bnode.region])
+breactionDiscontqF!(f, u, bnode, data) = breactionDiscontqF!(f, u, bnode, data, data.boundary_type[bnode.region])
 
 
-function breactionDiscont!(f, u, bnode, data, ::Type{interface_model_surface_recombination})
+function breactionDiscontqF!(f, u, bnode, data, ::Type{interface_model_surface_recombination})
+
+    ipsi = data.speciesQuantities[end]
 
     if data.calculation_type == inEquilibrium
 
@@ -204,30 +206,22 @@ function breactionDiscont!(f, u, bnode, data, ::Type{interface_model_surface_rec
     
         params      = data.params
     
-        ########
-        etan1 = params.chargeNumbers[1] / params.UT * ( (u[data.iphin, 1] - u[data.ipsi]) + params.bandEdgeEnergy[1, bnode.cellregions[1]] / q )
-        etan2 = params.chargeNumbers[1] / params.UT * ( (u[data.iphin, 2] - u[data.ipsi]) + params.bandEdgeEnergy[1, bnode.cellregions[2]] / q )
-        
-        n1    = params.bDensityOfStates[1, bnode.cellregions[1] ] * data.F[1](etan1)
-        n2    = params.bDensityOfStates[1, bnode.cellregions[2] ] * data.F[1](etan2)
-        ########
-        etap1 = params.chargeNumbers[2] / params.UT * ( (u[data.iphip, 1] - u[data.ipsi]) + params.bandEdgeEnergy[2, bnode.cellregions[1]] / q )
-        etap2 = params.chargeNumbers[2] / params.UT * ( (u[data.iphip, 2] - u[data.ipsi]) + params.bandEdgeEnergy[2, bnode.cellregions[2]] / q )
-    
-        p1    = params.densityOfStates[2, bnode.cellregions[1] ] * data.F[2](etap1)
-        p2    = params.densityOfStates[2, bnode.cellregions[2] ] * data.F[2](etap2)
-    
+        for icc in data.speciesQuantities[1:end-1] # list of our charge carrier quantities
+
+            if typeof(icc)  == VoronoiFVM.DiscontinuousQuantity{Int32}
+
+                # adjust this value, if you want to see the discontinuity
+                d         = 1.0e-11
+                react     = d * (u[icc, 1] - u[icc, 2])
+
+                f[icc, 1] =   react
+                f[icc, 2] = - react
+            end
+            
+
+        end
+        ########    
        
-        d       = 5.0e14   # choose: 5.0e14 to see discontinuity
-    
-        react_n         = (n1 - n2)/ d
-        react_p         = (p1 - p2)/ d
-        ########
-        f[data.iphin, 1] =   react_n
-        f[data.iphin, 2] = - react_n
-    
-        f[data.iphip, 1] =   react_p
-        f[data.iphip, 2] = - react_p
 
         return f
     end
@@ -236,44 +230,34 @@ end
 ##########################################################
 ##########################################################
 
-
-
 # without recombination!!!!
-function reactionDiscont!(f, u, node, data)
+function reactionDiscontqF!(f, u, node, data)
+
+    ipsi        = data.speciesQuantities[end]
 
     params      = data.params
     paramsnodal = data.paramsnodal
+
+    for icc in data.speciesQuantities[1:end-1] # list of our quantities
+        eta     = params.chargeNumbers[icc.id] / params.UT * ( (u[icc] - u[ipsi]) + params.bandEdgeEnergy[icc.id, node.region] / q )
+
+        f[ipsi] = f[ipsi] - params.chargeNumbers[icc.id] * (params.doping[icc.id, node.region])  # subtract doping
+        f[ipsi] = f[ipsi] + params.chargeNumbers[icc.id] * params.densityOfStates[icc.id, node.region] * data.F[icc.id](eta) # add charge carrier
     
-    # discontinuous quantities
-    etan     = params.chargeNumbers[1] / params.UT * ( (u[data.iphin] - u[data.ipsi]) + params.bandEdgeEnergy[1, node.region] / q )
-    etap     = params.chargeNumbers[2] / params.UT * ( (u[data.iphip] - u[data.ipsi]) + params.bandEdgeEnergy[2, node.region] / q )
-
-    f[data.ipsi] = f[data.ipsi] - params.chargeNumbers[1] * (params.doping[1, node.region])  - params.chargeNumbers[2] * (params.doping[2, node.region])  # subtract doping
-    f[data.ipsi] = f[data.ipsi] + params.chargeNumbers[1] * params.densityOfStates[1, node.region] * data.F[1](etan) + params.chargeNumbers[2] * params.densityOfStates[2, node.region] * data.F[2](etap)  # add charge carrier
-
-    # if defined, continuous quantities
-    otherCarriers = data.iphip.regionspec[data.params.numberOfRegions] + 1
-
-    for icc = otherCarriers:data.ipsi.ispec-1
-
-        E            = params.bandEdgeEnergy[icc, node.region] + paramsnodal.bandEdgeEnergy[icc, node.index]
-        eta          = params.chargeNumbers[icc] / params.UT * ( (u[icc] - u[data.ipsi]) + E / q )
-
-        f[data.ipsi] = f[data.ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, node.region] )  # subtract doping
-        f[data.ipsi] = f[data.ipsi] + params.chargeNumbers[icc] * (params.densityOfStates[icc, node.region] + paramsnodal.densityOfStates[icc, node.index]) * data.F[icc](eta)   # add charge carrier
-
     end
+    
+    f[ipsi] = - data.λ1 * q * f[ipsi]
 
-    f[data.ipsi] = - data.λ1 * q * f[data.ipsi]
 
     if data.calculation_type == inEquilibrium # these are for stability purposes
-        f[data.iphin] = u[data.iphin] - 0.0
-        f[data.iphip] = u[data.iphip] - 0.0
+        for icc in data.speciesQuantities[1:end-1]
+            f[icc] = u[icc] - 0.0
+        end
     else
-        f[data.iphin] =  0.0
-        f[data.iphip] =  0.0
+        for icc in data.speciesQuantities[1:end-1]
+            f[icc] = 0.0
+        end
     end
- 
 
     return f
 
@@ -283,21 +267,25 @@ end
 ##########################################################
 
 
-fluxDiscont!(f, u, edge, data) = fluxDiscont!(f, u, edge, data, data.calculation_type)
+fluxDiscontqF!(f, u, edge, data) = fluxDiscontqF!(f, u, edge, data, data.calculation_type)
 
-function fluxDiscont!(f, u, edge, data, ::Type{inEquilibrium})
 
-    params      = data.params
 
-    dpsi        =   u[data.ipsi, 2] - u[data.ipsi, 1]
-    f[data.ipsi] = - params.dielectricConstant[edge.region] * ε0 * dpsi
+function fluxDiscontqF!(f, u, edge, data, ::Type{inEquilibrium})
+
+    ipsi    = data.speciesQuantities[end]
+
+    params  = data.params
+
+    dpsi    =   u[ipsi, 2] - u[ipsi, 1]
+    f[ipsi] = - params.dielectricConstant[edge.region] * ε0 * dpsi
 
     return f
     
 end
 
 
-fluxDiscont!(f, u, edge, data, ::Type{outOfEquilibrium}) = fluxDiscont!(f, u, edge, data, data.flux_approximation)
+fluxDiscontqF!(f, u, edge, data, ::Type{outOfEquilibrium}) = fluxDiscontqF!(f, u, edge, data, data.flux_approximation)
 
 
 
@@ -308,79 +296,139 @@ The classical Scharfetter-Gummel flux scheme. This also works for space-dependen
 not for space-dependent effective DOS.
 
 """
-function fluxDiscont!(f, u, edge, data, ::Type{ScharfetterGummel})
+function fluxDiscontqF!(f, u, edge, data, ::Type{ScharfetterGummel})
 
-    params      = data.params
+    ipsi         = data.speciesQuantities[end]
+
+    params       = data.params
+    paramsnodal  = data.paramsnodal
     
-    dpsi        =   u[data.ipsi, 2] - u[data.ipsi, 1]
-    f[data.ipsi] = - params.dielectricConstant[edge.region] * ε0 * dpsi
+    dpsi         =   u[ipsi, 2] - u[ipsi, 1]
+    f[ipsi]      = - params.dielectricConstant[edge.region] * ε0 * dpsi
 
-    # discontinuous quantities
-    j0n         =  params.chargeNumbers[1] * q *  params.UT 
-    j0p         =  params.chargeNumbers[2] * q *  params.UT
+  
+    for icc in data.speciesQuantities[1:end-1]
 
-    etank    = params.chargeNumbers[1] / params.UT * ( (u[data.iphin, 1] - u[data.ipsi, 1]) + params.bandEdgeEnergy[1, edge.region]/q )
-    etanl    = params.chargeNumbers[1] / params.UT * ( (u[data.iphin, 2] - u[data.ipsi, 2]) + params.bandEdgeEnergy[1, edge.region]/q )
+        j0       =  params.chargeNumbers[icc.id] * q *  params.UT * params.mobility[icc.id, edge.region] 
+
+        etak     = params.chargeNumbers[icc.id] / params.UT * ( (u[icc, 1] - u[ipsi, 1]) + params.bandEdgeEnergy[icc.id, edge.region]/q )
+        etal     = params.chargeNumbers[icc.id] / params.UT * ( (u[icc, 2] - u[ipsi, 2]) + params.bandEdgeEnergy[icc.id, edge.region]/q )
+
+        bp, bm = fbernoulli_pm(params.chargeNumbers[icc.id] * dpsi / params.UT)
+
+        f[icc] = - j0 * ( bm * params.densityOfStates[icc.id, edge.region]  * data.F[icc.id](etal) - bp * params.densityOfStates[icc.id, edge.region]  * data.F[icc.id](etak) ) 
+        
+    end
     
-    etapk    = params.chargeNumbers[2] / params.UT * ( (u[data.iphip, 1] - u[data.ipsi, 1]) + params.bandEdgeEnergy[2, edge.region]/q )
-    etapl    = params.chargeNumbers[2] / params.UT * ( (u[data.iphip, 2] - u[data.ipsi, 2]) + params.bandEdgeEnergy[2, edge.region]/q ) 
-    ############
+    return f
+
+end
+
+
+function fluxDiscontqF!(f, u, edge, data, ::Type{excessChemicalPotential})
+
+    ipsi         = data.speciesQuantities[end]
+
+    params       = data.params
+    paramsnodal  = data.paramsnodal
     
-    bpn, bmn = fbernoulli_pm(params.chargeNumbers[1] * dpsi / params.UT)
-    bpp, bmp = fbernoulli_pm(params.chargeNumbers[2] * dpsi / params.UT)
-   
-    f[data.iphin] = - j0n * (params.mobility[1, edge.region] * bmn * params.densityOfStates[1, edge.region]  * data.F[1](etanl) - params.mobility[1, edge.region] * bpn * params.densityOfStates[1, edge.region]  * data.F[1](etank)) 
+    dpsi         =   u[ipsi, 2] - u[ipsi, 1]
+    f[ipsi]      = - params.dielectricConstant[edge.region] * ε0 * dpsi
 
-    f[data.iphip] = - j0p * (params.mobility[2, edge.region] * bmp * params.densityOfStates[2, edge.region]  * data.F[2](etapl) - params.mobility[2, edge.region] * bpp * params.densityOfStates[2, edge.region]  * data.F[2](etapk))
+  
+    for icc in data.speciesQuantities[1:end-1]
 
-    ############
-    # continuous quantities, if defined
-    otherCarriers = data.iphip.regionspec[data.params.numberOfRegions] + 1
-    nodel         = edge.node[2]; nodek       = edge.node[1]
+        j0       =  params.chargeNumbers[icc.id] * q *  params.UT * params.mobility[icc.id, edge.region]
 
-    for icc = otherCarriers:data.ipsi.ispec-1
-        j0                 =  params.chargeNumbers[icc] * q * params.mobility[icc, node.region] * params.UT * params.densityOfStates[icc, node.region]
+        etak     = params.chargeNumbers[icc.id] / params.UT * ( (u[icc, 1] - u[ipsi, 1]) + params.bandEdgeEnergy[icc.id, edge.region]/q )
+        etal     = params.chargeNumbers[icc.id] / params.UT * ( (u[icc, 2] - u[ipsi, 2]) + params.bandEdgeEnergy[icc.id, edge.region]/q )
 
-        Ek                 = params.bandEdgeEnergy[icc, edge.region] + paramsnodal.bandEdgeEnergy[icc, nodek]
-        El                 = params.bandEdgeEnergy[icc, edge.region] + paramsnodal.bandEdgeEnergy[icc, nodel]
+        Q        = params.chargeNumbers[icc.id] * ( dpsi/params.UT) + (etal - etak) - log(data.F[icc.id](etal)) + log(data.F[icc.id](etak) )
 
-        etak               = params.chargeNumbers[icc] / params.UT * ( (u[icc, 1] - u[ipsi, 1]) + Ek / q )
-        etal               = params.chargeNumbers[icc] / params.UT * ( (u[icc, 2] - u[ipsi, 2]) + El / q )
+        bp, bm   = fbernoulli_pm(Q)
 
-        bandEdgeDifference = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
+        f[icc] = - j0 * ( bm * params.densityOfStates[icc.id, edge.region]  * data.F[icc.id](etal) - bp * params.densityOfStates[icc.id, edge.region]  * data.F[icc.id](etak) ) 
 
-        bp, bm             = fbernoulli_pm(params.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / params.UT)
-        f[icc]             = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
     end
 
     return f
 
 end
-
 ##########################################################
 ##########################################################
-function breactionDiscont!(f, u, bnode, data, ::Type{ohmic_contact})
+function breactionDiscontqF!(f, u, bnode, data, ::Type{ohmic_contact})
 
     params      = data.params
     paramsnodal = data.paramsnodal 
 
+    ipsi        = data.speciesQuantities[end]
+
     # parameters
-    α          = 1.0e-10                      # tiny penalty value
+    α           = 1.0e-10                      # tiny penalty value
  
     innerRegion = bnode.cellregions[1] # tuple with [subRegionNumber 0]
 
+    for icc in data.speciesQuantities[1:end-1]
 
-    etan = params.chargeNumbers[1] / params.UT * ( (u[data.iphin.regionspec[innerRegion]] - u[data.ipsi]) + params.bBandEdgeEnergy[1, bnode.region] / q )
+        if typeof(icc) == VoronoiFVM.DiscontinuousQuantity{Int32}
+            eta = params.chargeNumbers[icc.id] / params.UT * ( (u[icc.regionspec[innerRegion]] - u[ipsi]) + params.bBandEdgeEnergy[icc.id, bnode.region] / q )
+        elseif typeof(icc) == VoronoiFVM.ContinuousQuantity{Int32}
+            eta = params.chargeNumbers[icc.id] / params.UT * ( (u[icc] - u[ipsi]) + params.bBandEdgeEnergy[icc.id, bnode.region] / q )
+        end
 
-    etap = params.chargeNumbers[2] / params.UT * ( (u[data.iphip.regionspec[innerRegion]] - u[data.ipsi]) + params.bBandEdgeEnergy[2, bnode.region] / q )
+        f[ipsi] = f[ipsi] - params.chargeNumbers[icc.id] * ( params.bDoping[icc.id, bnode.region] ) # subtract doping
+        f[ipsi] = f[ipsi] + params.chargeNumbers[icc.id] * (params.bDensityOfStates[icc.id, bnode.region] + paramsnodal.densityOfStates[icc.id, bnode.index]) * data.F[icc.id](eta) # add charge carrier
+
+
+    end
  
-    f[data.ipsi] = f[data.ipsi] - params.chargeNumbers[1] * ( params.bDoping[1, bnode.region] ) - params.chargeNumbers[2] * ( params.bDoping[2, bnode.region] )# subtract doping
-    f[data.ipsi] = f[data.ipsi] + params.chargeNumbers[1] * (params.bDensityOfStates[1, bnode.region] + paramsnodal.densityOfStates[1, bnode.index]) * data.F[1](etan) + params.chargeNumbers[2] * (params.bDensityOfStates[2, bnode.region] + paramsnodal.densityOfStates[2, bnode.index]) * data.F[2](etap) # add charge carrier
- 
-    f[data.ipsi] = - data.λ1 * 1 / α *  q * f[data.ipsi]
+    f[ipsi] = - data.λ1 * 1 / α *  q * f[ipsi]
 
     
     return f
 
 end
 
+##########################################################
+##########################################################
+
+"""
+$(TYPEDSIGNATURES)
+Master storage! function. This is the function which enters VoronoiFVM and hands over
+a storage term, if we consider transient problem.
+
+"""
+storageDiscontqF!(f, u, node, data) = storageDiscontqF!(f, u, node, data, data.model_type)
+
+storageDiscontqF!(f, u, node, data, ::Type{model_stationary})  = emptyFunction()
+
+
+"""
+$(TYPEDSIGNATURES)
+
+The storage term for time-dependent problems.
+Currently, for the time-dependent current densities the implicit Euler scheme is used.
+Hence, we have 
+
+``f[n_\\alpha] =  z_\\alpha  q ∂_t n_\\alpha`` 
+
+and for the electrostatic potential
+``f[ψ] = 0``.
+
+"""
+function storageDiscontqF!(f, u, node, data, ::Type{model_transient})
+
+    ipsi        = data.speciesQuantities[end]
+    params      = data.params
+    paramsnodal = data.paramsnodal
+
+    for icc in data.speciesQuantities[1:end-1]
+        eta     = params.chargeNumbers[icc.id] / params.UT * ( (u[icc] - u[ipsi]) + params.bandEdgeEnergy[icc.id, node.region] / q )
+        f[icc]  = q * params.chargeNumbers[icc.id] * (params.densityOfStates[icc.id, node.region] + paramsnodal.densityOfStates[icc.id, node.index]) * data.F[icc.id](eta)
+
+    end
+
+    f[ipsi] = 0.0
+    
+    return f
+end

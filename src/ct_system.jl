@@ -302,6 +302,10 @@ mutable struct ChargeTransportData
     """
     bulk_recombination_model     ::  DataType  
 
+    """
+    An AbstractVector which contains information on the regions, where ion vacancies are present.
+    """
+    enable_ion_vacancies         :: AbstractVector
 
     ###############################################################
     ####                 Numerics information                  ####
@@ -346,11 +350,7 @@ mutable struct ChargeTransportData
     ####        Quantities (for discontinuous solving)         ####
     ###############################################################
     
-    iphin                        :: VoronoiFVM.AbstractQuantity
-
-    iphip                        :: VoronoiFVM.AbstractQuantity
-
-    ipsi                         :: VoronoiFVM.AbstractQuantity
+    speciesQuantities            :: Array{VoronoiFVM.AbstractQuantity, 1}
 
 
     ###############################################################
@@ -538,6 +538,7 @@ including the physical parameters are located.
 function ChargeTransportData(grid, numberOfCarriers)
 
     numberOfBoundaryRegions = grid[NumBFaceRegions]
+    numberOfRegions         = grid[NumCellRegions]
 
     ###############################################################
     data = ChargeTransportData()
@@ -545,7 +546,6 @@ function ChargeTransportData(grid, numberOfCarriers)
     ###############################################################
     ####                   model information                   ####
     ###############################################################
-    #data.indexSet  = set_indices(grid, numberOfCarriers, interface_model_none) # without interface model 
 
     data.F                        = fill!(similar(Array{Function,1}(undef, numberOfCarriers),Function), Boltzmann)
     data.boundary_type            = Array{DataType,1}(undef, numberOfBoundaryRegions)
@@ -555,6 +555,7 @@ function ChargeTransportData(grid, numberOfCarriers)
         data.boundary_type[ii] = ohmic_contact
     end
 
+    data.enable_ion_vacancies    = [1:numberOfRegions]
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
@@ -566,11 +567,12 @@ function ChargeTransportData(grid, numberOfCarriers)
     data.λ2                       = 0.0                     # λ2: embedding parameter for G
     data.λ3                       = 0.0                     # λ3: embedding parameter for electro chemical reaction
 
-    data.iphin                    = ContinuousQuantity(1)
+    data.speciesQuantities        = Array{VoronoiFVM.AbstractQuantity,1}(undef, numberOfCarriers + 1)
 
-    data.iphip                    = ContinuousQuantity(2)
+    for ii in 1:numberOfCarriers + 1
+        data.speciesQuantities[ii] = ContinuousQuantity(ii, ii)
+    end
 
-    data.ipsi                     = ContinuousQuantity(3)
     ###############################################################
     ####          Physical parameters as own structs           ####
     ###############################################################
@@ -668,18 +670,21 @@ end
 
 function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_surface_recombination})
 
+    electricCarriers = ctsys.data.speciesQuantities[1:2]
     if ibreg == 1
-        ctsys.fvmsys.boundary_factors[ctsys.data.iphin.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
-        ctsys.fvmsys.boundary_factors[ctsys.data.iphip.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
 
-        ctsys.fvmsys.boundary_values[ ctsys.data.iphin.regionspec[ibreg], ibreg] = contact_val
-        ctsys.fvmsys.boundary_values[ ctsys.data.iphip.regionspec[ibreg], ibreg] = contact_val
+        for icc in electricCarriers
+            ctsys.fvmsys.boundary_factors[icc.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
+            ctsys.fvmsys.boundary_values[ icc.regionspec[ibreg], ibreg] = contact_val
+        end
+        
     else
-        ctsys.fvmsys.boundary_factors[ctsys.data.iphin.regionspec[ctsys.data.params.numberOfRegions], ibreg] = VoronoiFVM.Dirichlet
-        ctsys.fvmsys.boundary_factors[ctsys.data.iphip.regionspec[ctsys.data.params.numberOfRegions], ibreg] = VoronoiFVM.Dirichlet
 
-        ctsys.fvmsys.boundary_values[ ctsys.data.iphin.regionspec[ctsys.data.params.numberOfRegions], ibreg] = contact_val
-        ctsys.fvmsys.boundary_values[ ctsys.data.iphip.regionspec[ctsys.data.params.numberOfRegions], ibreg] = contact_val
+        for icc in electricCarriers
+            ctsys.fvmsys.boundary_factors[icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] = VoronoiFVM.Dirichlet
+            ctsys.fvmsys.boundary_values[ icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] = contact_val
+        end
+
     end
 
 end
