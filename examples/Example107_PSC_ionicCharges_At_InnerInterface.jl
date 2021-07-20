@@ -220,7 +220,8 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     interface_reaction  = interface_model_ion_charge
 
     # set the correct indices for each species (this is needed for giving the user the correct index set)
-    # but likewise it is possible to define one owns index set, i.e. iphin, iphin, iphia, iphiaj1, iphiaj2, ipsi = 1:6
+    # but likewise it is possible to define one owns index set, i.e. iphin, iphin, iphia, iphiaj1, iphiaj2 = 1:5
+    # CAUTION: this will be changed in future versions.
     indexSet            = set_indices!(grid, numberOfBulkCarriers, interface_reaction)
 
     iphin                     = indexSet["iphin"]
@@ -228,7 +229,6 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     iphia                     = indexSet["iphia"]
     iphiaj1                   = indexSet["iphiaJunction"][1]
     iphiaj2                   = indexSet["iphiaJunction"][2]
-    ipsi                      = indexSet["ipsi" ]
     numberOfInterfaceCarriers = length( indexSet["iphiaJunction"] )
 
     # this needs to be done because interface charges are likewise charges, i.e. numberOfCarriers = bulkspecies + interface species
@@ -395,8 +395,6 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     set_ohmic_contact!(ctsys, iphin, bregionDonor, 0.0)
     set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
 
-    println(iphiaj1)
-    println(ipsi)
     # enable interface species (this will be put in core of package in future versions; for now need to be stated here)
     enable_boundary_species!(ctsys, iphiaj1, [bregionJunction1])
     enable_boundary_species!(ctsys, iphiaj2, [bregionJunction2])
@@ -463,19 +461,14 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     control.tol_relative          = 1.0e-9
     control.tol_round             = 1.0e-9
 
-    # there are different way to control timestepping
-    # Here we assume these primary data
-    scanrate                     = 0.04 * V/s
-    ntsteps                      = 41
-    vend                         = voltageAcceptor
-    v0                           = 0.0
-
-    # The end time then is calculated here:
-    tend                         = vend/scanrate
-
+    # primary data for I-V scan protocol
+    scanrate                      = 0.04 * V/s
+    number_tsteps                 = 41
+    endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    
     # with fixed timestep sizes we can calculate the times
     # a priori
-    tvalues                      = range(0, stop = tend, length = ntsteps)
+    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
 
     # this is needed for turning electrochemical reaction on.
     # Caution: We need such lot small steps, otherwise storage term cannot be properly embedded
@@ -483,9 +476,9 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     I                           = collect(length(tvalues):-1:0.0)
     LAMBDA                      = 10 .^ (-I) 
 
-    for istep = 2:ntsteps
-        t                   = tvalues[istep] # Actual time
-        Δu                  = v0 + t*scanrate # Applied voltage 
+    for istep = 2:number_tsteps
+        t                   = tvalues[istep]       # Actual time
+        Δu                  = t * scanrate         # Applied voltage 
         Δt                  = t - tvalues[istep-1] # Time step size
     
         # Apply new voltage
@@ -518,16 +511,17 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     # if we want to adjuts number of points for the reverse scan protocol
-    ntsteps                 = 36
-    tvalues                 = range(0, stop = tend, length = ntsteps)
+    number_tsteps           = 36
+    tvalues                 = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
 
+    # for saving I-V data
     IVReverse               = zeros(0) # for IV values
     biasValuesReverse       = zeros(0) # for bias values
 
-    for istep = ntsteps:-1:2
+    for istep = number_tsteps:-1:2
 
-        t                     = tvalues[istep] # Actual time
-        Δu                    = v0 + t*scanrate # Applied voltage 
+        t                     = tvalues[istep]       # Actual time
+        Δu                    = t * scanrate         # Applied voltage 
         Δt                    = t - tvalues[istep-1] # Time step size
 
         # Apply new voltage
@@ -540,14 +534,10 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
 
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
-        # get IV curve
-        factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+        # get I-V data
+        current = get_current_val(ctsys, solution, initialGuess, Δt)
 
-        # testfunction zero in bregionAcceptor and one in bregionDonor
-        tf1     = testfunction(factory, [bregionDonor], [bregionAcceptor])
-        I1      = integrate(ctsys.fvmsys, tf1, solution, initialGuess, Δt)
-
-        push!(IVReverse, (I1[ipsi] + I1[iphin] + I1[iphip] + I1[iphia]) )
+        push!(IVReverse, current )
         push!(biasValuesReverse, Δu)
 
         initialGuess .= solution
@@ -563,17 +553,18 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    # if we want to adjuts number of points for the forward scan protocol
-    ntsteps                   = 31
-    tvalues                   = range(0, stop = tend, length = ntsteps)
+    # if we want to adjuts number of points for the reverse scan protocol
+    number_tsteps             = 31
+    tvalues                   = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
 
+    # for saving I-V data
     IVForward                 = zeros(0) # for IV values
     biasValuesForward         = zeros(0) # for bias values
 
-    for istep = 2:ntsteps
+    for istep = 2:number_tsteps
     
-        t                     = tvalues[istep] # Actual time
-        Δu                    = v0 + t*scanrate # Applied voltage 
+        t                     = tvalues[istep]       # Actual time
+        Δu                    = t * scanrate         # Applied voltage 
         Δt                    = t - tvalues[istep-1] # Time step size
     
         # Apply new voltage
@@ -588,14 +579,10 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
         # from last timestep
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
-        # get IV curve
-        factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
-
-        # testfunction zero in bregionAcceptor and one in bregionDonor
-        tf1     = testfunction(factory, [bregionDonor], [bregionAcceptor])
-        I1      = integrate(ctsys.fvmsys, tf1, solution, initialGuess, Δt)
+        # get I-V data
+        current = get_current_val(ctsys, solution, initialGuess, Δt)
  
-        push!(IVForward, (I1[ipsi] + I1[iphin] + I1[iphip] + I1[iphia]) )
+        push!(IVForward, current)
         push!(biasValuesForward, Δu)
         
         initialGuess .= solution
@@ -611,10 +598,10 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
 
     if plotting
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "\$ \\Delta u = $(biasValuesForward[end])\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$")
+        plot_densities(Plotter, grid, data, solution, "\$ \\Delta u = $(endVoltage)\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$")
         ################
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "\$ \\Delta u = $(biasValuesForward[end])\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$")
+        plot_solution(Plotter, grid, data, solution, "\$ \\Delta u = $(endVoltage)\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$")
         ################
         Plotter.figure()
         Plotter.plot(biasValuesForward, IVForward.*(cm^2), label = "\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (with internal BC)",  linewidth= 3, linestyle="--", color="red")
@@ -624,7 +611,7 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
         Plotter.ylabel("current density [A \$ cm^{-2}\$ ]")         
     end
 
-    testval = solution[ipsi, 69]
+    testval = solution[6, 69] # ipsi is last index
     return testval
 
 end #  main

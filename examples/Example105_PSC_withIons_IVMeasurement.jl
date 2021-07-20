@@ -216,13 +216,12 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     interface_reaction  = interface_model_none
 
     # set the correct indices for each species (this is needed for giving the user the correct index set)
-    # but likewise it is possible to define one owns index set, i.e. iphin, iphin, iphia, ipsi = 1:4
+    # but likewise it is possible to define one owns index set, i.e. iphin, iphin, iphia = 1:3
     indexSet            = set_indices!(grid, numberOfCarriers, interface_reaction)
 
     iphin               = indexSet["iphin"]
     iphip               = indexSet["iphip"]
     iphia               = indexSet["iphia"]
-    ipsi                = indexSet["ipsi" ]
 
     if test == false
         println("*** done\n")
@@ -429,26 +428,24 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     control.damp_growth           = 1.61 # >= 1
     control.max_round             = 7
  
-    # there are different way to control timestepping
-    # Here we assume these primary data
+    # primary data for I-V scan protocol
     scanrate                      = 1.0 * V/s
-    ntsteps                       = 31
-    vend                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    v0                            = 0.0
-    IV                            = zeros(0) # for IV values
-    biasValues                    = zeros(0) # for bias values
-
-    # The end time then is calculated here:
-    tend                          = vend/scanrate
+    number_tsteps                 = 31
+    endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
 
     # with fixed timestep sizes we can calculate the times
     # a priori
-    tvalues                       = range(0, stop = tend, length = ntsteps)
+    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
 
-    for istep = 2:ntsteps
+    # for saving I-V data
+    IV                            = zeros(0) # for IV values
+    biasValues                    = zeros(0) # for bias values
+    
+
+    for istep = 2:number_tsteps
         
-        t                     = tvalues[istep] # Actual time
-        Δu                    = v0 + t*scanrate # Applied voltage 
+        t                     = tvalues[istep]       # Actual time
+        Δu                    = t * scanrate         # Applied voltage 
         Δt                    = t - tvalues[istep-1] # Time step size
         
         # Apply new voltage
@@ -464,16 +461,10 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         # from last timestep
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
         
-        # get IV curve
-        factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+        # get I-V data
+        current = get_current_val(ctsys, solution, initialGuess, Δt)
 
-        # testfunction zero in bregionAcceptor and one in bregionDonor
-        tf     = testfunction(factory, [bregionDonor], [bregionAcceptor])
-        I      = integrate(ctsys.fvmsys, tf, solution, initialGuess, Δt)
-
-        current = I[ipsi] + I[iphin] + I[iphip] + I[iphia]
-
-        push!(IV,  current)
+        push!(IV, current)
         push!(biasValues, Δu)
 
         initialGuess .= solution
@@ -488,14 +479,14 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     #res = [biasValues IV];
 
     if plotting 
-        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(v0+vend); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(v0+vend); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(v0+vend); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
     end
 
-    testval = solution[ipsi, 15]
+    testval = solution[4, 15] # ipsi has index 4. here a solution val of ipsi is used as test val.
     return testval
     
     println("*** done\n")

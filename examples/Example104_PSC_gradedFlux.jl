@@ -256,12 +256,11 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     interface_reaction = interface_model_none
 
     # set the correct indices for each species (this is needed for giving the user the correct index set)
-    # but likewise it is possible to define one owns index set, i.e. iphin, iphin, iphip = 1:3
+    # but likewise it is possible to define one owns index set, i.e. iphin, iphip = 1:2
     indexSet         = set_indices!(grid, numberOfCarriers, interface_reaction)
 
     iphin           = indexSet["iphin"]
     iphip           = indexSet["iphip"]
-    ipsi            = indexSet["ipsi" ]
 
     if test == false
         println("*** done\n")
@@ -493,7 +492,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
         println("*** done\n")
     end
 
-    testval = solution[ipsi, 20]
+    testval = solution[3, 20] # the 3 corresponds to the index of ipsi
     return testval
 
 end #  main

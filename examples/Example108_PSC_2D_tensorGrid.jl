@@ -450,27 +450,23 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
     ctsys.data.calculation_type  = outOfEquilibrium
 
-    # there are different way to control timestepping
-    # Here we assume these primary data
-    scanrate                     = 0.04 * V/s
-    ntsteps                      = 41
-    vend                         = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    v0                           = 0.0
-
-    # The end time then is calculated here:
-    tend                         = vend/scanrate
-
+    # primary data for I-V scan protocol
+    scanrate                      = 0.04 * V/s
+    number_tsteps                 = 41
+    endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    
     # with fixed timestep sizes we can calculate the times
     # a priori
-    tvalues                      = range(0, stop = tend, length = ntsteps)
+    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
 
+    # for saving I-V data
     IV                           = zeros(0) # for IV values
     biasValues                   = zeros(0) # for bias values
 
-    for istep = 2:length(tvalues)
+    for istep = 2:number_tsteps
         
-        t                     = tvalues[istep] # Actual time
-        Δu                    = v0 + t*scanrate # Applied voltage 
+        t                     = tvalues[istep]       # Actual time
+        Δu                    = t * scanrate         # Applied voltage 
         Δt                    = t - tvalues[istep-1] # Time step size
         
         # Apply new voltage
@@ -486,16 +482,10 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         # from last timestep
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
-        # get IV curve
-        factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+        # get I-V data
+        current = get_current_val(ctsys, solution, initialGuess, Δt)
 
-        # testfunction zero in bregionAcceptor and one in bregionDonor
-        tf1     = testfunction(factory, [bregionDonor], [bregionAcceptor])
-        I1      = integrate(ctsys.fvmsys, tf1, solution, initialGuess, Δt)
-
-        currentI1 = (I1[ipsi] + I1[iphin] + I1[iphip] + I1[iphia] )
-
-        push!(IV,  currentI1 )
+        push!(IV, current)
         push!(biasValues, Δu)
 
         initialGuess .= solution
