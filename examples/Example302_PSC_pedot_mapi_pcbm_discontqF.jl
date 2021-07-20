@@ -32,13 +32,13 @@ function plot_solution(Plotter, ctsys, solution)
 
     phin_sol = VoronoiFVM.views(solution, ctsys.data.speciesQuantities[1], subgrids, ctsys.fvmsys)
     phip_sol = VoronoiFVM.views(solution, ctsys.data.speciesQuantities[2], subgrids, ctsys.fvmsys)
-    phia_sol = VoronoiFVM.views(solution, ctsys.data.speciesQuantities[3],  subgrids, ctsys.fvmsys)
+    phia_sol = VoronoiFVM.views(solution, ctsys.data.speciesQuantities[3], subgrids, ctsys.fvmsys)
     psi_sol  = VoronoiFVM.views(solution, ctsys.data.speciesQuantities[4],  subgrids, ctsys.fvmsys)
 
     vis      = GridVisualizer(resolution=(600,300), Plotter=Plotter)
 
+    scalarplot!(vis, subgrids[2], phia_sol[2], clear=false, label = "\$ \\varphi_a \$", color=:yellow, linewidth = 3)
     for i = 1:length(phin_sol)
-        scalarplot!(vis, subgrids[i], phia_sol[i], clear=false, label = "\$ \\varphi_a \$", color=:yellow, linewidth = 3)
         scalarplot!(vis, subgrids[i], phin_sol[i], clear=false, label = "\$ \\varphi_n \$", color=:green, linewidth = 4)
         scalarplot!(vis, subgrids[i], phip_sol[i], clear=false, label = "\$ \\varphi_p \$",  color=:red, linewidth = 4)
         scalarplot!(vis, subgrids[i], psi_sol[i], flimits=(0.0, 1.6), clear=false, label = "\$ \\psi \$", color=:blue, linewidth = 4)
@@ -174,8 +174,8 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     Nv_i                = 1.0e19                / (cm^3)
 
     ###################### adjust Na, Ea here #####################
-    Nanion              = 1.0e18                / (cm^3)
-    Ea_i                = -4.4                  *  eV 
+    Nanion              = 1.21e22               / (cm^3)
+    Ea_i                = -5.175                *  eV 
     # for the labels in the figures
     textEa              = Ea_i                 ./  eV
     textNa              = Nanion               .* (cm^3)
@@ -214,7 +214,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     ε                   = [ε_a, ε_i, ε_d] 
 
     # recombination model
-    bulk_recombination  = bulk_recombination_none 
+    bulk_recombination  = bulk_recombination_full
 
     # radiative recombination
     r0_a                = 6.3e-11               * cm^3 / s 
@@ -246,8 +246,8 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     Auger               = 0.0
 
     # doping
-    Nd                  =   2.08964913019212e17 / (cm^3) 
-    Na                  =   4.52958794718544e18 / (cm^3) 
+    Nd                  =   2.089649130192123e17 / (cm^3) 
+    Na                  =   4.529587947185444e18 / (cm^3) 
     C0                  =   1.0e18              / (cm^3) 
 
     # contact voltages: we impose an applied voltage only on one boundary.
@@ -468,7 +468,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     # there are different way to control timestepping
     # Here we assume these primary data
     scanrate                      = 0.04 * V/s
-    ntsteps                       = 16
+    ntsteps                       = 24
     vend                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     v0                            = 0.0
 
@@ -505,8 +505,8 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
             Plotter.xlabel("space [m]")
             Plotter.ylabel("potential [V]")
             ##########
-            sol = readdlm("jl-sol-Na-1p0e18-Ea-4p4-without-reco.dat")
-            
+            sol = readdlm("jl-sol-Na-1p21e22-Ea--5p175-with-reco.dat")
+
             Plotter.plot(sol[:, 1], sol[:, 2], linewidth = 3, linestyle= ":", color="black" )
             Plotter.plot(sol[:, 1], sol[:, 3], linewidth = 3, linestyle= ":", color="black" )
             Plotter.plot(sol[:, 1], sol[:, 4], linewidth = 3, linestyle= ":", color="black" )

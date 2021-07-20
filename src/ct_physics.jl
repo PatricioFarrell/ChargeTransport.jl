@@ -700,10 +700,10 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
 
 end
 
-recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recombination_none}) = 0.0
+recombination_kernel(data, ireg, iphin::Int64, iphip::Int64, n, p, ::Type{bulk_recombination_none}) = 0.0
 
 
-function recombination_kernel(data, ireg, iphin, iphip,  n, p, ::Type{bulk_recombination_radiative})
+function recombination_kernel(data, ireg, iphin::Int64, iphip::Int64,  n, p, ::Type{bulk_recombination_radiative})
 
     params = data.params
 
@@ -712,7 +712,7 @@ function recombination_kernel(data, ireg, iphin, iphip,  n, p, ::Type{bulk_recom
 end
 
 
-function recombination_kernel(data, ireg, iphin, iphip, n, p,::Type{bulk_recombination_trap_assisted})
+function recombination_kernel(data, ireg, iphin::Int64, iphip::Int64, n, p,::Type{bulk_recombination_trap_assisted})
 
     params = data.params
 
@@ -723,7 +723,7 @@ function recombination_kernel(data, ireg, iphin, iphip, n, p,::Type{bulk_recombi
 end
 
 
-function recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recombination_full})
+function recombination_kernel(data, ireg, iphin::Int64, iphip::Int64, n, p, ::Type{bulk_recombination_full})
 
     params = data.params
 

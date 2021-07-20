@@ -203,23 +203,17 @@ function breactionDiscontqF!(f, u, bnode, data, ::Type{interface_model_surface_r
         return emptyFunction()
 
     else
-    
-        params      = data.params
-    
-        for icc in data.speciesQuantities[1:end-1] # list of our charge carrier quantities
+        
+        for icc in data.speciesQuantities[1:2]
 
-            if typeof(icc)  == VoronoiFVM.DiscontinuousQuantity{Int32}
+            # adjust this value, if you want to see the discontinuity
+            d         = 1.0e5
+            react     = d * (u[icc, 1] - u[icc, 2])
 
-                # adjust this value, if you want to see the discontinuity
-                d         = 1.0e-11
-                react     = d * (u[icc, 1] - u[icc, 2])
-
-                f[icc, 1] =   react
-                f[icc, 2] = - react
-            end
-            
-
+            f[icc, 1] =   react
+            f[icc, 2] = - react
         end
+
         ########    
        
 
@@ -229,9 +223,17 @@ function breactionDiscontqF!(f, u, bnode, data, ::Type{interface_model_surface_r
 end
 ##########################################################
 ##########################################################
+"""
+$(TYPEDSIGNATURES)
+Master reactionDiscontqF! function. This is the function which enters VoronoiFVM and hands over
+reaction terms for concrete calculation type and bulk recombination model.
 
-# without recombination!!!!
-function reactionDiscontqF!(f, u, node, data)
+"""
+reactionDiscontqF!(f, u, node, data) = reactionDiscontqF!(f, u, node, data, data.calculation_type)
+
+
+
+function reactionDiscontqF!(f, u, node, data, ::Type{inEquilibrium})
 
     ipsi        = data.speciesQuantities[end]
 
@@ -248,20 +250,100 @@ function reactionDiscontqF!(f, u, node, data)
     
     f[ipsi] = - data.λ1 * q * f[ipsi]
 
-
-    if data.calculation_type == inEquilibrium # these are for stability purposes
-        for icc in data.speciesQuantities[1:end-1]
-            f[icc] = u[icc] - 0.0
-        end
-    else
-        for icc in data.speciesQuantities[1:end-1]
-            f[icc] = 0.0
-        end
+    for icc in data.speciesQuantities[1:end-1]
+        f[icc] = u[icc] - 0.0
     end
 
     return f
 
 end
+
+
+recombination_kernel(data, ireg, iphin::VoronoiFVM.AbstractQuantity, iphip::VoronoiFVM.AbstractQuantity, n, p, ::Type{bulk_recombination_none}) = 0.0
+
+
+function recombination_kernel(data, ireg, iphin::VoronoiFVM.AbstractQuantity, iphip::VoronoiFVM.AbstractQuantity,  n, p, ::Type{bulk_recombination_radiative})
+
+    params = data.params
+
+    return params.recombinationRadiative[ireg]
+
+end
+
+
+function recombination_kernel(data, ireg, iphin::VoronoiFVM.AbstractQuantity, iphip::VoronoiFVM.AbstractQuantity, n, p,::Type{bulk_recombination_trap_assisted})
+
+    params = data.params
+
+    kernelSRH = 1.0 / (  params.recombinationSRHLifetime[iphip.id, ireg] * (n + params.recombinationSRHTrapDensity[iphin.id, ireg]) + params.recombinationSRHLifetime[iphin.id, ireg] * (p + params.recombinationSRHTrapDensity[iphip.id, ireg]) )
+
+    return kernelSRH
+
+end
+
+
+function recombination_kernel(data, ireg, iphin::VoronoiFVM.AbstractQuantity, iphip::VoronoiFVM.AbstractQuantity, n, p, ::Type{bulk_recombination_full})
+
+    params = data.params
+
+    # radiative recombination
+    kernelRadiative = recombination_kernel(data, ireg, iphin, iphip, n, p, bulk_recombination_radiative)
+
+    # SRH recombination
+    kernelSRH       = recombination_kernel(data, ireg, iphin, iphip, n, p, bulk_recombination_trap_assisted)
+
+    # Auger recombination
+    kernelAuger     = (params.recombinationAuger[iphin.id, ireg] * n + params.recombinationAuger[iphip.id, ireg] * p)
+
+
+    return kernelRadiative + kernelAuger + kernelSRH
+
+end
+
+
+# if using discontinuous Quantities, generation currently not tested!!!!
+function reactionDiscontqF!(f, u, node, data, ::Type{outOfEquilibrium})
+
+    ipsi        = data.speciesQuantities[end]
+
+    params      = data.params
+    paramsnodal = data.paramsnodal
+
+    for icc in data.speciesQuantities[1:end-1] # list of our quantities
+
+        eta     = params.chargeNumbers[icc.id] / params.UT * ( (u[icc] - u[ipsi]) + params.bandEdgeEnergy[icc.id, node.region] / q )
+
+        f[ipsi] = f[ipsi] - params.chargeNumbers[icc.id] * (params.doping[icc.id, node.region])  # subtract doping
+        f[ipsi] = f[ipsi] + params.chargeNumbers[icc.id] * params.densityOfStates[icc.id, node.region] * data.F[icc.id](eta) # add charge carrier
+    
+    end
+    
+    f[ipsi] = - data.λ1 * q * f[ipsi]
+
+    iphin = data.speciesQuantities[1]
+    iphip = data.speciesQuantities[2]
+
+    # rhs of continuity equations for electron and holes (bipolar reaction)
+    etan                  = params.chargeNumbers[iphin.id] / params.UT * ( (u[iphin] - u[ipsi]) + params.bandEdgeEnergy[iphin.id, node.region] / q )
+    etap                  = params.chargeNumbers[iphip.id] / params.UT * ( (u[iphip] - u[ipsi]) + params.bandEdgeEnergy[iphip.id, node.region] / q )
+    n                     = (params.densityOfStates[iphin.id, node.region] + paramsnodal.densityOfStates[iphin.id, node.index])* data.F[iphin.id](etan)
+    p                     = (params.densityOfStates[iphip.id, node.region] + paramsnodal.densityOfStates[iphip.id, node.index])* data.F[iphip.id](etap)
+    exponentialTerm       = exp((q *u[iphin] - q  * u[iphip]) / (kB * params.temperature))
+    excessCarrierDensTerm = n * p * (1.0 - exponentialTerm)
+
+    for icc in data.speciesQuantities[1:2]
+
+        # gives you the recombination kernel based on choice of user
+        kernel = recombination_kernel(data, node.region, iphin, iphip, n, p, data.bulk_recombination_model)
+            
+        f[icc]          = q * params.chargeNumbers[icc.id] *  kernel *  excessCarrierDensTerm 
+    end
+
+
+    return f
+
+end
+
 
 ##########################################################
 ##########################################################
