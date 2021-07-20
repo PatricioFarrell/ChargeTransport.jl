@@ -368,7 +368,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     data.params                                         = params
 
     # initialize new system!!! (here happens new stuff, see ct_system_quantities)
-    ctsys                                               = ChargeTransportSystem2(grid, data, unknown_storage=unknown_storage)
+    ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
 
     # print data
     if test == false
@@ -381,7 +381,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ################################################################################
     if test == false
-        println("Define outerior boundary conditions and enabled layers")
+        println("Define outerior boundary conditions")
     end
     ################################################################################
 

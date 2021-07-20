@@ -265,6 +265,10 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     data.boundary_type[bregionJunction1] = interface_model_ion_charge_left
     data.boundary_type[bregionJunction2] = interface_model_ion_charge_right
     data.boundary_type[bregionDonor]     = ohmic_contact   
+
+    # Following input quantity is needed to clarify in which regions ion vacancies are assumed to be present. In this application:
+    # ion vacancies only live in active perovskite layer
+    data.enable_ion_vacancies            = [regionIntrinsic]
     
     # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
     # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
@@ -379,7 +383,7 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
 
     ################################################################################
     if test == false
-        println("Define outerior boundary conditions and enabled layers")
+        println("Define outerior boundary conditions")
     end
     ################################################################################
 
@@ -391,14 +395,9 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     set_ohmic_contact!(ctsys, iphin, bregionDonor, 0.0)
     set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
 
-    # enable all three species in all regions
-    enable_species!(ctsys, ipsi,  regions)
-    enable_species!(ctsys, iphin, regions)
-    enable_species!(ctsys, iphip, regions)
-    enable_species!(ctsys, iphia, [regionIntrinsic]) # ions restricted to active layer
-
-
-    # enable interface species
+    println(iphiaj1)
+    println(ipsi)
+    # enable interface species (this will be put in core of package in future versions; for now need to be stated here)
     enable_boundary_species!(ctsys, iphiaj1, [bregionJunction1])
     enable_boundary_species!(ctsys, iphiaj2, [bregionJunction2])
     

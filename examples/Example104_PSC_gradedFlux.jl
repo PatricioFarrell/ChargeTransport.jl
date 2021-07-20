@@ -291,7 +291,11 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
     # (distinguish between left and right).
     data.boundary_type[bregionDonor]    = ohmic_contact  
-    data.boundary_type[bregionAcceptor] = ohmic_contact                       
+    data.boundary_type[bregionAcceptor] = ohmic_contact      
+    
+    # Following input quantity is needed to clarify in which regions ion vacancies are assumed to be present. In this application:
+    # ion vacancies only live in active perovskite layer
+    data.enable_ion_vacancies            = [regionIntrinsic]
      
     # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
     # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
@@ -384,7 +388,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
     if test == false
-        println("Define boundary conditions and enabled layers")
+        println("Define boundary conditions")
     end
     ################################################################################
 
@@ -395,11 +399,6 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
     set_ohmic_contact!(ctsys, iphin, bregionAcceptor, 0.0)
     set_ohmic_contact!(ctsys, iphip, bregionAcceptor, 0.0)
-
-    # enable all three species in all regions
-    enable_species!(ctsys, ipsi,  regions)
-    enable_species!(ctsys, iphin, regions)
-    enable_species!(ctsys, iphip, regions)
 
     if test == false
         println("*** done\n")

@@ -256,7 +256,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     ################################################################################
     if test == false
-        println("Define outerior boundary conditions and enabled layers")
+        println("Define outerior boundary conditions")
     end
     ################################################################################
 
@@ -267,11 +267,6 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     set_ohmic_contact!(ctsys, iphip, bregionAcceptor, 0.0)
     set_ohmic_contact!(ctsys, iphin, bregionDonor, 0.0)
     set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
-
-    # enable all three species in all regions
-    enable_species!(ctsys, ipsi,  regions)
-    enable_species!(ctsys, iphin, regions)
-    enable_species!(ctsys, iphip, regions)
 
     if test == false
         println("*** done\n")

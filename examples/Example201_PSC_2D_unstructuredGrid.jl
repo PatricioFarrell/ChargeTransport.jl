@@ -272,6 +272,10 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
     # (distinguish between left and right).
     data.boundary_type[bregionAcceptor] = ohmic_contact                       
     data.boundary_type[bregionDonor]    = ohmic_contact   
+
+    # Following input quantity is needed to clarify in which regions ion vacancies are assumed to be present. In this application:
+    # ion vacancies only live in active perovskite layer
+    data.enable_ion_vacancies            = [regionIntrinsic]
     
     # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
     # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
@@ -367,7 +371,7 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
     
     ################################################################################
     if test == false
-        println("Define outerior boundary conditions and enabled layers")
+        println("Define outerior boundary conditions")
     end
     ################################################################################
 
@@ -378,12 +382,6 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
     set_ohmic_contact!(ctsys, iphip, bregionAcceptor, 0.0)
     set_ohmic_contact!(ctsys, iphin, bregionDonor, 0.0)
     set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
-
-    # enable all three species in all regions
-    enable_species!(ctsys, ipsi,  regions)
-    enable_species!(ctsys, iphin, regions)
-    enable_species!(ctsys, iphip, regions)
-    enable_species!(ctsys, iphia, [regionIntrinsic]) # ions restricted to active layer
 
     if test == false
         println("*** done\n")

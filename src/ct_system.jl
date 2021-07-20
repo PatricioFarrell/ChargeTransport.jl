@@ -585,15 +585,37 @@ function ChargeTransportData(grid, numberOfCarriers)
 
 end
 
-"""
-$(TYPEDSIGNATURES)
+###########################################################
+###########################################################
 
-Simplified constructor for ChargeTransportSystem. This is the main
+"""
+$(SIGNATURES)
+
+System constructor which builds all necessary information needed based
+on the input parameters concerning additional interface models. This is the main
 struct in which all information is stored and with which the calculations
 are performed.
-    
+
 """
 function ChargeTransportSystem(grid, data ;unknown_storage)
+
+    ctsys                 = ChargeTransportSystem()
+
+    interface_model       = inner_interface_model(data)
+    # here at this point a quantity based solving is built or not
+    ctsys                 = build_system(grid, data, unknown_storage, interface_model)
+    
+    return ctsys
+
+end
+
+"""
+$(SIGNATURES)
+
+The core of the system constructor. Here, the system for no additional interface model is build.
+
+"""
+function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
 
     num_species  = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1
 
@@ -610,6 +632,16 @@ function ChargeTransportSystem(grid, data ;unknown_storage)
                                       )
 
     ctsys.fvmsys = VoronoiFVM.System(grid, physics, unknown_storage = unknown_storage)
+
+    for icc in 1:2
+        enable_species!(ctsys.fvmsys, icc, 1:data.params.numberOfRegions) # iphin, iphip defined on whole domain
+    end
+
+    for icc in 3:data.params.numberOfCarriers
+        enable_species!(ctsys.fvmsys, icc, data.enable_ion_vacancies) # ion vacancies only present in user defined layers
+    end
+
+    enable_species!(ctsys.fvmsys, data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1 , 1:data.params.numberOfRegions) # ipsi defined on whole domain
 
     # for detection of number of species. In following versions we can simply delete num_species from physics initialization. 
     VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species) 
@@ -635,8 +667,106 @@ function Base.show(io::IO, this::ChargeTransportParamsNodal)
         println(io,getfield(this,name))
     end
 end
+
 ###########################################################
 ###########################################################
+
+"""
+$(SIGNATURES)
+
+Method which determines with input parameters which inner interface model 
+was chosen by user.
+
+"""
+function inner_interface_model(data::ChargeTransportData)
+
+    countSurfaceReco = 0::Int64; countInterfaceCharge = 0::Int64
+
+    # detect which interface model the user chooses by counting
+    for ireg in 1:data.params.numberOfBoundaryRegions
+        
+        if     data.boundary_type[ireg] ==  interface_model_surface_recombination
+
+            countSurfaceReco = countSurfaceReco + 1
+
+        elseif data.boundary_type[ireg] == interface_model_ion_charge
+
+            countInterfaceCharge = countInterfaceCharge + 1
+
+        end
+
+    end
+
+     # build the system based on the input interface model
+     if     countSurfaceReco > 0 # build surface_recombination based system
+
+        return interface_model_surface_recombination
+
+    elseif countInterfaceCharge > 0 # build ion interface charge system 
+
+        # DA: currently for this case, since InterfaceQuantites is not well tested we stick with the no inferface case, i.e.
+        #     the known case how we build the system. Since we did not change anything, the code in 
+        #     Example107 works perfectly fine since the choice of species number is already set.
+        return interface_model_none
+
+    elseif countSurfaceReco + countInterfaceCharge == 0 # build system without further interface conditions
+
+        return interface_model_none
+
+    end
+
+end
+
+"""
+$(SIGNATURES)
+
+Method which determines with input parameters which inner interface model 
+was chosen by user.
+
+"""
+function inner_interface_model(ctsys::ChargeTransportSystem)
+
+
+    countSurfaceReco = 0::Int64; countInterfaceCharge = 0::Int64
+
+    # detect which interface model the user chooses by counting
+    for ireg in 1:ctsys.data.params.numberOfBoundaryRegions
+        
+        if     ctsys.data.boundary_type[ireg] ==  interface_model_surface_recombination
+
+            countSurfaceReco = countSurfaceReco + 1
+
+        elseif ctsys.data.boundary_type[ireg] == interface_model_ion_charge
+
+            countInterfaceCharge = countInterfaceCharge + 1
+
+        end
+
+    end
+
+     # build the system based on the input interface model
+     if     countSurfaceReco > 0 # build surface_recombination based system
+
+        return interface_model_surface_recombination
+
+    elseif countInterfaceCharge > 0 # build ion interface charge system 
+
+        # DA: currently for this case, since InterfaceQuantites is not well tested we stick with the no inferface case, i.e.
+        #     the known case how we build the system. Since we did not change anything, the code in 
+        #     Example107 works perfectly fine since the choice of species number is already set.
+        return interface_model_none
+
+    elseif countSurfaceReco + countInterfaceCharge == 0 # build system without further interface conditions
+
+        return interface_model_none
+
+    end
+
+end
+
+###########################################################
+###########################################################
+
 """
 $(TYPEDSIGNATURES)
 
