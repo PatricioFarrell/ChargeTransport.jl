@@ -18,7 +18,6 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 
 module Example302_PSC_pedot_mapi_pcbm_discontqF
 
-using Base: Char
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
