@@ -938,6 +938,57 @@ end
 ###########################################################
 ###########################################################
 """
+$(TYPEDEF)
+Abstract type for scan protocol type
+
+"""
+abstract type scan_protocol_type end
+
+
+"""
+$(TYPEDEF)
+Abstract type for linear scan protocol.
+
+"""
+abstract type linearScanProtocol <: scan_protocol_type end
+
+
+"""
+Gives the user a linear time mesh, this mesh is used for a linear I-V scan protocol.
+
+"""
+function set_time_mesh(scanrate, endVoltage, number_tsteps; type_protocol = linearScanProtocol)
+
+    tend                          = endVoltage/scanrate
+
+    return range(0, stop = tend, length = number_tsteps)
+end
+
+
+"""
+Calculates current. But caution, still need some small modification!
+
+"""
+function get_current_val(ctsys, U, Uold, Δt)
+
+    factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+
+    tf     = testfunction(factory, [1], [2]) # left outer boundary = 1; right outer boundary = 2 (caution with order)
+    I      = integrate(ctsys.fvmsys, tf, U, Uold, Δt)
+
+    current = 0.0
+    for icc in 1:ctsys.data.params.numberOfCarriers+1
+        current = current + I[icc]
+    end
+
+    # caution I[ipsi] not completly correct. In our examples, this does not effect something, but we need
+    # derivative here.
+    return current
+end
+###########################################################
+###########################################################
+
+"""
 
 $(TYPEDSIGNATURES)
 
