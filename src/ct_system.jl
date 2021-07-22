@@ -349,9 +349,26 @@ mutable struct ChargeTransportData
     ###############################################################
     ####        Quantities (for discontinuous solving)         ####
     ###############################################################
-    
-    speciesQuantities            :: Array{VoronoiFVM.AbstractQuantity, 1}
 
+    """
+    Array where the Discontinuous and ContinuousQuantities are stored
+    """
+    chargeCarrierQuantities      :: Array{VoronoiFVM.AbstractQuantity, 1}
+
+    ###############################################################
+    """
+    This list is for the loops within physics methods. Here, we can have a vector 
+    holding all abstract quantities or a vector holding an integer array.
+    """
+    chargeCarrierList            :: Union{Array{VoronoiFVM.AbstractQuantity,1}, Array{Int64, 1}}
+
+
+    """
+    This variable handles the index of the electric potential. Based on
+    user choice we have with this new type the opportunity to
+    simulate with Quantities or integer indices.
+    """
+    indexPsi                     :: Union{VoronoiFVM.AbstractQuantity, Int64}
 
     ###############################################################
     ####          Physical parameters as own structs           ####
@@ -567,11 +584,20 @@ function ChargeTransportData(grid, numberOfCarriers)
     data.λ2                       = 0.0                     # λ2: embedding parameter for G
     data.λ3                       = 0.0                     # λ3: embedding parameter for electro chemical reaction
 
-    data.speciesQuantities        = Array{VoronoiFVM.AbstractQuantity,1}(undef, numberOfCarriers + 1)
+    ###############################################################
+    ####        Quantities (for discontinuous solving)         ####
+    ###############################################################
+    data.chargeCarrierQuantities  = Array{VoronoiFVM.AbstractQuantity,1}(undef, numberOfCarriers)
 
-    for ii in 1:numberOfCarriers + 1
-        data.speciesQuantities[ii] = ContinuousQuantity(ii, ii)
+    for ii in 1:numberOfCarriers
+        data.chargeCarrierQuantities[ii] = ContinuousQuantity(ii, ii)
     end
+
+    ###############################################################
+    # default values for most simple case 
+    data.chargeCarrierList        = collect(1:numberOfCarriers)
+
+    data.indexPsi                 = numberOfCarriers + 1
 
     ###############################################################
     ####          Physical parameters as own structs           ####
@@ -617,11 +643,17 @@ The core of the system constructor. Here, the system for no additional interface
 """
 function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
 
-    num_species  = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1
+    num_species_sys        = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1
 
-    ctsys        = ChargeTransportSystem()
+    ctsys                  = ChargeTransportSystem()
 
-    ctsys.data   = data
+    # for the loops within physics methods we set the chargeCarrierList to normal indexing.
+    # DA: caution with the interface_model with ionic interface charges
+    data.chargeCarrierList = collect(1:data.params.numberOfCarriers)
+
+    data.indexPsi          = num_species_sys
+
+    ctsys.data             = data
     
     physics      = VoronoiFVM.Physics(data        = data,
                                       flux        = flux!,
@@ -644,11 +676,61 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
     enable_species!(ctsys.fvmsys, data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1 , 1:data.params.numberOfRegions) # ipsi defined on whole domain
 
     # for detection of number of species. In following versions we can simply delete num_species from physics initialization. 
-    VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species) 
+    VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species_sys) 
 
     return ctsys
 
 end
+
+"""
+$(SIGNATURES)
+
+The core of the new system constructor. Here, the system for additional
+surface recombination at inner interfaces is build.
+
+"""
+function build_system(grid, data, unknown_storage, ::Type{interface_model_surface_recombination})
+
+    ctsys        = ChargeTransportSystem()
+    fvmsys       = VoronoiFVM.System(grid, unknown_storage=unknown_storage)
+
+    data.chargeCarrierQuantities[1] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions; id = 1) # iphin
+    data.chargeCarrierQuantities[2] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions; id = 2) # iphip
+
+    for icc in 3:data.params.numberOfCarriers
+        data.chargeCarrierQuantities[icc] = ContinuousQuantity(fvmsys, data.enable_ion_vacancies; id = icc) # if ion vacancies are present
+    end
+
+    #data.chargeCarrierQuantities[data.params.numberOfCarriers+1] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)    # last quantitiy is psi
+
+    # for the loops within physics methods we set the chargeCarrierList to quantity indexing.
+    data.chargeCarrierList = data.chargeCarrierQuantities
+
+    data.indexPsi          = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions) 
+
+    physics    = VoronoiFVM.Physics(data        = data,
+                                    flux        = flux!,
+                                    reaction    = reaction!,
+                                    breaction   = breaction!,
+                                    storage     = storage!
+                                    ### DA: insert additionally bstorage
+                                    )
+
+    # add the defined physics to system
+    physics!(fvmsys, physics)
+
+    # numberOfSpecies within system changes since we consider discontinuous quasi Fermi potentials
+    data.params.numberOfSpeciesSystem = VoronoiFVM.num_species(fvmsys)
+
+    ctsys.fvmsys = fvmsys
+    ctsys.data   = data
+
+    return ctsys
+
+end
+
+###########################################################
+###########################################################
 
 function show_params(ctsys::ChargeTransportSystem)
 
@@ -800,7 +882,7 @@ end
 
 function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_surface_recombination})
 
-    electricCarriers = ctsys.data.speciesQuantities[1:2]
+    electricCarriers = ctsys.data.chargeCarrierQuantities[1:2]
     if ibreg == 1
 
         for icc in electricCarriers
@@ -995,7 +1077,7 @@ $(TYPEDSIGNATURES)
 For given potentials, compute corresponding densities.
 
 """
-function compute_densities!(u, data, node, region, icc::Int, ipsi::Int, in_region::Bool)
+function compute_densities!(u, data, node, region, icc, ipsi, in_region::Bool)
 
     params      = data.params
     paramsnodal = data.paramsnodal 

@@ -286,7 +286,7 @@ The argument of the distribution function
 
 for interior nodes.
 """
-function etaFunction(u, node::VoronoiFVM.Node, data, icc::Int64, ipsi::Int64)
+function etaFunction(u, node::VoronoiFVM.Node, data, icc, ipsi)
     params      = data.params
     paramsnodal = data.paramsnodal
 
@@ -304,7 +304,7 @@ The argument of the distribution function
 
 for boundary nodes.
 """
-function etaFunction(u, bnode::VoronoiFVM.BNode, data, icc::Int64, ipsi::Int64) # bnode.index refers to index in overall mesh
+function etaFunction(u, bnode::VoronoiFVM.BNode, data, icc, ipsi) # bnode.index refers to index in overall mesh
     params      = data.params
     paramsnodal = data.paramsnodal
 
@@ -324,14 +324,14 @@ The argument of the distribution function
 for edges.
 """
 
-function etaFunction(u, edge::VoronoiFVM.Edge, data, icc::Int64, ipsi::Int64, nodeEdge)
+function etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge; nodeside=1 )
 
     params      = data.params
     paramsnodal = data.paramsnodal
     
     E  = params.bandEdgeEnergy[icc, edge.region] + paramsnodal.bandEdgeEnergy[icc, nodeEdge]
 
-    return params.chargeNumbers[icc] / params.UT * ( (u[icc] - u[ipsi]) + E / q )
+    return params.chargeNumbers[icc] / params.UT * ( (u[icc, nodeside] - u[ipsi, nodeside]) + E / q )
 end
 
 
@@ -361,7 +361,7 @@ The argument of the distribution function
 
 for floats.
 """
-function etaFunction(u, data, node, region, icc::Int64, ipsi::Int64, in_region::Bool)
+function etaFunction(u, data, node, region, icc, ipsi, in_region::Bool)
 
     params      = data.params
     paramsnodal = data.paramsnodal
@@ -427,12 +427,12 @@ function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
     params      = data.params
     paramsnodal = data.paramsnodal 
 
-     # parameters
-     α          = 1.0e-10                      # tiny penalty value
-     ipsi       = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1  # final index for electrostatic potential
+    # parameters
+    α          = 1.0e-10        # tiny penalty value
+    ipsi       = data.indexPsi  # final index for electrostatic potential
  
- 
-    for icc = 1:params.numberOfCarriers
+
+    for icc ∈ data.chargeCarrierList # quantities or integer indices
  
         eta     = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
  
@@ -451,6 +451,93 @@ function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
 
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+breaction term for surface recombination. Surface recombination itself is not correctly implemented yet.
+Currently with this function only discontinuous quantities at inner interfaces are tested.
+"""
+
+function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombination})
+
+    ipsi = data.indexPsi
+
+    if data.calculation_type == inEquilibrium
+
+        return emptyFunction()
+
+    else
+        params      = data.params
+        paramsnodal = data.paramsnodal
+
+
+        # Ei_a                = -4.05                 * eV   
+        # Ei_i                = -4.60                 * eV   
+        # Ei_d                = -5.00                 * eV   
+    
+        # EI                  = [Ei_a, Ei_i, Ei_d]
+    
+        # recombinationVelocity    = [1.0e1 1.0e7;
+        #                             1.0e5 1.0e1]
+        # recombinationTrapDensity = 0.5.* [trap_density!(1, 1, data, EI[1]) + trap_density!(1, 2, data, EI[2])   trap_density!(1, 2, data, EI[2]) + trap_density!(1, 3, data, EI[3]);
+        # trap_density!(2, 1, data, EI[1]) + trap_density!(2, 2, data, EI[2])   trap_density!(2, 2, data, EI[2]) + trap_density!(2, 3, data, EI[3])]
+                                
+
+        # iphin = data.chargeCarrierQuantities[1]
+        # iphip = data.chargeCarrierQuantities[2]
+    
+        ####################### idea 2 (junctions.tex) ###########################
+        # for icc in data.chargeCarrierQuantities[1:2] # list of our charge carrier quantities
+
+        #     etan1  = params.chargeNumbers[iphin.id] / params.UT * ( (u[iphin, 1] - u[ipsi]) + params.bandEdgeEnergy[iphin.id, bnode.cellregions[1]] / q ) # left
+        #     etan2  = params.chargeNumbers[iphin.id] / params.UT * ( (u[iphin, 2] - u[ipsi]) + params.bandEdgeEnergy[iphin.id, bnode.cellregions[2]] / q ) # right
+
+        #     etap1  = params.chargeNumbers[iphip.id] / params.UT * ( (u[iphip, 1] - u[ipsi]) + params.bandEdgeEnergy[iphip.id, bnode.cellregions[1]] / q ) # left
+        #     etap2  = params.chargeNumbers[iphip.id] / params.UT * ( (u[iphip, 2] - u[ipsi]) + params.bandEdgeEnergy[iphip.id, bnode.cellregions[2]] / q ) # right
+
+        #     n1     = (params.densityOfStates[iphin.id, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphin.id, bnode.index])* data.F[iphin.id](etan1)
+        #     n2     = (params.densityOfStates[iphin.id, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphin.id, bnode.index])* data.F[iphin.id](etan2)
+
+        #     p1     = (params.densityOfStates[iphip.id, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphip.id, bnode.index])* data.F[iphip.id](etap1)
+        #     p2     = (params.densityOfStates[iphip.id, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphip.id, bnode.index])* data.F[iphip.id](etap2)
+            
+        #     average_n    = 0.5 * (n1 + n2)^(2/3)
+        #     average_p    = 0.5 * (p1 + p2)^(2/3)
+        #     average_phin = 0.5 * ( u[iphin, 1] - u[iphin, 2] )
+        #     average_phip = 0.5 * ( u[iphip, 1] - u[iphip, 2] )
+
+        #     exponentialTerm       = exp((q * average_phin - q  * average_phip ) / (kB * params.temperature))
+        #     excessCarrierDensTerm = average_n * average_p * (1.0 - exponentialTerm)
+
+
+        #     kernelSRH = 1.0 / (  1.0/recombinationVelocity[iphip.id, bnode.region-2] * (average_n + recombinationTrapDensity[iphin.id, bnode.region-2]) + 1.0/recombinationVelocity[iphin.id, bnode.region-2] * (average_p + recombinationTrapDensity[iphip.id, bnode.region-2]) )
+
+        #     react2     = q * params.chargeNumbers[icc.id] *  kernelSRH *  excessCarrierDensTerm 
+
+        #     f[icc, 1] =   react2
+        #     f[icc, 2] = - react2
+        #end
+
+        ####################### idea 2 (junctions.tex) ###########################
+
+        
+        for icc ∈ data.chargeCarrierList[1:2] # quantities or integer indices and only defined for iphin and iphip
+            # qF potentials 
+            d         = [1.0e1 1.0e3;
+                        1.0e7 1.0e1]
+            react     = d[icc.id, bnode.region-2] * (u[icc, 1] - u[icc, 2])
+
+            f[icc, 1] =   react
+            f[icc, 2] = - react
+        end
+
+        ########    
+       
+
+        return f
+    end
+
+end
 
 """
 $(TYPEDSIGNATURES)
@@ -605,11 +692,11 @@ function bstorage!(f, u, bnode, data, ::Type{interface_model_ion_charge_left})
 # But need to fix use of interface charges (done by indices)!
 
     params            = data.params
-    paramsnodal        = data.paramsnodal
+    paramsnodal       = data.paramsnodal
 
-    iphia             = 3
+    iphia             = data.chargeCarrierList[3]
     iphiaj1, iphiaj2  = 4:5
-    ipsi              = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1        # final index for electrostatic potential
+    ipsi              = data.indexPsi      # final index for electrostatic potential
 
     E1                = params.bBandEdgeEnergy[iphia, bnode.region]  + paramsnodal.bandEdgeEnergy[iphia, bnode.index]
     DOS1              = params.bDensityOfStates[iphia, bnode.region] + paramsnodal.densityOfStates[iphia, bnode.index]
@@ -676,12 +763,12 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
     paramsnodal = data.paramsnodal
 
     # indices
-    ipsi                  = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1            # final index for electrostatic potential
-    ireg                  = node.region
-    inode                 = node.index
+    ipsi        = data.indexPsi   # final index for electrostatic potential
+    ireg        = node.region
+    inode       = node.index
 
     # rhs of NLP (charge density)
-    for icc = 1:params.numberOfCarriers
+    for icc ∈ data.chargeCarrierList
         
         eta     = etaFunction(u, node, data, icc, ipsi) 
         f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, ireg] )   # subtract doping
@@ -692,7 +779,7 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
 
     f[ipsi]                     = - data.λ1 * q * f[ipsi]
 
-    for icc = 1:params.numberOfCarriers
+    for icc ∈ data.chargeCarrierList
         f[icc] = u[icc] - 0.0
     end
 
@@ -700,10 +787,10 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
 
 end
 
-recombination_kernel(data, ireg, iphin::Int64, iphip::Int64, n, p, ::Type{bulk_recombination_none}) = 0.0
+recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recombination_none}) = 0.0
 
 
-function recombination_kernel(data, ireg, iphin::Int64, iphip::Int64,  n, p, ::Type{bulk_recombination_radiative})
+function recombination_kernel(data, ireg, iphin, iphip,  n, p, ::Type{bulk_recombination_radiative})
 
     params = data.params
 
@@ -712,7 +799,7 @@ function recombination_kernel(data, ireg, iphin::Int64, iphip::Int64,  n, p, ::T
 end
 
 
-function recombination_kernel(data, ireg, iphin::Int64, iphip::Int64, n, p,::Type{bulk_recombination_trap_assisted})
+function recombination_kernel(data, ireg, iphin, iphip, n, p,::Type{bulk_recombination_trap_assisted})
 
     params = data.params
 
@@ -723,7 +810,7 @@ function recombination_kernel(data, ireg, iphin::Int64, iphip::Int64, n, p,::Typ
 end
 
 
-function recombination_kernel(data, ireg, iphin::Int64, iphip::Int64, n, p, ::Type{bulk_recombination_full})
+function recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recombination_full})
 
     params = data.params
 
@@ -768,14 +855,14 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     paramsnodal = data.paramsnodal
 
     # indices
-    iphin                 = 1
-    iphip                 = 2
-    ipsi                  = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1            # final index for electrostatic potential
+    iphin                 = data.chargeCarrierList[1]
+    iphip                 = data.chargeCarrierList[2]
+    ipsi                  = data.indexPsi           # final index for electrostatic potential
     ireg                  = node.region
     inode                 = node.index
 
     # rhs of NLP (charge density)
-    for icc = 1:params.numberOfCarriers
+    for icc ∈ data.chargeCarrierList
         
         eta     = etaFunction(u, node, data, icc, ipsi) 
         f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, node.region] )  # subtract doping
@@ -790,7 +877,7 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     exponentialTerm       = exp((q *u[iphin] - q  * u[iphip]) / (kB*params.temperature))
     excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
 
-    for icc in [iphin, iphip] 
+    for icc ∈ [iphin, iphip] 
 
         # gives you the recombination kernel based on choice of user
         kernel = recombination_kernel(data, ireg, iphin, iphip, n, p, data.bulk_recombination_model)
@@ -799,7 +886,7 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     end
 
     # vorsicht bei diesem part! hat auswirkungen auf tier 0
-    for icc in iphip+1:params.numberOfCarriers
+    for icc ∈ data.chargeCarrierList[3:end]
         f[icc]              = u[icc] - 0.0
     end
 
@@ -887,12 +974,13 @@ function storage!(f, u, node, data, ::Type{model_transient})
     params      = data.params
     paramsnodal = data.paramsnodal 
 
-    ipsi        = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
+    ipsi        = data.indexPsi
     
-    for icc = 1:params.numberOfCarriers
+    for icc ∈ data.chargeCarrierList
 
         eta    = etaFunction(u, node, data, icc, ipsi) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
         f[icc] = q * params.chargeNumbers[icc] * (params.densityOfStates[icc, node.region] + paramsnodal.densityOfStates[icc, node.index]) * data.F[icc](eta)
+
     end
 
     f[ipsi] =  0.0
@@ -916,17 +1004,14 @@ flux!(f, u, edge, data) = flux!(f, u, edge, data, data.calculation_type)
 function flux!(f, u, edge, data, ::Type{inEquilibrium})
 
     params      = data.params
-    paramsnodal  = data.paramsnodal
-
-    uk          = viewK(edge, u)
-    ul          = viewL(edge, u)
+    paramsnodal = data.paramsnodal
+    
+    ipsi        = data.indexPsi # integer index or Quantity
+    ireg        = edge.region
     nodel       = edge.node[2]
     nodek       = edge.node[1]
-    
-    ipsi        = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
-    ireg        = edge.region
 
-    dpsi        =   ul[ipsi] - uk[ipsi]
+    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
     f[ipsi]     = - (params.dielectricConstant[ireg] + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2) * ε0 * dpsi
     
 end
@@ -945,26 +1030,25 @@ not for space-dependent effective DOS.
 """
 function flux!(f, u, edge, data, ::Type{ScharfetterGummel})
 
-    params      = data.params
-    paramsnodal = data.paramsnodal
-
-    uk          = viewK(edge, u)
-    ul          = viewL(edge, u)
+    params      =   data.params
+    paramsnodal =   data.paramsnodal
     
-    ipsi        = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
-    ireg        = edge.region
-    nodel       = edge.node[2]
-    nodek       = edge.node[1]
+    ipsi        =   data.indexPsi
+    nodel       =   edge.node[2]
+    nodek       =   edge.node[1]
+    ireg        =   edge.region
     
-    dpsi        =   ul[ipsi] - uk[ipsi]
+    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
     f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
     
-    for icc = 1:params.numberOfCarriers
+    # k = 1 refers to left side, where as l = 2 refers to right side.
+    for icc ∈ data.chargeCarrierList
 
         j0                 =  params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT * params.densityOfStates[icc, ireg]
 
-        etak               = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge)
-        etal               = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge)
+        # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge, nodeside)
+        etak               = etaFunction(u, edge, data, icc, ipsi, nodek, nodeside = 1) 
+        etal               = etaFunction(u, edge, data, icc, ipsi, nodel, nodeside = 2)
 
         bandEdgeDifference = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
 
@@ -987,28 +1071,26 @@ the discretization scheme is modified. [insert continuous flux etc ...]
 """
 function flux!(f, u, edge, data, ::Type{ScharfetterGummel_Graded})
 
-    params      = data.params
-    paramsnodal = data.paramsnodal
-
-    uk          = viewK(edge, u)
-    ul          = viewL(edge, u)
+    params      =   data.params
+    paramsnodal =   data.paramsnodal
     
-    ipsi        = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
-    ireg        = edge.region
-    nodel       = edge.node[2]
-    nodek       = edge.node[1]
+    ipsi        =   data.indexPsi
+    nodel       =   edge.node[2]
+    nodek       =   edge.node[1]
+    ireg        =   edge.region
     
-    dpsi        = ul[ipsi] - uk[ipsi]
-    dpsiEps     = (params.dielectricConstant[ireg]  + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2) * dpsi
+    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
+    dpsiEps     =   (params.dielectricConstant[ireg]  + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2) * dpsi
     f[ipsi]     = - ε0 * dpsiEps
     
-    for icc = 1:params.numberOfCarriers
+    # k = 1 refers to left side, where as l = 2 refers to right side.
+    for icc ∈ data.chargeCarrierList
 
         j0                 =  params.chargeNumbers[icc] * q * params.UT
 
-        etak               = params.chargeNumbers[icc] / params.UT * ( (uk[icc] - uk[ipsi]) + (paramsnodal.bandEdgeEnergy[icc, nodek] + params.bandEdgeEnergy[icc, ireg]) / q )
-        etal               = params.chargeNumbers[icc] / params.UT * ( (ul[icc] - ul[ipsi]) + (paramsnodal.bandEdgeEnergy[icc, nodel] + params.bandEdgeEnergy[icc, ireg]) / q )
-
+        # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge, nodeside)
+        etak               = etaFunction(u, edge, data, icc, ipsi, nodek, nodeside = 1) 
+        etal               = etaFunction(u, edge, data, icc, ipsi, nodel, nodeside = 2) 
 
         bandEdgeDifference = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
         mobility           = params.mobility[icc, ireg] + (paramsnodal.mobility[icc, nodel] + paramsnodal.mobility[icc, nodek])/2
@@ -1021,7 +1103,7 @@ function flux!(f, u, edge, data, ::Type{ScharfetterGummel_Graded})
             bp, bm         = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDifference / q) / params.UT - (log(paramsnodal.densityOfStates[icc, nodel]) -log(paramsnodal.densityOfStates[icc, nodek])) ) 
         end
 
-        f[icc]             =  -j0  * mobility * ( bm  * densityOfStatesl * data.F[icc](etal) - bp *  densityOfStatesk * data.F[icc](etak) )
+        f[icc]             = - j0  * mobility * ( bm  * densityOfStatesl * data.F[icc](etal) - bp *  densityOfStatesk * data.F[icc](etak) )
 
     end
 
@@ -1039,27 +1121,26 @@ not for space-dependent effective DOS.
 """
 function flux!(f, u, edge, data, ::Type{excessChemicalPotential})
 
-    params      = data.params
-    paramsnodal = data.paramsnodal
+    params      =   data.params
+    paramsnodal =   data.paramsnodal
     
-    uk          = viewK(edge, u)
-    ul          = viewL(edge, u)
+    ipsi        =   data.indexPsi
+    nodel       =   edge.node[2]
+    nodek       =   edge.node[1]
+    ireg        =   edge.region
     
-    ipsi        = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
-    ireg        = edge.region
-    nodel       = edge.node[2]
-    nodek       = edge.node[1]
-    
-    dpsi        =   ul[ipsi] - uk[ipsi]
+    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
     f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
     
 
-    for icc = 1:params.numberOfCarriers
+    # k = 1 refers to left side, where as l = 2 refers to right side.
+    for icc ∈ data.chargeCarrierList
 
         j0                 = params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT * params.densityOfStates[icc, ireg]
 
-        etak               = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u, edge, data, icc, ipsi, nodeEdge)
-        etal               = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u, edge, data, icc, ipsi, nodeEdge)
+        # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge, nodeside)
+        etak               = etaFunction(u, edge, data, icc, ipsi, nodek, nodeside = 1) 
+        etal               = etaFunction(u, edge, data, icc, ipsi, nodel, nodeside = 2) 
 
         bandEdgeDifference = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
 
@@ -1084,27 +1165,27 @@ the discretization scheme is modified. [insert continuous flux etc ...]
 """
 function flux!(f, u, edge, data, ::Type{excessChemicalPotential_Graded})
 
-    params      = data.params
-    paramsnodal = data.paramsnodal
+    params      =   data.params
+    paramsnodal =   data.paramsnodal
 
-    uk          = viewK(edge, u)
-    ul          = viewL(edge, u)
+    ipsi        =   data.indexPsi
+    nodel       =   edge.node[2]
+    nodek       =   edge.node[1]
+    ireg        =   edge.region
     
-    ipsi        = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
-    ireg        = edge.region
-    nodel       = edge.node[2]
-    nodek       = edge.node[1]
-    
-    dpsi        = ul[ipsi] - uk[ipsi]
-    dpsiEps     = (params.dielectricConstant[ireg]  + paramsnodal.dielectricConstant[nodel]) * ul[ipsi] - (params.dielectricConstant[ireg] + paramsnodal.dielectricConstant[nodek]) * uk[ipsi]
+    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
+    dpsiEps     =   (params.dielectricConstant[ireg]  + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2) * dpsi
     f[ipsi]     = - ε0 * dpsiEps
     
     
-    for icc = 1:params.numberOfCarriers
+    # k = 1 refers to left side, where as l = 2 refers to right side.
+    for icc ∈ data.chargeCarrierList
 
         j0                 = params.chargeNumbers[icc] * q * params.UT
-        etak               = params.chargeNumbers[icc] / params.UT * ( (uk[icc] - uk[ipsi]) + (paramsnodal.bandEdgeEnergy[icc, nodek] + params.bandEdgeEnergy[icc, ireg]) / q )
-        etal               = params.chargeNumbers[icc] / params.UT * ( (ul[icc] - ul[ipsi]) + (paramsnodal.bandEdgeEnergy[icc, nodel] + params.bandEdgeEnergy[icc, ireg]) / q )
+ 
+        # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge, nodeside)
+        etak               = etaFunction(u, edge, data, icc, ipsi, nodek, nodeside = 1) 
+        etal               = etaFunction(u, edge, data, icc, ipsi, nodel, nodeside = 2) 
 
         bandEdgeDifference = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
         mobilityl          = (params.mobility[icc, ireg] + paramsnodal.mobility[icc, nodel])
@@ -1140,29 +1221,28 @@ not for space-dependent effective DOS.
 """
 function flux!(f, u, edge, data, ::Type{diffusionEnhanced})
 
-    params      = data.params
-    paramsnodal = data.paramsnodal
+    params      =   data.params
+    paramsnodal =   data.paramsnodal
 
-    tolReg      = 1.0e-13
+    tolReg      =   1.0e-13
     
-    uk          = viewK(edge, u)
-    ul          = viewL(edge, u)
+    ipsi        =   data.indexPsi
+    nodel       =   edge.node[2]
+    nodek       =   edge.node[1]
+    ireg        =   edge.region
     
-    ipsi        = params.numberOfCarriers + params.numberOfInterfaceCarriers  + 1
-    ireg        = edge.region
-    nodel       = edge.node[2]
-    nodek       = edge.node[1]
-    
-    dpsi        =   ul[ipsi] - uk[ipsi]
+    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
     f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
     
     
-    for icc = 1:params.numberOfCarriers
+    # k = 1 refers to left side, where as l = 2 refers to right side.
+    for icc ∈ data.chargeCarrierList
 
         j0                 = params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT * params.densityOfStates[icc, ireg]
 
-        etak               = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
-        etal               = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
+        # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge, nodeside)
+        etak               = etaFunction(u, edge, data, icc, ipsi, nodek, nodeside = 1) 
+        etal               = etaFunction(u, edge, data, icc, ipsi, nodel, nodeside = 2)
 
         if abs( (etal - etak)/(etak + etal) ) > tolReg
             g  = (etal - etak ) / ( log(data.F[icc](etal)) - log(data.F[icc](etak)) )
@@ -1195,31 +1275,30 @@ not for space-dependent effective DOS.
 """
 function flux!(f, u, edge, data, ::Type{generalized_SG})
 
-    params        = data.params
-    paramsnodal   = data.paramsnodal
+    params        =   data.params
+    paramsnodal   =   data.paramsnodal
 
-    max_iteration = 200          # for Newton solver
-    it            = 0            # number of iterations (newton)
-    damp          = 0.1          # damping factor
+    max_iteration =   200          # for Newton solver
+    it            =   0            # number of iterations (newton)
+    damp          =   0.1          # damping factor
     
-    uk            = viewK(edge, u)
-    ul            = viewL(edge, u)
-    nodel         = edge.node[2]
-    nodek         = edge.node[1]
+    ipsi          =   data.indexPsi
+    nodel         =   edge.node[2]
+    nodek         =   edge.node[1]
+    ireg          =   edge.region
     
-    ipsi          = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
-    ireg          = edge.region
-    
-    dpsi          =    ul[ipsi] - uk[ipsi]
+    dpsi          =   u[ipsi, 2] - u[ipsi, 1]
     f[ipsi]       =  - params.dielectricConstant[ireg] * ε0 * dpsi
     
     
-    for icc = 1:params.numberOfCarriers 
+    # k = 1 refers to left side, where as l = 2 refers to right side.
+    for icc ∈ data.chargeCarrierList
 
         j0                  = params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT * params.densityOfStates[icc, ireg]
 
-        etak                = etaFunction(uk, edge, data, icc, ipsi, nodek) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
-        etal                = etaFunction(ul, edge, data, icc, ipsi, nodel) # calls etaFunction(u,edge::VoronoiFVM.Edge,data,icc,ipsi, nodeEdge)
+        # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge, nodeside)
+        etak               = etaFunction(u, edge, data, icc, ipsi, nodek, nodeside = 1) 
+        etal               = etaFunction(u, edge, data, icc, ipsi, nodel, nodeside = 2)
 
         bandEdgeDifference  = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
 

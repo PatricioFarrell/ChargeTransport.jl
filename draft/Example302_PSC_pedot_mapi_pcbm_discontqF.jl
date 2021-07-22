@@ -27,12 +27,12 @@ using PyPlot
 
 function plot_solution(Plotter, ctsys, solution)
 
-    subgrids = VoronoiFVM.subgrids(ctsys.data.speciesQuantities[1], ctsys.fvmsys)
+    subgrids = VoronoiFVM.subgrids(ctsys.data.chargeCarrierQuantities[1], ctsys.fvmsys)
 
-    phin_sol = VoronoiFVM.views(solution, ctsys.data.speciesQuantities[1], subgrids, ctsys.fvmsys)
-    phip_sol = VoronoiFVM.views(solution, ctsys.data.speciesQuantities[2], subgrids, ctsys.fvmsys)
-    phia_sol = VoronoiFVM.views(solution, ctsys.data.speciesQuantities[3], subgrids, ctsys.fvmsys)
-    psi_sol  = VoronoiFVM.views(solution, ctsys.data.speciesQuantities[4],  subgrids, ctsys.fvmsys)
+    phin_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierQuantities[1], subgrids, ctsys.fvmsys)
+    phip_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierQuantities[2], subgrids, ctsys.fvmsys)
+    phia_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierQuantities[3], subgrids, ctsys.fvmsys)
+    psi_sol  = VoronoiFVM.views(solution, ctsys.data.indexPsi,  subgrids, ctsys.fvmsys)
 
     vis      = GridVisualizer(resolution=(600,300), Plotter=Plotter)
 
@@ -537,14 +537,14 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     end
 
 
-    testval = solution[15]
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
 
 end #  main
 
 function test()
-    #testval=xxxx
+    testval = 97.57169773748385
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

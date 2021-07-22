@@ -18,10 +18,13 @@ include("ct_units.jl")
 export K, J, A, V, m, s, C, kg
 export cm, mm, μm, nm, ms, μs, ns, ps, eV
 
+##################################################################
 
 include("ct_distributions.jl")
 
 export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA
+
+##################################################################
 
 include("ct_physics.jl")
 
@@ -35,6 +38,8 @@ export ScharfetterGummel_Graded, excessChemicalPotential_Graded
 export generation_model, generation_none, generation_beer_lambert, generation_uniform
 export breaction!, bstorage!, reaction!, storage!, flux!
 
+##################################################################
+
 include("ct_system.jl")
 
 export ChargeTransportParams, ChargeTransportParamsNodal, ChargeTransportData, ChargeTransportSystem
@@ -44,17 +49,10 @@ export show_params, trap_density!
 export linearScanProtocol, scan_protocol_type, set_time_mesh, get_current_val
 
 ##################################################################
-include("ct_system_quantities.jl")
-
-export ChargeTransportSystem2, inner_interface_model
-##################################################################
 
 include("ct_plotting.jl")
 
 export plot_densities, plot_energies, plot_doping, plot_electroNeutralSolutionBoltzmann, plot_solution, plot_IV
-
-
-
 
 
 end # module
