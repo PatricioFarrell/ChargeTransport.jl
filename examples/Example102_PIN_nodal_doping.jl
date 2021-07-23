@@ -79,7 +79,7 @@ function main(;Plotter = nothing, plotting = false, verbose = false, test = fals
 
 
     # recombination model
-    bulk_recombination = bulk_recombination_trap_assisted
+    bulk_recombination = bulk_recomb_model_trap_assisted
 
     # recombination parameters
     SRH_TrapDensity_n = 4.760185435081902e5    / cm^3       
@@ -122,8 +122,13 @@ function main(;Plotter = nothing, plotting = false, verbose = false, test = fals
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    # Following choices are possible for recombination model: bulk_recombination_model_none, bulk_recombination_model_trap_assisted, bulk_recombination_radiative, bulk_recombination_full <: bulk_recombination_model 
-    data.bulk_recombination_model       = bulk_recombination
+    #Here the user can specify, if they assume continuous or discontinuous charge carriers. We note that for a surface recombination model,
+    # we encourage to use discontinuous electron and hole quasi Fermi potentials.
+    data.isContinuous[iphin]            = true
+    data.isContinuous[iphip]            = true
+
+    # Following choices are possible for recombination model: bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
+    data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge

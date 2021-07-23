@@ -95,7 +95,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
 
     # recombination model
-    bulk_recombination = bulk_recombination_full
+    bulk_recombination = bulk_recomb_model_full
 
     # recombination parameters
     Auger             = 1.0e-29   * cm^6 / s          # 1.0e-41
@@ -140,7 +140,6 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     # initialize ChargeTransportData instance and fill in data
     data                                = ChargeTransportData(grid, numberOfCarriers)
 
-
     #### declare here all necessary information concerning the model ###
 
     # Following variable declares, if we want to solve stationary or transient problem
@@ -149,8 +148,13 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    # Following choices are possible for recombination model: bulk_recombination_model_none, bulk_recombination_model_trap_assisted, bulk_recombination_radiative, bulk_recombination_full <: bulk_recombination_model 
-    data.bulk_recombination_model       = bulk_recombination
+    #Here the user can specify, if they assume continuous or discontinuous charge carriers. We note that for a surface recombination model,
+    # we encourage to use discontinuous electron and hole quasi Fermi potentials.
+    data.isContinuous[iphin]            = true
+    data.isContinuous[iphip]            = true
+
+    # Following choices are possible for recombination model: bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
+    data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge

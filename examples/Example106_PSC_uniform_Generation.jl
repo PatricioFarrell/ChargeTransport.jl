@@ -171,7 +171,7 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
     ε                   = [ε_a, ε_i, ε_d] 
 
     # recombination model
-    bulk_recombination  = bulk_recombination_full
+    bulk_recombination  = bulk_recomb_model_full
 
     # radiative recombination
     r0_a                = 6.3e-11               * cm^3 / s 
@@ -252,8 +252,15 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
-    # Following choices are possible for recombination model: bulk_recombination_model_none, bulk_recombination_model_trap_assisted, bulk_recombination_radiative, bulk_recombination_full <: bulk_recombination_model 
-    data.bulk_recombination_model       = bulk_recombination
+    # Here the user can specify, if they assume continuous or discontinuous charge carriers. We note that for a surface recombination model,
+    # we encourage to use discontinuous electron and hole quasi Fermi potentials.
+    data.isContinuous[iphin]            = true
+    data.isContinuous[iphip]            = true
+    data.isContinuous[iphia]            = true
+
+    # The input iphin, iphip refers to the indices set by the user.
+    # Following choices are possible for bulk_recombination_model: bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
+    data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
 
     # Following choices are possibile for generation: generation_none, generation_uniform, generation_beer_lambert. No generation is default; beer-lambert not properly tested yet.
     data.generation_model               = generation_model
@@ -264,9 +271,9 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
     data.boundary_type[bregionAcceptor] = ohmic_contact                       
     data.boundary_type[bregionDonor]    = ohmic_contact   
 
-    # Following input quantity is needed to clarify in which regions ion vacancies are assumed to be present. In this application:
-    # ion vacancies only live in active perovskite layer
-    data.enable_ion_vacancies            = [regionIntrinsic]
+    # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
+    # In this application ion vacancies only live in active perovskite layer
+    data.enable_ion_vacancies            = enable_ion_vacancies(ionic_vacancies = [iphia], regions = [regionIntrinsic])
     
     # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
     # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG

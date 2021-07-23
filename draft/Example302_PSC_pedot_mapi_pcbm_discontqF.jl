@@ -141,7 +141,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    # charge carriers 
+    # charge carriers (by construction the index length(chargeCarriers) +1 is automatically assigned to the electric potential)
     iphin               = 1
     iphip               = 2
     iphia               = 3
@@ -212,7 +212,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     ε                   = [ε_a, ε_i, ε_d] 
 
     # recombination model
-    bulk_recombination  = bulk_recombination_full
+    bulk_recombination  = bulk_recomb_model_full
 
     # radiative recombination
     r0_a                = 6.3e-11               * cm^3 / s 
@@ -274,8 +274,15 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
-    # Following choices are possible for recombination model: bulk_recombination_model_none, bulk_recombination_model_trap_assisted, bulk_recombination_radiative, bulk_recombination_full <: bulk_recombination_model 
-    data.bulk_recombination_model       = bulk_recombination
+    # Here the user can specify, if they assume continuous or discontinuous charge carriers. We note that for a surface recombination model,
+    # we encourage to use discontinuous electron and hole quasi Fermi potentials.
+    data.isContinuous[iphin]            = false
+    data.isContinuous[iphip]            = false
+    data.isContinuous[iphia]            = true
+
+    # The input iphin, iphip refers to the indices set by the user.
+    # Following choices are possible for bulk_recombination_model:bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
+    data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
@@ -285,9 +292,9 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     data.boundary_type[bregionJunction2] = interface_model_surface_recombination                      
     data.boundary_type[bregionDonor]     = ohmic_contact   
 
-    # Following input quantity is needed to clarify in which regions ion vacancies are assumed to be present. In this application:
-    # ion vacancies only live in active perovskite layer
-    data.enable_ion_vacancies            = [regionIntrinsic]
+    # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
+    # In this application ion vacancies only live in active perovskite layer
+    data.enable_ion_vacancies            = enable_ion_vacancies(ionic_vacancies = [iphia], regions = [regionIntrinsic])
     
     # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
     # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
@@ -544,7 +551,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
 end #  main
 
 function test()
-    testval = 97.57169773748385
+    testval = 97.57205176140376
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

@@ -159,7 +159,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     ε                  = [ε_d, ε_i, ε_a] 
 
     # recombination model
-    bulk_recombination = bulk_recombination_full
+    bulk_recombination = bulk_recomb_model_full
 
     # radiative recombination
     r0_d               = 0.0e+0               * cm^3 / s 
@@ -230,18 +230,19 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    # Following choices are possible for recombination model: bulk_recombination_model_none, bulk_recombination_model_trap_assisted, bulk_recombination_radiative, bulk_recombination_full <: bulk_recombination_model 
-    data.bulk_recombination_model       = bulk_recombination
+    # Here the user can specify, if they assume continuous or discontinuous charge carriers. We note that for a surface recombination model,
+    # we encourage to use discontinuous electron and hole quasi Fermi potentials.
+    data.isContinuous[iphin]            = true
+    data.isContinuous[iphip]            = true
+
+    # Following choices are possible for recombination model: bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
+    data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
     # (distinguish between left and right).
     data.boundary_type[bregionAcceptor] = ohmic_contact                       
     data.boundary_type[bregionDonor]    = ohmic_contact   
-
-    # Following input quantity is needed to clarify in which regions ion vacancies are assumed to be present. In this application:
-    # ion vacancies only live in active perovskite layer
-    data.enable_ion_vacancies            = [regionIntrinsic]
     
     # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
     # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
