@@ -31,7 +31,7 @@ include("ct_physics.jl")
 export boundary_model, ohmic_contact, schottky_contact
 export interface_model, interface_model_none, interface_model_surface_recombination, interface_model_ion_charge, interface_model_ion_charge_left, interface_model_ion_charge_right
 export model_type, model_transient, model_stationary
-export bulk_recombination_model, bulk_recombination_none, bulk_recombination_trap_assisted, bulk_recombination_radiative, bulk_recombination_full
+export bulk_recombination_model, bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_model_radiative, bulk_recomb_model_full
 export ScharfetterGummel, excessChemicalPotential, diffusionEnhanced, generalized_SG 
 export inEquilibrium, outOfEquilibrium
 export ScharfetterGummel_Graded, excessChemicalPotential_Graded
@@ -43,6 +43,7 @@ export breaction!, bstorage!, reaction!, storage!, flux!
 include("ct_system.jl")
 
 export ChargeTransportParams, ChargeTransportParamsNodal, ChargeTransportData, ChargeTransportSystem
+export ChargeTransportBulkRecombination, set_bulk_recombination, ChargeTransportIonicChargeCarriers, enable_ion_vacancies
 export equilibrium_solve!
 export set_ohmic_contact!, set_indices!, compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
 export show_params, trap_density!

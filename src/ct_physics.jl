@@ -91,7 +91,7 @@ $(TYPEDEF)
 Abstract type for no bulk recombination model.
 
 """
-abstract type bulk_recombination_none <: bulk_recombination_model end 
+abstract type bulk_recomb_model_none <: bulk_recombination_model end 
 
 
 """
@@ -100,7 +100,7 @@ Abstract type for trap assisted bulk recombination model, i.e.
 only Schockley-Read-Hall recombination is used.
 
 """
-abstract type bulk_recombination_trap_assisted <: bulk_recombination_model end
+abstract type bulk_recomb_model_trap_assisted <: bulk_recombination_model end
 
 
 """
@@ -108,7 +108,7 @@ $(TYPEDEF)
 Abstract type for only radiative recombination model.
 
 """
-abstract type bulk_recombination_radiative <: bulk_recombination_model end
+abstract type bulk_recomb_model_radiative <: bulk_recombination_model end
 
 
 """
@@ -117,7 +117,7 @@ Abstract type for full bulk recombination model.
 Currently, Schockley-Read-Hall, radiative and Auger are implemented.
 
 """
-abstract type bulk_recombination_full <: bulk_recombination_model end
+abstract type bulk_recomb_model_full <: bulk_recombination_model end
 
 ##########################################################
 ##########################################################
@@ -787,10 +787,10 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
 
 end
 
-recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recombination_none}) = 0.0
+recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recomb_model_none}) = 0.0
 
 
-function recombination_kernel(data, ireg, iphin, iphip,  n, p, ::Type{bulk_recombination_radiative})
+function recombination_kernel(data, ireg, iphin, iphip,  n, p, ::Type{bulk_recomb_model_radiative})
 
     params = data.params
 
@@ -799,7 +799,7 @@ function recombination_kernel(data, ireg, iphin, iphip,  n, p, ::Type{bulk_recom
 end
 
 
-function recombination_kernel(data, ireg, iphin, iphip, n, p,::Type{bulk_recombination_trap_assisted})
+function recombination_kernel(data, ireg, iphin, iphip, n, p,::Type{bulk_recomb_model_trap_assisted})
 
     params = data.params
 
@@ -810,15 +810,15 @@ function recombination_kernel(data, ireg, iphin, iphip, n, p,::Type{bulk_recombi
 end
 
 
-function recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recombination_full})
+function recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recomb_model_full})
 
     params = data.params
 
     # radiative recombination
-    kernelRadiative = recombination_kernel(data, ireg, iphin, iphip, n, p, bulk_recombination_radiative)
+    kernelRadiative = recombination_kernel(data, ireg, iphin, iphip, n, p, bulk_recomb_model_radiative)
 
     # SRH recombination
-    kernelSRH       = recombination_kernel(data, ireg, iphin, iphip, n, p, bulk_recombination_trap_assisted)
+    kernelSRH       = recombination_kernel(data, ireg, iphin, iphip, n, p, bulk_recomb_model_trap_assisted)
 
     # Auger recombination
     kernelAuger     = (params.recombinationAuger[iphin, ireg] * n + params.recombinationAuger[iphip, ireg] * p)
@@ -880,7 +880,7 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     for icc ∈ [iphin, iphip] 
 
         # gives you the recombination kernel based on choice of user
-        kernel = recombination_kernel(data, ireg, iphin, iphip, n, p, data.bulk_recombination_model)
+        kernel = recombination_kernel(data, ireg, iphin, iphip, n, p, data.bulk_recombination.bulk_recomb_model)
                 
         f[icc]          = q * params.chargeNumbers[icc] *  kernel *  excessCarrierDensTerm  - q * params.chargeNumbers[icc] * generation(data, ireg,  node.coord[node.index], data.generation_model)
     end

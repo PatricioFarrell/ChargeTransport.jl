@@ -4,6 +4,101 @@
 """
 $(TYPEDEF)
 
+A struct holding all information necessary for building bulk recombination.
+With help of this constructor we can read out the indices the user chooses for
+electron and hole quasi Fermi potentials.
+
+$(TYPEDFIELDS)
+
+"""
+mutable struct ChargeTransportBulkRecombination
+
+    """
+    index for data construction of quasi Fermi potential of electrons
+    """
+	iphin                ::  Union{VoronoiFVM.AbstractQuantity, Int64}
+
+    """
+    index for data construction of quasi Fermi potential of holes
+    """
+    iphip                ::  Union{VoronoiFVM.AbstractQuantity, Int64}
+
+    """
+    the chosen bulk recombination model.
+    """
+    bulk_recomb_model    ::  DataType
+
+    ChargeTransportBulkRecombination() = new()
+
+end
+
+
+"""
+Corresponding constructor for the bulk recombination model.
+"""
+function set_bulk_recombination(; iphin = 1, iphip = 2, bulk_recombination_model = bulk_recomb_model_full)
+
+    bulk_recombination = ChargeTransportBulkRecombination()
+
+    bulk_recombination.iphin             = iphin
+    bulk_recombination.iphip             = iphip
+    bulk_recombination.bulk_recomb_model = bulk_recombination_model
+
+    return bulk_recombination
+
+end
+
+###########################################################
+###########################################################
+
+"""
+$(TYPEDEF)
+
+A struct holding all information necessary on the ionic charge carriers.
+With help of this constructor we can read out the indices the user chooses for
+ionic vacancy quasi Fermi potentials and the respective regions in which they are
+defined.
+
+$(TYPEDFIELDS)
+
+"""
+mutable struct ChargeTransportIonicChargeCarriers
+
+    """
+    Array with the indices of ionic charge carriers.
+    """
+    ionic_vacancies       ::  Array{Union{VoronoiFVM.AbstractQuantity, Int64}, 1}
+
+    """
+    Corresponding regions where ionic charge carriers are assumed to be present.
+    """
+    regions               ::  Array{Int64, 1}
+
+    ChargeTransportIonicChargeCarriers() = new()
+
+end
+
+
+"""
+Corresponding constructor for the present ionic charge carriers and the respective regions.
+"""
+function enable_ion_vacancies(;ionic_vacancies = [3], regions = [2])
+
+    enable_ions = ChargeTransportIonicChargeCarriers()
+
+    enable_ions.ionic_vacancies = ionic_vacancies
+    enable_ions.regions               = regions
+
+    return enable_ions
+    
+end
+
+###########################################################
+###########################################################
+
+"""
+$(TYPEDEF)
+
 A struct holding the physical region dependent parameters for
 a drift-diffusion simulation of a semiconductor device.
 
@@ -300,12 +395,12 @@ mutable struct ChargeTransportData
     """
     A DataType for the bulk recombination model.
     """
-    bulk_recombination_model     ::  DataType  
+    bulk_recombination           ::  ChargeTransportBulkRecombination
 
     """
     An AbstractVector which contains information on the regions, where ion vacancies are present.
     """
-    enable_ion_vacancies         :: AbstractVector
+    enable_ion_vacancies         ::  ChargeTransportIonicChargeCarriers
 
     ###############################################################
     ####                 Numerics information                  ####
@@ -356,6 +451,12 @@ mutable struct ChargeTransportData
     chargeCarrierQuantities      :: Array{VoronoiFVM.AbstractQuantity, 1}
 
     ###############################################################
+    """
+    An array which contains information on continuous and discontinuous quantities.
+    """
+    isContinuous                 :: Array{Bool, 1}
+
+
     """
     This list is for the loops within physics methods. Here, we can have a vector 
     holding all abstract quantities or a vector holding an integer array.
@@ -566,13 +667,17 @@ function ChargeTransportData(grid, numberOfCarriers)
 
     data.F                        = fill!(similar(Array{Function,1}(undef, numberOfCarriers),Function), Boltzmann)
     data.boundary_type            = Array{DataType,1}(undef, numberOfBoundaryRegions)
-    data.bulk_recombination_model = bulk_recombination_none
+
+    # bulk_recombination is a struct holding the input information
+    data.bulk_recombination       = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recombination_model = bulk_recomb_model_none)
 
     for ii in 1:numberOfBoundaryRegions # as default all boundaries are set to an ohmic contact model.
-        data.boundary_type[ii] = ohmic_contact
+        data.boundary_type[ii]    = ohmic_contact
     end
 
-    data.enable_ion_vacancies    = [1:numberOfRegions]
+    # enable_ion_vacancies is a struct holding the input information
+    data.enable_ion_vacancies    = enable_ion_vacancies(ionic_vacancies = [3], regions = [2])
+
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
@@ -594,6 +699,9 @@ function ChargeTransportData(grid, numberOfCarriers)
     end
 
     ###############################################################
+
+    data.isContinuous             = Array{Bool, 1}(undef, numberOfCarriers)
+    data.isContinuous            .= true
     # default values for most simple case 
     data.chargeCarrierList        = collect(1:numberOfCarriers)
 
@@ -665,15 +773,21 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
 
     ctsys.fvmsys = VoronoiFVM.System(grid, physics, unknown_storage = unknown_storage)
 
-    for icc in 1:2
-        enable_species!(ctsys.fvmsys, icc, 1:data.params.numberOfRegions) # iphin, iphip defined on whole domain
+    for icc ∈ data.chargeCarrierList # first simply define all charge carriers on whole domain
+        enable_species!(ctsys.fvmsys, icc, 1:data.params.numberOfRegions) 
     end
 
-    for icc in 3:data.params.numberOfCarriers
-        enable_species!(ctsys.fvmsys, icc, data.enable_ion_vacancies) # ion vacancies only present in user defined layers
+    
+    if data.params.numberOfCarriers > 2 # when ionic vacancies are present
+
+        ionic_vacancies = data.enable_ion_vacancies.ionic_vacancies
+
+        for icc ∈ ionic_vacancies # Then, ion vacancies only present in user defined layers, i.e. adjust previous specification
+            enable_species!(ctsys.fvmsys, icc, data.enable_ion_vacancies.regions) 
+        end
     end
 
-    enable_species!(ctsys.fvmsys, data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1 , 1:data.params.numberOfRegions) # ipsi defined on whole domain
+    enable_species!(ctsys.fvmsys, data.indexPsi , 1:data.params.numberOfRegions) # ipsi defined on whole domain
 
     # for detection of number of species. In following versions we can simply delete num_species from physics initialization. 
     VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species_sys) 
@@ -694,15 +808,41 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_surfac
     ctsys        = ChargeTransportSystem()
     fvmsys       = VoronoiFVM.System(grid, unknown_storage=unknown_storage)
 
-    data.chargeCarrierQuantities[1] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions; id = 1) # iphin
-    data.chargeCarrierQuantities[2] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions; id = 2) # iphip
+    if data.params.numberOfCarriers < 3 # ions are not present
 
-    for icc in 3:data.params.numberOfCarriers
-        data.chargeCarrierQuantities[icc] = ContinuousQuantity(fvmsys, data.enable_ion_vacancies; id = icc) # if ion vacancies are present
+        for icc in 1:data.params.numberOfCarriers # Integers
+            if data.isContinuous[icc] == false
+                data.chargeCarrierQuantities[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+            elseif data.isContinuous[icc] == true
+                data.chargeCarrierQuantities[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+            end
+        end
+
+    else # ions are present
+        ionic_vacancies = data.enable_ion_vacancies.ionic_vacancies
+
+        for icc in 1:data.params.numberOfCarriers # Integers
+
+            if data.isContinuous[icc] == false # discontinuous quantity
+                if icc ∈ ionic_vacancies # ionic quantity
+                    data.chargeCarrierQuantities[icc] = DiscontinuousQuantity(fvmsys, data.enable_ion_vacancies.regions, id = icc)
+                else
+                    data.chargeCarrierQuantities[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+                end
+
+            elseif data.isContinuous[icc] == true # continuous quantity
+
+                if icc ∈ ionic_vacancies  # ionic quantity
+                    data.chargeCarrierQuantities[icc] = ContinuousQuantity(fvmsys, data.enable_ion_vacancies.regions, id = icc)
+                else
+                    data.chargeCarrierQuantities[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+                end
+            end
+
+        end
+
     end
-
-    #data.chargeCarrierQuantities[data.params.numberOfCarriers+1] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)    # last quantitiy is psi
-
+    
     # for the loops within physics methods we set the chargeCarrierList to quantity indexing.
     data.chargeCarrierList = data.chargeCarrierQuantities
 
