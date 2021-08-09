@@ -482,9 +482,13 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
         # recombinationTrapDensity = 0.5.* [trap_density!(1, 1, data, EI[1]) + trap_density!(1, 2, data, EI[2])   trap_density!(1, 2, data, EI[2]) + trap_density!(1, 3, data, EI[3]);
         # trap_density!(2, 1, data, EI[1]) + trap_density!(2, 2, data, EI[2])   trap_density!(2, 2, data, EI[2]) + trap_density!(2, 3, data, EI[3])]
                                 
+        # # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
+        # iphin       = data.bulk_recombination.iphin
+        # iphip       = data.bulk_recombination.iphip
 
-        # iphin = data.chargeCarrierQuantities[1]
-        # iphip = data.chargeCarrierQuantities[2]
+        # # based on user index and regularity of solution quantities or integers are used and depicted here
+        # iphin       = data.chargeCarrierList[iphin]
+        # iphip       = data.chargeCarrierList[iphip]
     
         ####################### idea 2 (junctions.tex) ###########################
         # for icc in data.chargeCarrierQuantities[1:2] # list of our charge carrier quantities
@@ -507,12 +511,12 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
         #     average_phip = 0.5 * ( u[iphip, 1] - u[iphip, 2] )
 
         #     exponentialTerm       = exp((q * average_phin - q  * average_phip ) / (kB * params.temperature))
-        #     excessCarrierDensTerm = average_n * average_p * (1.0 - exponentialTerm)
+        #     excessDensTerm = average_n * average_p * (1.0 - exponentialTerm)
 
 
         #     kernelSRH = 1.0 / (  1.0/recombinationVelocity[iphip.id, bnode.region-2] * (average_n + recombinationTrapDensity[iphin.id, bnode.region-2]) + 1.0/recombinationVelocity[iphin.id, bnode.region-2] * (average_p + recombinationTrapDensity[iphip.id, bnode.region-2]) )
 
-        #     react2     = q * params.chargeNumbers[icc.id] *  kernelSRH *  excessCarrierDensTerm 
+        #     react2     = q * params.chargeNumbers[icc.id] *  kernelSRH *  excessDensTerm 
 
         #     f[icc, 1] =   react2
         #     f[icc, 2] = - react2
@@ -520,8 +524,15 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
 
         ####################### idea 2 (junctions.tex) ###########################
 
-        
-        for icc ∈ data.chargeCarrierList[1:2] # quantities or integer indices and only defined for iphin and iphip
+        # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
+        iphin       = data.bulk_recombination.iphin
+        iphip       = data.bulk_recombination.iphip
+
+        # based on user index and regularity of solution quantities or integers are used and depicted here
+        iphin       = data.chargeCarrierList[iphin]
+        iphip       = data.chargeCarrierList[iphip]
+
+        for icc ∈ [iphin, iphip]
             # qF potentials 
             d         = [1.0e1 1.0e3;
                         1.0e7 1.0e1]
@@ -853,45 +864,61 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
 
     params      = data.params
     paramsnodal = data.paramsnodal
+    ireg        = node.region
+    inode       = node.index
 
-    # indices
-    iphin                 = data.chargeCarrierList[1]
-    iphip                 = data.chargeCarrierList[2]
-    ipsi                  = data.indexPsi           # final index for electrostatic potential
-    ireg                  = node.region
-    inode                 = node.index
+    # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
+    iphin       = data.bulk_recombination.iphin
+    iphip       = data.bulk_recombination.iphip
 
-    # rhs of NLP (charge density)
-    for icc ∈ data.chargeCarrierList
+    # based on user index and regularity of solution quantities or integers are used and depicted here
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+    ipsi        = data.indexPsi                  # final index for electrostatic potential
+    
+    ############################################################
+    ####          simple zero reaction for all icc          ####
+    ############################################################
+    for icc ∈ data.chargeCarrierList # chargeCarrierList ∈ {IN} ∪ {AbstractQuantity}
+
+        f[icc]  = u[icc] - 0.0 # set for all charge carriers (electric and possible present ionic) zero conditions
+
+    end
+
+    ###########################################################
+    ####         right-hand side of nonlinear Poisson      ####
+    ####         equation (space charge density)           ####
+    ###########################################################
+    for icc ∈ data.chargeCarrierList # chargeCarrierList ∈ {IN} ∪ {AbstractQuantity}
         
         eta     = etaFunction(u, node, data, icc, ipsi) 
         f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, node.region] )  # subtract doping
         f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.densityOfStates[icc, node.region] + paramsnodal.densityOfStates[icc, node.index]) * data.F[icc](eta)   # add charge carrier
 
     end
-    f[ipsi] = f[ipsi] - paramsnodal.doping[inode]
 
-    # rhs of continuity equations for electron and holes (bipolar reaction)
-    n                     = compute_densities!(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
-    p                     = compute_densities!(u, data, inode, ireg, iphip, ipsi, true) 
-    exponentialTerm       = exp((q *u[iphin] - q  * u[iphip]) / (kB*params.temperature))
-    excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
+    f[ipsi]     = f[ipsi] - paramsnodal.doping[inode]
+
+    f[ipsi]     = - q * data.λ1 * f[ipsi]
+
+    ###########################################################
+    ####       right-hand side of continuity equations     ####
+    ####       for φ_n and φ_p (bipolar reaction)          ####
+    ###########################################################
+
+    n               = compute_densities!(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
+    p               = compute_densities!(u, data, inode, ireg, iphip, ipsi, true) 
+
+    exponentialTerm = exp((q *u[iphin] - q * u[iphip]) / (kB * params.temperature))
+    excessDensTerm  = n * p * (1.0 - exponentialTerm)
 
     for icc ∈ [iphin, iphip] 
 
         # gives you the recombination kernel based on choice of user
-        kernel = recombination_kernel(data, ireg, iphin, iphip, n, p, data.bulk_recombination.bulk_recomb_model)
+        kernel      = recombination_kernel(data, ireg, iphin, iphip, n, p, data.bulk_recombination.bulk_recomb_model)
                 
-        f[icc]          = q * params.chargeNumbers[icc] *  kernel *  excessCarrierDensTerm  - q * params.chargeNumbers[icc] * generation(data, ireg,  node.coord[node.index], data.generation_model)
+        f[icc]      = q * params.chargeNumbers[icc] *  kernel *  excessDensTerm  - q * params.chargeNumbers[icc] * generation(data, ireg,  node.coord[node.index], data.generation_model)
     end
-
-    # vorsicht bei diesem part! hat auswirkungen auf tier 0
-    for icc ∈ data.chargeCarrierList[3:end]
-        f[icc]              = u[icc] - 0.0
-    end
-
-    
-    f[ipsi]                     = - q * data.λ1 * f[ipsi]
 
     return f
 

@@ -65,41 +65,32 @@ function main(;Plotter = nothing, plotting = false, verbose = false, test = fals
     end
     ################################################################################
 
-    numberOfCarriers  = 2 # electrons and holes
+    # set indices of the quasi Fermi potentials
+    iphin              = 1 # electron quasi Fermi potential
+    iphip              = 2 # hole quasi Fermi potential
+    numberOfCarriers   = 2 
 
     # physical data
-    Ec                = 1.424                *  eV
-    Ev                = 0.0                  *  eV
-    Nc                = 4.351959895879690e17 / (cm^3)
-    Nv                = 9.139615903601645e18 / (cm^3)
-    mun               = 8500.0               * (cm^2) / (V * s)
-    mup               = 400.0                * (cm^2) / (V * s)
-    εr                = 12.9                 *  1.0              # relative dielectric permittivity of GAs
-    T                 = 300.0                *  K
+    Ec                 = 1.424                *  eV
+    Ev                 = 0.0                  *  eV
+    Nc                 = 4.351959895879690e17 / (cm^3)
+    Nv                 = 9.139615903601645e18 / (cm^3)
+    mun                = 8500.0               * (cm^2) / (V * s)
+    mup                = 400.0                * (cm^2) / (V * s)
+    εr                 = 12.9                 *  1.0              # relative dielectric permittivity of GAs
+    T                  = 300.0                *  K
 
 
     # recombination model
     bulk_recombination = bulk_recomb_model_trap_assisted
 
     # recombination parameters
-    SRH_TrapDensity_n = 4.760185435081902e5    / cm^3       
-    SRH_TrapDensity_p = 9.996936448738406e6    / cm^3
-    SRH_LifeTime      = 1.0                    * ps   
+    SRH_TrapDensity_n  = 4.760185435081902e5    / cm^3       
+    SRH_TrapDensity_p  = 9.996936448738406e6    / cm^3
+    SRH_LifeTime       = 1.0                    * ps   
 
     # contact voltages
-    voltageAcceptor   = 1.4 * V
-
-    # interface model
-    interface_reaction = interface_model_none
-
-    # set the correct indices for each species (this is needed for giving the user the correct index set)
-    # but likewise it is possible to define one owns index set, i.e. iphin, iphin = 1:2 (ipsi = 3, but not needed, except,
-    # if one is interested here in reading out the solution), but
-    # one needs to be aware of the remarks within the documentary.
-    indexSet         = set_indices!(grid, numberOfCarriers, interface_reaction)
-
-    iphin           = indexSet["iphin"]
-    iphip           = indexSet["iphip"]
+    voltageAcceptor    = 1.4 * V
 
     if test == false
         println("*** done\n")
@@ -139,6 +130,10 @@ function main(;Plotter = nothing, plotting = false, verbose = false, test = fals
     # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
     # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
     data.flux_approximation             = ScharfetterGummel
+
+    if test == false
+        println("*** done\n")
+    end
 
     ################################################################################
     if test == false

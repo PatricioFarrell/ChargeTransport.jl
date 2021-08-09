@@ -104,9 +104,11 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    numberOfCarriers  = 2 # electrons and holes
+    # set indices of the quasi Fermi potentials
+    iphin             = 2 # electron quasi Fermi potential
+    iphip             = 1 # hole quasi Fermi potential
+    numberOfCarriers  = 2 
 
-    
     ##########      physical data      ##########
     # temperature
     T                 = 300.0                 *  K
@@ -198,16 +200,6 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     # contact voltages: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
     voltageAcceptor     =  1.2                  * V 
-
-    # interface model (this is needed for giving the user the correct index set)
-    interface_reaction  = interface_model_none
-
-    # set the correct indices for each species (this is needed for giving the user the correct index set)
-    # but likewise it is possible to define one owns index set, i.e. iphin, iphin = 1:2
-    indexSet            = set_indices!(grid, numberOfCarriers, interface_reaction)
-
-    iphin               = indexSet["iphin"]
-    iphip               = indexSet["iphip"]
 
     if test == false
         println("*** done\n")

@@ -122,8 +122,14 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
     end
     ################################################################################
 
-    # indices 
-    numberOfCarriers = 3 # iphin, iphip, ipsi
+    # set indices of the quasi Fermi potentials
+    # DA: note that, if setting iphia not to the last index, we get convergence problems with the Newton.
+    # Currently not well tested!
+    iphin               = 1 # electron quasi Fermi potential
+    iphip               = 2 # hole quasi Fermi potential
+    iphia               = 3 # anion vacancy quasi Fermi potential
+
+    numberOfCarriers    = 3 # electrons, holes and anion vacancies
 
     # temperature
     T                =  300.0                 *  K
@@ -230,18 +236,6 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
     # contact voltages: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
     voltageAcceptor =  1.0                  * V 
-
-    # interface model (this is needed for giving the user the correct index set)
-    interface_reaction  = interface_model_none
-
-    # set the correct indices for each species (this is needed for giving the user the correct index set)
-    # but likewise it is possible to define one owns index set, i.e. iphin, iphin, iphia, ipsi = 1:4
-    indexSet            = set_indices!(grid, numberOfCarriers, interface_reaction)
-
-    iphin               = indexSet["iphin"]
-    iphip               = indexSet["iphip"]
-    iphia               = indexSet["iphia"]
-    ipsi                = indexSet["ipsi" ]
 
     if test == false
         println("*** done\n")
@@ -428,7 +422,7 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
     initialGuess         .= solution 
 
     if plotting # currently, plotting the solution was only tested with PyPlot.
-        
+        ipsi = 4
         X = grid[Coordinates][1,:]
         Y = grid[Coordinates][2,:]
 
@@ -523,7 +517,7 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
         Plotter.xlabel("Applied Voltage [V]")
     end
 
-    testval = solution[ipsi, 42]
+    testval = solution[4, 42]
     return testval
 
 end #  main

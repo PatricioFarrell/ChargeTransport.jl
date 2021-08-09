@@ -578,8 +578,8 @@ function ChargeTransportParams(grid, numberOfCarriers)
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
     ############################################################### 
-    params.brecombinationSRHTrapDensity = spzeros(Float64, 2, numberOfBoundaryRegions)                 # for surface reco
-    params.recombinationSRHvelocity     = spzeros(Float64, 2, numberOfBoundaryRegions)                 # for surface reco
+    params.brecombinationSRHTrapDensity = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)                 # for surface reco
+    params.recombinationSRHvelocity     = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)                 # for surface reco
 
     ###############################################################
     ####        number of regions x number of carriers         ####
@@ -592,9 +592,9 @@ function ChargeTransportParams(grid, numberOfCarriers)
     ###############################################################
     #### number of regions x 2 (for electrons and holes only!) ####
     ###############################################################
-    params.recombinationSRHLifetime     = Array{Float64,2}(undef, 2, numberOfRegions)
-    params.recombinationSRHTrapDensity  = Array{Float64,2}(undef, 2, numberOfRegions)
-    params.recombinationAuger           = Array{Float64,2}(undef, 2, numberOfRegions)
+    params.recombinationSRHLifetime     = spzeros(Float64, numberOfCarriers, numberOfRegions)
+    params.recombinationSRHTrapDensity  = spzeros(Float64, numberOfCarriers, numberOfRegions)
+    params.recombinationAuger           = spzeros(Float64, numberOfCarriers, numberOfRegions)
 
     ###############################################################
     ####                   number of regions                   ####
@@ -997,6 +997,9 @@ a given value.
     
 """
 function set_ohmic_contact!(ctsys, icc, ibreg, contact_val)
+
+    #iphin = ctsys.data.bulk_recombination.iphin
+    #iphip = ctsys.data.bulk_recombination.iphip
  
     ctsys.fvmsys.boundary_factors[icc, ibreg] = VoronoiFVM.Dirichlet
     ctsys.fvmsys.boundary_values[icc, ibreg]  = contact_val
@@ -1101,64 +1104,6 @@ function equilibrium_solve!(ctsys::ChargeTransportSystem; control = VoronoiFVM.N
 end
 ###########################################################
 ###########################################################
-function set_indices!(grid, numberOfCarriers, ::Type{interface_model_none}) # we are in most classical setting
-
-    indexSet = Dict()
-
-    indexSet["iphin"] = 1
-    indexSet["iphip"] = 2
-
-    if numberOfCarriers == 3
-
-        indexSet["iphia"] = 3
-
-    end
-    
-    indexSet["ipsi"]  = numberOfCarriers + 1
-
-    return indexSet
-end
-
-function set_indices!(grid, numberOfCarriers, ::Type{interface_model_ion_charge})
-# DA: generalizing to arbitrary domains is a bit difficult since we do not know which ones 
-# are the active perovskite layers. Thus, we additionally need them here as input argument?
-    bcellregions = grid[NumBFaceRegions]
-    indexSet = Dict()
-
-    indexSet["iphin"] = 1
-    indexSet["iphip"] = 2
-    indexSet["iphia"] = 3
-
-
-    indexSet["iphiaJunction"] = 4:5
-    indexSet["ipsi"] = 3 + length( indexSet["iphiaJunction"] ) + 1
-        
-    return indexSet
-
-end
-
-
-function set_indices!(grid, numberOfCarriers, ::Type{interface_model_surface_recombination})
-
-    cellregions = grid[NumCellRegions]
-    indexSet = Dict()
-
-    indexSet["iphin"] = collect(1:cellregions)
-    indexSet["iphip"] = collect(cellregions+1:2*cellregions)
-
-    if numberOfCarriers == 3
-        indexSet["iphia"] = 2*cellregions+1
-    elseif numberOfCarriers < 2 || numberOfCarriers > 3
-        println("Case of more than three carriers not tested yet. Hence, only electrons and holes are assumed.")
-    end
-
-    indexSet["ipsi"] = ( numberOfCarriers+1 ) + 2 * (cellregions-1)
-        
-    return indexSet
-
-end
-###########################################################
-###########################################################
 """
 $(TYPEDEF)
 Abstract type for scan protocol type
@@ -1188,7 +1133,7 @@ end
 
 
 """
-Calculates current. But caution, still need some small modification!
+Calculates current for time dependent problem. But caution, still need some small modification!
 
 """
 function get_current_val(ctsys, U, Uold, Δt)
@@ -1209,6 +1154,26 @@ function get_current_val(ctsys, U, Uold, Δt)
 end
 ###########################################################
 ###########################################################
+
+"""
+Calculates current for stationary problem. But caution, still need some small modification!
+
+"""
+function get_current_val(ctsys, U)
+
+    factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+
+    tf     = testfunction(factory, [1], [2]) # left outer boundary = 1; right outer boundary = 2 (caution with order)
+    I      = integrate(ctsys.fvmsys, tf, U)
+
+    current = 0.0
+    for icc in 1:ctsys.data.params.numberOfCarriers
+        current = current + I[icc]
+    end
+
+    return current
+
+end
 
 """
 

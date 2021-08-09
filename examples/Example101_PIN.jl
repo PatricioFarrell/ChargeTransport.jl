@@ -4,17 +4,19 @@
 
 Simulating charge transport in a GaAs pin diode. This means
 the corresponding PDE problem corresponds to the van Roosbroeck
-system of equations.
+system of equations, i.e. the unknowns are given by the quasi Fermi 
+potentials of electrons and holes φ_n, φ_p and the electric potential ψ.
 The simulations are performed out of equilibrium and for the
 stationary problem.
 =#
 
 module Example101_PIN
 
-using VoronoiFVM
-using ChargeTransportInSolids
-using ExtendableGrids
-using GridVisualize
+using VoronoiFVM               # PDE solver with a FVM spatial discretization
+using ChargeTransportInSolids  # drift-diffusion solver
+using ExtendableGrids          # grid initializer
+using GridVisualize            # grid visualizer
+
 
 # function for initializing the grid for a possble extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
@@ -61,9 +63,9 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     grid                    = simplexgrid(coord)
 
-    # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm], [h_pdoping], regionAcceptor)        # p-doped region = 1
-    cellmask!(grid, [h_pdoping], [h_pdoping + h_intrinsic], regionIntrinsic)    # intrinsic region = 2
+    # cellmask! for defining the subregions and assigning region number
+    cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor)  # p-doped region = 1
+    cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
 
     if plotting
@@ -81,52 +83,42 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    numberOfCarriers  = 2 # electrons and holes
+    # set indices of the quasi Fermi potentials
+    iphin              = 1 # electron quasi Fermi potential
+    iphip              = 2 # hole quasi Fermi potential
+    numberOfCarriers   = 2 
 
     # physical data
-    Ec                = 1.424                *  eV
-    Ev                = 0.0                  *  eV
-    Nc                = 4.351959895879690e17 / (cm^3)
-    Nv                = 9.139615903601645e18 / (cm^3)
-    mun               = 8500.0               * (cm^2) / (V * s)
-    mup               = 400.0                * (cm^2) / (V * s)
-    εr                = 12.9                 *  1.0              # relative dielectric permittivity of GAs
-    T                 = 300.0                *  K
-
+    Ec                 = 1.424                *  eV
+    Ev                 = 0.0                  *  eV
+    Nc                 = 4.351959895879690e17 / (cm^3)
+    Nv                 = 9.139615903601645e18 / (cm^3)
+    mun                = 8500.0               * (cm^2) / (V * s)
+    mup                = 400.0                * (cm^2) / (V * s)
+    εr                 = 12.9                 *  1.0              # relative dielectric permittivity of GAs
+    T                  = 300.0                *  K
 
     # recombination model
-    bulk_recombination = bulk_recomb_model_full
+    bulk_recombination = bulk_recomb_model_full # use full recombination
 
     # recombination parameters
-    Auger             = 1.0e-29   * cm^6 / s          # 1.0e-41
-    SRH_TrapDensity   = 1.0e10    / cm^3              # 1.0e16
-    SRH_LifeTime      = 1.0       * ns                # 1.0e10
-    Radiative         = 1.0e-10   * cm^3 / s          # 1.0e-16
+    Auger             = 1.0e-29              * cm^6 / s     
+    SRH_TrapDensity   = 1.0e10               / cm^3            
+    SRH_LifeTime      = 1.0                  * ns             
+    Radiative         = 1.0e-10              * cm^3 / s 
 
     # doping
-    dopingFactorNd    =   1.0
-    dopingFactorNa    =   0.46
-    Nd                =   dopingFactorNd * Nc
-    Na                =   dopingFactorNa * Nv
+    dopingFactorNd    = 1.0
+    dopingFactorNa    = 0.46
+    Nd                = dopingFactorNd * Nc
+    Na                = dopingFactorNa * Nv
 
     # intrinsic concentration (not doping!)
-    ni                =   sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) 
+    ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) 
 
     # contact voltages: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
-    voltageAcceptor   = 1.5 * V
-
-    # interface model
-    interface_reaction = interface_model_none
-
-    # set the correct indices for each species (this is needed for giving the user the correct index set)
-    # but likewise it is possible to define one owns index set, i.e. iphin, iphin = 1:2 (ipsi = 3, but not needed, except,
-    # if one is interested here in reading out the solution), but
-    # one needs to be aware of the remarks within the documentary.
-    indexSet         = set_indices!(grid, numberOfCarriers, interface_reaction)
-
-    iphin           = indexSet["iphin"]
-    iphip           = indexSet["iphip"]
+    voltageAcceptor   = 1.5                  * V
 
     if test == false
         println("*** done\n")
@@ -250,7 +242,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         psi0 = electroNeutralSolution!(grid, data)
         plot_energies(Plotter, grid, data)
         Plotter.figure()
-        plot_doping(Plotter, grid, params)
+        plot_doping(Plotter, grid, data)
         Plotter.figure()
         plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=true)
         Plotter.figure()
@@ -332,7 +324,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     end
 
     maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 16)
+    biasValues = range(0, stop = maxBias, length = 32)
     IV         = zeros(0)
 
     w_device = 0.5    * μm  # width of device
@@ -340,6 +332,9 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     for Δu in biasValues
 
+        if verbose
+            println("Δu  = ", Δu )
+        end
         # set non equilibrium boundary conditions
         set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
         set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
@@ -348,14 +343,10 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
         initialGuess .= solution
 
-        # get IV curve
-        factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+        # get I-V data
+        current = get_current_val(ctsys, solution)
 
-        # testfunction zero in bregionAcceptor and one in bregionDonor
-        tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])
-        I      = integrate(ctsys.fvmsys, tf, solution)
-
-        push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
+        push!(IV,  abs.(w_device * z_device * ( current)) )
 
     end # bias loop
 

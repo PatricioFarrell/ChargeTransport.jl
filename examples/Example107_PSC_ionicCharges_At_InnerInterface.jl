@@ -111,7 +111,17 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    numberOfBulkCarriers    = 3 # electrons, holes and anion vacancies
+
+    iphin                     = 1 # electron quasi Fermi potential
+    iphip                     = 2 # hole quasi Fermi potential
+    iphia                     = 3 # anion vacancy quasi Fermi potential
+
+    numberOfBulkCarriers      = 3 # electrons, holes and anion vacancies
+
+    # DA: Caution, this will be adjusted in future versions!!!!
+    iphiaj1                   = 4
+    iphiaj2                   = 5
+    numberOfInterfaceCarriers = 2 # iphiaj1 and iphiaj2
 
     # temperature
     T                   = 300.0                 *  K
@@ -215,24 +225,6 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     # contact voltages: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
     voltageAcceptor     =  1.2                  * V 
-
-    # interface model (this is needed for giving the user the correct index set)
-    interface_reaction  = interface_model_ion_charge
-
-    # set the correct indices for each species (this is needed for giving the user the correct index set)
-    # but likewise it is possible to define one owns index set, i.e. iphin, iphin, iphia, iphiaj1, iphiaj2 = 1:5
-    # CAUTION: this will be changed in future versions.
-    indexSet            = set_indices!(grid, numberOfBulkCarriers, interface_reaction)
-
-    iphin                     = indexSet["iphin"]
-    iphip                     = indexSet["iphip"]
-    iphia                     = indexSet["iphia"]
-    iphiaj1                   = indexSet["iphiaJunction"][1]
-    iphiaj2                   = indexSet["iphiaJunction"][2]
-    numberOfInterfaceCarriers = length( indexSet["iphiaJunction"] )
-
-    # this needs to be done because interface charges are likewise charges, i.e. numberOfCarriers = bulkspecies + interface species
-    numberOfCarriers = numberOfBulkCarriers + numberOfInterfaceCarriers
 
     if test == false
         println("*** done\n")

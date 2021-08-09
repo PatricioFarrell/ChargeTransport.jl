@@ -103,6 +103,13 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
     end
     ################################################################################
 
+    # set indices of the quasi Fermi potentials
+    # DA: note that, if setting iphia not to the last index, we get convergence problems with the Newton.
+    # Currently not well tested!
+    iphin               = 1 # electron quasi Fermi potential
+    iphip               = 2 # hole quasi Fermi potential
+    iphia               = 3 # anion vacancy quasi Fermi potential
+
     numberOfCarriers    = 3 # electrons, holes and anion vacancies
 
     # temperature
@@ -219,17 +226,6 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
     # contact voltages: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
     voltageAcceptor     =  1.2                  * V 
-
-    # interface model (this is needed for giving the user the correct index set)
-    interface_reaction  = interface_model_none
-
-    # set the correct indices for each species (this is needed for giving the user the correct index set)
-    # but likewise it is possible to define one owns index set, i.e. iphin, iphin, iphia = 1:3
-    indexSet            = set_indices!(grid, numberOfCarriers, interface_reaction)
-
-    iphin               = indexSet["iphin"]
-    iphip               = indexSet["iphip"]
-    iphia               = indexSet["iphia"]
 
     if test == false
         println("*** done\n")

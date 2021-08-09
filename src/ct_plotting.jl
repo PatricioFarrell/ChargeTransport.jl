@@ -34,9 +34,22 @@ function plot_densities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
         marker = ""
     end
 
-    colors                      = ["green", "red", "gold", "purple"]
-    linestyles                  = ["-", ":", "--", "-."]
-    densityNames                = ["n", "p", "a", "c"]
+    colors       = Array{String, 1}(undef, 4)
+    linestyles   = Array{String, 1}(undef, 4)
+    densityNames = Array{String, 1}(undef, 4)
+
+    iphin     = data.bulk_recombination.iphin
+    iphip     = data.bulk_recombination.iphip
+    # DA: Caution!!! This can cause problems when plotting!!
+    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+
+    colors[iphin]     = "green";            linestyles[iphin]     = "-";          densityNames[iphin]     = "n"
+    colors[iphip]     = "red";              linestyles[iphip]     = ":";          densityNames[iphip]     = "p"
+    colors[ionic_vac] = ["gold", "purple"]; linestyles[ionic_vac] = ["--", "-."]; densityNames[ionic_vac] = ["a", "c"]
+
+    # colors                      = ["green", "red", "gold", "purple"]
+    # linestyles                  = ["-", ":", "--", "-."]
+    # densityNames                = ["n", "p", "a", "c"]
 
     ipsi                        = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1
 
@@ -168,12 +181,21 @@ function plot_energies(Plotter, grid, data, sol, title, ;plotGridpoints=false)
         marker = ""
     end
 
-    colors              = ["green", "red", "gold", "purple"]
-    linestyles          = ["-", ":", "--", "-."]
-    labelBandEdgeEnergy = ["\$E_c-q\\psi\$ ", "\$E_v-q\\psi\$ ", "\$E_a-q\\psi\$ ", "\$E_{cat}-q\\psi\$ "]
-    labelPotential      = ["\$ - q \\varphi_n\$", "\$ - q \\varphi_p\$", "\$ - q \\varphi_a\$", "\$ - q \\varphi_c\$"]
+    colors              = Array{String, 1}(undef, 4)
+    linestyles          = Array{String, 1}(undef, 4)
+    labelBandEdgeEnergy = Array{String, 1}(undef, 4)
+    labelPotential      = Array{String, 1}(undef, 4)
 
-    for icc in 1:2
+    iphin     = data.bulk_recombination.iphin
+    iphip     = data.bulk_recombination.iphip
+    # DA: Caution!!! This can cause problems when plotting!!
+    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+
+    colors[iphin]     = "green";            linestyles[iphin]     = "-";          labelBandEdgeEnergy[iphin]     = "\$E_c-q\\psi\$"; labelPotential[iphin] = "\$ - q \\varphi_n\$"
+    colors[iphip]     = "red";              linestyles[iphip]     = ":";          labelBandEdgeEnergy[iphip]     = "\$E_v-q\\psi\$"; labelPotential[iphip] = "\$ - q \\varphi_n\$"
+    colors[ionic_vac] = ["gold", "purple"]; linestyles[ionic_vac] = ["--", "-."]; labelBandEdgeEnergy[ionic_vac] = ["\$E_a-q\\psi\$ ", "\$E_{cat}-q\\psi\$ "]; labelPotential[ionic_vac] = [ "\$ - q \\varphi_a\$", "\$ - q \\varphi_c\$"]
+
+    for icc in [iphin, iphip]
         # first cell
         ireg         = cellregions[1]
         E1           = params.bBandEdgeEnergy[icc, 1] + paramsnodal.bandEdgeEnergy[icc, 1] # left boundary
@@ -240,9 +262,18 @@ function plot_energies(Plotter, grid::ExtendableGrid, data)
         error("plotEnergies is so far only implemented in 1D")
     end
 
-    colors      = ["green", "red", "gold", "purple"]
-    styles      = ["-", ":", "--", "-."]
-    EnergyNames = ["\$ E_c\$", "\$ E_v \$", " \$ E_a \$", " \$ E_{cat}\$"]
+    colors      = Array{String, 1}(undef, 4)
+    styles      = Array{String, 1}(undef, 4)
+    EnergyNames = Array{String, 1}(undef, 4)
+
+    iphin     = data.bulk_recombination.iphin
+    iphip     = data.bulk_recombination.iphip
+    # DA: Caution!!! This can cause problems when plotting!!
+    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+
+    colors[iphin]     = "green";            styles[iphin]     = "-";          EnergyNames[iphin]     = "\$E_c\$";
+    colors[iphip]     = "red";              styles[iphip]     = ":";          EnergyNames[iphip]     = "\$E_v\$"
+    colors[ionic_vac] = ["gold", "purple"]; styles[ionic_vac] = ["--", "-."]; EnergyNames[ionic_vac] = ["\$E_a\$ ", "\$E_{cat}\$ "]
 
     # plot different band-edge energies values in interior
     for icc = 1:params.numberOfCarriers
@@ -300,8 +331,9 @@ Possibility to plot the considered doping. This is especially useful
 for making sure that the interior and the boundary doping agree.
 
 """
-function plot_doping(Plotter, g::ExtendableGrid, params::ChargeTransportParams)
+function plot_doping(Plotter, g::ExtendableGrid, data::ChargeTransportData)
 
+    params      = data.params
     coord       = g[Coordinates]
     cellregions = g[CellRegions]
     cellnodes   = g[CellNodes]
@@ -311,13 +343,22 @@ function plot_doping(Plotter, g::ExtendableGrid, params::ChargeTransportParams)
         error("plotDoping is so far only implemented in 1D")
     end
 
-    colors                      = ["green", "red", "gold", "purple"]
-    styles                      = ["-",":", "--", "-."]
-    densityNames                = ["n", "p", "a", "c"]
+    
+    colors       = Array{String, 1}(undef, 4)
+    styles       = Array{String, 1}(undef, 4)
+    densityNames = Array{String, 1}(undef, 4)
+
+    iphin     = data.bulk_recombination.iphin
+    iphip     = data.bulk_recombination.iphip
+    # DA: Caution!!! This can cause problems when plotting!!
+    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+
+    colors[iphin]     = "green";            styles[iphin]     = "-";          densityNames[iphin]     = "n";
+    colors[iphip]     = "red";              styles[iphip]     = ":";          densityNames[iphip]     = "p"
+    colors[ionic_vac] = ["gold", "purple"]; styles[ionic_vac] = ["--", "-."]; densityNames[ionic_vac] = ["a", "c"]
     
 
     # plot different doping values in interior
-
     for icc = 1:params.numberOfCarriers
 
         for i in 1:length(cellregions)
@@ -440,10 +481,18 @@ function plot_solution(Plotter, grid, data, solution, title, ;plotGridpoints=fal
         marker = ""
     end
 
+    colors       = Array{String, 1}(undef, 4)
+    linestyles   = Array{String, 1}(undef, 4)
+    densityNames = Array{String, 1}(undef, 4)
 
-    colors        = ["green", "red", "gold", "purple"]
-    linestyles    = ["--", "-.", "-", ":"]
-    densityNames  = ["\$\\varphi_n\$", "\$\\varphi_p\$", "\$\\varphi_a\$", "\$\\varphi_c\$"]  
+    iphin     = data.bulk_recombination.iphin
+    iphip     = data.bulk_recombination.iphip
+    # DA: Caution!!! This can cause problems when plotting!!
+    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+
+    colors[iphin]     = "green";            linestyles[iphin]     = "--";       densityNames[iphin]     = "\$\\varphi_n\$"
+    colors[iphip]     = "red";              linestyles[iphip]     = "-.";       densityNames[iphip]     = "\$\\varphi_p\$"
+    colors[ionic_vac] = ["gold", "purple"]; linestyles[ionic_vac] = ["-", ":"]; densityNames[ionic_vac] = ["\$\\varphi_a\$", "\$\\varphi_c\$"]
 
     Plotter.clf() 
     Plotter.plot(coord, (solution[ipsi,:] + data.params.Eref/q*ones(length(solution[ipsi,:]))), marker = marker, label = "\$\\psi\$", color="b")
@@ -470,15 +519,24 @@ function plot_solution(Plotter, grid, solution, Eref, agrid, t, Δu)
 
     ipsi = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1
 
-    colors        = ["green", "red", "gold", "purple"]
-    linestyles    = ["--", "-.", "-", ":"]
-    densityNames  = ["\$\\varphi_n\$", "\$\\varphi_p\$", "\$\\varphi_a\$", "\$\\varphi_c\$"]  
+    colors       = Array{String, 1}(undef, 4)
+    linestyles   = Array{String, 1}(undef, 4)
+    densityNames = Array{String, 1}(undef, 4)
+
+    iphin     = data.bulk_recombination.iphin
+    iphip     = data.bulk_recombination.iphip
+    # DA: Caution!!! This can cause problems when plotting!!
+    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+
+    colors[iphin]     = "green";            linestyles[iphin]     = "--";       densityNames[iphin]     = "\$\\varphi_n\$"
+    colors[iphip]     = "red";              linestyles[iphip]     = "-.";       densityNames[iphip]     = "\$\\varphi_p\$"
+    colors[ionic_vac] = ["gold", "purple"]; linestyles[ionic_vac] = ["-", ":"]; densityNames[ionic_vac] = ["\$\\varphi_a\$", "\$\\varphi_c\$"]
     
     Plotter.clf() 
     scalarplot!(p[1,1], grid, (solution[ipsi,:] + Eref/q*ones(length(solution[ipsi,:]))), label = "\$\\psi\$", color="b",  marker = "x", 
     title="time \$ t =\$ $t, bias \$\\Delta u\$ = $Δu", clear = true)
 
-    for icc in 1:2
+    for icc in [iphin, iphip]
         scalarplot!(p[1,1], grid, solution[icc,:], label =  densityNames[icc], color= colors[icc], linestyle = linestyles[icc], clear = false)
     end
 
