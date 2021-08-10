@@ -63,7 +63,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     grid                    = simplexgrid(coord)
 
-    # cellmask! for defining the subregions and assigning region number
+    # cellmask! for defining the subregions and assigning region number (doping profiles do not intersect)
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor)  # p-doped region = 1
     cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3

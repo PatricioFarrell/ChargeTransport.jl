@@ -10,8 +10,7 @@ material interfaces.
 A linear I-V measurement protocol is included and the corresponding
 solution vectors after the scan protocol can be depicted.
 
-The paramters can be found here and are from
-Calado et al.:
+The paramters are from Calado et al. and can be found here:
 https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_mapi_pcbm.csv.
 (with adjustments on layer lengths)
 =#
@@ -27,11 +26,14 @@ using PyPlot
 
 function plot_solution(Plotter, ctsys, solution)
 
-    subgrids = VoronoiFVM.subgrids(ctsys.data.chargeCarrierQuantities[1], ctsys.fvmsys)
+    iphin = ctsys.data.bulk_recombination.iphin
+    iphip = ctsys.data.bulk_recombination.iphip
 
-    phin_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierQuantities[1], subgrids, ctsys.fvmsys)
-    phip_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierQuantities[2], subgrids, ctsys.fvmsys)
-    phia_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierQuantities[3], subgrids, ctsys.fvmsys)
+    subgrids = VoronoiFVM.subgrids(ctsys.data.chargeCarrierList[iphin], ctsys.fvmsys)
+
+    phin_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
+    phip_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
+    phia_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierList[3], subgrids, ctsys.fvmsys) # need another way to get index here.
     psi_sol  = VoronoiFVM.views(solution, ctsys.data.indexPsi,  subgrids, ctsys.fvmsys)
 
     vis      = GridVisualizer(resolution=(600,300), Plotter=Plotter)
@@ -77,7 +79,6 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
 
 
     # grid
-    # NB: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
     h_pdoping               = 3.00e-6 * cm + 1.0e-7 * cm
     h_intrinsic             = 3.00e-5 * cm 
     h_ndoping               = 8.50e-6 * cm + 1.0e-7 * cm
@@ -118,14 +119,15 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     grid                    = ExtendableGrids.simplexgrid(coord)
     numberOfNodes           = length(coord)
 
-    # set different regions in grid, doping profiles do not intersect
+    # # cellmask! for defining the subregions and assigning region number (doping profiles do not intersect)
     cellmask!(grid, [0.0 * μm],                 [h_pdoping],                           regionAcceptor, tol = 1.0e-18)   # p-doped region   = 1
     cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic],             regionIntrinsic, tol = 1.0e-18)  # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic],  [h_pdoping + h_intrinsic + h_ndoping], regionDonor, tol = 1.0e-18)      # n-doped region   = 3
 
-    # boundary regions
-    bfacemask!(grid, [h_pdoping],               [h_pdoping],                           bregionJunction1)
-    bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)
+    # bfacemask! for ``active'' boundary regions, i.e. internal interfaces. On the outer boudary regions, the 
+    # conditions will be formulated later
+    bfacemask!(grid, [h_pdoping],               [h_pdoping],                           bregionJunction1)  # first  inner interface
+    bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)  # second inner interface
 
     if plotting
         GridVisualize.gridplot(grid, Plotter = Plotter)
@@ -141,12 +143,15 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    # charge carriers (by construction the index length(chargeCarriers) +1 is automatically assigned to the electric potential)
-    iphin               = 1
-    iphip               = 2
-    iphia               = 3
-    chargeCarriers      = [iphin, iphip, iphia]  # these is an Array of indices of the charge carriers 
-    numberOfCarriers    = length(chargeCarriers) # electrons, holes and anion vacancies
+    # charge carriers (by construction the last index is automatically assigned to the electric potential, i.e.
+    # ipsi = length(ichargeCarriers) + 1)
+
+    iphin               = 1 # electron quasi Fermi potential
+    iphip               = 2 # hole quasi Fermi potential
+    iphia               = 3 # anion vacancy quasi Fermi potential
+
+    ichargeCarriers     = [iphin, iphip, iphia]   # this is an Array of indices of the charge carriers 
+    numberOfCarriers    = length(ichargeCarriers) # electrons, holes and anion vacancies
 
     # temperature
     T                   =  300.0                *  K
@@ -173,7 +178,8 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ###################### adjust Na, Ea here #####################
     Nanion              = 1.21e22               / (cm^3)
-    Ea_i                = -5.175                *  eV 
+    Ea_i                = -5.175                *  eV
+
     # for the labels in the figures
     textEa              = Ea_i                 ./  eV
     textNa              = Nanion               .* (cm^3)
@@ -204,7 +210,6 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     μa                  = [0.0,  μa_i, 0.0 ] 
 
     # relative dielectric permittivity  
-
     ε_a                 = 4.0                   *  1.0  
     ε_i                 = 23.0                  *  1.0 
     ε_d                 = 3.0                   *  1.0 
@@ -244,11 +249,11 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     Auger               = 0.0
 
     # doping
-    Nd                  =   2.089649130192123e17 / (cm^3) 
-    Na                  =   4.529587947185444e18 / (cm^3) 
-    C0                  =   1.0e18              / (cm^3) 
+    Nd                  = 2.089649130192123e17  / (cm^3) 
+    Na                  = 4.529587947185444e18  / (cm^3) 
+    C0                  = 1.0e18                / (cm^3) 
 
-    # contact voltages: we impose an applied voltage only on one boundary.
+    # contact voltages: we impose an applied voltage only on one outer boundary.
     # At the other boundary the applied voltage is zero.
     voltageAcceptor     =  1.2                  * V 
 
@@ -263,26 +268,28 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     ################################################################################
 
     # initialize ChargeTransportData instance and fill in data
-    data                                = ChargeTransportData(grid, numberOfCarriers)
+    data                                 = ChargeTransportData(grid, numberOfCarriers)
 
+    ##############################################################################
+    ####     declare here all necessary information concerning the model      ####
+    ##############################################################################
 
-    #### declare here all necessary information concerning the model ###
-
-    # Following variable declares, if we want to solve stationary or transient problem: model_transient, model_stationary
-    data.model_type                     = model_transient
+    # Following variable declares, if we want to solve a stationary or transient problem.
+    # Choose between: model_transient, model_stationary
+    data.model_type                      = model_transient
 
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
-    data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
+    data.F                               = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
     # Here the user can specify, if they assume continuous or discontinuous charge carriers. We note that for a surface recombination model,
-    # we encourage to use discontinuous electron and hole quasi Fermi potentials.
-    data.isContinuous[iphin]            = false
-    data.isContinuous[iphip]            = false
-    data.isContinuous[iphia]            = true
+    # we need to use discontinuous electron and hole quasi Fermi potentials.
+    data.isContinuous[iphin]             = false
+    data.isContinuous[iphip]             = false
+    data.isContinuous[iphia]             = true
 
-    # The input iphin, iphip refers to the indices set by the user.
     # Following choices are possible for bulk_recombination_model:bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
-    data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
+    # The input iphin, iphip refers to the indices set by the user and needs to be specified
+    data.bulk_recombination              = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
@@ -311,7 +318,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     ################################################################################
 
     # Params is a struct which contains all necessary physical parameters. If one wants to simulate
-    # space-dependent variable, one additionally needs to generate a ParamsNodal struct, see Example102.
+    # space-dependent variables, one additionally needs to generate a ParamsNodal struct, see Example102 or Example104.
     params                                              = ChargeTransportParams(grid, numberOfCarriers)
 
     params.temperature                                  = T
@@ -332,7 +339,6 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
 
     params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
     params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
-
 
     # interior region data
     for ireg in 1:numberOfRegions
@@ -371,13 +377,15 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     params.bDoping[iphip, bregionAcceptor]              = Na    
 
     # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
-    # in next step.
+    # in a next step.
     data.params                                         = params
 
-    # initialize new system!!! (here happens new stuff, see ct_system_quantities)
+    # in the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
+    # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
+    # but rather on default data.
     ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
 
-    # print data
+    # print all params stored in ctsys.data.params
     if test == false
         show_params(ctsys)
     end
@@ -392,10 +400,9 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    # set ohmic contacts for each electrons and holes at all outerior boundaries. First, 
-    # we compute equilibrium solutions. Hence the boundary values at the ohmic contacts
+    # set ohmic contacts for electrons and holes at all outerior boundaries. Here, 
+    # we compute equilibrium solutions, i.e. the boundary values at the ohmic contacts
     # are zero.
-
     set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
     set_ohmic_contact!(ctsys, bregionDonor, 0.0)
 
