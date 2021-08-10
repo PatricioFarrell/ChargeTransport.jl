@@ -815,6 +815,8 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_surfac
     # save this information such that there is no need to calculate it again for boundary conditions
     data.inner_interface_model = interface_model_surface_recombination
 
+    data.chargeCarrierList = Array{VoronoiFVM.AbstractQuantity, 1}(undef, data.params.numberOfCarriers)
+
     if data.params.numberOfCarriers < 3 # ions are not present
 
         for icc in 1:data.params.numberOfCarriers # Integers
@@ -1023,11 +1025,14 @@ function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_su
     iphin = ctsys.data.bulk_recombination.iphin
     iphip = ctsys.data.bulk_recombination.iphip
 
+    iphin = ctsys.data.chargeCarrierList[iphin]
+    iphip = ctsys.data.chargeCarrierList[iphip]
+
     if ibreg == 1
 
         for icc ∈ [iphin, iphip]
             ctsys.fvmsys.boundary_factors[icc.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
-            ctsys.fvmsys.boundary_values[ icc.regionspec[ibreg], ibreg] = contact_val
+            ctsys.fvmsys.boundary_values[icc.regionspec[ibreg], ibreg] = contact_val
         end
         
     else
