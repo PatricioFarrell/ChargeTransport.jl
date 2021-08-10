@@ -245,8 +245,8 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     data.isContinuous[iphip]            = true
     data.isContinuous[iphia]            = true
 
-    # The input iphin, iphip refers to the indices set by the user.
     # Following choices are possible for bulk_recombination_model: bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
+    # The input iphin, iphip refers to the indices set by the user.
     data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
@@ -368,10 +368,8 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     # set ohmic contacts for each charge carrier at all outerior boundaries. First, 
     # we compute equilibrium solutions. Hence the boundary values at the ohmic contacts
     # are zero.
-    set_ohmic_contact!(ctsys, iphin, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, iphip, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, iphin, bregionDonor, 0.0)
-    set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
+    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
+    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
 
     if test == false
         println("*** done\n")
@@ -453,8 +451,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         
         # Apply new voltage
         # set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
-        set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
+        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
 
         if verbose
             println("time value: t = $(t)")

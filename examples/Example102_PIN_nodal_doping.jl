@@ -227,10 +227,8 @@ function main(;Plotter = nothing, plotting = false, verbose = false, test = fals
     # set ohmic contacts for each charge carrier at all outerior boundaries. First, 
     # we compute equilibrium solutions. Hence the boundary values at the ohmic contacts
     # are zero.
-    set_ohmic_contact!(ctsys, iphin, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, iphip, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, iphin, bregionDonor, 0.0)
-    set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
+    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
+    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
 
     if test == false
         println("*** done\n")
@@ -260,10 +258,6 @@ function main(;Plotter = nothing, plotting = false, verbose = false, test = fals
         println("Compute solution in thermodynamic equilibrium for Boltzmann")
     end
     ################################################################################
-
-    # control.damp_initial      = 0.001
-    # control.damp_growth       = 1.21 # >= 1
-    # control.max_round         = 4
 
     # initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
@@ -304,8 +298,7 @@ function main(;Plotter = nothing, plotting = false, verbose = false, test = fals
     for Δu in biasValues
 
         # set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
-        set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
+        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
 
         solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
 

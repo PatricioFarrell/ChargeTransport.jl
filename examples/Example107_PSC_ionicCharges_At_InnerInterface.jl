@@ -389,10 +389,8 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     # set ohmic contacts for each charge carrier at all outerior boundaries. First, 
     # we compute equilibrium solutions. Hence the boundary values at the ohmic contacts
     # are zero.
-    set_ohmic_contact!(ctsys, iphin, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, iphip, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, iphin, bregionDonor, 0.0)
-    set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
+    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
+    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
 
     # enable interface species (this will be put in core of package in future versions; for now need to be stated here)
     enable_boundary_species!(ctsys, iphiaj1, [bregionJunction1])
@@ -482,8 +480,7 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
     
         # Apply new voltage
         # set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
-        set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
+        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
 
         # turn slightly electro-chemical reaction on
         ctsys.fvmsys.physics.data.λ3   = LAMBDA[istep + 1]
@@ -524,8 +521,7 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
         Δt                    = t - tvalues[istep-1] # Time step size
 
         # Apply new voltage
-        set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
-        set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
+        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
 
         if verbose
             println("time value: t = $(t)")
@@ -567,8 +563,7 @@ function main(;n = 6, Plotter = nothing, plotting = false, verbose = false, test
         Δt                    = t - tvalues[istep-1] # Time step size
     
         # Apply new voltage
-        set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
-        set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
+        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
     
         if verbose
             println("time value: t = $(t)")

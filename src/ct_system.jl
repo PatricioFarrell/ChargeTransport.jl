@@ -402,6 +402,11 @@ mutable struct ChargeTransportData
     """
     enable_ion_vacancies         ::  ChargeTransportIonicChargeCarriers
 
+    """
+    DataType which stores information about which inner interface model is chosen by user.
+    """
+    inner_interface_model        ::  DataType
+
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
@@ -446,21 +451,25 @@ mutable struct ChargeTransportData
     ###############################################################
 
     """
-    An array which contains information on continuous and discontinuous quantities.
+    An array which contains information on whether charge carriers
+    is continuous or discontinuous.
+    This is needed for building the AbstractQuantities.
     """
     isContinuous                 :: Array{Bool, 1}
 
 
     """
-    This list is for the loops within physics methods and stores all charge carriers.
-    Here, we can have a vector holding all abstract quantities or a vector holding an integer array.
+    This list stores all charge carriers.
+    Here, we can have a vector holding all abstract quantities
+    or a vector holding an integer array depending on the interface model
+    and the the regularity of unknowns.
     """
     chargeCarrierList            :: Union{Array{VoronoiFVM.AbstractQuantity,1}, Array{Int64, 1}}
 
 
     """
-    This variable handles the index of the electric potential. Based on
-    user choice we have with this new type the opportunity to
+    This variable stores the index of the electric potential. Based on
+    the user choice we have with this new type the opportunity to
     simulate with Quantities or integer indices.
     """
     indexPsi                     :: Union{VoronoiFVM.AbstractQuantity, Int64}
@@ -672,6 +681,8 @@ function ChargeTransportData(grid, numberOfCarriers)
     # enable_ion_vacancies is a struct holding the input information
     data.enable_ion_vacancies    = enable_ion_vacancies(ionic_vacancies = [3], regions = [2])
 
+    data.inner_interface_model   = interface_model_none
+
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
@@ -743,10 +754,13 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
 
     ctsys                  = ChargeTransportSystem()
 
-    # for the loops within physics methods we set the chargeCarrierList to normal indexing.
+    # save this information such that there is no need to calculate it again for boundary conditions
+    data.inner_interface_model = interface_model_none
+
+    # Here, in this case for the loops within physics methods we set the chargeCarrierList to normal indexing.
+    data.chargeCarrierList = collect(1:data.params.numberOfCarriers)
     # DA: caution with the interface_model with ionic interface charges (in future versions,
     # we will work with VoronoiFVM.InterfaceQuantites)
-    data.chargeCarrierList = collect(1:data.params.numberOfCarriers)
 
     data.indexPsi          = num_species_sys
 
@@ -766,7 +780,6 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
         enable_species!(ctsys.fvmsys, icc, 1:data.params.numberOfRegions) 
     end
 
-    
     if data.params.numberOfCarriers > 2 # when ionic vacancies are present
 
         # get the ion vacancy indices by user input which where parsed into the struct
@@ -798,6 +811,9 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_surfac
 
     ctsys        = ChargeTransportSystem()
     fvmsys       = VoronoiFVM.System(grid, unknown_storage=unknown_storage)
+
+    # save this information such that there is no need to calculate it again for boundary conditions
+    data.inner_interface_model = interface_model_surface_recombination
 
     if data.params.numberOfCarriers < 3 # ions are not present
 
@@ -980,23 +996,14 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Functions which sets for given charge carrier at a given boundary
-a given value.
+Functions which sets at a given outer boundary
+a given Dirichlet value.
     
 """
-function set_ohmic_contact!(ctsys, icc, ibreg, contact_val)
-
-    #iphin = ctsys.data.bulk_recombination.iphin
-    #iphip = ctsys.data.bulk_recombination.iphip
- 
-    ctsys.fvmsys.boundary_factors[icc, ibreg] = VoronoiFVM.Dirichlet
-    ctsys.fvmsys.boundary_values[icc, ibreg]  = contact_val
- 
-end
 
 function set_ohmic_contact!(ctsys, ibreg, contact_val)
 
-    interface_model       = inner_interface_model(ctsys)
+    interface_model       = ctsys.data.inner_interface_model
 
     set_ohmic_contact!(ctsys, ibreg, contact_val, interface_model)
  
@@ -1004,7 +1011,7 @@ end
 
 function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_none})
 
-    for icc = 1:ctsys.data.numberOfCarriers
+    for icc = 1:ctsys.data.params.numberOfCarriers
         ctsys.fvmsys.boundary_factors[icc, ibreg] = VoronoiFVM.Dirichlet
         ctsys.fvmsys.boundary_values[icc, ibreg]  = contact_val
     end
@@ -1013,17 +1020,19 @@ end
 
 function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_surface_recombination})
 
-    electricCarriers = ctsys.data.chargeCarrierList[1:2]
+    iphin = ctsys.data.bulk_recombination.iphin
+    iphip = ctsys.data.bulk_recombination.iphip
+
     if ibreg == 1
 
-        for icc in electricCarriers
+        for icc ∈ [iphin, iphip]
             ctsys.fvmsys.boundary_factors[icc.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
             ctsys.fvmsys.boundary_values[ icc.regionspec[ibreg], ibreg] = contact_val
         end
         
     else
 
-        for icc in electricCarriers
+        for icc ∈ [iphin, iphip]
             ctsys.fvmsys.boundary_factors[icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] = VoronoiFVM.Dirichlet
             ctsys.fvmsys.boundary_values[ icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] = contact_val
         end
@@ -1163,22 +1172,26 @@ function get_current_val(ctsys, U)
 
 end
 
+###########################################################
+###########################################################
+
 """
 
 $(TYPEDSIGNATURES)
 
-For given potentials, compute corresponding densities.
+For given potentials, compute corresponding densities. This function is needed
+for the method, plotting the densities.
 
 """
-function compute_densities!(u, data, node, region, icc, ipsi, in_region::Bool)
+function compute_densities!(u, data, inode, region, icc, ipsi, in_region::Bool)
 
     params      = data.params
     paramsnodal = data.paramsnodal 
 
     if in_region == false
-        (params.bDensityOfStates[icc, region] + paramsnodal.densityOfStates[icc, node] ) * data.F[icc](etaFunction(u, data, node, region, icc, ipsi, in_region::Bool))
+        (params.bDensityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode] ) * data.F[icc](etaFunction(u, data, inode, region, icc, ipsi, in_region::Bool))
     elseif in_region == true
-        (params.densityOfStates[icc, region] + paramsnodal.densityOfStates[icc, node])* data.F[icc](etaFunction(u, data, node, region, icc, ipsi, in_region::Bool)) 
+        (params.densityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode])* data.F[icc](etaFunction(u, data, inode, region, icc, ipsi, in_region::Bool)) 
     end
         
 end
@@ -1229,6 +1242,8 @@ function compute_densities!(grid, data, sol)
 
 end
 
+###########################################################
+###########################################################
 
 """
 

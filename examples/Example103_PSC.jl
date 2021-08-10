@@ -333,10 +333,8 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
     # set ohmic contacts for each charge carrier at all outerior boundaries. First, 
     # we compute equilibrium solutions. Hence the boundary values at the ohmic contacts
     # are zero.
-    set_ohmic_contact!(ctsys, iphin, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, iphip, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, iphin, bregionDonor, 0.0)
-    set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
+    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
+    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
 
     if test == false
         println("*** done\n")
@@ -414,8 +412,7 @@ function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test
         end
 
         # set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
-        set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
+        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
 
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 

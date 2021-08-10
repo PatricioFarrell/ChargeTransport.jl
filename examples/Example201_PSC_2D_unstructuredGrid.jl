@@ -379,10 +379,8 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
     # set ohmic contacts for each charge carrier at all outerior boundaries. First, 
     # we compute equilibrium solutions. Hence the boundary values at the ohmic contacts
     # are zero.
-    set_ohmic_contact!(ctsys, iphin, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, iphip, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, iphin, bregionDonor, 0.0)
-    set_ohmic_contact!(ctsys, iphip, bregionDonor, 0.0)
+    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
+    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
 
     if test == false
         println("*** done\n")
@@ -473,10 +471,8 @@ function main(Plotter = nothing, ;plotting = false, verbose = false, test = fals
         Δu                    = t * scanrate         # Applied voltage 
         Δt                    = t - tvalues[istep-1] # Time step size
         
-        # Apply new voltage
-        # set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, iphin, bregionAcceptor, Δu)
-        set_ohmic_contact!(ctsys, iphip, bregionAcceptor, Δu)
+        # Apply new voltage; set non equilibrium boundary conditions
+        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
         
         if verbose
             println("time value: t = $(t)")
