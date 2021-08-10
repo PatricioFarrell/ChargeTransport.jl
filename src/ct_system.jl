@@ -446,20 +446,14 @@ mutable struct ChargeTransportData
     ###############################################################
 
     """
-    Array where the Discontinuous and ContinuousQuantities are stored
-    """
-    chargeCarrierQuantities      :: Array{VoronoiFVM.AbstractQuantity, 1}
-
-    ###############################################################
-    """
     An array which contains information on continuous and discontinuous quantities.
     """
     isContinuous                 :: Array{Bool, 1}
 
 
     """
-    This list is for the loops within physics methods. Here, we can have a vector 
-    holding all abstract quantities or a vector holding an integer array.
+    This list is for the loops within physics methods and stores all charge carriers.
+    Here, we can have a vector holding all abstract quantities or a vector holding an integer array.
     """
     chargeCarrierList            :: Union{Array{VoronoiFVM.AbstractQuantity,1}, Array{Int64, 1}}
 
@@ -692,14 +686,6 @@ function ChargeTransportData(grid, numberOfCarriers)
     ###############################################################
     ####        Quantities (for discontinuous solving)         ####
     ###############################################################
-    data.chargeCarrierQuantities  = Array{VoronoiFVM.AbstractQuantity,1}(undef, numberOfCarriers)
-
-    for ii in 1:numberOfCarriers
-        data.chargeCarrierQuantities[ii] = ContinuousQuantity(ii, ii)
-    end
-
-    ###############################################################
-
     data.isContinuous             = Array{Bool, 1}(undef, numberOfCarriers)
     data.isContinuous            .= true
     # default values for most simple case 
@@ -726,9 +712,10 @@ end
 $(SIGNATURES)
 
 System constructor which builds all necessary information needed based
-on the input parameters concerning additional interface models. This is the main
-struct in which all information is stored and with which the calculations
-are performed.
+on the input parameters with special regard to additional interface models.
+This is the main struct in which all information on the input data, but also
+on the solving system, with which the calculations are performed,
+are stored.
 
 """
 function ChargeTransportSystem(grid, data ;unknown_storage)
@@ -736,7 +723,8 @@ function ChargeTransportSystem(grid, data ;unknown_storage)
     ctsys                 = ChargeTransportSystem()
 
     interface_model       = inner_interface_model(data)
-    # here at this point a quantity based solving is built or not
+    # here at this point, based on the interface model, we choose a system based on normal
+    # integer indexing or quantity indexing.
     ctsys                 = build_system(grid, data, unknown_storage, interface_model)
     
     return ctsys
@@ -756,7 +744,8 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
     ctsys                  = ChargeTransportSystem()
 
     # for the loops within physics methods we set the chargeCarrierList to normal indexing.
-    # DA: caution with the interface_model with ionic interface charges
+    # DA: caution with the interface_model with ionic interface charges (in future versions,
+    # we will work with VoronoiFVM.InterfaceQuantites)
     data.chargeCarrierList = collect(1:data.params.numberOfCarriers)
 
     data.indexPsi          = num_species_sys
@@ -780,6 +769,8 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
     
     if data.params.numberOfCarriers > 2 # when ionic vacancies are present
 
+        # get the ion vacancy indices by user input which where parsed into the struct
+        # data.enable_ion_vacancies
         ionic_vacancies = data.enable_ion_vacancies.ionic_vacancies
 
         for icc ∈ ionic_vacancies # Then, ion vacancies only present in user defined layers, i.e. adjust previous specification
@@ -789,7 +780,7 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
 
     enable_species!(ctsys.fvmsys, data.indexPsi , 1:data.params.numberOfRegions) # ipsi defined on whole domain
 
-    # for detection of number of species. In following versions we can simply delete num_species from physics initialization. 
+    # for detection of number of species 
     VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species_sys) 
 
     return ctsys
@@ -812,9 +803,9 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_surfac
 
         for icc in 1:data.params.numberOfCarriers # Integers
             if data.isContinuous[icc] == false
-                data.chargeCarrierQuantities[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+                data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
             elseif data.isContinuous[icc] == true
-                data.chargeCarrierQuantities[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+                data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
             end
         end
 
@@ -825,17 +816,17 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_surfac
 
             if data.isContinuous[icc] == false # discontinuous quantity
                 if icc ∈ ionic_vacancies # ionic quantity
-                    data.chargeCarrierQuantities[icc] = DiscontinuousQuantity(fvmsys, data.enable_ion_vacancies.regions, id = icc)
+                    data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, data.enable_ion_vacancies.regions, id = icc)
                 else
-                    data.chargeCarrierQuantities[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+                    data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
                 end
 
             elseif data.isContinuous[icc] == true # continuous quantity
 
                 if icc ∈ ionic_vacancies  # ionic quantity
-                    data.chargeCarrierQuantities[icc] = ContinuousQuantity(fvmsys, data.enable_ion_vacancies.regions, id = icc)
+                    data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, data.enable_ion_vacancies.regions, id = icc)
                 else
-                    data.chargeCarrierQuantities[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+                    data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
                 end
             end
 
@@ -843,9 +834,6 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_surfac
 
     end
     
-    # for the loops within physics methods we set the chargeCarrierList to quantity indexing.
-    data.chargeCarrierList = data.chargeCarrierQuantities
-
     data.indexPsi          = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions) 
 
     physics    = VoronoiFVM.Physics(data        = data,
@@ -1025,7 +1013,7 @@ end
 
 function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_surface_recombination})
 
-    electricCarriers = ctsys.data.chargeCarrierQuantities[1:2]
+    electricCarriers = ctsys.data.chargeCarrierList[1:2]
     if ibreg == 1
 
         for icc in electricCarriers

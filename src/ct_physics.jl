@@ -467,73 +467,22 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
         return emptyFunction()
 
     else
-        params      = data.params
-        paramsnodal = data.paramsnodal
 
-
-        # Ei_a                = -4.05                 * eV   
-        # Ei_i                = -4.60                 * eV   
-        # Ei_d                = -5.00                 * eV   
-    
-        # EI                  = [Ei_a, Ei_i, Ei_d]
-    
-        # recombinationVelocity    = [1.0e1 1.0e7;
-        #                             1.0e5 1.0e1]
-        # recombinationTrapDensity = 0.5.* [trap_density!(1, 1, data, EI[1]) + trap_density!(1, 2, data, EI[2])   trap_density!(1, 2, data, EI[2]) + trap_density!(1, 3, data, EI[3]);
-        # trap_density!(2, 1, data, EI[1]) + trap_density!(2, 2, data, EI[2])   trap_density!(2, 2, data, EI[2]) + trap_density!(2, 3, data, EI[3])]
-                                
-        # # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
-        # iphin       = data.bulk_recombination.iphin
-        # iphip       = data.bulk_recombination.iphip
-
-        # # based on user index and regularity of solution quantities or integers are used and depicted here
-        # iphin       = data.chargeCarrierList[iphin]
-        # iphip       = data.chargeCarrierList[iphip]
-    
-        ####################### idea 2 (junctions.tex) ###########################
-        # for icc in data.chargeCarrierQuantities[1:2] # list of our charge carrier quantities
-
-        #     etan1  = params.chargeNumbers[iphin.id] / params.UT * ( (u[iphin, 1] - u[ipsi]) + params.bandEdgeEnergy[iphin.id, bnode.cellregions[1]] / q ) # left
-        #     etan2  = params.chargeNumbers[iphin.id] / params.UT * ( (u[iphin, 2] - u[ipsi]) + params.bandEdgeEnergy[iphin.id, bnode.cellregions[2]] / q ) # right
-
-        #     etap1  = params.chargeNumbers[iphip.id] / params.UT * ( (u[iphip, 1] - u[ipsi]) + params.bandEdgeEnergy[iphip.id, bnode.cellregions[1]] / q ) # left
-        #     etap2  = params.chargeNumbers[iphip.id] / params.UT * ( (u[iphip, 2] - u[ipsi]) + params.bandEdgeEnergy[iphip.id, bnode.cellregions[2]] / q ) # right
-
-        #     n1     = (params.densityOfStates[iphin.id, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphin.id, bnode.index])* data.F[iphin.id](etan1)
-        #     n2     = (params.densityOfStates[iphin.id, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphin.id, bnode.index])* data.F[iphin.id](etan2)
-
-        #     p1     = (params.densityOfStates[iphip.id, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphip.id, bnode.index])* data.F[iphip.id](etap1)
-        #     p2     = (params.densityOfStates[iphip.id, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphip.id, bnode.index])* data.F[iphip.id](etap2)
-            
-        #     average_n    = 0.5 * (n1 + n2)^(2/3)
-        #     average_p    = 0.5 * (p1 + p2)^(2/3)
-        #     average_phin = 0.5 * ( u[iphin, 1] - u[iphin, 2] )
-        #     average_phip = 0.5 * ( u[iphip, 1] - u[iphip, 2] )
-
-        #     exponentialTerm       = exp((q * average_phin - q  * average_phip ) / (kB * params.temperature))
-        #     excessDensTerm = average_n * average_p * (1.0 - exponentialTerm)
-
-
-        #     kernelSRH = 1.0 / (  1.0/recombinationVelocity[iphip.id, bnode.region-2] * (average_n + recombinationTrapDensity[iphin.id, bnode.region-2]) + 1.0/recombinationVelocity[iphin.id, bnode.region-2] * (average_p + recombinationTrapDensity[iphip.id, bnode.region-2]) )
-
-        #     react2     = q * params.chargeNumbers[icc.id] *  kernelSRH *  excessDensTerm 
-
-        #     f[icc, 1] =   react2
-        #     f[icc, 2] = - react2
-        #end
-
-        ####################### idea 2 (junctions.tex) ###########################
-
-        # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
-        iphin       = data.bulk_recombination.iphin
-        iphip       = data.bulk_recombination.iphip
+        # indices (∈ IN ) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
+        iphin       = data.bulk_recombination.iphin # integer index of φ_n
+        iphip       = data.bulk_recombination.iphip # integer index of φ_p
 
         # based on user index and regularity of solution quantities or integers are used and depicted here
-        iphin       = data.chargeCarrierList[iphin]
-        iphip       = data.chargeCarrierList[iphip]
+        iphin       = data.chargeCarrierList[iphin] # = Quantity or integer
+        iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
 
-        for icc ∈ [iphin, iphip]
-            # qF potentials 
+        for icc ∈ [iphin, iphip] # equations for qF potentials 
+            
+            # to see continuity
+            #d         = [1.0e7 1.0e7;
+            #            1.0e7 1.0e7]
+
+            # to see discontinuity
             d         = [1.0e1 1.0e3;
                         1.0e7 1.0e1]
             react     = d[icc.id, bnode.region-2] * (u[icc, 1] - u[icc, 2])
