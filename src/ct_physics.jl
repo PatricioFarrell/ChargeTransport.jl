@@ -721,14 +721,16 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
 
     params      = data.params
     paramsnodal = data.paramsnodal
-
-    # indices
-    ipsi        = data.indexPsi   # final index for electrostatic potential
     ireg        = node.region
     inode       = node.index
 
-    # rhs of NLP (charge density)
-    for icc ∈ data.chargeCarrierList
+    ipsi        = data.indexPsi   # final index for electrostatic potential
+
+    ###########################################################
+    ####         right-hand side of nonlinear Poisson      ####
+    ####         equation (space charge density)           ####
+    ###########################################################
+    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
         
         eta     = etaFunction(u, node, data, icc, ipsi) 
         f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, ireg] )   # subtract doping
@@ -739,8 +741,13 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
 
     f[ipsi]                     = - data.λ1 * q * f[ipsi]
 
-    for icc ∈ data.chargeCarrierList
+    ############################################################
+    ####          simple zero reaction for all icc          ####
+    ############################################################
+    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+
         f[icc] = u[icc] - 0.0
+
     end
 
     return f
@@ -828,7 +835,7 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     ############################################################
     ####          simple zero reaction for all icc          ####
     ############################################################
-    for icc ∈ data.chargeCarrierList # chargeCarrierList ∈ {IN} ∪ {AbstractQuantity}
+    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
 
         f[icc]  = u[icc] - 0.0 # set for all charge carriers (electric and possible present ionic) zero conditions
 
@@ -838,7 +845,7 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     ####         right-hand side of nonlinear Poisson      ####
     ####         equation (space charge density)           ####
     ###########################################################
-    for icc ∈ data.chargeCarrierList # chargeCarrierList ∈ {IN} ∪ {AbstractQuantity}
+    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
         
         eta     = etaFunction(u, node, data, icc, ipsi) 
         f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, node.region] )  # subtract doping
@@ -855,8 +862,8 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     ####       for φ_n and φ_p (bipolar reaction)          ####
     ###########################################################
 
-    n               = compute_densities!(u, data, inode, ireg, iphin, ipsi, true)  # true for interior region
-    p               = compute_densities!(u, data, inode, ireg, iphip, ipsi, true) 
+    n               = (params.densityOfStates[iphin, ireg] + paramsnodal.densityOfStates[iphin, inode]) * data.F[iphin](etaFunction(u, node, data, iphin, ipsi))
+    p               = (params.densityOfStates[iphip, ireg] + paramsnodal.densityOfStates[iphip, inode]) * data.F[iphip](etaFunction(u, node, data, iphip, ipsi))
 
     exponentialTerm = exp((q *u[iphin] - q * u[iphip]) / (kB * params.temperature))
     excessDensTerm  = n * p * (1.0 - exponentialTerm)
