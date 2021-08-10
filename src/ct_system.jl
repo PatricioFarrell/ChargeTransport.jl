@@ -16,12 +16,12 @@ mutable struct ChargeTransportBulkRecombination
     """
     index for data construction of quasi Fermi potential of electrons
     """
-	iphin                ::  Union{VoronoiFVM.AbstractQuantity, Int64}
+	iphin                ::  Int64 # here the id's of the AbstractQuantities or the integer indices are parsed.
 
     """
     index for data construction of quasi Fermi potential of holes
     """
-    iphip                ::  Union{VoronoiFVM.AbstractQuantity, Int64}
+    iphip                ::  Int64 # here the id's of the AbstractQuantities or the integer indices are parsed.
 
     """
     the chosen bulk recombination model.
@@ -67,7 +67,7 @@ mutable struct ChargeTransportIonicChargeCarriers
     """
     Array with the indices of ionic charge carriers.
     """
-    ionic_vacancies       ::  Array{Union{VoronoiFVM.AbstractQuantity, Int64}, 1}
+    ionic_vacancies       ::  Array{Int64, 1}
 
     """
     Corresponding regions where ionic charge carriers are assumed to be present.
