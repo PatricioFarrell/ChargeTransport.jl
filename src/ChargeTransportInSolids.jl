@@ -30,6 +30,9 @@ include("ct_physics.jl")
 
 export boundary_model, ohmic_contact, schottky_contact
 export interface_model, interface_model_none, interface_model_surface_recombination, interface_model_ion_charge, interface_model_ion_charge_left, interface_model_ion_charge_right
+
+export interface_model_surface_reco_Cont
+
 export model_type, model_transient, model_stationary
 export bulk_recombination_model, bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_model_radiative, bulk_recomb_model_full
 export ScharfetterGummel, excessChemicalPotential, diffusionEnhanced, generalized_SG 

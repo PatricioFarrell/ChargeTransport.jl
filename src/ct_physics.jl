@@ -43,6 +43,14 @@ abstract type interface_model_none <: interface_model end
 
 """
 $(TYPEDEF)
+Abstract type for no interface model.
+
+"""
+abstract type interface_model_surface_reco_Cont <: interface_model end
+
+
+"""
+$(TYPEDEF)
 Abstract type for surface recombination mechanisms.
 
 """
@@ -401,6 +409,62 @@ This breaction! function is chosen when no interface model is chosen.
 breaction!(f, u, bnode, data, ::Type{interface_model_none}) = emptyFunction()
 
 
+bstorage!(f, u, bnode, data, ::Type{interface_model_surface_reco_Cont}) = emptyFunction()
+
+function breaction!(f, u, bnode, data, ::Type{interface_model_surface_reco_Cont})
+    if data.calculation_type == inEquilibrium
+        return
+    end
+
+    #indices (∈ IN ) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
+    iphin       = data.bulk_recombination.iphin # integer index of φ_n
+    iphip       = data.bulk_recombination.iphip # integer index of φ_p
+
+    ipsi = data.indexPsi
+
+    params      = data.params
+    paramsnodal = data.paramsnodal
+
+    recombinationVelocity    = [1.0e1 1.0e7; 1.0e5 1.0e1]
+                                
+
+    if bnode.region == 3 # choose values from left transport layer
+
+        etan = params.chargeNumbers[iphin] / params.UT * ( (u[iphin] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[1]] / q ) # left
+        etap = params.chargeNumbers[iphip] / params.UT * ( (u[iphip] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[1]] / q ) # left
+
+        n    = ((params.densityOfStates[iphin, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphin, bnode.index])* data.F[iphin](etan))
+        p    = ((params.densityOfStates[iphip, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphip, bnode.index])* data.F[iphip](etap))
+
+        exponentialTerm = exp((q * u[iphin] - q  * u[iphip] ) / (kB * params.temperature))
+        excessDensTerm  = n * p * (1.0 - exponentialTerm)
+
+        kernelSRH = 1.0 / (  1.0/recombinationVelocity[iphip, bnode.region-2] * (n + params.recombinationSRHTrapDensity[iphin, bnode.cellregions[1]]) + 1.0/recombinationVelocity[iphin, bnode.region-2] * (p + params.recombinationSRHTrapDensity[iphip, bnode.cellregions[1]] ) )
+   
+        for icc ∈ data.chargeCarrierList
+            f[icc] = q * params.chargeNumbers[icc] *  kernelSRH *  excessDensTerm
+        end
+
+    elseif bnode.region == 4 # choose values from left transport layer
+        etan = params.chargeNumbers[iphin] / params.UT * ( (u[iphin] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[2]] / q ) # left
+        etap = params.chargeNumbers[iphip] / params.UT * ( (u[iphip] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[2]] / q ) # left
+
+        n    = ((params.densityOfStates[iphin, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphin, bnode.index])* data.F[iphin](etan))
+        p    = ((params.densityOfStates[iphip, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphip, bnode.index])* data.F[iphip](etap))
+
+        exponentialTerm = exp((q * u[iphin] - q  * u[iphip] ) / (kB * params.temperature))
+        excessDensTerm  = n * p * (1.0 - exponentialTerm)
+
+        kernelSRH = 1.0 / (  1.0/recombinationVelocity[iphip, bnode.region-2] * (n + params.recombinationSRHTrapDensity[iphin, bnode.cellregions[2]]) + 1.0/recombinationVelocity[iphin, bnode.region-2] * (p + params.recombinationSRHTrapDensity[iphip, bnode.cellregions[2]] ) )
+   
+        for icc ∈ data.chargeCarrierList
+            f[icc] = q * params.chargeNumbers[icc] *  kernelSRH *  excessDensTerm
+        end
+
+    end
+
+end
+
 
 """
 $(TYPEDSIGNATURES)
@@ -451,6 +515,8 @@ function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
 
 end
 
+
+
 """
 $(TYPEDSIGNATURES)
 
@@ -460,44 +526,88 @@ Currently with this function only discontinuous quantities at inner interfaces a
 
 function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombination})
 
-    ipsi = data.indexPsi
-
     if data.calculation_type == inEquilibrium
 
         return emptyFunction()
 
-    else
-
-        # indices (∈ IN ) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
-        iphin       = data.bulk_recombination.iphin # integer index of φ_n
-        iphip       = data.bulk_recombination.iphip # integer index of φ_p
-
-        # based on user index and regularity of solution quantities or integers are used and depicted here
-        iphin       = data.chargeCarrierList[iphin] # = Quantity or integer
-        iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
-
-        for icc ∈ [iphin, iphip] # equations for qF potentials 
-            
-            # to see continuity
-            #d         = [1.0e7 1.0e7;
-            #            1.0e7 1.0e7]
-
-            # to see discontinuity
-            d         = [1.0e1 1.0e3;
-                        1.0e7 1.0e1]
-            react     = d[icc.id, bnode.region-2] * (u[icc, 1] - u[icc, 2])
-
-            f[icc, 1] =   react
-            f[icc, 2] = - react
-        end
-
-        ########    
-       
-
-        return f
     end
 
+    ipsi = data.indexPsi
+
+    #indices (∈ IN ) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
+    iphin       = data.bulk_recombination.iphin # integer index of φ_n
+    iphip       = data.bulk_recombination.iphip # integer index of φ_p
+
+    # based on user index and regularity of solution quantities or integers are used and depicted here
+    iphin       = data.chargeCarrierList[iphin] # = Quantity or integer
+    iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
+
+    params      = data.params
+    paramsnodal = data.paramsnodal
+
+    recombinationVelocity    = [1.0e1 1.0e7;
+                                    1.0e5 1.0e1]
+                                
+    # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
+    iphin       = data.bulk_recombination.iphin
+    iphip       = data.bulk_recombination.iphip
+
+    # based on user index and regularity of solution quantities or integers are used and depicted here
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+    
+
+    ######### left values  ##########
+    etan1 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 1] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[1]] / q ) # left
+    etap1 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 1] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[1]] / q ) # left
+
+    n1    = ((params.densityOfStates[iphin, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphin, bnode.index])* data.F[iphin](etan1))
+    p1    = ((params.densityOfStates[iphip, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphip, bnode.index])* data.F[iphip](etap1))
+
+    exponentialTerm1 = exp((q * u[iphin, 1] - q  * u[iphip, 1] ) / (kB * params.temperature))
+    excessDensTerm1  = n1 * p1 * (1.0 - exponentialTerm1)
+
+    kernelSRH1 = 1.0 / (  1.0/recombinationVelocity[iphip, bnode.region-2] * (n1 + params.recombinationSRHTrapDensity[iphin, bnode.cellregions[1]]) + 1.0/recombinationVelocity[iphin, bnode.region-2] * (p1 + params.recombinationSRHTrapDensity[iphip, bnode.cellregions[1]] ) )
+
+
+    ######### right values  ##########
+    etan2 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 2] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[2]] / q ) # right
+    etap2 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 2] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[2]] / q ) # right
+
+    n2    = ((params.densityOfStates[iphin, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphin, bnode.index])* data.F[iphin](etan2))
+    p2    = ((params.densityOfStates[iphip, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphip, bnode.index])* data.F[iphip](etap2))
+
+    exponentialTerm2 = exp((q * u[iphin, 2] - q  * u[iphip, 2] ) / (kB * params.temperature))
+    excessDensTerm2   = n2 * p2 * (1.0 - exponentialTerm2)
+
+    kernelSRH2 = 1.0 / (  1.0/recombinationVelocity[iphip, bnode.region-2] * (n2 + params.recombinationSRHTrapDensity[iphin, bnode.cellregions[2]])+ 1.0/recombinationVelocity[iphin, bnode.region-2] * (p2 + params.recombinationSRHTrapDensity[iphip, bnode.cellregions[2]]))
+
+    for icc ∈ [iphin, iphip] # equations for qF potentials 
+        react1     =  q *  params.chargeNumbers[icc] *  kernelSRH1 *  excessDensTerm1 
+        react2     =  q *  params.chargeNumbers[icc] *  kernelSRH2 *  excessDensTerm2 
+
+        f[icc, 1] = react1
+        f[icc, 2] = - react2
+
+    end
+
+    # for icc ∈ [iphin, iphip] # equations for qF potentials 
+            
+    #     #to see continuity
+    #     d         = [1.0e7 1.0e7;
+    #                1.0e7 1.0e7]
+
+    #     # to see discontinuity
+    #     # d         = [1.0e1 1.0e3;
+    #     #                 1.0e7 1.0e1]
+    #     react     =d[icc, bnode.region-2] *   (u[icc, 1] - u[icc, 2])
+
+    #     f[icc, 1] =   react
+    #     f[icc, 2] = - react
+    # end
+
 end
+
 
 """
 $(TYPEDSIGNATURES)
@@ -639,6 +749,13 @@ No bstorage! is used, if an ohmic contact model is chosen.
 
 """
 bstorage!(f, u, bnode, data, ::Type{ohmic_contact}) = emptyFunction()
+
+"""
+$(TYPEDSIGNATURES)
+No bstorage! is used, if an schottky contact model is chosen.
+
+"""
+bstorage!(f, u, bnode, data, ::Type{schottky_contact}) = emptyFunction()
 
 
 
@@ -1329,7 +1446,6 @@ end
 """
 $(TYPEDSIGNATURES)
 [Note that this way of implementation is not well tested yet. 
-Will be coded different in future version !!!!]
 
 Creates Schottky boundary conditions in a first attempt. For the electrostatic potential we assume 
 
@@ -1348,7 +1464,7 @@ no electrical field and a quasi Fermi level equal to the metal work function ``\
 ``n_{\\alpha, 0}= z_\\alpha/ U_T (E_\\alpha - \\phi) / q. ``
 
 """
-function breactionSchottky!(f, u, bnode, data)
+function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
 
     params        = data.params
     paramsnodal   = data.paramsnodal
@@ -1356,19 +1472,24 @@ function breactionSchottky!(f, u, bnode, data)
 
     ipsi          = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1        # final index for electrostatic potential
 
+    Eref              = 4.1                   *  eV
+
+    bFermiLevel      = [-4.1 * eV + Eref, -5.0 * eV + Eref]
+    bVelocity        = [1.0e7*cm/s 0.0*cm/s; 0.0*cm/s 1.0e7*cm/s; 0.0 1.0e7*cm/s]
+
     # bnode.coord
-    # if bnode.region == 1
-    #     f[ipsi] = -u[ipsi] 
-    # elseif bnode.region == 2
-    #     f[ipsi] =  + u[ipsi] - data.λ1 *((data.bFermiLevel[2] - data.bFermiLevel[1])/q ) - data.contactVoltage[bnode.region]  
-    # end
+    if bnode.region == 1
+        f[ipsi] = -u[ipsi] 
+    elseif bnode.region == 2
+        f[ipsi] =  + u[ipsi] - data.λ1 *((bFermiLevel[2] - bFermiLevel[1])/q ) - 0.0#data.contactVoltage[bnode.region]  
+    end
 
     for icc = 1:params.numberOfCarriers-1
        
         if bnode.region == 1
-            phi = params.bFermiLevel[1]
+            phi = bFermiLevel[1]
         elseif bnode.region == 2
-            phi = params.bFermiLevel[2]
+            phi = bFermiLevel[2]
         end
         if bnode.region == 1 || bnode.region == 2
             E      = params.bBandEdgeEnergy[icc, bnode.region] + paramsnodal.bandEdgeEnergy[icc, bnode.index]

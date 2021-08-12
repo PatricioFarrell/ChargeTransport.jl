@@ -15,7 +15,7 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 (with adjustments on layer lengths)
 =#
 
-module Example302_PSC_pedot_mapi_pcbm_discontqF
+module Example333_PSC_pedot_mapi_pcbm_contqF
 
 using VoronoiFVM
 using ChargeTransportInSolids
@@ -24,37 +24,8 @@ using GridVisualize
 using DelimitedFiles
 using PyPlot
 
-function plot_solution(Plotter, ctsys, solution)
 
-    iphin = ctsys.data.bulk_recombination.iphin
-    iphip = ctsys.data.bulk_recombination.iphip
-
-    subgrids = VoronoiFVM.subgrids(ctsys.data.chargeCarrierList[iphin], ctsys.fvmsys)
-
-    phin_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
-    phip_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
-    phia_sol = VoronoiFVM.views(solution, ctsys.data.chargeCarrierList[3], subgrids, ctsys.fvmsys) # need another way to get index here.
-    psi_sol  = VoronoiFVM.views(solution, ctsys.data.indexPsi,  subgrids, ctsys.fvmsys)
-
-    vis      = GridVisualizer(resolution=(600,300), Plotter=Plotter)
-
-    scalarplot!(vis, subgrids[2], phia_sol[2], clear=false, label = "\$ \\varphi_a \$", color=:yellow, linewidth = 3)
-    for i = 1:length(phin_sol)
-        scalarplot!(vis, subgrids[i], phin_sol[i], clear=false, label = "\$ \\varphi_n \$", color=:green, linewidth = 4)
-        scalarplot!(vis, subgrids[i], phip_sol[i], clear=false, label = "\$ \\varphi_p \$",  color=:red, linewidth = 4)
-        scalarplot!(vis, subgrids[i], psi_sol[i], flimits=(0.0, 1.6), clear=false, label = "\$ \\psi \$", color=:blue, linewidth = 4)
-        
-
-        if i == 1
-            Plotter.legend(fancybox = true, loc = "best", fontsize=11)
-        end
-
-    end
-
-end
-
-
-function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -283,8 +254,8 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
 
     # Here the user can specify, if they assume continuous or discontinuous charge carriers. We note that for a surface recombination model,
     # we need to use discontinuous electron and hole quasi Fermi potentials.
-    data.isContinuous[iphin]             = false
-    data.isContinuous[iphip]             = false
+    data.isContinuous[iphin]             = true
+    data.isContinuous[iphip]             = true
     data.isContinuous[iphia]             = true
 
     # Following choices are possible for bulk_recombination_model:bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
@@ -295,8 +266,8 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
     # (distinguish between left and right).
     data.boundary_type[bregionAcceptor]  = ohmic_contact  
-    data.boundary_type[bregionJunction1] = interface_model_surface_recombination
-    data.boundary_type[bregionJunction2] = interface_model_surface_recombination                      
+    data.boundary_type[bregionJunction1] = interface_model_surface_reco_Cont
+    data.boundary_type[bregionJunction2] = interface_model_surface_reco_Cont                   
     data.boundary_type[bregionDonor]     = ohmic_contact   
 
     # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
@@ -455,14 +426,14 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
         dfusion_grid          = 1.0e-2.*readdlm("data/Driftfusion-pedotpss-grid.dat")
         dfusion_psi_interface =         readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-psi-EQ.dat")
         ##########################
-        plot_solution(Plotter, ctsys, solution)
+        plot_solution(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
         Plotter.title("Equilibrium; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$")
         Plotter.xlabel("space [m]")
         Plotter.ylabel("potential [V]")
         PyPlot.plot(dfusion_grid', (dfusion_psi_interface[1,:]- 5.02*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
         PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
         PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
-        Plotter.tight_layout()
+        Plotter.figure()
 
     end
 
@@ -480,12 +451,12 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
 
     control.damp_initial          = 0.5
     control.damp_growth           = 1.21
-    control.max_round             = 7
+    control.max_round             = 5
 
     # there are different way to control timestepping
     # Here we assume these primary data
     scanrate                      = 0.04 * V/s
-    ntsteps                       = 24
+    ntsteps                       = 51
     vend                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     v0                            = 0.0
 
@@ -516,33 +487,34 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
         initialGuess .= solution
 
         if plotting
-            dfusion_psi           = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-psi-t-end.dat")
 
+            ##########################
+            plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+
+            dfusion_psi    = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-psi-t-end.dat")
             dfusion_phin   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efn-t-end.dat")
             dfusion_phip   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efp-t-end.dat")
+        
+            dfusion_psi_interface    = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-psi-t-end.dat")
+            dfusion_phin_interface   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efn-t-end.dat")
+            dfusion_phip_interface   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efp-t-end.dat")
 
-            dfusion_psi_interface   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-psi-t-end.dat")
-            dfusion_phin_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efn-t-end.dat")
-            dfusion_phip_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efp-t-end.dat")
-            ##########################
-            plot_solution(Plotter, ctsys, solution)
-            Plotter.title("\$ \\Delta u = $( Δu)\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$")
-            Plotter.xlabel("space [m]")
-            Plotter.ylabel("potential [V]")
-            ##########
-            PyPlot.plot(dfusion_grid', (  dfusion_psi[1,:] - 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
-            PyPlot.plot(dfusion_grid', (-dfusion_phin[1,:] - 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
-            PyPlot.plot(dfusion_grid', (-dfusion_phip[1,:] - 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
+            PyPlot.plot(dfusion_grid', (dfusion_psi[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
+            PyPlot.plot(dfusion_grid', (-dfusion_phin[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
+            PyPlot.plot(dfusion_grid', (-dfusion_phip[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
             #####
             PyPlot.plot(dfusion_grid', (dfusion_psi_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
             PyPlot.plot(dfusion_grid', (-dfusion_phin_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
             PyPlot.plot(dfusion_grid', (-dfusion_phip_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
             PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
             PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
-            Plotter.tight_layout()
+            ##########
+            
         end
 
     end # time loop
+
+
 
 
     if test == false
