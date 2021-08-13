@@ -1056,6 +1056,30 @@ function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_su
 
 end
 
+
+function set_schottky_contact!(ctsys, ibreg; appliedVoltage = 0.0)
+    ipsi = ctsys.data.indexPsi
+
+    SchottkyBoundaries = findall(x->x==schottky_contact, ctsys.data.boundary_type)
+    otherOuterBoundary = 0
+
+    for breg in  SchottkyBoundaries
+
+        if  breg != ibreg
+            otherOuterBoundary = breg
+        end
+
+    end
+
+    # ibreg boundary
+    ctsys.fvmsys.boundary_values[ipsi, ibreg]  = ((ctsys.data.params.bFermiLevel[ibreg] - ctsys.data.params.bFermiLevel[otherOuterBoundary])/q ) + appliedVoltage
+    ctsys.fvmsys.boundary_factors[ipsi, ibreg] = VoronoiFVM.Dirichlet
+
+    # other boundary
+    ctsys.fvmsys.boundary_values[ipsi, otherOuterBoundary] = 0.0
+    ctsys.fvmsys.boundary_factors[ipsi, otherOuterBoundary] = VoronoiFVM.Dirichlet
+
+end
 ###########################################################
 ###########################################################
 # Wrappers for methods of VoronoiFVM

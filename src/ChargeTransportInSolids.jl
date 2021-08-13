@@ -48,7 +48,8 @@ include("ct_system.jl")
 export ChargeTransportParams, ChargeTransportParamsNodal, ChargeTransportData, ChargeTransportSystem
 export ChargeTransportBulkRecombination, set_bulk_recombination, ChargeTransportIonicChargeCarriers, enable_ion_vacancies
 export equilibrium_solve!
-export set_ohmic_contact!, compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
+export set_ohmic_contact!, set_schottky_contact!
+export compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
 export show_params, trap_density!
 export linearScanProtocol, scan_protocol_type, set_time_mesh, get_current_val
 

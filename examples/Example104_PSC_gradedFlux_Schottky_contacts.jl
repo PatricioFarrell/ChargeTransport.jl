@@ -8,6 +8,7 @@ two junctions between perovskite layer and transport layers, to
 which we refer as graded interfaces.
 Hence, a graded flux discretization with space dependent
 band-edge energies and density of states is tested here.
+Additionally, to that instead of the usual ohmic contacts, we tested here Schottky contacts.
 
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
@@ -16,13 +17,12 @@ in the publication here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 =#
 
-module Example104_PSC_gradedFlux
+module Example104_PSC_gradedFlux_Schottky_contacts
 
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
-
 
 # function for grading the physical parameters 
 function gradingParameter(physicalParameter, coord, regionTransportLayers, regionJunctions, h, heightLayers, lengthLayers, values)
@@ -51,7 +51,7 @@ function gradingParameter(physicalParameter, coord, regionTransportLayers, regio
     return physicalParameter
 end
 
-function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;n = 2, Plotter = Nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -141,23 +141,24 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     # set indices of the quasi Fermi potentials
-    iphin                   = 2 # electron quasi Fermi potential
-    iphip                   = 1 # hole quasi Fermi potential
+    iphin                   = 1 # electron quasi Fermi potential
+    iphip                   = 2 # hole quasi Fermi potential
     numberOfCarriers        = 2 
 
     ##########      physical data      ##########
     # temperature
     T                       = 300.0                 *  K
 
+    Eref                    = 4.1                   *  eV # reference energy
     # band edge energies    
-    Ec_d                    = -4.0                  *  eV 
-    Ev_d                    = -6.0                  *  eV 
-        
-    Ec_i                    = -3.7                  *  eV 
-    Ev_i                    = -5.4                  *  eV 
-        
-    Ec_a                    = -3.1                  *  eV 
-    Ev_a                    = -5.1                  *  eV 
+    Ec_d                    = -4.0                  *  eV  + Eref
+    Ev_d                    = -6.0                  *  eV  + Eref
+
+    Ec_i                    = -3.7                  *  eV  + Eref 
+    Ev_i                    = -5.4                  *  eV  + Eref 
+
+    Ec_a                    = -3.1                  *  eV  + Eref 
+    Ev_a                    = -5.1                  *  eV  + Eref 
     
     # these parameters at the junctions for E_\alpha and N_\alpha will be overwritten.
     Ec_j1                   = Ec_d;     Ec_j2     = Ec_i
@@ -249,7 +250,6 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     # doping (doping values are from Driftfusion)
     Nd                     =   1.03e18             / (cm^3) 
     Na                     =   1.03e18             / (cm^3) 
-    Ni_acceptor            =   8.32e7              / (cm^3) 
 
     # contact voltages: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
@@ -287,8 +287,8 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
     # (distinguish between left and right).
-    data.boundary_type[bregionDonor]    = ohmic_contact  
-    data.boundary_type[bregionAcceptor] = ohmic_contact      
+    data.boundary_type[bregionDonor]    = schottky_contact   
+    data.boundary_type[bregionAcceptor] = schottky_contact       
      
     # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
     # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
@@ -345,17 +345,24 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     end           
     
     # interior doping
-    params.doping[iphin, regionDonor]               = Nd
-    params.doping[iphip, regionIntrinsic]           = Ni_acceptor    
+    params.doping[iphin, regionDonor]               = Nd   
     params.doping[iphip, regionAcceptor]            = Na     
                              
     # boundary doping
     params.bDoping[iphip, bregionAcceptor]          = Na        # data.bDoping  = [Na  0.0;
     params.bDoping[iphin, bregionDonor]             = Nd        #                  0.0  Nd]
 
+    # values for the schottky contacts
+    params.bFermiLevel                              = [-4.1  * eV + Eref,
+                                                       -5.0  * eV + Eref]
+    params.bVelocity                                = [1.0e7 * cm/s    0.0   * cm/s;
+                                                       0.0   * cm/s    1.0e7 * cm/s]
+
     # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
     # in next step.
     data.params                                     = params
+
+
 
     # same holds true for space dependent params
     data.paramsnodal                                = paramsnodal
@@ -384,11 +391,9 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    # set ohmic contacts for each charge carrier at all outerior boundaries. First, 
-    # we compute equilibrium solutions. Hence the boundary values at the ohmic contacts
-    # are zero.
-    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
-    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
+    # set Schottky contacts. For this we need to know at which outer boundary the contact
+    # voltage shall be applied (which is in this case bregionAcceptor)
+    set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = 0.0)
 
     if test == false
         println("*** done\n")
@@ -425,7 +430,6 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     solution              = unknowns(ctsys)
 
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
     initialGuess         .= solution 
 
     if plotting
@@ -436,6 +440,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
         plot_solution(Plotter, grid, data, solution, "Equilibrium")
         Plotter.figure()
     end
+
 
     if test == false
         println("*** done\n")
@@ -453,7 +458,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
     control.max_round                                = 7
 
     maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 13)
+    biasValues = range(0, stop = maxBias, length = 21)
 
     for Δu in biasValues
         if verbose
@@ -461,7 +466,8 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
         end
 
         # set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+        set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = Δu)
+
 
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 
@@ -488,7 +494,7 @@ function main(;n = 4, Plotter = nothing, plotting = false, verbose = false, test
 end #  main
 
 function test()
-    testval=-4.100368066229441
+    testval=0.11725154137940488
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

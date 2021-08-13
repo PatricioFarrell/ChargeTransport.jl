@@ -15,7 +15,7 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 (with adjustments on layer lengths)
 =#
 
-module Example107_PSC_ionicCharges_At_InnerInterface
+module Example109_PSC_ionicCharges_At_InnerInterface
 
 using VoronoiFVM
 using ChargeTransportInSolids

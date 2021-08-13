@@ -1468,36 +1468,16 @@ function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
 
     params        = data.params
     paramsnodal   = data.paramsnodal
-    # DA: Still need to be well tested!!
 
     ipsi          = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1        # final index for electrostatic potential
 
-    Eref              = 4.1                   *  eV
-
-    bFermiLevel      = [-4.1 * eV + Eref, -5.0 * eV + Eref]
-    bVelocity        = [1.0e7*cm/s 0.0*cm/s; 0.0*cm/s 1.0e7*cm/s]
-
-    # bnode.coord
-    # if bnode.region == 1
-    #     f[ipsi] = -u[ipsi] 
-    # elseif bnode.region == 2
-    #     f[ipsi] =  + u[ipsi] - data.λ1 *((bFermiLevel[2] - bFermiLevel[1])/q ) - 0.0#data.contactVoltage[bnode.region]  
-    # end
-
     for icc = 1:params.numberOfCarriers
        
-        if bnode.region == 1
-            phi = bFermiLevel[1]
-        elseif bnode.region == 2
-            phi = bFermiLevel[2]
-        end
-        if bnode.region == 1 || bnode.region == 2
-            E      = params.bBandEdgeEnergy[icc, bnode.region] + paramsnodal.bandEdgeEnergy[icc, bnode.index]
-            etaFix = params.chargeNumbers[icc] / params.UT * (  (-phi + E ) / q  )
-            eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + E / q )
+        E      = params.bBandEdgeEnergy[icc, bnode.region] + paramsnodal.bandEdgeEnergy[icc, bnode.index]
+        etaFix = params.chargeNumbers[icc] / params.UT * (  (- params.bFermiLevel[bnode.region] + E ) / q  )
+        eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + E / q )
 
-            f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  (params.bDensityOfStates[icc, bnode.region] + paramsnodal.densityOfStates[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
-        end
+        f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  (params.bDensityOfStates[icc, bnode.region] + paramsnodal.densityOfStates[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
 
     end
 
