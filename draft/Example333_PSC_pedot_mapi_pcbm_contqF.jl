@@ -5,8 +5,6 @@
 Simulating a three layer PSC device Pedot| MAPI | PCBM.
 The simulations are performed out of equilibrium, time-dependent
 and with abrupt interfaces. 
-A special aspect here is that we allow the quasi Fermi potentials to be discontinuous at
-material interfaces.
 A linear I-V measurement protocol is included and the corresponding
 solution vectors after the scan protocol can be depicted.
 
@@ -76,11 +74,11 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
                                         h_intrinsic/(7.1*δ), 
                                         tol=t)
     coord_n_g               = geomspace(h_pdoping+h_intrinsic,               
-                                        h_pdoping+h_intrinsic+h_ndoping/2, 
-                                        h_ndoping/(2.0*δ),   
-                                        h_ndoping/(2.0*δ),      
+                                        h_pdoping+h_intrinsic+h_ndoping/4, 
+                                        h_ndoping/(6.1*δ),   
+                                        h_ndoping/(6.1*δ),      
                                         tol=t)
-    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(1.0*δ)))
+    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/4, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(1.0*δ)))
 
     coord                   = glue(coord_p_u,coord_p_g,  tol=10*t) 
     coord                   = glue(coord,    coord_i_g1, tol=10*t)
@@ -103,7 +101,9 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     if plotting
         GridVisualize.gridplot(grid, Plotter = Plotter)
         Plotter.title("Grid")
+        Plotter.figure()
     end
+
  
     if test == false
         println("*** done\n")
@@ -422,20 +422,6 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
         println("*** done\n")
     end
 
-    if plotting
-        dfusion_grid          = 1.0e-2.*readdlm("data/Driftfusion-pedotpss-grid.dat")
-        dfusion_psi_interface =         readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-psi-EQ.dat")
-        ##########################
-        plot_solution(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
-        Plotter.title("Equilibrium; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$")
-        Plotter.xlabel("space [m]")
-        Plotter.ylabel("potential [V]")
-        PyPlot.plot(dfusion_grid', (dfusion_psi_interface[1,:]- 5.02*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
-        PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
-        PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
-        Plotter.figure()
-
-    end
 
     if test == false
         println("*** done\n")
@@ -456,7 +442,7 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     # there are different way to control timestepping
     # Here we assume these primary data
     scanrate                      = 0.04 * V/s
-    ntsteps                       = 51
+    ntsteps                       = 101
     vend                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     v0                            = 0.0
 
@@ -466,6 +452,10 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     # with fixed timestep sizes we can calculate the times
     # a priori
     tvalues                       = range(0, stop = tend, length = ntsteps)
+
+    # for saving I-V data
+    IV                            = zeros(0) # for IV values
+    biasValues                    = zeros(0) # for bias values
 
     for istep = 2:ntsteps
         
@@ -486,19 +476,23 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
         
         initialGuess .= solution
 
+        # get I-V data
+        current = get_current_val(ctsys, solution, initialGuess, Δt)
+
+        push!(IV, current)
+        push!(biasValues, Δu)
+
         if plotting
-
-            ##########################
-            plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
-
-            dfusion_psi    = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-psi-t-end.dat")
-            dfusion_phin   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efn-t-end.dat")
-            dfusion_phip   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efp-t-end.dat")
+            dfusion_grid            = 1.0e-2.*readdlm("data/Driftfusion-pedotpss-grid.dat")
+            dfusion_psi             = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-psi-t-end.dat")
+            dfusion_phin            = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efn-t-end.dat")
+            dfusion_phip            = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efp-t-end.dat")
         
-            dfusion_psi_interface    = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-psi-t-end.dat")
-            dfusion_phin_interface   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efn-t-end.dat")
-            dfusion_phip_interface   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efp-t-end.dat")
-
+            dfusion_psi_interface   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-psi-t-end.dat")
+            dfusion_phin_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efn-t-end.dat")
+            dfusion_phip_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efp-t-end.dat")
+            ##########################
+            plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", plotGridpoints=true)
             PyPlot.plot(dfusion_grid', (dfusion_psi[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
             PyPlot.plot(dfusion_grid', (-dfusion_phin[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
             PyPlot.plot(dfusion_grid', (-dfusion_phip[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
@@ -508,12 +502,30 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
             PyPlot.plot(dfusion_grid', (-dfusion_phip_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
             PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
             PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
+            
             ##########
             
         end
 
     end # time loop
 
+
+    Plotter.figure()
+    IV_measured         = readdlm("data/Driftfusion-IV-measurement-pcb-forward.dat")
+    IV_Driftfusion_reco = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-IV-forward.dat")
+    IV_Driftfusion      = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-IV-forward.dat")
+        
+    PyPlot.plot(biasValues, abs.(IV.*(cm)^2*1.0e3), label = "simulation",  linewidth= 3, linestyle="--", color="red")
+    PyPlot.plot(IV_measured[:, 1], IV_measured[:, 2], label = "measurement",  linestyle="--", color = "black")
+    PyPlot.plot(IV_Driftfusion[:, 1], IV_Driftfusion[:, 2].*1.0e3, label = "Driftfusion ( without interface reco)", linewidth = 3, markersize="7", marker= "o", linestyle="--", color = "green")
+    PyPlot.plot(IV_Driftfusion_reco[:, 1], IV_Driftfusion_reco[:, 2].*1.0e3, label = "Driftfusion ( with interface reco)", markersize=7,marker= "x",  linestyle=":", color="brown")
+
+    PyPlot.legend()
+    PyPlot.tight_layout()
+    PyPlot.title("Forward; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ ")
+    Plotter.ylabel("total current [mA]") # 
+    Plotter.xlabel("Applied Voltage [V]")
+    PyPlot.ylim(0.0, 0.006*1.0e3)
 
 
 

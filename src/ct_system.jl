@@ -189,7 +189,6 @@ mutable struct ChargeTransportParams
     """
     bFermiLevel                  ::  Array{Float64,1}
 
-
     ###############################################################
     ####                  number of carriers                   ####
     ###############################################################
@@ -1013,10 +1012,21 @@ end
 
 function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_none})
 
-    for icc = 1:ctsys.data.params.numberOfCarriers
-        ctsys.fvmsys.boundary_factors[icc, ibreg] = VoronoiFVM.Dirichlet
-        ctsys.fvmsys.boundary_values[icc, ibreg]  = contact_val
-    end
+    iphin = ctsys.data.bulk_recombination.iphin
+    iphip = ctsys.data.bulk_recombination.iphip
+
+    iphin = ctsys.data.chargeCarrierList[iphin]
+    iphip = ctsys.data.chargeCarrierList[iphip]
+
+    ctsys.fvmsys.boundary_factors[iphin, ibreg] = VoronoiFVM.Dirichlet
+    ctsys.fvmsys.boundary_values[iphin, ibreg]  = contact_val
+    ctsys.fvmsys.boundary_factors[iphip, ibreg] = VoronoiFVM.Dirichlet
+    ctsys.fvmsys.boundary_values[iphip, ibreg]  = contact_val
+
+    # for icc = 1:ctsys.data.params.numberOfCarriers
+    #     ctsys.fvmsys.boundary_factors[icc, ibreg] = VoronoiFVM.Dirichlet
+    #     ctsys.fvmsys.boundary_values[icc, ibreg]  = contact_val
+    # end
 
 end
 
