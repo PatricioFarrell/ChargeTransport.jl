@@ -1,7 +1,7 @@
 ## Numerical Techniques
 refer to VoronoiFVM ... 
 
-One section for graded interfaces and for the case that band-edge energy and effective DOS are assumed to be non-constant, but dependent on space.
+put here also some graphics in for better understanding ....
 
 ## API for Generating Discrete System
 ### Types and Constants
