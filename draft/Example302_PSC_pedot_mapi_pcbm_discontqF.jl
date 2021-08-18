@@ -539,11 +539,13 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
             PyPlot.plot(dfusion_grid', (-dfusion_phip_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
             PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
             PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
+            #PyPlot.xlim(h_pdoping-1.2e-8, h_pdoping + h_intrinsic+1.2e-8)
+            #PyPlot.ylim(-0.1, 1.25)
             Plotter.tight_layout()
         end
 
     end # time loop
-
+    #savefig("discont-qF.eps")
 
     if test == false
         println("*** done\n")

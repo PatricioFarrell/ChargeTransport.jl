@@ -547,16 +547,7 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
 
     recombinationVelocity    = [1.0e1 1.0e7;
                                     1.0e5 1.0e1]
-                                
-    # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
-    iphin       = data.bulk_recombination.iphin
-    iphip       = data.bulk_recombination.iphip
-
-    # based on user index and regularity of solution quantities or integers are used and depicted here
-    iphin       = data.chargeCarrierList[iphin]
-    iphip       = data.chargeCarrierList[iphip]
     
-
     ######### left values  ##########
     etan1 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 1] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[1]] / q ) # left
     etap1 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 1] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[1]] / q ) # left

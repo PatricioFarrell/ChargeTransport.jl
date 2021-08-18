@@ -492,7 +492,7 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
             dfusion_phin_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efn-t-end.dat")
             dfusion_phip_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efp-t-end.dat")
             ##########################
-            plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", plotGridpoints=true)
+            plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
             PyPlot.plot(dfusion_grid', (dfusion_psi[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
             PyPlot.plot(dfusion_grid', (-dfusion_phin[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
             PyPlot.plot(dfusion_grid', (-dfusion_phip[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
@@ -502,10 +502,13 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
             PyPlot.plot(dfusion_grid', (-dfusion_phip_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
             PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
             PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
+            #PyPlot.xlim(h_pdoping-1.2e-8, h_pdoping + h_intrinsic+1.2e-8)
+            #PyPlot.ylim(-0.1, 1.25)
             
             ##########
             
         end
+        #savefig("cont-qF.eps")
 
     end # time loop
 
@@ -517,15 +520,16 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
         
     PyPlot.plot(biasValues, abs.(IV.*(cm)^2*1.0e3), label = "simulation",  linewidth= 3, linestyle="--", color="red")
     PyPlot.plot(IV_measured[:, 1], IV_measured[:, 2], label = "measurement",  linestyle="--", color = "black")
-    PyPlot.plot(IV_Driftfusion[:, 1], IV_Driftfusion[:, 2].*1.0e3, label = "Driftfusion ( without interface reco)", linewidth = 3, markersize="7", marker= "o", linestyle="--", color = "green")
-    PyPlot.plot(IV_Driftfusion_reco[:, 1], IV_Driftfusion_reco[:, 2].*1.0e3, label = "Driftfusion ( with interface reco)", markersize=7,marker= "x",  linestyle=":", color="brown")
+    PyPlot.plot(IV_Driftfusion[:, 1], IV_Driftfusion[:, 2].*1.0e3, label = "Driftfusion (without interface reco)", linewidth = 3, markersize="7", marker= "o", linestyle="--", color = "green")
+    PyPlot.plot(IV_Driftfusion_reco[:, 1], IV_Driftfusion_reco[:, 2].*1.0e3, label = "Driftfusion (with interface reco)", markersize=7,marker= "x",  linestyle=":", color="blue")
 
     PyPlot.legend()
-    PyPlot.tight_layout()
     PyPlot.title("Forward; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ ")
     Plotter.ylabel("total current [mA]") # 
     Plotter.xlabel("Applied Voltage [V]")
     PyPlot.ylim(0.0, 0.006*1.0e3)
+    PyPlot.tight_layout()
+    #savefig("cont-qF-IV.eps")
 
 
 
