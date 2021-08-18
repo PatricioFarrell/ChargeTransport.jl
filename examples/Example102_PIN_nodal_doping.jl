@@ -113,8 +113,7 @@ function main(;Plotter = nothing, plotting = false, verbose = false, test = fals
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    #Here the user can specify, if they assume continuous or discontinuous charge carriers. We note that for a surface recombination model,
-    # we encourage to use discontinuous electron and hole quasi Fermi potentials.
+    #Here the user can specify, if they assume continuous or discontinuous charge carriers.
     data.isContinuous[iphin]            = true
     data.isContinuous[iphip]            = true
 

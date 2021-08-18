@@ -39,9 +39,9 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     ################################################################################
 
     # region numbers
-    regionAcceptor          = 1                           # p doped region
-    regionIntrinsic         = 2                           # intrinsic region
-    regionDonor             = 3                           # n doped region
+    regionAcceptor          = 1          # p doped region
+    regionIntrinsic         = 2          # intrinsic region
+    regionDonor             = 3          # n doped region
     regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
     numberOfRegions         = length(regions)
 
@@ -140,8 +140,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    #Here the user can specify, if they assume continuous or discontinuous charge carriers. We note that for a surface recombination model,
-    # we encourage to use discontinuous electron and hole quasi Fermi potentials.
+    #Here the user can specify, if they assume continuous or discontinuous charge carriers.
     data.isContinuous[iphin]            = true
     data.isContinuous[iphip]            = true
 
@@ -235,20 +234,6 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         println("*** done\n")
     end
 
-    if plotting == true
-        ################################################################################
-        println("Plot electroneutral potential, band-edge energies and doping")
-        ################################################################################
-        psi0 = electroNeutralSolution!(grid, data)
-        plot_energies(Plotter, grid, data)
-        Plotter.figure()
-        plot_doping(Plotter, grid, data)
-        Plotter.figure()
-        plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=true)
-        Plotter.figure()
-        println("*** done\n")
-    end
-
     ################################################################################
     if test == false
         println("Define outerior boundary conditions")
@@ -262,6 +247,20 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     set_ohmic_contact!(ctsys, bregionDonor, 0.0)
 
     if test == false
+        println("*** done\n")
+    end
+
+    if plotting == true
+        ################################################################################
+        println("Plot electroneutral potential, band-edge energies and doping")
+        ################################################################################
+        psi0 = electroNeutralSolution!(grid, data)
+        plot_energies(Plotter, grid, data)
+        Plotter.figure()
+        plot_doping(Plotter, grid, data)
+        Plotter.figure()
+        plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=true)
+        Plotter.figure()
         println("*** done\n")
     end
     ################################################################################
