@@ -26,15 +26,20 @@ export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk, Fe
 
 ##################################################################
 
-include("ct_physics.jl")
+include("ct_datatypes.jl")
 
 export boundary_model, ohmic_contact, schottky_contact
 export interface_model, interface_model_none, interface_model_surface_recombination, interface_model_ion_charge, interface_model_ion_charge_left, interface_model_ion_charge_right
 
-export interface_model_surface_reco_Cont
+export interface_model_discont_qF
 
 export model_type, model_transient, model_stationary
 export bulk_recombination_model, bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_model_radiative, bulk_recomb_model_full
+
+##################################################################
+
+include("ct_physics.jl")
+
 export ScharfetterGummel, excessChemicalPotential, diffusionEnhanced, generalized_SG 
 export inEquilibrium, outOfEquilibrium
 export ScharfetterGummel_Graded, excessChemicalPotential_Graded
