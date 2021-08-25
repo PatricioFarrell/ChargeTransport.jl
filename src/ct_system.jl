@@ -238,7 +238,7 @@ mutable struct ChargeTransportParams
     A 2D array with the corresponding recombination surface boundary density values
     for electrons and holes.
     """
-    brecombinationSRHTrapDensity ::  Array{Float64,2}
+    bRecombinationSRHTrapDensity ::  Array{Float64,2}
  
 
     ###############################################################
@@ -580,7 +580,7 @@ function ChargeTransportParams(grid, numberOfCarriers)
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
     ############################################################### 
-    params.brecombinationSRHTrapDensity = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)                 # for surface reco
+    params.bRecombinationSRHTrapDensity = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)                 # for surface reco
     params.recombinationSRHvelocity     = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)                 # for surface reco
 
     ###############################################################

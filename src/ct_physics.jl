@@ -193,44 +193,22 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
 
     params      = data.params
     paramsnodal = data.paramsnodal
-
-    recombinationVelocity    = [1.0e1*cm/s 1.0e7*cm/s; 1.0e5*cm/s 1.0e1*cm/s]
                                 
+    etan = params.chargeNumbers[iphin] / params.UT * ( (u[iphin] - u[ipsi]) + params.bBandEdgeEnergy[iphin, bnode.region] / q )
+    etap = params.chargeNumbers[iphip] / params.UT * ( (u[iphip] - u[ipsi]) + params.bBandEdgeEnergy[iphip, bnode.region] / q ) 
 
-    if bnode.region == 3 # choose values from intrinsic layer
+    n    = ((params.bDensityOfStates[iphin, bnode.region] + paramsnodal.densityOfStates[iphin, bnode.index])* data.F[iphin](etan))
+    p    = ((params.bDensityOfStates[iphip, bnode.region] + paramsnodal.densityOfStates[iphip, bnode.index])* data.F[iphip](etap))
 
-        etan = params.chargeNumbers[iphin] / params.UT * ( (u[iphin] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[2]] / q ) # left
-        etap = params.chargeNumbers[iphip] / params.UT * ( (u[iphip] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[2]] / q ) # left
+    exponentialTerm = exp((q * u[iphin] - q  * u[iphip] ) / (kB * params.temperature))
+    excessDensTerm  = n * p * (1.0 - exponentialTerm)
 
-        n    = ((params.densityOfStates[iphin, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphin, bnode.index])* data.F[iphin](etan))
-        p    = ((params.densityOfStates[iphip, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphip, bnode.index])* data.F[iphip](etap))
-
-        exponentialTerm = exp((q * u[iphin] - q  * u[iphip] ) / (kB * params.temperature))
-        excessDensTerm  = n * p * (1.0 - exponentialTerm)
-
-        kernelSRH = 1.0 / (  1.0/recombinationVelocity[iphip, bnode.region-2] * (n + params.recombinationSRHTrapDensity[iphin, bnode.cellregions[2]]) + 1.0/recombinationVelocity[iphin, bnode.region-2] * (p + params.recombinationSRHTrapDensity[iphip, bnode.cellregions[2]] ) )
+    kernelSRH = 1.0 / (  1.0/params.recombinationSRHvelocity[iphip, bnode.region] * (n + params.bRecombinationSRHTrapDensity[iphin, bnode.region]) + 1.0/params.recombinationSRHvelocity[iphin, bnode.region] * (p + params.bRecombinationSRHTrapDensity[iphip, bnode.region] ) )
    
-        for icc ∈ [iphin, iphip]
-            f[icc] =  q * params.chargeNumbers[icc] * kernelSRH *  excessDensTerm
-        end
-
-    elseif bnode.region == 4 # choose values from intrinsic layer
-        etan = params.chargeNumbers[iphin] / params.UT * ( (u[iphin] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[1]] / q ) # left
-        etap = params.chargeNumbers[iphip] / params.UT * ( (u[iphip] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[1]] / q ) # left
-
-        n    = ((params.densityOfStates[iphin, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphin, bnode.index])* data.F[iphin](etan))
-        p    = ((params.densityOfStates[iphip, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphip, bnode.index])* data.F[iphip](etap))
-
-        exponentialTerm = exp((q * u[iphin] - q  * u[iphip] ) / (kB * params.temperature))
-        excessDensTerm  = n * p * (1.0 - exponentialTerm)
-
-        kernelSRH = 1.0 / (  1.0/recombinationVelocity[iphip, bnode.region-2] * (n + params.recombinationSRHTrapDensity[iphin, bnode.cellregions[1]]) + 1.0/recombinationVelocity[iphin, bnode.region-2] * (p + params.recombinationSRHTrapDensity[iphip, bnode.cellregions[2]] ) )
-   
-        for icc ∈ [iphin, iphip]
-            f[icc] = q * params.chargeNumbers[icc] *  kernelSRH *  excessDensTerm
-        end
-
+    for icc ∈ [iphin, iphip]
+        f[icc] =  q * params.chargeNumbers[icc] * kernelSRH *  excessDensTerm
     end
+
 
 end
 

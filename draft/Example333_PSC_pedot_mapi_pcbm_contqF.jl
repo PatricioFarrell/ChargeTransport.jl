@@ -298,19 +298,6 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     params.chargeNumbers[iphip]                         =  1
     params.chargeNumbers[iphia]                         =  1
 
-    # boundary region data
-    params.bDensityOfStates[iphin, bregionDonor]        = Nc_d
-    params.bDensityOfStates[iphip, bregionDonor]        = Nv_d
-
-    params.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
-    params.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
-    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
-
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
-
     # interior region data
     for ireg in 1:numberOfRegions
 
@@ -338,6 +325,45 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
         params.recombinationAuger[iphin, ireg]          = Auger
         params.recombinationAuger[iphip, ireg]          = Auger
     end
+
+    ## outer boundary region data
+    params.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
+    params.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
+
+    params.bDensityOfStates[iphin, bregionDonor]        = Nc_d
+    params.bDensityOfStates[iphip, bregionDonor]        = Nv_d
+
+    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
+    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
+
+    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
+    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
+
+    ## inner boundary region data
+    params.bDensityOfStates[iphin, bregionJunction1]    = Nc_i#( 0.5 * (Nc_a + Nc_i) )^(2/3)
+    params.bDensityOfStates[iphip, bregionJunction1]    = Nv_i#( 0.5 * (Nv_a + Nv_i) )^(2/3)
+
+    params.bDensityOfStates[iphin, bregionJunction2]    = Nc_i#( 0.5 * (Nc_i + Nc_d) )^(2/3)
+    params.bDensityOfStates[iphip, bregionJunction2]    = Nv_i#( 0.5 * (Nv_i + Nv_d) )^(2/3)
+
+    params.bBandEdgeEnergy[iphin, bregionJunction1]     = Ec_i#0.5 * (Ec_a + Ec_i) 
+    params.bBandEdgeEnergy[iphip, bregionJunction1]     = Ev_i#0.5 * (Ev_a + Ev_i) 
+
+    params.bBandEdgeEnergy[iphin, bregionJunction2]     = Ec_i#0.5 * (Ec_i + Ec_d) 
+    params.bBandEdgeEnergy[iphip, bregionJunction2]     = Ev_i#0.5 * (Ev_i + Ev_d) 
+
+    # for surface recombination
+    params.recombinationSRHvelocity[iphin, bregionJunction1]     = 1.0e1  * cm / s
+    params.recombinationSRHvelocity[iphip, bregionJunction1]     = 1.0e5  * cm / s
+
+    params.bRecombinationSRHTrapDensity[iphin, bregionJunction1] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
+    params.bRecombinationSRHTrapDensity[iphip, bregionJunction1] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
+    ##############################################################
+    params.recombinationSRHvelocity[iphin, bregionJunction2]     = 1.0e7  * cm / s
+    params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e1  * cm / s
+
+    params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
+    params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
 
     # interior doping
     params.doping[iphin,  regionDonor]                  = Nd 
@@ -513,11 +539,24 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
 
     end # time loop
 
-    PyPlot.figure()
-    plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = end", plotGridpoints = false)
+    plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = end; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+    PyPlot.plot(dfusion_grid', (dfusion_psi[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
+    PyPlot.plot(dfusion_grid', (-dfusion_phin[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
+    PyPlot.plot(dfusion_grid', (-dfusion_phip[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
+    #####
+    PyPlot.plot(dfusion_grid', (dfusion_psi_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
+    PyPlot.plot(dfusion_grid', (-dfusion_phin_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
+    PyPlot.plot(dfusion_grid', (-dfusion_phip_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
+    PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
+    PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
+    #PyPlot.xlim(h_pdoping-1.2e-8, h_pdoping + h_intrinsic+1.2e-8)
+    #PyPlot.ylim(-0.1, 1.25)
 
-    Plotter.figure()
-    plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = end; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+    #PyPlot.figure()
+    #plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = end", plotGridpoints = false)
+
+    #Plotter.figure()
+    #plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = end; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
     ##########
 
     Plotter.figure()
