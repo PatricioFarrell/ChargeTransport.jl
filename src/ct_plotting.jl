@@ -495,10 +495,10 @@ function plot_solution(Plotter, grid, data, solution, title, ;plotGridpoints=fal
     colors[ionic_vac] = ["gold", "purple"]; linestyles[ionic_vac] = ["-", ":"]; densityNames[ionic_vac] = ["\$\\varphi_a\$", "\$\\varphi_c\$"]
 
     Plotter.clf() 
-    Plotter.plot(coord, (solution[ipsi,:] + data.params.Eref/q*ones(length(solution[ipsi,:]))), marker = marker, label = "\$\\psi\$", color="b")
+    Plotter.plot(coord, (solution[ipsi,:] + data.params.Eref/q*ones(length(solution[ipsi,:]))), marker = marker, label = "\$\\psi\$", color="b", linewidth= 3)
 
     for icc in 1:data.params.numberOfCarriers
-        Plotter.plot(coord./1, solution[icc,:], label =  densityNames[icc], marker = marker, color= colors[icc], linestyle = linestyles[icc])
+        Plotter.plot(coord./1, solution[icc,:], label =  densityNames[icc], marker = marker, color= colors[icc], linestyle = linestyles[icc], linewidth= 3)
     end
             
     Plotter.grid()

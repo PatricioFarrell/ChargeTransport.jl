@@ -1,289 +1,5 @@
 ##########################################################
 ##########################################################
-"""
-$(TYPEDEF)
-Abstract type for boundary model.
-
-"""
-abstract type boundary_model   end 
-
-############    outer boundary conditions     ############
-"""
-$(TYPEDEF)
-Abstract type for ohmic contacts as boundary model.
-
-"""
-abstract type ohmic_contact <: boundary_model  end
-
-
-"""
-$(TYPEDEF)
-Abstract type for schottky contacts as boundary model.
-
-"""
-abstract type schottky_contact <: boundary_model end
-
-############    inner boundary conditions     ############
-"""
-$(TYPEDEF)
-Abstract type for interface model which
-is part of boundary model.
-
-"""
-abstract type interface_model <: boundary_model end
-
-
-"""
-$(TYPEDEF)
-Abstract type for no interface model.
-
-"""
-abstract type interface_model_none <: interface_model end
-
-
-"""
-$(TYPEDEF)
-Abstract type for no interface model.
-
-"""
-abstract type interface_model_surface_reco_Cont <: interface_model end
-
-
-"""
-$(TYPEDEF)
-Abstract type for surface recombination mechanisms.
-
-"""
-abstract type interface_model_surface_recombination <: interface_model end
-
-
-"""
-$(TYPEDEF)
-Abstract type for present ion charges at interfaces.
-
-"""
-abstract type interface_model_ion_charge <: interface_model end
-
-
-"""
-$(TYPEDEF)
-Abstract type for distinction of ion charge interface model
-between left and right of active layer. Distinguishing is necessary
-due to sign of electrochemical reaction.
-
-"""
-abstract type interface_model_ion_charge_left <: interface_model_ion_charge end
-
-
-"""
-$(TYPEDEF)
-Abstract type for distinction of ion charge interface model
-between left and right of active layer. Distinguishing is necessary
-due to sign of electrochemical reaction.
-
-"""
-abstract type interface_model_ion_charge_right <: interface_model_ion_charge end
-
-##########################################################
-##########################################################
-"""
-$(TYPEDEF)
-Abstract type for bulk recombination model.
-
-"""
-abstract type bulk_recombination_model end
-
-
-"""
-$(TYPEDEF)
-Abstract type for no bulk recombination model.
-
-"""
-abstract type bulk_recomb_model_none <: bulk_recombination_model end 
-
-
-"""
-$(TYPEDEF)
-Abstract type for trap assisted bulk recombination model, i.e.
-only Schockley-Read-Hall recombination is used.
-
-"""
-abstract type bulk_recomb_model_trap_assisted <: bulk_recombination_model end
-
-
-"""
-$(TYPEDEF)
-Abstract type for only radiative recombination model.
-
-"""
-abstract type bulk_recomb_model_radiative <: bulk_recombination_model end
-
-
-"""
-$(TYPEDEF)
-Abstract type for full bulk recombination model.
-Currently, Schockley-Read-Hall, radiative and Auger are implemented.
-
-"""
-abstract type bulk_recomb_model_full <: bulk_recombination_model end
-
-##########################################################
-##########################################################
-"""
-$(TYPEDEF)
-Abstract type for model type which indicates, if we consider stationary 
-or transient problem.
-
-"""
-abstract type model_type end
-
-
-"""
-$(TYPEDEF)
-Abstract type for transient simulations.
-
-"""
-abstract type model_transient <: model_type end
-
-
-"""
-$(TYPEDEF)
-Abstract type for stationary simulations.
-
-"""
-abstract type model_stationary <: model_type end
-##########################################################
-##########################################################
-"""
-$(TYPEDEF)
-Abstract type for flux discretization model.
-
-"""
-abstract type flux_approximation end
-
-
-"""
-$(TYPEDEF)
-Abstract type for Scharfetter-Gummel flux discretization.
-Choose this one, when the Boltzmann statistics function is
-chosen as statistics.
-
-"""
-abstract type ScharfetterGummel <: flux_approximation end
-
-
-"""
-$(TYPEDEF)
-Abstract type for Scharfetter-Gummel flux discretization for graded
-effective density of states and/or graded band-edge energies, i.e.
-when this two quantities are assumed to be space-dependent.
-
-"""
-abstract type ScharfetterGummel_Graded <: flux_approximation end
-
-
-"""
-$(TYPEDEF)
-Abstract type for excess chemical potential flux discretization.
-
-"""
-abstract type excessChemicalPotential <: flux_approximation end
-
-"""
-$(TYPEDEF)
-Abstract type for excess chemical potential flux discretization
-for graded effective density of states and/or graded band-edge 
-energies, i.e. when this two quantities are assumed to be space-dependent.
-
-"""
-abstract type excessChemicalPotential_Graded <: flux_approximation end
-
-
-"""
-$(TYPEDEF)
-Abstract type for diffusion enhanced flux discretization.
-
-"""
-abstract type diffusionEnhanced <: flux_approximation end
-
-
-"""
-$(TYPEDEF)
-Abstract type for generalized Scharfetter-Gummel flux discretization.
-This flux approximation results in an implicit equation which needs to be
-solved and is exact for all Blakemore type statistics functions with
-abritary γ.
-
-"""
-abstract type generalized_SG <: flux_approximation end
-
-##########################################################
-##########################################################
-"""
-$(TYPEDEF)
-
-Abstract type calculation_type which distinguishes between equilibrium and out
-of equilibrium calculations.
-
-"""
-abstract type calculation_type end
-
-
-"""
-$(TYPEDEF)
-
-Abstract type for equilibrium calculations.
-
-"""
-abstract type inEquilibrium <: calculation_type end
-
-
-"""
-$(TYPEDEF)
-
-Abstract type for out of equilibrium calculations.
-
-"""
-abstract type outOfEquilibrium <: calculation_type end
-
-##########################################################
-##########################################################
-"""
-$(TYPEDEF)
-
-Abstract type for generation model.
-
-"""
-abstract type generation_model end
-
-
-"""
-$(TYPEDEF)
-
-Abstract type for uniform generation.
-
-"""
-abstract type generation_uniform <: generation_model end
-
-
-"""
-$(TYPEDEF)
-
-Abstract type for Beer-Lambert generation.
-
-"""
-abstract type generation_beer_lambert <: generation_model end
-
-
-"""
-$(TYPEDEF)
-
-Abstract type for no generation model.
-
-"""
-abstract type generation_none <: generation_model end
-##########################################################
-##########################################################
 
 """
 $(TYPEDSIGNATURES)
@@ -399,6 +115,55 @@ for each boundary the chosen boundary model.
 breaction!(f, u, bnode, data) =  breaction!(f, u, bnode, data, data.boundary_type[bnode.region])
 
 
+"""
+$(TYPEDSIGNATURES)
+
+Creates ohmic boundary conditions via a penalty approach with penalty parameter ``\\delta``.
+For example, the right-hand side for the electrostatic potential ``\\psi`` is implemented as
+
+``f[\\psi]  = -q/\\delta   ( (p - N_a) - (n - N_d) )``,
+
+assuming a bipolar semiconductor. In general, we have for some given charge number ``z_\\alpha``
+
+``f[\\psi] =  -q/\\delta  \\sum_\\alpha{ z_\\alpha  (n_\\alpha - C_\\alpha) },``
+
+where ``C_\\alpha`` corresponds to some doping w.r.t. the species ``\\alpha``.
+
+The boundary conditions for the charge carriers are set in the main file. Hence,
+
+``f[n_\\alpha] = 0```
+
+for all charge carriers ``\\alpha``.
+"""
+function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
+
+    params      = data.params
+    paramsnodal = data.paramsnodal 
+
+    # parameters
+    α          = 1.0e-10        # tiny penalty value
+    ipsi       = data.indexPsi  # final index for electrostatic potential
+ 
+
+    for icc ∈ data.chargeCarrierList # quantities or integer indices
+ 
+        eta     = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
+ 
+        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )                    # subtract doping
+        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.bDensityOfStates[icc, bnode.region] + paramsnodal.densityOfStates[icc, bnode.index]) * data.F[icc](eta)  # add charge carrier
+ 
+        # boundary conditions for charge carriers are set in main program
+        f[icc]  = 0.0
+ 
+    end
+    f[ipsi] = f[ipsi] - paramsnodal.doping[bnode.index]
+
+    f[ipsi] = - data.λ1 * 1 / α *  q * f[ipsi]
+
+    return f
+
+end
+
 
 """
 $(TYPEDSIGNATURES)
@@ -409,9 +174,13 @@ This breaction! function is chosen when no interface model is chosen.
 breaction!(f, u, bnode, data, ::Type{interface_model_none}) = emptyFunction()
 
 
-bstorage!(f, u, bnode, data, ::Type{interface_model_surface_reco_Cont}) = emptyFunction()
+"""
+$(TYPEDSIGNATURES)
 
-function breaction!(f, u, bnode, data, ::Type{interface_model_surface_reco_Cont})
+breaction term for surface recombination.
+"""
+
+function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombination})
     if data.calculation_type == inEquilibrium
         return
     end
@@ -466,65 +235,14 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_reco_Cont}
 end
 
 
-"""
-$(TYPEDSIGNATURES)
-
-Creates ohmic boundary conditions via a penalty approach with penalty parameter ``\\delta``.
-For example, the right-hand side for the electrostatic potential ``\\psi`` is implemented as
-
-``f[\\psi]  = -q/\\delta   ( (p - N_a) - (n - N_d) )``,
-
-assuming a bipolar semiconductor. In general, we have for some given charge number ``z_\\alpha``
-
-``f[\\psi] =  -q/\\delta  \\sum_\\alpha{ z_\\alpha  (n_\\alpha - C_\\alpha) },``
-
-where ``C_\\alpha`` corresponds to some doping w.r.t. the species ``\\alpha``.
-
-The boundary conditions for the charge carriers are set in the main file. Hence,
-
-``f[n_\\alpha] = 0```
-
-for all charge carriers ``\\alpha``.
-"""
-function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
-
-    params      = data.params
-    paramsnodal = data.paramsnodal 
-
-    # parameters
-    α          = 1.0e-10        # tiny penalty value
-    ipsi       = data.indexPsi  # final index for electrostatic potential
- 
-
-    for icc ∈ data.chargeCarrierList # quantities or integer indices
- 
-        eta     = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
- 
-        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )                    # subtract doping
-        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.bDensityOfStates[icc, bnode.region] + paramsnodal.densityOfStates[icc, bnode.index]) * data.F[icc](eta)  # add charge carrier
- 
-        # boundary conditions for charge carriers are set in main program
-        f[icc]  = 0.0
- 
-    end
-    f[ipsi] = f[ipsi] - paramsnodal.doping[bnode.index]
-
-    f[ipsi] = - data.λ1 * 1 / α *  q * f[ipsi]
-
-    return f
-
-end
-
-
 
 """
 $(TYPEDSIGNATURES)
 
-breaction term for surface recombination. Surface recombination itself is not correctly implemented yet.
-Currently with this function only discontinuous quantities at inner interfaces are tested.
+breaction term for case where qF are discontinuous.
 """
 
-function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombination})
+function breaction!(f, u, bnode, data, ::Type{interface_model_discont_qF})
 
     if data.calculation_type == inEquilibrium
 
@@ -733,6 +451,14 @@ No bstorage! is used, if surface recombination model is chosen.
 
 """
 bstorage!(f, u, bnode, data, ::Type{interface_model_surface_recombination}) = emptyFunction()
+
+
+"""
+$(TYPEDSIGNATURES)
+No bstorage! is used, when assuming discontinuous qF.
+
+"""
+bstorage!(f, u, bnode, data, ::Type{interface_model_discont_qF}) = emptyFunction()
 
 """
 $(TYPEDSIGNATURES)

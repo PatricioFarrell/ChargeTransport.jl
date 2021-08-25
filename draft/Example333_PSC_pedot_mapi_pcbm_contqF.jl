@@ -266,8 +266,8 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
     # (distinguish between left and right).
     data.boundary_type[bregionAcceptor]  = ohmic_contact  
-    data.boundary_type[bregionJunction1] = interface_model_surface_reco_Cont
-    data.boundary_type[bregionJunction2] = interface_model_surface_reco_Cont                   
+    data.boundary_type[bregionJunction1] = interface_model_surface_recombination
+    data.boundary_type[bregionJunction2] = interface_model_surface_recombination                   
     data.boundary_type[bregionDonor]     = ohmic_contact   
 
     # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
@@ -457,6 +457,15 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     IV                            = zeros(0) # for IV values
     biasValues                    = zeros(0) # for bias values
 
+    dfusion_grid            = 1.0e-2.*readdlm("data/Driftfusion-pedotpss-grid.dat")
+    dfusion_psi             = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-psi-t-end.dat")
+    dfusion_phin            = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efn-t-end.dat")
+    dfusion_phip            = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efp-t-end.dat")
+
+    dfusion_psi_interface   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-psi-t-end.dat")
+    dfusion_phin_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efn-t-end.dat")
+    dfusion_phip_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efp-t-end.dat")
+
     for istep = 2:ntsteps
         
         t                         = tvalues[istep] # Actual time
@@ -483,14 +492,6 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
         push!(biasValues, Δu)
 
         if plotting
-            dfusion_grid            = 1.0e-2.*readdlm("data/Driftfusion-pedotpss-grid.dat")
-            dfusion_psi             = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-psi-t-end.dat")
-            dfusion_phin            = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efn-t-end.dat")
-            dfusion_phip            = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efp-t-end.dat")
-        
-            dfusion_psi_interface   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-psi-t-end.dat")
-            dfusion_phin_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efn-t-end.dat")
-            dfusion_phip_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efp-t-end.dat")
             ##########################
             plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
             PyPlot.plot(dfusion_grid', (dfusion_psi[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
@@ -504,14 +505,20 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
             PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
             #PyPlot.xlim(h_pdoping-1.2e-8, h_pdoping + h_intrinsic+1.2e-8)
             #PyPlot.ylim(-0.1, 1.25)
+            ##########################
             
-            ##########
             
         end
         #savefig("cont-qF.eps")
 
     end # time loop
 
+    PyPlot.figure()
+    plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = end", plotGridpoints = false)
+
+    Plotter.figure()
+    plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = end; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+    ##########
 
     Plotter.figure()
     IV_measured         = readdlm("data/Driftfusion-IV-measurement-pcb-forward.dat")
@@ -545,7 +552,7 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
 end #  main
 
 function test()
-    testval = 97.57205176140376
+    testval = 106.5374782442455
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

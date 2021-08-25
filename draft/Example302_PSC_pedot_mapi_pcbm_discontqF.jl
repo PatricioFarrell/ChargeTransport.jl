@@ -295,8 +295,8 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
     # (distinguish between left and right).
     data.boundary_type[bregionAcceptor]  = ohmic_contact  
-    data.boundary_type[bregionJunction1] = interface_model_surface_recombination
-    data.boundary_type[bregionJunction2] = interface_model_surface_recombination                      
+    data.boundary_type[bregionJunction1] = interface_model_discont_qF
+    data.boundary_type[bregionJunction2] = interface_model_discont_qF                     
     data.boundary_type[bregionDonor]     = ohmic_contact   
 
     # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
@@ -384,6 +384,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
     # but rather on default data.
     ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
+
 
     # print all params stored in ctsys.data.params
     if test == false
@@ -559,7 +560,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
 end #  main
 
 function test()
-    testval = 97.57205176140376
+    testval = 98.31370082803808
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

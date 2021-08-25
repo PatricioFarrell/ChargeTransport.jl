@@ -802,17 +802,17 @@ end
 """
 $(SIGNATURES)
 
-The core of the new system constructor. Here, the system for additional
-surface recombination at inner interfaces is build.
+The core of the new system constructor. Here, the system for discontinuous quantities
+is build.
 
 """
-function build_system(grid, data, unknown_storage, ::Type{interface_model_surface_recombination})
+function build_system(grid, data, unknown_storage, ::Type{interface_model_discont_qF})
 
     ctsys        = ChargeTransportSystem()
     fvmsys       = VoronoiFVM.System(grid, unknown_storage=unknown_storage)
 
     # save this information such that there is no need to calculate it again for boundary conditions
-    data.inner_interface_model = interface_model_surface_recombination
+    data.inner_interface_model = interface_model_discont_qF
 
     data.chargeCarrierList = Array{VoronoiFVM.AbstractQuantity, 1}(undef, data.params.numberOfCarriers)
 
@@ -907,14 +907,14 @@ was chosen by user.
 """
 function inner_interface_model(data::ChargeTransportData)
 
-    countSurfaceReco = 0::Int64; countInterfaceCharge = 0::Int64
+    countDiscontqF = 0::Int64; countInterfaceCharge = 0::Int64
 
     # detect which interface model the user chooses by counting
     for ireg in 1:data.params.numberOfBoundaryRegions
         
-        if     data.boundary_type[ireg] ==  interface_model_surface_recombination
+        if     data.boundary_type[ireg] ==  interface_model_discont_qF
 
-            countSurfaceReco = countSurfaceReco + 1
+            countDiscontqF = countDiscontqF + 1
 
         elseif data.boundary_type[ireg] == interface_model_ion_charge
 
@@ -925,9 +925,9 @@ function inner_interface_model(data::ChargeTransportData)
     end
 
      # build the system based on the input interface model
-     if     countSurfaceReco > 0 # build surface_recombination based system
+     if     countDiscontqF > 0 # build discont_qF based system
 
-        return interface_model_surface_recombination
+        return interface_model_discont_qF
 
     elseif countInterfaceCharge > 0 # build ion interface charge system 
 
@@ -936,7 +936,7 @@ function inner_interface_model(data::ChargeTransportData)
         #     Example107 works perfectly fine since the choice of species number is already set.
         return interface_model_none
 
-    elseif countSurfaceReco + countInterfaceCharge == 0 # build system without further interface conditions
+    elseif countDiscontqF + countInterfaceCharge == 0 # build system without further interface conditions
 
         return interface_model_none
 
@@ -954,14 +954,14 @@ was chosen by user.
 function inner_interface_model(ctsys::ChargeTransportSystem)
 
 
-    countSurfaceReco = 0::Int64; countInterfaceCharge = 0::Int64
+    countDiscontqF = 0::Int64; countInterfaceCharge = 0::Int64
 
     # detect which interface model the user chooses by counting
     for ireg in 1:ctsys.data.params.numberOfBoundaryRegions
         
-        if     ctsys.data.boundary_type[ireg] ==  interface_model_surface_recombination
+        if     ctsys.data.boundary_type[ireg] ==  interface_model_discont_qF
 
-            countSurfaceReco = countSurfaceReco + 1
+            countDiscontqF = countDiscontqF + 1
 
         elseif ctsys.data.boundary_type[ireg] == interface_model_ion_charge
 
@@ -972,9 +972,9 @@ function inner_interface_model(ctsys::ChargeTransportSystem)
     end
 
      # build the system based on the input interface model
-     if     countSurfaceReco > 0 # build surface_recombination based system
+     if     countDiscontqF > 0 # build discont_qF based system
 
-        return interface_model_surface_recombination
+        return interface_model_discont_qF
 
     elseif countInterfaceCharge > 0 # build ion interface charge system 
 
@@ -983,7 +983,7 @@ function inner_interface_model(ctsys::ChargeTransportSystem)
         #     Example107 works perfectly fine since the choice of species number is already set.
         return interface_model_none
 
-    elseif countSurfaceReco + countInterfaceCharge == 0 # build system without further interface conditions
+    elseif countDiscontqF + countInterfaceCharge == 0 # build system without further interface conditions
 
         return interface_model_none
 
@@ -1030,7 +1030,7 @@ function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_no
 
 end
 
-function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_surface_recombination})
+function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_discont_qF})
 
     iphin = ctsys.data.bulk_recombination.iphin
     iphip = ctsys.data.bulk_recombination.iphip
