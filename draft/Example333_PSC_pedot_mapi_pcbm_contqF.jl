@@ -340,17 +340,31 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
 
     ## inner boundary region data
-    params.bDensityOfStates[iphin, bregionJunction1]    = Nc_i#( 0.5 * (Nc_a + Nc_i) )^(2/3)
-    params.bDensityOfStates[iphip, bregionJunction1]    = Nv_i#( 0.5 * (Nv_a + Nv_i) )^(2/3)
+    params.bDensityOfStates[iphin, bregionJunction1]    = Nc_i
+    params.bDensityOfStates[iphip, bregionJunction1]    = Nv_i
 
-    params.bDensityOfStates[iphin, bregionJunction2]    = Nc_i#( 0.5 * (Nc_i + Nc_d) )^(2/3)
-    params.bDensityOfStates[iphip, bregionJunction2]    = Nv_i#( 0.5 * (Nv_i + Nv_d) )^(2/3)
+    params.bDensityOfStates[iphin, bregionJunction2]    = Nc_i
+    params.bDensityOfStates[iphip, bregionJunction2]    = Nv_i
 
-    params.bBandEdgeEnergy[iphin, bregionJunction1]     = Ec_i#0.5 * (Ec_a + Ec_i) 
-    params.bBandEdgeEnergy[iphip, bregionJunction1]     = Ev_i#0.5 * (Ev_a + Ev_i) 
+    params.bBandEdgeEnergy[iphin, bregionJunction1]     = Ec_i 
+    params.bBandEdgeEnergy[iphip, bregionJunction1]     = Ev_i 
 
-    params.bBandEdgeEnergy[iphin, bregionJunction2]     = Ec_i#0.5 * (Ec_i + Ec_d) 
-    params.bBandEdgeEnergy[iphip, bregionJunction2]     = Ev_i#0.5 * (Ev_i + Ev_d) 
+    params.bBandEdgeEnergy[iphin, bregionJunction2]     = Ec_i 
+    params.bBandEdgeEnergy[iphip, bregionJunction2]     = Ev_i 
+
+    #######################
+    # params.bDensityOfStates[iphin, bregionJunction1]    = 2^(1/3) * ( 0.5 * (Nc_a + Nc_i) )^(2/3)
+    # params.bDensityOfStates[iphip, bregionJunction1]    = 2^(1/3) * ( 0.5 * (Nv_a + Nv_i) )^(2/3)
+
+    # params.bDensityOfStates[iphin, bregionJunction2]    = 2^(1/3) * ( 0.5 * (Nc_i + Nc_d) )^(2/3)
+    # params.bDensityOfStates[iphip, bregionJunction2]    = 2^(1/3) * ( 0.5 * (Nv_i + Nv_d) )^(2/3)
+
+    # params.bBandEdgeEnergy[iphin, bregionJunction1]     = 0.5 * (Ec_a + Ec_i) 
+    # params.bBandEdgeEnergy[iphip, bregionJunction1]     = 0.5 * (Ev_a + Ev_i) 
+
+    # params.bBandEdgeEnergy[iphin, bregionJunction2]     = 0.5 * (Ec_i + Ec_d) 
+    # params.bBandEdgeEnergy[iphip, bregionJunction2]     = 0.5 * (Ev_i + Ev_d) 
+
 
     # for surface recombination
     params.recombinationSRHvelocity[iphin, bregionJunction1]     = 1.0e1  * cm / s
@@ -364,6 +378,16 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
 
     params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
     params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
+
+    ########
+    # params.bRecombinationSRHTrapDensity[iphin, bregionJunction1] = 2^(1/3) * ( 0.5 * (params.recombinationSRHTrapDensity[iphin, regionAcceptor] + params.recombinationSRHTrapDensity[iphin, regionIntrinsic]) )^(2/3)
+    # params.bRecombinationSRHTrapDensity[iphip, bregionJunction1] = 2^(1/3) * ( 0.5 * (params.recombinationSRHTrapDensity[iphip, regionAcceptor] + params.recombinationSRHTrapDensity[iphip, regionIntrinsic]) )^(2/3)
+    # ##############################################################
+    # params.recombinationSRHvelocity[iphin, bregionJunction2]     = 1.0e7  * cm / s
+    # params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e1  * cm / s
+
+    # params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = 2^(1/3) * ( 0.5 * (params.recombinationSRHTrapDensity[iphin, regionIntrinsic] + params.recombinationSRHTrapDensity[iphin, regionDonor]) )^(2/3)
+    # params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = 2^(1/3) * ( 0.5 * (params.recombinationSRHTrapDensity[iphip, regionIntrinsic] + params.recombinationSRHTrapDensity[iphip, regionDonor]) )^(2/3)
 
     # interior doping
     params.doping[iphin,  regionDonor]                  = Nd 

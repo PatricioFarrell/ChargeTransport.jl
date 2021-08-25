@@ -22,7 +22,7 @@ export cm, mm, μm, nm, ms, μs, ns, ps, eV
 
 include("ct_distributions.jl")
 
-export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA
+export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA, FermiDiracZero
 
 ##################################################################
 
