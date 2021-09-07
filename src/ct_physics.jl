@@ -197,8 +197,8 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
     etan = params.chargeNumbers[iphin] / params.UT * ( (u[iphin] - u[ipsi]) + params.bBandEdgeEnergy[iphin, bnode.region] / q )
     etap = params.chargeNumbers[iphip] / params.UT * ( (u[iphip] - u[ipsi]) + params.bBandEdgeEnergy[iphip, bnode.region] / q ) 
 
-    n    = ((params.bDensityOfStates[iphin, bnode.region] + paramsnodal.densityOfStates[iphin, bnode.index])* data.F[iphin](etan))
-    p    = ((params.bDensityOfStates[iphip, bnode.region] + paramsnodal.densityOfStates[iphip, bnode.index])* data.F[iphip](etap))
+    n    = ((params.bDensityOfStates[iphin, bnode.region] + paramsnodal.densityOfStates[iphin, bnode.index]) * FermiDiracZero(etan))
+    p    = ((params.bDensityOfStates[iphip, bnode.region] + paramsnodal.densityOfStates[iphip, bnode.index]) * FermiDiracZero(etap))
 
     exponentialTerm = exp((q * u[iphin] - q  * u[iphip] ) / (kB * params.temperature))
     excessDensTerm  = n * p * (1.0 - exponentialTerm)
