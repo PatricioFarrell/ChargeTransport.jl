@@ -13,7 +13,7 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 (with adjustments on layer lengths)
 =#
 
-module Example333_PSC_pedot_mapi_pcbm_contqF
+module Example333_PSC_wihtout_ions_surface_reco
 
 using VoronoiFVM
 using ChargeTransportInSolids
@@ -63,6 +63,7 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
                                         h_pdoping/(1.2*δ), 
                                         h_pdoping/(1.2*δ), 
                                         tol=t)
+    
     coord_i_g1              = geomspace(h_pdoping, 
                                         h_pdoping+h_intrinsic/k, 
                                         h_intrinsic/(7.1*δ), 
@@ -97,8 +98,8 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
 
     # bfacemask! for ``active'' boundary regions, i.e. internal interfaces. On the outer boudary regions, the 
     # conditions will be formulated later
-    bfacemask!(grid, [h_pdoping],               [h_pdoping],                           bregionJunction1)  # first  inner interface
-    bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)  # second inner interface
+   bfacemask!(grid, [h_pdoping],               [h_pdoping],                           bregionJunction1)  # first  inner interface
+   bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)  # second inner interface
 
     if plotting
         GridVisualize.gridplot(grid, Plotter = Plotter)
@@ -121,9 +122,8 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
 
     iphin               = 1 # electron quasi Fermi potential
     iphip               = 2 # hole quasi Fermi potential
-    iphia               = 3 # anion vacancy quasi Fermi potential
 
-    ichargeCarriers     = [iphin, iphip, iphia]   # this is an Array of indices of the charge carriers 
+    ichargeCarriers     = [iphin, iphip]   # this is an Array of indices of the charge carriers 
     numberOfCarriers    = length(ichargeCarriers) # electrons, holes and anion vacancies
 
     # temperature
@@ -149,23 +149,11 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     Nc_i                = 1.0e19                / (cm^3)
     Nv_i                = 1.0e19                / (cm^3)
 
-    ###################### adjust Na, Ea here #####################
-    Nanion              = 1.21e22               / (cm^3)
-    Ea_i                = -5.175                *  eV
-
-    # for the labels in the figures
-    textEa              = Ea_i                 ./  eV
-    textNa              = Nanion               .* (cm^3)
-    ###################### adjust Na, Ea here #####################
-
-    EA                  = [0.0,  Ea_i,  0.0]
-
     Nc_d                = 1.0e19                / (cm^3)
     Nv_d                = 1.0e19                / (cm^3)
 
     NC                  = [Nc_a, Nc_i, Nc_d]
     NV                  = [Nv_a, Nv_i, Nv_d]
-    NAnion              = [0.0,  Nanion, 0.0]
 
     # mobilities 
     μn_a                = 0.1                   * (cm^2) / (V * s)  
@@ -173,14 +161,12 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
 
     μn_i                = 2.00e1                * (cm^2) / (V * s)  
     μp_i                = 2.00e1                * (cm^2) / (V * s)
-    μa_i                = 1.00e-10              * (cm^2) / (V * s)
 
     μn_d                = 1.0e-3                * (cm^2) / (V * s) 
     μp_d                = 1.0e-3                * (cm^2) / (V * s) 
 
     μn                  = [μn_a, μn_i, μn_d] 
     μp                  = [μp_a, μp_i, μp_d] 
-    μa                  = [0.0,  μa_i, 0.0 ] 
 
     # relative dielectric permittivity  
     ε_a                 = 4.0                   *  1.0  
@@ -224,7 +210,6 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     # doping
     Nd                  = 2.089649130192123e17  / (cm^3) 
     Na                  = 4.529587947185444e18  / (cm^3) 
-    C0                  = 1.0e18                / (cm^3) 
 
     # contact voltages: we impose an applied voltage only on one outer boundary.
     # At the other boundary the applied voltage is zero.
@@ -252,13 +237,12 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     data.model_type                      = model_transient
 
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
-    data.F                               = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
+    data.F                               = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA]
 
     # Here the user can specify, if they assume continuous or discontinuous charge carriers. We note that for a surface recombination model,
     # we need to use discontinuous electron and hole quasi Fermi potentials.
     data.isContinuous[iphin]             = true
     data.isContinuous[iphip]             = true
-    data.isContinuous[iphia]             = true
 
     # Following choices are possible for bulk_recombination_model:bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
     # The input iphin, iphip refers to the indices set by the user and needs to be specified
@@ -271,10 +255,6 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     data.boundary_type[bregionJunction1] = interface_model_surface_recombination
     data.boundary_type[bregionJunction2] = interface_model_surface_recombination                   
     data.boundary_type[bregionDonor]     = ohmic_contact   
-
-    # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
-    # In this application ion vacancies only live in active perovskite layer
-    data.enable_ion_vacancies            = enable_ion_vacancies(ionic_vacancies = [iphia], regions = [regionIntrinsic])
     
     # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
     # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
@@ -298,7 +278,6 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     params.UT                                           = (kB * params.temperature) / q
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
-    params.chargeNumbers[iphia]                         =  1
 
     # interior region data
     for ireg in 1:numberOfRegions
@@ -308,15 +287,12 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
         # effective dos, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = NC[ireg]
         params.densityOfStates[iphip, ireg]             = NV[ireg]
-        params.densityOfStates[iphia, ireg]             = NAnion[ireg]
 
         params.bandEdgeEnergy[iphin, ireg]              = EC[ireg] 
         params.bandEdgeEnergy[iphip, ireg]              = EV[ireg] 
-        params.bandEdgeEnergy[iphia, ireg]              = EA[ireg] 
 
         params.mobility[iphin, ireg]                    = μn[ireg]
         params.mobility[iphip, ireg]                    = μp[ireg]
-        params.mobility[iphia, ireg]                    = μa[ireg]
 
         # recombination parameters
         params.recombinationRadiative[ireg]             = r0[ireg]
@@ -328,7 +304,7 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
         params.recombinationAuger[iphip, ireg]          = Auger
     end
 
-    ## outer boundary region data
+    # ## outer boundary region data
     params.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
     params.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
 
@@ -346,7 +322,7 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     params.bDensityOfStates[iphin, bregionJunction1]    = Nc_i
     params.bDensityOfStates[iphip, bregionJunction1]    = Nv_i
 
-    params.bDensityOfStates[iphin, bregionJunction2]    = Nc_i
+    params.bDensityOfStates[iphin, bregionJunction2]    = Nc_i 
     params.bDensityOfStates[iphip, bregionJunction2]    = Nv_i
 
     params.bBandEdgeEnergy[iphin, bregionJunction1]     = Ec_i 
@@ -356,24 +332,33 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     params.bBandEdgeEnergy[iphip, bregionJunction2]     = Ev_i 
 
     # for surface recombination
+ 
     params.recombinationSRHvelocity[iphin, bregionJunction1]     = 1.0e1  * cm / s
     params.recombinationSRHvelocity[iphip, bregionJunction1]     = 1.0e5  * cm / s
 
     params.recombinationSRHvelocity[iphin, bregionJunction2]     = 1.0e7  * cm / s
     params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e1  * cm / s
 
+    # velocity = 1.0e7 * cm / s
+    # params.recombinationSRHvelocity[iphin, bregionJunction1]     = 1.0e1  * cm / s
+    # params.recombinationSRHvelocity[iphip, bregionJunction1]     = velocity
+
+    # params.recombinationSRHvelocity[iphin, bregionJunction2]     = velocity
+    # params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e1  * cm / s
+
     params.bRecombinationSRHTrapDensity[iphin, bregionJunction1] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
     params.bRecombinationSRHTrapDensity[iphip, bregionJunction1] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
 
     params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
-    params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
+    params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic] 
+
     ##############################################################
 
-    # params.bDensityOfStates[iphin, bregionJunction1]    =  ( 0.5 * (Nc_a + Nc_i) )
-    # params.bDensityOfStates[iphip, bregionJunction1]    = ( 0.5 * (Nv_a + Nv_i) )
+    # params.bDensityOfStates[iphin, bregionJunction1]    = 2^(1/3) * ( 0.5 * (Nc_a + Nc_i) )^(2/3)
+    # params.bDensityOfStates[iphip, bregionJunction1]    = 2^(1/3) * ( 0.5 * (Nv_a + Nv_i) )^(2/3)
 
-    # params.bDensityOfStates[iphin, bregionJunction2]    =  ( 0.5 * (Nc_i + Nc_d) )
-    # params.bDensityOfStates[iphip, bregionJunction2]    =  ( 0.5 * (Nv_i + Nv_d) )
+    # params.bDensityOfStates[iphin, bregionJunction2]    = 2^(1/3) * ( 0.5 * (Nc_i + Nc_d) )^(2/3)
+    # params.bDensityOfStates[iphip, bregionJunction2]    = 2^(1/3) * ( 0.5 * (Nv_i + Nv_d) )^(2/3)
 
     # params.bBandEdgeEnergy[iphin, bregionJunction1]     = 0.5 * (Ec_a + Ec_i) 
     # params.bBandEdgeEnergy[iphip, bregionJunction1]     = 0.5 * (Ev_a + Ev_i) 
@@ -381,18 +366,15 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     # params.bBandEdgeEnergy[iphin, bregionJunction2]     = 0.5 * (Ec_i + Ec_d) 
     # params.bBandEdgeEnergy[iphip, bregionJunction2]     = 0.5 * (Ev_i + Ev_d) 
 
-    # params.bRecombinationSRHTrapDensity[iphin, bregionJunction1] = ( 0.5 * (params.recombinationSRHTrapDensity[iphin, regionAcceptor] + params.recombinationSRHTrapDensity[iphin, regionIntrinsic]) )
-    # params.bRecombinationSRHTrapDensity[iphip, bregionJunction1] =  ( 0.5 * (params.recombinationSRHTrapDensity[iphip, regionAcceptor] + params.recombinationSRHTrapDensity[iphip, regionIntrinsic]) )
+    # params.bRecombinationSRHTrapDensity[iphin, bregionJunction1] = 2^(1/3) * ( 0.5 * (params.recombinationSRHTrapDensity[iphin, regionAcceptor] + params.recombinationSRHTrapDensity[iphin, regionIntrinsic]) )^(2/3)
+    # params.bRecombinationSRHTrapDensity[iphip, bregionJunction1] = 2^(1/3) * ( 0.5 * (params.recombinationSRHTrapDensity[iphip, regionAcceptor] + params.recombinationSRHTrapDensity[iphip, regionIntrinsic]) )^(2/3)
+   
+    # params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = 2^(1/3) * ( 0.5 * (params.recombinationSRHTrapDensity[iphin, regionIntrinsic] + params.recombinationSRHTrapDensity[iphin, regionDonor]) )^(2/3)
+    # params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = 2^(1/3) * ( 0.5 * (params.recombinationSRHTrapDensity[iphip, regionIntrinsic] + params.recombinationSRHTrapDensity[iphip, regionDonor]) )^(2/3)
 
-    # params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = ( 0.5 * (params.recombinationSRHTrapDensity[iphin, regionIntrinsic] + params.recombinationSRHTrapDensity[iphin, regionDonor]) )
-    # params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] =( 0.5 * (params.recombinationSRHTrapDensity[iphip, regionIntrinsic] + params.recombinationSRHTrapDensity[iphip, regionDonor]) )
-
-    ##############################################################
-    
     # interior doping
     params.doping[iphin,  regionDonor]                  = Nd 
-    params.doping[iphip,  regionAcceptor]               = Na      
-    params.doping[iphia,  regionIntrinsic]              = C0                 
+    params.doping[iphip,  regionAcceptor]               = Na                   
     # boundary doping
     params.bDoping[iphin, bregionDonor]                 = Nd 
     params.bDoping[iphip, bregionAcceptor]              = Na    
@@ -507,15 +489,6 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     IV                            = zeros(0) # for IV values
     biasValues                    = zeros(0) # for bias values
 
-    dfusion_grid            = 1.0e-2.*readdlm("data/Driftfusion-pedotpss-grid.dat")
-    dfusion_psi             = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-psi-t-end.dat")
-    dfusion_phin            = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efn-t-end.dat")
-    dfusion_phip            = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-Efp-t-end.dat")
-
-    dfusion_psi_interface   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-psi-t-end.dat")
-    dfusion_phin_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efn-t-end.dat")
-    dfusion_phip_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-Efp-t-end.dat")
-
     for istep = 2:ntsteps
         
         t                         = tvalues[istep] # Actual time
@@ -541,112 +514,74 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
         push!(IV, current)
         push!(biasValues, Δu)
 
-        if plotting
-            ##########################
-            plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
-            PyPlot.plot(dfusion_grid', (dfusion_psi[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
-            PyPlot.plot(dfusion_grid', (-dfusion_phin[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
-            PyPlot.plot(dfusion_grid', (-dfusion_phip[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
-            #####
-            PyPlot.plot(dfusion_grid', (dfusion_psi_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
-            PyPlot.plot(dfusion_grid', (-dfusion_phin_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
-            PyPlot.plot(dfusion_grid', (-dfusion_phip_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
-            PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
-            PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
-            #PyPlot.xlim(h_pdoping-1.2e-8, h_pdoping + h_intrinsic+1.2e-8)
-            #PyPlot.ylim(-0.1, 1.25)
-            ##########################
-            
-            
-        end
 
     end # time loop
 
-    plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = end; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
-    PyPlot.plot(dfusion_grid', (dfusion_psi[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
-    PyPlot.plot(dfusion_grid', (-dfusion_phin[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
-    PyPlot.plot(dfusion_grid', (-dfusion_phip[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
-    #####
-    PyPlot.plot(dfusion_grid', (dfusion_psi_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
-    PyPlot.plot(dfusion_grid', (-dfusion_phin_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
-    PyPlot.plot(dfusion_grid', (-dfusion_phip_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
-    PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
-    PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
-    PyPlot.xlim(h_pdoping-1.2e-8, h_pdoping + h_intrinsic+1.2e-8)
-    PyPlot.ylim(-0.1, 1.25)
+    #writedlm("PSC-sol-with-surface-reco-3D-intrinsic-dens-modified-statistics-one-sided-velocity-$(params.recombinationSRHvelocity[iphip, bregionJunction1]).dat", [coord solution'])
+    #writedlm("PSC-sol-with-surface-reco-IV-data-bulk-intrinsic.dat", [coord solution'])
+
+    #res = [biasValues IV]
+    #writedlm("PSC_IV_without_ions_without_surface_reco.dat", res)
+
+    if plotting
+        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = end")
+        sol_without_reco   = readdlm("data/PSC_sol_without_ions_without_surface_reco.dat")
+        PyPlot.plot(sol_without_reco[:, 1], sol_without_reco[:, 2], linewidth = 3, linestyle= ":", color="black")
+        PyPlot.plot(sol_without_reco[:, 1], sol_without_reco[:, 3], linewidth = 3, linestyle= ":", color="black")
+        PyPlot.plot(sol_without_reco[:, 1], sol_without_reco[:, 4], linewidth = 3, linestyle= ":", color="black")
+        PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
+        PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
+        # PyPlot.xlim(h_pdoping-1.2e-8, h_pdoping + h_intrinsic+1.2e-8)
+        # PyPlot.ylim(-0.1, 1.25)
 
 
-    ##########################
-    dfusion_grid            = 1.0e-2.*readdlm("data/Driftfusion-pedotpss-grid.dat")
-    dfusion_n            = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-n-t-end.dat")
-    dfusion_p            = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-p-t-end.dat")
-    dfusion_a            = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-a-t-end.dat")
+        PyPlot.figure()
+        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = end", plotGridpoints = false)
 
-    dfusion_n_interface   = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-n-t-end.dat")
-    dfusion_p_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-p-t-end.dat")
-    dfusion_a_interface  = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-a-t-end.dat")
 
+        Plotter.figure()
+        IV_measured         = readdlm("data/Driftfusion-IV-measurement-pcb-forward.dat")
+        IV_without_reco     = readdlm("data/PSC_IV_without_ions_without_surface_reco.dat")
+        IV_Driftfusion_reco = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-IV-forward.dat")
+        
+        PyPlot.plot(IV_measured[:, 1], IV_measured[:, 2], label = "measurement",  linestyle="--", color = "black")
+        PyPlot.plot(biasValues, abs.(IV_without_reco[:,2].*(cm)^2*1.0e3), label = "without interface reco", linewidth = 3, markersize="7", marker= "o", linestyle="--", color = "green")
+        PyPlot.plot(IV_Driftfusion_reco[:, 1], IV_Driftfusion_reco[:, 2].*1.0e3, label = "Driftfusion (with interface reco and ions)", markersize=7,marker= "x",  linestyle=":", color="blue")
+        PyPlot.plot(biasValues, abs.(IV.*(cm)^2*1.0e3), label = "simulation",  linewidth= 3, linestyle="--", color="red")
+
+        PyPlot.legend()
+        PyPlot.title("Forward")
+        Plotter.ylabel("total current [mA]") # 
+        Plotter.xlabel("Applied Voltage [V]")
+        PyPlot.ylim(0.0, 0.006*1.0e3)
+        PyPlot.tight_layout()
+
+
+
+    end
+
+    ########################## plot argument distribution #################
+    etan = zeros(length(coord))
+    etap = zeros(length(coord))
+    count = 1
+    for xx = 1:length(coord)
+
+        etan[xx] = params.chargeNumbers[iphin] / params.UT * ( (solution[iphin,xx] - solution[3,xx]) + params.bandEdgeEnergy[iphin, count] / q )
+
+        etap[xx] = params.chargeNumbers[iphip] / params.UT * ( (solution[iphip,xx] - solution[3,xx]) + params.bandEdgeEnergy[iphip, count] / q )
+        if xx == icoord_p || xx == icoord_pi
+            count = count + 1
+        end
+    end
 
     PyPlot.figure()
-    plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = end", plotGridpoints = false)
-    ######
-    PyPlot.semilogy(dfusion_grid', (dfusion_n[1,:]), linewidth = 3, linestyle= ":", color="black")
-    PyPlot.semilogy(dfusion_grid', (dfusion_p[1,:]) , linewidth = 3, linestyle= ":", color="black")
-    PyPlot.semilogy(dfusion_grid', (dfusion_a[1,:]) , linewidth = 3, linestyle= ":", color="black")
-    ######
-    PyPlot.semilogy(dfusion_grid', (dfusion_n_interface[1,:]), linewidth = 3, linestyle= ":", color="grey")
-    PyPlot.semilogy(dfusion_grid', (dfusion_p_interface[1,:]), linewidth = 3, linestyle= ":", color="grey")
-    PyPlot.semilogy(dfusion_grid',(dfusion_a_interface[1,:]), linewidth = 3, linestyle= ":", color="grey")
-
+    PyPlot.plot(coord, etan', color = "green", label = "\$\\eta_n\$"  )
+    PyPlot.plot(coord, etap', color = "red", label = "\$\\eta_p\$" )
     PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
     PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
-
-    # PyPlot.xlim(h_pdoping-1.2e-8, h_pdoping + h_intrinsic+1.2e-8)
-    # PyPlot.ylim(1.0e-2, 1.0e20)
-
-
-    ##########################
-    Plotter.figure()
-    IV_measured         = readdlm("data/Driftfusion-IV-measurement-pcb-forward.dat")
-    IV_Driftfusion_reco = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-interface-reco-IV-forward.dat")
-    IV_Driftfusion      = readdlm("data/Driftfusion-pedotpss-Na-1p21e22-IV-forward.dat")
-        
-    PyPlot.plot(biasValues, abs.(IV.*(cm)^2*1.0e3), label = "simulation",  linewidth= 3, linestyle="--", color="red")
-    PyPlot.plot(IV_measured[:, 1], IV_measured[:, 2], label = "measurement",  linestyle="--", color = "black")
-    PyPlot.plot(IV_Driftfusion[:, 1], IV_Driftfusion[:, 2].*1.0e3, label = "Driftfusion (without interface reco)", linewidth = 3, markersize="7", marker= "o", linestyle="--", color = "green")
-    PyPlot.plot(IV_Driftfusion_reco[:, 1], IV_Driftfusion_reco[:, 2].*1.0e3, label = "Driftfusion (with interface reco)", markersize=7,marker= "x",  linestyle=":", color="blue")
-
-    PyPlot.legend()
-    PyPlot.title("Forward; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ ")
-    Plotter.ylabel("total current [mA]") # 
-    Plotter.xlabel("Applied Voltage [V]")
-    PyPlot.ylim(0.0, 0.006*1.0e3)
-    PyPlot.tight_layout()
-
-    # ########################## plot argument distribution #################
-    # etan = zeros(length(coord))
-    # etap = zeros(length(coord))
-    # count = 1
-    # for xx = 1:length(coord)
-
-    #     etan[xx] = params.chargeNumbers[iphin] / params.UT * ( (solution[iphin,xx] - solution[4,xx]) + params.bandEdgeEnergy[iphin, count] / q )
-
-    #     etap[xx] = params.chargeNumbers[iphip] / params.UT * ( (solution[iphip,xx] - solution[4,xx]) + params.bandEdgeEnergy[iphip, count] / q )
-    #     if xx == icoord_p || xx == icoord_pi
-    #         count = count + 1
-    #     end
-    # end
-    # println(length(coord))
-    # println(length(etan))
-
-    # PyPlot.figure()
-    # PyPlot.plot(coord, etan', color = "green", label = "\$\\eta_n\$"  )
-    # PyPlot.plot(coord, etap', color = "red", label = "\$\\eta_p\$" )
-    # PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
-    # PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
-    # PyPlot.title("Argument statistics function")
-    # Plotter.grid()
-    # PyPlot.legend(fancybox = true, loc = "best")
+    PyPlot.title("Argument statistics function")
+    Plotter.grid()
+    PyPlot.legend(fancybox = true, loc = "best")
 
     if test == false
         println("*** done\n")
