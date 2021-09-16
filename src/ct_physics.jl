@@ -58,7 +58,7 @@ function etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge; nodesi
     E  = data.params.bandEdgeEnergy[icc, edge.region] + data.paramsnodal.bandEdgeEnergy[icc, nodeEdge]
 
     # params.chargeNumbers[icc] / params.UT * ( (u[icc] - u[ipsi]) + E / q )
-    return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc]) 
+    return etaFunction(u[ipsi,nodeside], u[icc,nodeside], data.params.UT, E, data.params.chargeNumbers[icc]) 
 end
 
 
@@ -762,17 +762,23 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium_trap})
     Rn = 1 / taun * (n0 * u[itrap]/Nt     - n * (1-u[itrap]/Nt) )
     Rp = 1 / taup * (p0 * (1-u[itrap]/Nt) - p * u[itrap]/Nt     )
 
-    f[iphin] = -q * params.chargeNumbers[iphin] * Rn
-    f[iphip] = -q * params.chargeNumbers[iphip] * Rp
-    f[itrap] = -q * params.chargeNumbers[itrap] * (Rp-Rn)
+    f[iphin] = q * params.chargeNumbers[iphin] * Rn
+    f[iphip] = q * params.chargeNumbers[iphip] * Rp
+    f[itrap] = q * params.chargeNumbers[itrap] * (Rp-Rn)
+
+    # f[iphin] = 0#-q * 1#params.chargeNumbers[iphin] * Rn
+    # f[iphip] = 0#-q * 1#params.chargeNumbers[iphip] * Rp
+    # f[itrap] = 0#-q * 1#params.chargeNumbers[itrap] * (Rp-Rn)
+    # f[ipsi] = 0#-q * 1#params.chargeNumbers[itrap] * (Rp-Rn)
 
     # @show value(f[iphin])
     # @show value(f[iphip])
-    # @show value(p)
-    # @show value(etaFunction(u, data, inode, ireg, iphin, ipsi, true)) 
-    # @show value(u[iphin]) 
     # @show value(f[itrap])
-    # @show iphip+1:params.numberOfCarriers
+    # @show value(p)
+    # @show value(n)
+    # @show value(etaFunction(u, data, inode, ireg, iphin, ipsi, true)) 
+
+    
     # println("---")
 
 
@@ -1045,7 +1051,21 @@ function flux!(f, u, edge, data, ::Type{excessChemicalPotential})
         bp, bm             = fbernoulli_pm(Q)
 
         f[icc] = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
+        # @show value(data.F[icc](etal))
+        # @show value(data.F[icc](etak))
+        # @show value(Q)
+        # @show value((dpsi - bandEdgeDifference/q) /params.UT)
+        # @show value(u[3])
     end
+
+
+    #     @show value(f[1])
+    # @show value(f[2])
+    # @show value(f[3])
+
+
+    
+    # println("---")
 
     return f
 
