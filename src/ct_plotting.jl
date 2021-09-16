@@ -195,7 +195,7 @@ function plot_energies(Plotter, grid, data, sol, title, ;plotGridpoints=false)
     colors[iphip]     = "red";              linestyles[iphip]     = ":";          labelBandEdgeEnergy[iphip]     = "\$E_v-q\\psi\$"; labelPotential[iphip] = "\$ - q \\varphi_n\$"
     colors[ionic_vac] = ["gold", "purple"]; linestyles[ionic_vac] = ["--", "-."]; labelBandEdgeEnergy[ionic_vac] = ["\$E_a-q\\psi\$ ", "\$E_{cat}-q\\psi\$ "]; labelPotential[ionic_vac] = [ "\$ - q \\varphi_a\$", "\$ - q \\varphi_c\$"]
 
-    for icc in [iphin, iphip]
+    for icc in data.chargeCarrierList#[iphin, iphip]
         # first cell
         ireg         = cellregions[1]
         E1           = params.bBandEdgeEnergy[icc, 1] + paramsnodal.bandEdgeEnergy[icc, 1] # left boundary
