@@ -247,6 +247,16 @@ Abstract type for out of equilibrium calculations.
 """
 abstract type outOfEquilibrium <: calculation_type end
 
+"""
+$(TYPEDEF)
+
+Abstract type for out of equilibrium calculations with a trap density,
+see *On the Shockley-Read-Hall Model: Generation-Recombination in Semiconductors*
+in SIAM Journal on Applied Mathematics, Vol. 67, No. 4 (2007), pp. 1183-1201.
+
+"""
+abstract type outOfEquilibrium_trap <: outOfEquilibrium end
+
 ##########################################################
 ##########################################################
 """
