@@ -88,7 +88,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     Et                = 0.6                  *  eV               # does not enter anywhere...
     Nc                = 4.351959895879690e17 / (cm^3)
     Nv                = 9.139615903601645e18 / (cm^3)
-    Nt                = 1e18#Nv#1e18                 / (cm^3)            # check this value later
+    Nt                = 1e18                 / (cm^3)            # check this value later
     mun               = 8500.0               * (cm^2) / (V * s)
     mup               = 400.0                * (cm^2) / (V * s)
     mut               = 0                    * (cm^2) / (V * s)  # such that there is no flux
@@ -129,6 +129,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     # initialize ChargeTransportData instance and fill in data
     data                                = ChargeTransportData(grid, numberOfCarriers)
+    ipsi                                = data.indexPsi
 
 
     #### declare here all necessary information concerning the model ###
@@ -258,10 +259,10 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     set_ohmic_contact!(ctsys, bregionDonor, 0.0)
 
     # enable all three species in all regions
-    enable_species!(ctsys, data.indexPsi,  regions)
-    enable_species!(ctsys, iphin, regions)
-    enable_species!(ctsys, iphip, regions)
-    enable_species!(ctsys, iphit, regions)
+    # enable_species!(ctsys, data.indexPsi,  regions)
+    # enable_species!(ctsys, iphin, regions)
+    # enable_species!(ctsys, iphip, regions)
+    # enable_species!(ctsys, iphit, regions)
 
     if test == false
         println("*** done\n")
@@ -318,10 +319,10 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         plot_solution(Plotter, grid, data, solution, "equilibrium")
     end
 
-    # @show compute_densities!(grid, data, solution)
-    # @show solution
+    @show compute_densities!(grid, data, solution)
+    @show solution
 
-    # return 
+    return 
 
     ################################################################################
     if test == false
@@ -339,31 +340,41 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     # Scan rate and time steps
     scanrate                      = 1.0 * V/s
-    ntsteps                       = 31
-    vend                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    v0                            = 0.0
+    number_tsteps                 = 31
+    endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    # v0                            = 0.0
+
     IV                            = zeros(0) # for IV values
     biasValues                    = zeros(0) # for bias values
 
     # The end time then is calculated here:
-    tend                          = vend/scanrate
+    tend                          = endVoltage/scanrate
 
     # with fixed timestep sizes we can calculate the times
     # a priori
-    tvalues                       = range(0, stop = tend, length = ntsteps)
+    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
 
     w_device = 0.5    * μm  # width of device
     z_device = 1.0e-4 * cm  # depth of device
 
-    for istep = 2:ntsteps
+    ### take out when problem solved
+    # solve!(solution, initialGuess, ctsys, control  = control, tstep = 0.0)
+    # initialGuess .= solution
+    # if verbose
+    #         println("time value: t = $(t)")
+    # end
+
+    for istep = 2:number_tsteps
 
         t                     = tvalues[istep]          # Actual time
-        Δu                    = v0 + t*scanrate         # Applied voltage 
+        Δu                    = t*scanrate         # Applied voltage 
+        # Δu                    = v0 + t*scanrate         # Applied voltage 
         Δt                    = t - tvalues[istep-1]    # Time step size
 
+         # Apply new voltage
         # set non equilibrium boundary conditions
         set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
-        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+
 
         if verbose
             println("time value: t = $(t)")
@@ -373,19 +384,31 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         # from last timestep
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
+        # get I-V data
+        current = get_current_val(ctsys, solution, initialGuess, Δt)
+
+        push!(IV, current)
+        push!(biasValues, Δu)
+
         initialGuess .= solution
 
-        # get IV curve
-        factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
 
-        # testfunction zero in bregionAcceptor and one in bregionDonor
-        tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])
-        I      = integrate(ctsys.fvmsys, tf, solution, initialGuess, Δt)
 
-        current = I[ipsi] + I[iphin] + I[iphip] 
 
-        push!(IV,  abs.(w_device * z_device * current ))
-        push!(biasValues, Δu)
+        ######## CHECK TRAPS CONTRIBUTE TO CURRENT!
+        # initialGuess .= solution
+
+        # # get IV curve
+        # factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+
+        # # testfunction zero in bregionAcceptor and one in bregionDonor
+        # tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])
+        # I      = integrate(ctsys.fvmsys, tf, solution, initialGuess, Δt)
+
+        # current = I[ipsi] + I[iphin] + I[iphip] 
+
+        # push!(IV,  abs.(w_device * z_device * current ))
+        # push!(biasValues, Δu)
 
     end # bias loop
 
@@ -395,11 +418,11 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
      # plot solution and IV curve
     if plotting 
-        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(v0+vend), \$ t=$(tvalues[ntsteps])\$")
+        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$")
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(v0+vend), \$ t=$(tvalues[ntsteps])\$")
+        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$")
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(v0+vend), \$ t=$(tvalues[ntsteps])\$")
+        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$")
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
     end
