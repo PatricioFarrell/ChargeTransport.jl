@@ -1248,7 +1248,7 @@ function compute_densities!(grid, data, sol)
     paramsnodal  = data.paramsnodal
 
     ipsi         = params.numberOfCarriers + 1 
-    densities    = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
+    densities    = Array{Real,2}(undef, params.numberOfCarriers, size(sol, 2))
         
     bfacenodes   = grid[BFaceNodes]
     bfaceregions = grid[BFaceRegions]

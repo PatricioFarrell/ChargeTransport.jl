@@ -17,6 +17,7 @@ include("ct_units.jl")
 
 export K, J, A, V, m, s, C, kg
 export cm, mm, μm, nm, ms, μs, ns, ps, eV
+export tiny_penalty_value
 
 ##################################################################
 
@@ -41,7 +42,7 @@ export bulk_recombination_model, bulk_recomb_model_none, bulk_recomb_model_trap_
 include("ct_physics.jl")
 
 export ScharfetterGummel, excessChemicalPotential, diffusionEnhanced, generalized_SG 
-export inEquilibrium, outOfEquilibrium
+export inEquilibrium, outOfEquilibrium, outOfEquilibrium_trap
 export ScharfetterGummel_Graded, excessChemicalPotential_Graded
 export generation_model, generation_none, generation_beer_lambert, generation_uniform
 export breaction!, bstorage!, reaction!, storage!, flux!
