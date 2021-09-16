@@ -11,12 +11,13 @@ The argument of the distribution function
 for interior nodes.
 """
 function etaFunction(u, node::VoronoiFVM.Node, data, icc, ipsi)
-    params      = data.params
-    paramsnodal = data.paramsnodal
+     # params      = data.params
+    # paramsnodal = data.paramsnodal
 
-    E  = params.bandEdgeEnergy[icc, node.region] + paramsnodal.bandEdgeEnergy[icc, node.index]
+    E  = data.params.bandEdgeEnergy[icc, node.region] + data.paramsnodal.bandEdgeEnergy[icc, node.index]
     
-    return params.chargeNumbers[icc] / params.UT * ( (u[icc] - u[ipsi]) + E / q )
+     return data.params.chargeNumbers[icc] / data.params.UT * ( (u[icc] - u[ipsi]) + E / q )
+   # return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc]) 
 end
 
 """
@@ -29,12 +30,13 @@ The argument of the distribution function
 for boundary nodes.
 """
 function etaFunction(u, bnode::VoronoiFVM.BNode, data, icc, ipsi) # bnode.index refers to index in overall mesh
-    params      = data.params
-    paramsnodal = data.paramsnodal
+    # params      = data.params
+    # paramsnodal = data.paramsnodal
 
-    E  = params.bBandEdgeEnergy[icc, bnode.region] + paramsnodal.bandEdgeEnergy[icc, bnode.index]
+    E  = data.params.bBandEdgeEnergy[icc, bnode.region] + data.paramsnodal.bandEdgeEnergy[icc, bnode.index]
     
-    return params.chargeNumbers[icc] / params.UT * ( (u[icc] - u[ipsi]) + E / q )
+    #return params.chargeNumbers[icc] / params.UT * ( (u[icc] - u[ipsi]) + E / q )
+    return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc]) 
 end
 
 
@@ -50,12 +52,13 @@ for edges.
 
 function etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi, nodeEdge; nodeside=1 )
 
-    params      = data.params
-    paramsnodal = data.paramsnodal
+    # params      = data.params
+    # paramsnodal = data.paramsnodal
     
-    E  = params.bandEdgeEnergy[icc, edge.region] + paramsnodal.bandEdgeEnergy[icc, nodeEdge]
+    E  = data.params.bandEdgeEnergy[icc, edge.region] + data.paramsnodal.bandEdgeEnergy[icc, nodeEdge]
 
-    return params.chargeNumbers[icc] / params.UT * ( (u[icc, nodeside] - u[ipsi, nodeside]) + E / q )
+    # params.chargeNumbers[icc] / params.UT * ( (u[icc] - u[ipsi]) + E / q )
+    return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc]) 
 end
 
 
@@ -71,7 +74,7 @@ The parameters ``E_\\alpha`` and ``z_\\alpha`` are given as vectors.
 This function may be used to compute the charge density, i.e. the
 right-hand side of the Poisson equation.   
 """
-function etaFunction(psi, phi, UT, E::Array, z::Array)
+function etaFunction(psi, phi, UT, E, z)
     z ./ UT .* ( (phi - psi) .+ E / q )
 end
 
@@ -87,16 +90,16 @@ for floats.
 """
 function etaFunction(u, data, node, region, icc, ipsi, in_region::Bool)
 
-    params      = data.params
-    paramsnodal = data.paramsnodal
+    # params      = data.params
+    # paramsnodal = data.paramsnodal
 
     if in_region == true
-        E  = params.bandEdgeEnergy[icc, region] + paramsnodal.bandEdgeEnergy[icc, node]
+        E  = data.params.bandEdgeEnergy[icc, region] + data.paramsnodal.bandEdgeEnergy[icc, node]
     elseif in_region == false
-        E  = params.bBandEdgeEnergy[icc, region] + paramsnodal.bandEdgeEnergy[icc, node]
+        E  = data.params.bBandEdgeEnergy[icc, region] + data.paramsnodal.bandEdgeEnergy[icc, node]
     end
 
-    return params.chargeNumbers[icc] / params.UT * ( (u[icc] - u[ipsi]) + E / q )
+    return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc]) 
 end
 
 ##########################################################
@@ -141,8 +144,7 @@ function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
     paramsnodal = data.paramsnodal 
 
     # parameters
-    α          = 1.0e-10        # tiny penalty value
-    ipsi       = data.indexPsi  # final index for electrostatic potential
+    ipsi  = data.indexPsi  # final index for electrostatic potential
  
 
     for icc ∈ data.chargeCarrierList # quantities or integer indices
@@ -158,7 +160,7 @@ function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
     end
     f[ipsi] = f[ipsi] - paramsnodal.doping[bnode.index]
 
-    f[ipsi] = - data.λ1 * 1 / α *  q * f[ipsi]
+    f[ipsi] = - data.λ1 * 1 / tiny_penalty_value *  q * f[ipsi]
 
     return f
 
@@ -692,6 +694,102 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
 
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Like ``reaction!(f, u, node, data, ::Type{outOfEquilibrium})`` but including a trap density for transient simulations.
+
+"""
+function reaction!(f, u, node, data, ::Type{outOfEquilibrium_trap})
+
+    params      = data.params
+    paramsnodal = data.paramsnodal
+    ireg        = node.region
+    inode       = node.index
+
+    # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
+    iphin       = data.bulk_recombination.iphin
+    iphip       = data.bulk_recombination.iphip
+
+    # based on user index and regularity of solution quantities or integers are used 
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+    itrap       = data.chargeCarrierList[3]
+    ipsi        = data.indexPsi                  
+    
+    ############################################################
+    ####          simple zero reaction for all icc          ####
+    ############################################################
+    # for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+
+    #     f[icc]  = u[icc] - 0.0 # set for all charge carriers (electric and possible present ionic) zero conditions
+
+    # end
+
+    ###########################################################
+    ####         right-hand side of nonlinear Poisson      ####
+    ####         equation (space charge density)           ####
+    ###########################################################
+    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+        
+        eta     = etaFunction(u, node, data, icc, ipsi) 
+        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, node.region] )  # subtract doping
+        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.densityOfStates[icc, node.region] + paramsnodal.densityOfStates[icc, node.index]) * data.F[icc](eta)   # add charge carrier
+
+    end
+
+    f[ipsi]     = f[ipsi] - paramsnodal.doping[inode]
+
+    f[ipsi]     = - q * data.λ1 * f[ipsi]
+
+    ###########################################################
+    ####       right-hand side of continuity equations     ####
+    ####       for φ_n and φ_p (bipolar reaction)          ####
+    ###########################################################
+
+    n               = (params.densityOfStates[iphin, ireg] + paramsnodal.densityOfStates[iphin, inode]) * data.F[iphin](etaFunction(u, node, data, iphin, ipsi))
+    p               = (params.densityOfStates[iphip, ireg] + paramsnodal.densityOfStates[iphip, inode]) * data.F[iphip](etaFunction(u, node, data, iphip, ipsi))
+
+    taun                  = params.recombinationSRHLifetime[iphin, ireg]
+    n0                    = params.recombinationSRHTrapDensity[iphin, ireg]
+    taup                  = params.recombinationSRHLifetime[iphip, ireg]
+    p0                    = params.recombinationSRHTrapDensity[iphip, ireg]
+    Nt                    = params.densityOfStates[itrap, ireg]
+    # exponentialTerm       = exp((q *u[iphin] - q  * u[iphip]) / (kB*params.temperature))
+    # excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
+
+
+    Rn = 1 / taun * (n0 * u[itrap]/Nt     - n * (1-u[itrap]/Nt) )
+    Rp = 1 / taup * (p0 * (1-u[itrap]/Nt) - p * u[itrap]/Nt     )
+
+    f[iphin] = -q * params.chargeNumbers[iphin] * Rn
+    f[iphip] = -q * params.chargeNumbers[iphip] * Rp
+    f[itrap] = -q * params.chargeNumbers[itrap] * (Rp-Rn)
+
+    # @show value(f[iphin])
+    # @show value(f[iphip])
+    # @show value(p)
+    # @show value(etaFunction(u, data, inode, ireg, iphin, ipsi, true)) 
+    # @show value(u[iphin]) 
+    # @show value(f[itrap])
+    # @show iphip+1:params.numberOfCarriers
+    # println("---")
+
+
+    ## vorsicht bei diesem part! hat auswirkungen auf tier 0
+    # for icc in iphip+1:params.numberOfCarriers
+    #     f[icc]              = u[icc] - 0.0
+    # end
+
+
+    
+
+
+
+
+    return f    
+end
+
 
 """
 $(SIGNATURES)
@@ -812,6 +910,10 @@ function flux!(f, u, edge, data, ::Type{inEquilibrium})
 end
 
 flux!(f, u, edge, data, ::Type{outOfEquilibrium}) = flux!(f, u, edge, data, data.flux_approximation)
+
+function flux!(f, u, edge, data, ::Type{outOfEquilibrium_trap}) 
+    flux!(f, u, edge, data, outOfEquilibrium) 
+end
 
 
 flux!(f, u, edge, data, ::Type{flux_approximation}) = emptyFunction()
