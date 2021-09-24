@@ -716,15 +716,6 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium_trap})
     iphip       = data.chargeCarrierList[iphip]
     itrap       = data.chargeCarrierList[3]
     ipsi        = data.indexPsi                  
-    
-    ############################################################
-    ####          simple zero reaction for all icc          ####
-    ############################################################
-    # for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
-
-    #     f[icc]  = u[icc] - 0.0 # set for all charge carriers (electric and possible present ionic) zero conditions
-
-    # end
 
     ###########################################################
     ####         right-hand side of nonlinear Poisson      ####
@@ -739,59 +730,36 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium_trap})
     end
 
     f[ipsi]     = f[ipsi] - paramsnodal.doping[inode]
-
-    f[ipsi]     = - q * data.λ1 * f[ipsi]
+    f[ipsi]     = - q * f[ipsi]
 
     ###########################################################
     ####       right-hand side of continuity equations     ####
     ####       for φ_n and φ_p (bipolar reaction)          ####
     ###########################################################
 
-    n               = (params.densityOfStates[iphin, ireg] + paramsnodal.densityOfStates[iphin, inode]) * data.F[iphin](etaFunction(u, node, data, iphin, ipsi))
-    p               = (params.densityOfStates[iphip, ireg] + paramsnodal.densityOfStates[iphip, inode]) * data.F[iphip](etaFunction(u, node, data, iphip, ipsi))
+    Nc = params.densityOfStates[iphin, ireg] + paramsnodal.densityOfStates[iphin, inode]
+    Nv = params.densityOfStates[iphip, ireg] + paramsnodal.densityOfStates[iphip, inode]
+    Nt = params.densityOfStates[itrap, ireg]
+    n  = Nc * data.F[iphin](etaFunction(u, node, data, iphin, ipsi))
+    p  = Nv * data.F[iphip](etaFunction(u, node, data, iphip, ipsi))
+    t  = Nt * data.F[itrap](etaFunction(u, node, data, itrap, ipsi))
 
     taun                  = params.recombinationSRHLifetime[iphin, ireg]
     n0                    = params.recombinationSRHTrapDensity[iphin, ireg]
     taup                  = params.recombinationSRHLifetime[iphip, ireg]
     p0                    = params.recombinationSRHTrapDensity[iphip, ireg]
-    Nt                    = params.densityOfStates[itrap, ireg]
-    # exponentialTerm       = exp((q *u[iphin] - q  * u[iphip]) / (kB*params.temperature))
-    # excessCarrierDensTerm = n*p * (1.0 - exponentialTerm)
 
+    if params.chargeNumbers[itrap] == -1
+        Rn = 1 / taun * (n0 * t/Nt     - n * (1-t/Nt) )
+        Rp = 1 / taup * (p0 * (1-t/Nt) - p * t/Nt     )
+    elseif params.chargeNumbers[itrap] == 1
+        Rn = 1 / taun * (n * t/Nt     - n0 * (1-t/Nt) )
+        Rp = 1 / taup * (p * (1-t/Nt) - p0 * t/Nt     )
+    end
 
-    Rn = 1 / taun * (n0 * u[itrap]/Nt     - n * (1-u[itrap]/Nt) )
-    Rp = 1 / taup * (p0 * (1-u[itrap]/Nt) - p * u[itrap]/Nt     )
-
-    f[iphin] = q * params.chargeNumbers[iphin] * Rn
-    f[iphip] = q * params.chargeNumbers[iphip] * Rp
-    f[itrap] = q * params.chargeNumbers[itrap] * (Rp-Rn)
-
-    # f[iphin] = 0#-q * 1#params.chargeNumbers[iphin] * Rn
-    # f[iphip] = 0#-q * 1#params.chargeNumbers[iphip] * Rp
-    # f[itrap] = 0#-q * 1#params.chargeNumbers[itrap] * (Rp-Rn)
-    # f[ipsi] = 0#-q * 1#params.chargeNumbers[itrap] * (Rp-Rn)
-
-    # @show value(f[iphin])
-    # @show value(f[iphip])
-    # @show value(f[itrap])
-    # @show value(p)
-    # @show value(n)
-    # @show value(etaFunction(u, data, inode, ireg, iphin, ipsi, true)) 
-
-    
-    # println("---")
-
-
-    ## vorsicht bei diesem part! hat auswirkungen auf tier 0
-    # for icc in iphip+1:params.numberOfCarriers
-    #     f[icc]              = u[icc] - 0.0
-    # end
-
-
-    
-
-
-
+    f[iphin] = -q * params.chargeNumbers[iphin] * Rn
+    f[iphip] = -q * params.chargeNumbers[iphip] * Rp
+    f[itrap] = -q * params.chargeNumbers[itrap] * (Rp-Rn)
 
     return f    
 end
