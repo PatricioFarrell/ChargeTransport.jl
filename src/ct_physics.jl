@@ -517,6 +517,100 @@ end
 
 ##########################################################
 ##########################################################
+"""
+$(TYPEDSIGNATURES)
+Master bflux! function. This is the function which enters VoronoiFVM and hands over
+for each boundary the flux within the boundary.
+
+"""
+bflux!(f, u, bedge, data) = bflux!(f, u, bedge, data, data.calculation_type)
+
+
+"""
+In case of equilibrium, the bflux shall not enter.
+"""
+bflux!(f, u, bedge, data, ::Type{inEquilibrium}) = emptyFunction()
+
+
+
+"""
+Out of equilibrium, we need to additionally check for grid dimension.
+"""
+bflux!(f, u, bedge, data, ::Type{outOfEquilibrium}) = bflux!(f, u, bedge, data, data.grid_dimension)
+
+
+"""
+In case of one dimensional grid, no bflux entering.
+"""
+bflux!(f, u, bedge, data, ::Type{OneD_grid}) = emptyFunction()
+
+
+"""
+Out of equilibrium and for dimension = 2, the bflux shall only enter, when we have inner interfaces defined.
+"""
+bflux!(f, u, bedge, data, ::Type{TwoD_grid}) = bflux!(f, u, bedge, data, data.boundary_type[bedge.region]) #emptyFunction()#
+
+
+"""
+For outer boundaries.
+"""
+bflux!(f, u, bedge, data, ::Type{ohmic_contact})    = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{schottky_contact}) = emptyFunction()
+
+"""
+In this specific case then, we can use the precise flux approximation scheme.
+
+"""
+# DA: does not work with Type{interface_model} only ????
+bflux!(f, u, bedge, data, ::Type{interface_model_none}) = bflux!(f, u, bedge, data, data.flux_approximation)
+bflux!(f, u, bedge, data, ::Type{interface_model_surface_recombination}) = bflux!(f, u, bedge, data, data.flux_approximation)
+
+"""
+$(TYPEDSIGNATURES)
+
+The excess chemical potential flux discretization scheme for inner boundaries.
+
+"""
+function bflux!(f, u, bedge, data, ::Type{excessChemicalPotential})
+
+    params      =   data.params
+    paramsnodal =   data.paramsnodal
+    
+    
+    ipsi        =   data.indexPsi
+    nodel       =   bedge.node[2]
+    nodek       =   bedge.node[1]
+    ireg        =   bedge.region
+    
+    # ############################################################
+    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
+  
+    # k = 1 refers to left side, where as l = 2 refers to right side.
+    for icc ∈ data.chargeCarrierList[1:2]
+
+        j0                 = params.chargeNumbers[icc] * q * params.bMobility[icc, ireg] * params.UT * params.bDensityOfStates[icc, ireg]
+
+        # need to add this to the other etaFunctions
+        Ek                 = params.bBandEdgeEnergy[icc, bedge.region] + paramsnodal.bandEdgeEnergy[icc, nodek]
+        El                 = params.bBandEdgeEnergy[icc, bedge.region] + paramsnodal.bandEdgeEnergy[icc, nodel]
+        etak               = etaFunction(u[ipsi, 1], u[icc, 1], data.params.UT, Ek, params.chargeNumbers[icc])
+        etal               = etaFunction(u[ipsi, 2], u[icc, 2], data.params.UT, El, params.chargeNumbers[icc])
+
+        bandEdgeDifference = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
+
+        Q                  = params.chargeNumbers[icc]*( (dpsi - bandEdgeDifference/q) /params.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
+        bp, bm             = fbernoulli_pm(Q)
+
+        f[icc] = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
+
+    end
+
+    return f
+
+end
+
+##########################################################
+##########################################################
 
 """
 $(TYPEDSIGNATURES)
