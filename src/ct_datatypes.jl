@@ -1,5 +1,16 @@
 ##########################################################
 ##########################################################
+
+abstract type grid_dimension end
+
+abstract type OneD_grid <: grid_dimension end
+
+abstract type TwoD_grid <: grid_dimension end
+
+abstract type ThreeD_grid <: grid_dimension end
+
+##########################################################
+##########################################################
 """
 $(TYPEDEF)
 Abstract type for boundary model.
