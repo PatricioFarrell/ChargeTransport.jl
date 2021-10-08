@@ -42,7 +42,7 @@ export bulk_recombination_model, bulk_recomb_model_none, bulk_recomb_model_trap_
 include("ct_physics.jl")
 
 export ScharfetterGummel, excessChemicalPotential, diffusionEnhanced, generalized_SG 
-export inEquilibrium, outOfEquilibrium, outOfEquilibrium_trap
+export inEquilibrium, outOfEquilibrium, outOfEquilibrium_trap, outOfEquilibrium_trap_stationary, outOfEquilibrium_trap_stationary_2_species
 export ScharfetterGummel_Graded, excessChemicalPotential_Graded
 export generation_model, generation_none, generation_beer_lambert, generation_uniform
 export breaction!, bstorage!, reaction!, storage!, flux!

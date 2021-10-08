@@ -257,6 +257,26 @@ in SIAM Journal on Applied Mathematics, Vol. 67, No. 4 (2007), pp. 1183-1201.
 """
 abstract type outOfEquilibrium_trap <: outOfEquilibrium end
 
+"""
+$(TYPEDEF)
+
+Abstract type for out of equilibrium calculations with a trap density for stationary 
+simulations.
+
+"""
+abstract type outOfEquilibrium_trap_stationary <: outOfEquilibrium end
+
+"""
+$(TYPEDEF)
+
+Abstract type for out of equilibrium calculations with a trap density for stationary 
+simulations with only two species.
+
+"""
+abstract type outOfEquilibrium_trap_stationary_2_species <: outOfEquilibrium end
+
+
+
 ##########################################################
 ##########################################################
 """

@@ -56,23 +56,6 @@ end
 $(TYPEDSIGNATURES)
 
 
-The Fermi-Dirac integral of order ``0`` which reads 
-``\\log(\\exp(x) + 1)``.
-"""
-function FermiDiracZero(x::Real)
-    ex = exp(x)
-    y  = 1+ex
-    w  = y-1
-    z  = w==0 ? ex : ex*log(y)/w
-    return z
-    #log( exp(x) + 1)
-end
-
-
-"""
-$(TYPEDSIGNATURES)
-
-
 The incomplete Fermi-Dirac integral of order 1/2, 
 implemented according to [Bednarczyk1978, 
 "The Approximation of the Fermi-Dirac integral ``F_{1/2}()``"].
