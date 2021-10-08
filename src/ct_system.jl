@@ -214,6 +214,13 @@ mutable struct ChargeTransportParams
     """
     bDensityOfStates             ::  Array{Float64,2}
 
+
+    """
+    A 2D array with the corresponding boundary mobility values `` \\mu_\\alpha``
+    for each carrier ``\\alpha``.
+    """
+    bMobility                    ::  Array{Float64,2}
+
     """
     A 2D array with the corresponding boundary doping values for each carrier ``\\alpha``.
     """
@@ -406,6 +413,11 @@ mutable struct ChargeTransportData
     """
     inner_interface_model        ::  DataType
 
+    """
+    DataType which stores information on grid dimension.
+    """
+    grid_dimension               ::  DataType
+
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
@@ -574,6 +586,7 @@ function ChargeTransportParams(grid, numberOfCarriers)
     ###############################################################
     params.bBandEdgeEnergy              = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDensityOfStates             = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    params.bMobility                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDoping                      = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)  # velocity at boundary; SchottkyContacts
 
@@ -682,6 +695,24 @@ function ChargeTransportData(grid, numberOfCarriers)
 
     data.inner_interface_model   = interface_model_none
 
+
+    # DA: do not like this. It is needed for the bflux, but working with integers seem to did not work ...
+    grid_dimension               = ExtendableGrids.dim_space(grid)
+
+    if grid_dimension == 1
+
+        data.grid_dimension      = OneD_grid
+
+    elseif grid_dimension == 2
+        
+        data.grid_dimension      = TwoD_grid
+
+    elseif grid_dimension == 3
+
+        data.grid_dimension      = ThreeD_grid
+
+    end
+
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
@@ -770,7 +801,8 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
                                       reaction    = reaction!,
                                       breaction   = breaction!,
                                       storage     = storage!,
-                                      bstorage    = bstorage!
+                                      bstorage    = bstorage!,
+                                      bflux       = bflux!
                                       )
 
     ctsys.fvmsys = VoronoiFVM.System(grid, physics, unknown_storage = unknown_storage)
@@ -857,7 +889,8 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_discon
                                     flux        = flux!,
                                     reaction    = reaction!,
                                     breaction   = breaction!,
-                                    storage     = storage!
+                                    storage     = storage!,
+                                    bflux       = bflux!
                                     ### DA: insert additionally bstorage
                                     )
 

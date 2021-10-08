@@ -29,6 +29,8 @@ export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk, Fe
 
 include("ct_datatypes.jl")
 
+export grid_dimension, OneD_grid, TwoD_grid, ThreeD_gride
+
 export boundary_model, ohmic_contact, schottky_contact
 export interface_model, interface_model_none, interface_model_surface_recombination, interface_model_ion_charge, interface_model_ion_charge_left, interface_model_ion_charge_right
 
