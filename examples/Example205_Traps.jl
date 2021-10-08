@@ -88,10 +88,10 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     # physical data
     Ec                = 1.424                *  eV
     Ev                = 0.0                  *  eV
-    Et                = 0.6                  *  eV               # does not enter anywhere...
+    Et                = 0.6                  *  eV               
     Nc                = 4.351959895879690e17 / (cm^3)
     Nv                = 9.139615903601645e18 / (cm^3)
-    Nt                = 1e16                / (cm^3)            # check this value later
+    Nt                = 1e16                / (cm^3)            
     mun               = 8500.0               * (cm^2) / (V * s)
     mup               = 400.0                * (cm^2) / (V * s)
     mut               = 0                    * (cm^2) / (V * s)  # such that there is no flux
@@ -109,6 +109,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     Auger             = 1.0e-29  * cm^6 / s          # 1.0e-41
     SRH_LifeTime      = 1.0e-3   * ns               
     Radiative         = 1.0e-10  * cm^3 / s          # 1.0e-16
+    G                 = 1.0e25  / (cm^3 * s)
 
     # doping -- trap doping will not be set and thus automatically zero
     dopingFactorNd    =   1.0
@@ -149,10 +150,8 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     # Following choices are possible for recombination model: bulk_recombination_model_none, bulk_recombination_model_trap_assisted, bulk_recombination_radiative, bulk_recombination_full <: bulk_recombination_model 
     data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
-
-    ######################## LOOK HERE!!!
-
     data.calculation_type               = inEquilibrium 
+    data.generation_model               = generation_uniform
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
@@ -182,7 +181,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
     # trap charge number determines whether hole or electron trap is used
-    params.chargeNumbers[iphit]                         = 1
+    params.chargeNumbers[iphit]                         = -1
 
     for ibreg in 1:numberOfBoundaryRegions   # boundary region data
 
@@ -217,7 +216,8 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         params.recombinationSRHTrapDensity[iphip, ireg] = p0
         params.recombinationAuger[iphin, ireg]          = Auger
         params.recombinationAuger[iphip, ireg]          = Auger
-
+        params.generationUniform[ireg]                  = G
+        
     end
 
     # doping -- since we do not set any doping for the traps it is automatically zero
@@ -321,7 +321,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     # Scan rate and time steps
     scanrate                      = 1.0 * V/s
-    number_tsteps                 = 61
+    number_tsteps                 = 81
     endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
 
     IV                            = zeros(0) # for IV values
@@ -347,26 +347,30 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     control.max_round         = 3
 
 
-    # embed equilibrium densities (try life time instead?)
+    # embed life times
+    # generation is still zero since data.λ2 = 0
     if test == false
-        println("Embed equilibrium densities")
+        println("Embed life times")
     end
-    steps = 12
+    steps = 35
     I      = collect(steps:-1:0.0)
     LAMBDA = 10 .^ (I) 
     Δt     = tvalues[2] - tvalues[1]
 
     for i in 1:length(LAMBDA)
         if control.verbose
-            println("λ1 = $(LAMBDA[i]), life time = $(SRH_LifeTime), n0 = $(LAMBDA[i] * n0), p0 = $(LAMBDA[i] * p0)")
+            println("λ1 = $(LAMBDA[i]), Nt = $(Nt), life time = $(SRH_LifeTime), n0 = $(n0), p0 = $(p0), G = $(G*1 / (LAMBDA[i] * SRH_LifeTime * Nt))")
         end
-        ctsys.data.params.recombinationSRHLifetime[iphin,regions] .= LAMBDA[i] * n0
-        ctsys.data.params.recombinationSRHLifetime[iphip,regions] .= LAMBDA[i] * p0
+        ctsys.data.params.recombinationSRHLifetime[iphin,regions] .= LAMBDA[i] * SRH_LifeTime
+        ctsys.data.params.recombinationSRHLifetime[iphip,regions] .= LAMBDA[i] * SRH_LifeTime
+        data.λ2 = 1 / (LAMBDA[i] )
         VoronoiFVM.solve!(solution, initialGuess, ctsys, control = control, tstep=Δt)
         initialGuess = solution
     end
 
-
+    # control parameters for tuning on the generation in forward sweep 
+    # I = collect(length(tvalues):-1:0.0)
+    # LAMBDA = 10 .^ (-I) 
 
     for istep = 2:number_tsteps
 
@@ -377,7 +381,11 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
          # Apply new voltage: set non equilibrium boundary conditions
         set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
 
+        # turn slowly generation on
+        #ctsys.fvmsys.physics.data.λ2   = LAMBDA[istep + 1]
+
         if verbose
+        #    println("generation on: λ2 = $(ctsys.data.λ2)")
             println("time value: t = $(t)")
         end
 
@@ -387,8 +395,9 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
         # get I-V data
         current = get_current_val(ctsys, solution, initialGuess, Δt)
+        #current = w_device * z_device * current
 
-        push!(IV, current)
+        push!(IV, w_device * z_device * current)
         push!(biasValues, Δu)
 
         initialGuess .= solution
