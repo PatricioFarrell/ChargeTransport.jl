@@ -567,7 +567,7 @@ function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, tes
 end #  main
 
 function test()
-    testval = -3.9300908060331095
+    testval = -3.92993784639653
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
