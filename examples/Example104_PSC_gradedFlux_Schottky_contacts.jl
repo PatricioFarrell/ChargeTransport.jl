@@ -393,6 +393,7 @@ function main(;n = 2, Plotter = Nothing, plotting = false, verbose = false, test
     # set Schottky contacts. For this we need to know at which outer boundary the contact
     # voltage shall be applied (which is in this case bregionAcceptor)
     set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = 0.0)
+    set_schottky_contact!(ctsys, bregionDonor, appliedVoltage = 0.0)
 
     if test == false
         println("*** done\n")
@@ -493,7 +494,7 @@ function main(;n = 2, Plotter = Nothing, plotting = false, verbose = false, test
 end #  main
 
 function test()
-    testval=0.11725154137940488
+    testval=0.11725154137944142#0.11725154137940488
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
