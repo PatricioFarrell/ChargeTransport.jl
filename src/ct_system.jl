@@ -1091,26 +1091,40 @@ end
 
 
 function set_schottky_contact!(ctsys, ibreg; appliedVoltage = 0.0)
+
     ipsi = ctsys.data.indexPsi
 
-    SchottkyBoundaries = findall(x->x==schottky_contact, ctsys.data.boundary_type)
-    otherOuterBoundary = 0
-
-    for breg in  SchottkyBoundaries
-
-        if  breg != ibreg
-            otherOuterBoundary = breg
-        end
-
-    end
-
-    # ibreg boundary
-    ctsys.fvmsys.boundary_values[ipsi, ibreg]  = ((ctsys.data.params.bFermiLevel[ibreg] - ctsys.data.params.bFermiLevel[otherOuterBoundary])/q ) + appliedVoltage
+    # set Schottky barrier and applied voltage
+    ctsys.fvmsys.boundary_values[ipsi, ibreg]  = (ctsys.data.params.bFermiLevel[ibreg]/q ) + appliedVoltage
     ctsys.fvmsys.boundary_factors[ipsi, ibreg] = VoronoiFVM.Dirichlet
 
-    # other boundary
-    ctsys.fvmsys.boundary_values[ipsi, otherOuterBoundary] = 0.0
-    ctsys.fvmsys.boundary_factors[ipsi, otherOuterBoundary] = VoronoiFVM.Dirichlet
+    ######################################################################
+    # Changed on 14/10/2021: "Example104_PSC_gradedFlux_Schottky_contacts" 
+    # is affected by this change and had to be adjusted. There is only a 
+    # small discrepancy when running the test, the error is <1e-13 
+    # If Dilara can agree that the overall change is no problematic, we 
+    # can delete the comment below. 
+    ####################### PREVIOUS: ##################################
+    # ipsi = ctsys.data.indexPsi
+
+    # SchottkyBoundaries = findall(x->x==schottky_contact, ctsys.data.boundary_type)
+    # otherOuterBoundary = 0
+
+    # for breg in  SchottkyBoundaries
+
+    #     if  breg != ibreg
+    #         otherOuterBoundary = breg
+    #     end
+
+    # end
+
+    # # ibreg boundary
+    # ctsys.fvmsys.boundary_values[ipsi, ibreg]  = ((ctsys.data.params.bFermiLevel[ibreg] - ctsys.data.params.bFermiLevel[otherOuterBoundary])/q ) + appliedVoltage
+    # ctsys.fvmsys.boundary_factors[ipsi, ibreg] = VoronoiFVM.Dirichlet
+
+    # # other boundary
+    # ctsys.fvmsys.boundary_values[ipsi, otherOuterBoundary] = 0.0
+    # ctsys.fvmsys.boundary_factors[ipsi, otherOuterBoundary] = VoronoiFVM.Dirichlet
 
 end
 ###########################################################
@@ -1450,4 +1464,15 @@ function printJacobi(node, sys)
     else
         println(sys.matrix[3*node-2:3*node, 3*node-5:3*node+3])
     end
+end
+
+"""
+
+$(TYPEDSIGNATURES)
+
+Compute the charge density for each region separately.
+"""
+function chargeDensity(ctsys,sol)
+    # integrate(ctsys.fvmsys,ctsys.fvmsys.physics.reaction,sol)#[ctsys.data.indexPsi,:]
+    integrate(ctsys.fvmsys,reaction!,sol)[ctsys.data.indexPsi,:]
 end

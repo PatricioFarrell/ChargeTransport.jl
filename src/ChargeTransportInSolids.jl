@@ -60,6 +60,7 @@ export set_ohmic_contact!, set_schottky_contact!
 export compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
 export show_params, trap_density!
 export linearScanProtocol, scan_protocol_type, set_time_mesh, get_current_val
+export chargeDensity
 
 ##################################################################
 
