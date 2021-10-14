@@ -449,7 +449,7 @@ bstorage!(f, u, bnode, data, ::Type{ohmic_contact}) = emptyFunction()
 
 """
 $(TYPEDSIGNATURES)
-No bstorage! is used, if an schottky contact model is chosen.
+No bstorage! is used, if an Schottky contact model is chosen.
 
 """
 bstorage!(f, u, bnode, data, ::Type{schottky_contact}) = emptyFunction()
@@ -1502,9 +1502,16 @@ function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
     params        = data.params
     paramsnodal   = data.paramsnodal
 
-    ipsi          = params.numberOfCarriers + params.numberOfInterfaceCarriers + 1        # final index for electrostatic potential
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
+    iphin       = data.bulk_recombination.iphin
+    iphip       = data.bulk_recombination.iphip
 
-    for icc = 1:params.numberOfCarriers
+    # based on user index and regularity of solution quantities or integers are used 
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+    ipsi        = data.indexPsi                
+
+    for icc in [iphin,iphip] 
        
         E      = params.bBandEdgeEnergy[icc, bnode.region] + paramsnodal.bandEdgeEnergy[icc, bnode.index]
         etaFix = params.chargeNumbers[icc] / params.UT * (  (- params.bFermiLevel[bnode.region] + E ) / q  )
