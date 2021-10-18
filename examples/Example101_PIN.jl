@@ -16,6 +16,7 @@ using VoronoiFVM               # PDE solver with a FVM spatial discretization
 using ChargeTransportInSolids  # drift-diffusion solver
 using ExtendableGrids          # grid initializer
 using GridVisualize            # grid visualizer
+using PyPlot                   # solution visualizer 
 
 
 # function for initializing the grid for a possble extension to other p-i-n devices.
@@ -30,7 +31,7 @@ function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping
 end
 
 
-function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false

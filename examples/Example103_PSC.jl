@@ -1,5 +1,5 @@
 #=
-# 102: 1D PSC p-i-n device without mobile ions.
+# 103: 1D PSC p-i-n device without mobile ions.
 ([source code](SOURCE_URL))
 
 Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions
@@ -21,8 +21,9 @@ using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
+using PyPlot
 
-function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false

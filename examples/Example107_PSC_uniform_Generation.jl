@@ -1,5 +1,5 @@
 #=
-# 106: 1D PSC p-i-n device with uniform generation rate.
+# 107: 1D PSC p-i-n device with uniform generation rate.
 ([source code](SOURCE_URL))
 
 Simulating a three layer PSC device Pedot| MAPI | PCBM.
@@ -20,8 +20,9 @@ using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
+using PyPlot
 
-function main(;n = 13, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false

@@ -20,8 +20,9 @@ using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
+using PyPlot
 
-function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false

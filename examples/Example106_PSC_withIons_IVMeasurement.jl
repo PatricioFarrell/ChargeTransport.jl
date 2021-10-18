@@ -1,5 +1,5 @@
 #=
-# 104: 1D PSC p-i-n device with ions (linear I-V scan protocol).
+# 106: 1D PSC p-i-n device with ions (linear I-V scan protocol).
 ([source code](SOURCE_URL))
 
 Simulating a three layer PSC device SiO2| MAPI | SiO2 with mobile ions 
@@ -20,8 +20,9 @@ using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
+using PyPlot
 
-function main(;n = 8, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
     
     ################################################################################
     if test == false

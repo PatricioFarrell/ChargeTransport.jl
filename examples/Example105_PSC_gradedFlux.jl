@@ -22,7 +22,7 @@ using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
-
+using PyPlot
 
 # function for grading the physical parameters 
 function gradingParameter(physicalParameter, coord, regionTransportLayers, regionJunctions, h, heightLayers, lengthLayers, values)
@@ -51,7 +51,7 @@ function gradingParameter(physicalParameter, coord, regionTransportLayers, regio
     return physicalParameter
 end
 
-function main(;n = 2, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
