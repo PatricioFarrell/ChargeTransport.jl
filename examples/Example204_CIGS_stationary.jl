@@ -236,7 +236,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     params.bDoping[iphip, bregionAcceptor]              = Na   
     
     # values for the schottky contacts
-    params.bFermiLevel[bregionAcceptor]                 = barrier
+    params.SchottkyBarrier[bregionAcceptor]             = barrier
     params.bVelocity[iphin,bregionAcceptor]             = vn 
     params.bVelocity[iphip,bregionAcceptor]             = vp 
 

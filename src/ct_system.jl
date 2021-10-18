@@ -185,9 +185,9 @@ mutable struct ChargeTransportParams
     contactVoltage               ::  Array{Float64,1}
 
     """
-    An array for the given Fermi level at the contacts.
+    An array for the given Schottky barriers at present Schotkky contacts.
     """
-    bFermiLevel                  ::  Array{Float64,1}
+    SchottkyBarrier              ::  Array{Float64,1}
 
     ###############################################################
     ####                  number of carriers                   ####
@@ -574,7 +574,7 @@ function ChargeTransportParams(grid, numberOfCarriers)
     ####              number of boundary regions               ####
     ###############################################################
     params.contactVoltage               = spzeros(Float64, numberOfBoundaryRegions)
-    params.bFermiLevel                  = spzeros(Float64, numberOfBoundaryRegions)    # Fermi level at boundary
+    params.SchottkyBarrier              = spzeros(Float64, numberOfBoundaryRegions) 
     
     ###############################################################
     ####                  number of carriers                   ####
@@ -1095,36 +1095,9 @@ function set_schottky_contact!(ctsys, ibreg; appliedVoltage = 0.0)
     ipsi = ctsys.data.indexPsi
 
     # set Schottky barrier and applied voltage
-    ctsys.fvmsys.boundary_values[ipsi, ibreg]  = (ctsys.data.params.bFermiLevel[ibreg]/q ) + appliedVoltage
+    ctsys.fvmsys.boundary_values[ipsi,  ibreg] = (ctsys.data.params.SchottkyBarrier[ibreg]/q ) + appliedVoltage
     ctsys.fvmsys.boundary_factors[ipsi, ibreg] = VoronoiFVM.Dirichlet
 
-    ######################################################################
-    # Changed on 14/10/2021: "Example104_PSC_gradedFlux_Schottky_contacts" 
-    # is affected by this change and had to be adjusted. There is only a 
-    # small discrepancy when running the test, the error is <1e-13 
-    # If Dilara can agree that the overall change is no problematic, we 
-    # can delete the comment below. 
-    ####################### PREVIOUS: ##################################
-    # ipsi = ctsys.data.indexPsi
-
-    # SchottkyBoundaries = findall(x->x==schottky_contact, ctsys.data.boundary_type)
-    # otherOuterBoundary = 0
-
-    # for breg in  SchottkyBoundaries
-
-    #     if  breg != ibreg
-    #         otherOuterBoundary = breg
-    #     end
-
-    # end
-
-    # # ibreg boundary
-    # ctsys.fvmsys.boundary_values[ipsi, ibreg]  = ((ctsys.data.params.bFermiLevel[ibreg] - ctsys.data.params.bFermiLevel[otherOuterBoundary])/q ) + appliedVoltage
-    # ctsys.fvmsys.boundary_factors[ipsi, ibreg] = VoronoiFVM.Dirichlet
-
-    # # other boundary
-    # ctsys.fvmsys.boundary_values[ipsi, otherOuterBoundary] = 0.0
-    # ctsys.fvmsys.boundary_factors[ipsi, otherOuterBoundary] = VoronoiFVM.Dirichlet
 
 end
 ###########################################################

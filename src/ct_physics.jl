@@ -1514,7 +1514,7 @@ function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
     for icc in [iphin,iphip] 
        
         E      = params.bBandEdgeEnergy[icc, bnode.region] + paramsnodal.bandEdgeEnergy[icc, bnode.index]
-        etaFix = params.chargeNumbers[icc] / params.UT * (  (- params.bFermiLevel[bnode.region] + E ) / q  )
+        etaFix = params.chargeNumbers[icc] / params.UT * (  (- params.SchottkyBarrier[bnode.region] + E ) / q  )
         eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + E / q )
 
         f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  (params.bDensityOfStates[icc, bnode.region] + paramsnodal.densityOfStates[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))

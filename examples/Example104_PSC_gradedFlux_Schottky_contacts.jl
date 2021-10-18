@@ -1,5 +1,5 @@
 #=
-# 103: 1D PSC p-i-n device with graded interfaces.
+# 104: 1D PSC p-i-n device with graded interfaces & Schottky contacts.
 ([source code](SOURCE_URL))
 
 Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions.
@@ -23,6 +23,7 @@ using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
+using PyPlot
 
 # function for grading the physical parameters 
 function gradingParameter(physicalParameter, coord, regionTransportLayers, regionJunctions, h, heightLayers, lengthLayers, values)
@@ -51,7 +52,7 @@ function gradingParameter(physicalParameter, coord, regionTransportLayers, regio
     return physicalParameter
 end
 
-function main(;n = 2, Plotter = Nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -149,7 +150,7 @@ function main(;n = 2, Plotter = Nothing, plotting = false, verbose = false, test
     # temperature
     T                       = 300.0                 *  K
 
-    Eref                    = 4.1                   *  eV # reference energy
+    Eref                    = 4.1                   *  eV  # reference energy
     # band edge energies    
     Ec_d                    = -4.0                  *  eV  + Eref
     Ev_d                    = -6.0                  *  eV  + Eref
@@ -248,8 +249,8 @@ function main(;n = 2, Plotter = Nothing, plotting = false, verbose = false, test
     Auger                  = 0.0
 
     # doping (doping values are from Driftfusion)
-    Nd                     =   1.03e18             / (cm^3) 
-    Na                     =   1.03e18             / (cm^3) 
+    Nd                     = 1.03e18             / (cm^3) 
+    Na                     = 1.03e18             / (cm^3) 
 
     # contact voltages: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
@@ -275,10 +276,6 @@ function main(;n = 2, Plotter = Nothing, plotting = false, verbose = false, test
     
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
-
-    # Here the user can specify, if they assume continuous or discontinuous charge carriers.
-    data.isContinuous[iphin]            = true
-    data.isContinuous[iphip]            = true
 
     # Following choices are possible for recombination model: bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
     data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
@@ -352,8 +349,8 @@ function main(;n = 2, Plotter = Nothing, plotting = false, verbose = false, test
     params.bDoping[iphin, bregionDonor]             = Nd        #                  0.0  Nd]
 
     # values for the schottky contacts
-    params.bFermiLevel                              = [-4.1  * eV + Eref,
-                                                       -5.0  * eV + Eref]
+    params.SchottkyBarrier[bregionDonor]            =  0.0
+    params.SchottkyBarrier[bregionAcceptor]         = -5.0  * eV  -  (-4.1  * eV) # difference between boundary Fermi level 
     params.bVelocity                                = [1.0e7 * cm/s    0.0   * cm/s;
                                                        0.0   * cm/s    1.0e7 * cm/s]
 
@@ -458,16 +455,15 @@ function main(;n = 2, Plotter = Nothing, plotting = false, verbose = false, test
     control.max_round                                = 7
 
     maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 21)
+    biasValues = range(0, stop = maxBias, length = 25)
 
     for Δu in biasValues
         if verbose
-            println("Bias value: Δu = $(Δu) (no illumination)")
+            println("Bias value: Δu = $(Δu)")
         end
 
         # set non equilibrium boundary conditions
         set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = Δu)
-
 
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 
@@ -494,7 +490,7 @@ function main(;n = 2, Plotter = Nothing, plotting = false, verbose = false, test
 end #  main
 
 function test()
-    testval=0.11725154137944142#0.11725154137940488
+    testval=0.11725154137943199
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
