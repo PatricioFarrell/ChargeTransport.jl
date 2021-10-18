@@ -254,12 +254,6 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                               = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
-    # Here the user can specify, if they assume continuous or discontinuous charge carriers. We note that for a surface recombination model,
-    # we need to use discontinuous electron and hole quasi Fermi potentials.
-    data.isContinuous[iphin]             = true
-    data.isContinuous[iphip]             = true
-    data.isContinuous[iphia]             = true
-
     # Following choices are possible for bulk_recombination_model:bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
     # The input iphin, iphip refers to the indices set by the user and needs to be specified
     data.bulk_recombination              = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)

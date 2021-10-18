@@ -145,11 +145,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # Fermi-Dirac statistics for electron and holes & Fermi-Dirac of order -1 for traps
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
-    # Here the user can specify, if they assume continuous or discontinuous charge carriers.
-    data.isContinuous[iphin]            = true
-    data.isContinuous[iphip]            = true
-    data.isContinuous[iphit]            = true
-
     # set recombination model
     data.bulk_recombination = set_bulk_recombination(iphin = iphin, 
                                                      iphip = iphip, 

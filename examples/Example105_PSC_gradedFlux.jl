@@ -276,10 +276,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    # Here the user can specify, if they assume continuous or discontinuous charge carriers.
-    data.isContinuous[iphin]            = true
-    data.isContinuous[iphip]            = true
-
     # Following choices are possible for recombination model: bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
     data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
 
