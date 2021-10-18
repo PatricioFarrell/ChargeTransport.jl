@@ -5,7 +5,7 @@
 Simulating transient charge transport in a GaAs pin diode with an electron trap.
 =#
 
-module Example205_Traps
+module Example109_Traps
 
 using VoronoiFVM
 using ChargeTransportInSolids
@@ -27,7 +27,7 @@ function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping
 end
 
 
-function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -50,9 +50,12 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     # grid
     refinementfactor        = 2^(n-1)
-    h_pdoping               = 2 * μm
-    h_intrinsic             = 2 * μm
-    h_ndoping               = 2 * μm
+    h_pdoping               = 2.0    * μm
+    h_intrinsic             = 2.0    * μm
+    h_ndoping               = 2.0    * μm
+    w_device                = 0.5    * μm  # width of device
+    z_device                = 1.0e-4 * cm  # depth of device
+
     coord                   = initialize_pin_grid(refinementfactor,
                                                   h_pdoping,
                                                   h_intrinsic,
@@ -80,46 +83,46 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    iphin             = 1 # index electron quasi Fermi potential
-    iphip             = 2 # index hole quasi Fermi potential
-    iphit             = 3 # index trap quasi Fermi potential
-    numberOfCarriers  = 3 # electrons, holes and traps
+    iphin              = 1 # index electron quasi Fermi potential
+    iphip              = 2 # index hole quasi Fermi potential
+    iphit              = 3 # index trap quasi Fermi potential
+    numberOfCarriers   = 3 # electrons, holes and traps
 
     # physical data
-    Ec                = 1.424                *  eV
-    Ev                = 0.0                  *  eV
-    Et                = 0.6                  *  eV               
-    Nc                = 4.351959895879690e17 / (cm^3)
-    Nv                = 9.139615903601645e18 / (cm^3)
-    Nt                = 1e16                / (cm^3)            
-    mun               = 8500.0               * (cm^2) / (V * s)
-    mup               = 400.0                * (cm^2) / (V * s)
-    mut               = 0                    * (cm^2) / (V * s)  # such that there is no flux
-    εr                = 12.9                 *  1.0              # relative dielectric permittivity of GAs
-    T                 = 300.0                *  K
+    Ec                  = 1.424                             *  eV
+    Ev                  = 0.0                               *  eV
+    Et                  = 0.6                               *  eV               
+    Nc                  = 4.351959895879690e17              / (cm^3)
+    Nv                  = 9.139615903601645e18              / (cm^3)
+    Nt                  = 1e16                              / (cm^3)            
+    mun                 = 8500.0                            * (cm^2) / (V * s)
+    mup                 = 400.0                             * (cm^2) / (V * s)
+    mut                 = 0.0                               * (cm^2) / (V * s)  # such that there is no flux
+    εr                  = 12.9                              *  1.0              # relative dielectric permittivity of GAs
+    T                   = 300.0                             *  K
 
 
     # recombination model
-    bulk_recombination = bulk_recomb_model_full
+    bulk_recombination  = bulk_recomb_model_full
 
     # recombination parameters
-    ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) # intrinsic concentration
-    n0                = Nc * Boltzmann( (Et-Ec) / (kB*T) )             # Boltzmann equilibrium concentration
-    p0                = ni^2 / n0                                      # Boltzmann equilibrium concentration
-    Auger             = 1.0e-29  * cm^6 / s          # 1.0e-41
-    SRH_LifeTime      = 1.0e-3   * ns               
-    Radiative         = 1.0e-10  * cm^3 / s          # 1.0e-16
-    G                 = 1.0e25  / (cm^3 * s)
+    ni                  = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) # intrinsic concentration
+    n0                  = Nc * Boltzmann( (Et-Ec) / (kB*T) )             # Boltzmann equilibrium concentration
+    p0                  = ni^2 / n0                                      # Boltzmann equilibrium concentration
+    Auger               = 1.0e-29                           * cm^6 / s          # 1.0e-41
+    SRH_LifeTime        = 1.0e-3                            * ns               
+    Radiative           = 1.0e-10                           * cm^3 / s          # 1.0e-16
+    G                   = 1.0e25                            / (cm^3 * s)
 
     # doping -- trap doping will not be set and thus automatically zero
-    dopingFactorNd    =   1.0
-    dopingFactorNa    =   0.46
-    Nd                =   dopingFactorNd * Nc
-    Na                =   dopingFactorNa * Nv
+    dopingFactorNd      = 1.0
+    dopingFactorNa      = 0.46
+    Nd                  = dopingFactorNd * Nc
+    Na                  = dopingFactorNa * Nv
 
     # contact voltages: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
-    voltageAcceptor   = 1.5 * V
+    voltageAcceptor     = 1.5                               * V
 
     if test == false
         println("*** done\n")
@@ -132,7 +135,6 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     # initialize ChargeTransportData instance and fill in data
     data                                = ChargeTransportData(grid, numberOfCarriers)
-    ipsi                                = data.indexPsi
 
     #### declare here all necessary information concerning the model ###
 
@@ -140,17 +142,12 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     data.model_type                     = model_transient
 
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
-    # data.F                             .= Boltzmann
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
-    # Here the user can specify, if they assume continuous or discontinuous charge carriers.
-    data.isContinuous[iphin]            = true
-    data.isContinuous[iphip]            = true
-    data.isContinuous[iphit]            = true
-
     # Following choices are possible for recombination model: bulk_recombination_model_none, bulk_recombination_model_trap_assisted, bulk_recombination_radiative, bulk_recombination_full <: bulk_recombination_model 
-    data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
-    data.calculation_type               = inEquilibrium 
+    data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination) 
+
+    # Following choices are possibile for generation: generation_none, generation_uniform, generation_beer_lambert. No generation is default; beer-lambert not properly tested yet.
     data.generation_model               = generation_uniform
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
@@ -221,14 +218,14 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     end
 
     # doping -- since we do not set any doping for the traps it is automatically zero
-    params.doping[iphin, regionDonor]                   = Nd        # data.doping   = [0.0  Na;
-    params.doping[iphin, regionIntrinsic]               = ni        #                  ni   0.0;
-    params.doping[iphip, regionIntrinsic]               = 0.0        #                  Nd  0.0]
+    params.doping[iphin, regionDonor]                   = Nd       
+    params.doping[iphin, regionIntrinsic]               = ni      
+    params.doping[iphip, regionIntrinsic]               = 0.0    
     params.doping[iphip, regionAcceptor]                = Na
 
     # boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd        # data.bDoping  = [0.0  Na;
-    params.bDoping[iphip, bregionAcceptor]              = Na        #                  Nd  0.0]
+    params.bDoping[iphin, bregionDonor]                 = Nd      
+    params.bDoping[iphip, bregionAcceptor]              = Na     
 
     # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
     # in next step.
@@ -258,7 +255,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     # we compute equilibrium solutions. Hence the boundary values at the ohmic contacts
     # are zero.
     set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
+    set_ohmic_contact!(ctsys, bregionDonor,    0.0)
 
     if test == false
         println("*** done\n")
@@ -290,6 +287,8 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     end
     ################################################################################
 
+    data.calculation_type = inEquilibrium
+
     # initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
     solution              = unknowns(ctsys)
@@ -298,26 +297,42 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
     initialGuess         .= solution 
 
-    
     if test == false
         println("*** done\n")
     end
 
     if plotting 
-        plot_energies(Plotter, grid, data, solution, "equilibrium")
+        plot_energies(Plotter, grid, data, solution, "Equilibrium")
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"equilibrium")
+        plot_densities(Plotter, grid, data, solution,"Equilibrium")
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "equilibrium")
+        plot_solution(Plotter, grid, data, solution, "Equilibrium")
     end
 
     ################################################################################
     if test == false
-        println("IV Measurement loop")
+        println("Adjust Newton parameters")
     end
     ################################################################################
 
-    ctsys.data.calculation_type      = outOfEquilibrium_trap
+    control.tol_absolute          = 1.0e-10
+    control.tol_relative          = 1.0e-10
+    control.tol_round             = 1.0e-4
+    control.damp_initial          = 0.5
+    control.damp_growth           = 1.2
+    control.max_iterations        = 30
+    control.max_round             = 3
+
+    if test == false
+        println("*** done\n")
+    end
+
+    ################################################################################
+    if test == false
+        println("Embed life times and increase generation")
+    end
+    ################################################################################
+    ctsys.data.calculation_type   = outOfEquilibrium_trap
 
     # Scan rate and time steps
     scanrate                      = 1.0 * V/s
@@ -332,45 +347,33 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
     # with fixed timestep sizes we can calculate the times
     # a priori
-    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
+    tvalues                       = range(0.0, stop = tend, length = number_tsteps)
 
-    w_device = 0.5    * μm  # width of device
-    z_device = 1.0e-4 * cm  # depth of device
-
-    # adjust Newton parameters
-    control.tol_absolute      = 1.0e-10
-    control.tol_relative      = 1.0e-10
-    control.tol_round         = 1.0e-4
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.2
-    control.max_iterations    = 30
-    control.max_round         = 3
-
-
-    # embed life times
-    # generation is still zero since data.λ2 = 0
-    if test == false
-        println("Embed life times")
-    end
-    steps = 35
-    I      = collect(steps:-1:0.0)
-    LAMBDA = 10 .^ (I) 
-    Δt     = tvalues[2] - tvalues[1]
+    steps                         = 35
+    I                             = collect(steps:-1:0.0)
+    LAMBDA                        = 10 .^ (I) 
+    Δt                            = tvalues[2] - tvalues[1]
 
     for i in 1:length(LAMBDA)
         if control.verbose
-            println("λ1 = $(LAMBDA[i]), Nt = $(Nt), life time = $(SRH_LifeTime), n0 = $(n0), p0 = $(p0), G = $(G*1 / (LAMBDA[i] * SRH_LifeTime * Nt))")
+            println("λ = $(LAMBDA[i]), Nt = $(Nt), life time = $(SRH_LifeTime), n0 = $(n0), p0 = $(p0), G = $(G*1 / (LAMBDA[i] * SRH_LifeTime * Nt))")
         end
         ctsys.data.params.recombinationSRHLifetime[iphin,regions] .= LAMBDA[i] * SRH_LifeTime
         ctsys.data.params.recombinationSRHLifetime[iphip,regions] .= LAMBDA[i] * SRH_LifeTime
+        
         data.λ2 = 1 / (LAMBDA[i] )
         VoronoiFVM.solve!(solution, initialGuess, ctsys, control = control, tstep=Δt)
         initialGuess = solution
     end
 
-    # control parameters for tuning on the generation in forward sweep 
-    # I = collect(length(tvalues):-1:0.0)
-    # LAMBDA = 10 .^ (-I) 
+    if test == false
+        println("*** done\n")
+    end
+    ################################################################################
+    if test == false
+        println("IV Measurement loop")
+    end
+    ################################################################################
 
     for istep = 2:number_tsteps
 
@@ -378,11 +381,8 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         Δu                    = t*scanrate              # Applied voltage 
         Δt                    = t - tvalues[istep-1]    # Time step size
 
-         # Apply new voltage: set non equilibrium boundary conditions
+        # Apply new voltage: set non equilibrium boundary conditions
         set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
-
-        # turn slowly generation on
-        #ctsys.fvmsys.physics.data.λ2   = LAMBDA[istep + 1]
 
         if verbose
         #    println("generation on: λ2 = $(ctsys.data.λ2)")
@@ -395,15 +395,13 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 
         # get I-V data
         current = get_current_val(ctsys, solution, initialGuess, Δt)
-        #current = w_device * z_device * current
 
         push!(IV, w_device * z_device * current)
         push!(biasValues, Δu)
 
         initialGuess .= solution
 
-        ######## CHECK TRAPS CONTRIBUTE TO CURRENT!
-
+        ######## CHECK IF TRAPS CONTRIBUTE TO CURRENT!
 
     end # bias loop
 
@@ -422,7 +420,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
     end
 
-    testval = solution[15]
+    testval = solution[iphit, 17]
     return testval
 
     if test == false
@@ -432,7 +430,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
 end #  main
 
 function test()
-    testval = 1.5068426773059806
+    testval = 1.0245795906936692
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
