@@ -231,8 +231,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
-    # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
-    # (distinguish between left and right).
+    # For inner boundaries we have interface_model_none, interface_model_surface_recombination.
     data.boundary_type[bregionAcceptor] = ohmic_contact                       
     data.boundary_type[bregionDonor]    = ohmic_contact   
     

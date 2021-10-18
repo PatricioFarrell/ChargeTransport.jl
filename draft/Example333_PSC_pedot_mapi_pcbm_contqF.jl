@@ -151,7 +151,7 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ###################### adjust Na, Ea here #####################
     Nanion              = 1.21e22               / (cm^3)
-    Ea_i                = -5.175                *  eV
+    Ea_i                = -4.86             *  eV
 
     # for the labels in the figures
     textEa              = Ea_i                 ./  eV
@@ -265,8 +265,7 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
     data.bulk_recombination              = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
-    # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
-    # (distinguish between left and right).
+    # For inner boundaries we have interface_model_none, interface_model_surface_recombination.
     data.boundary_type[bregionAcceptor]  = ohmic_contact  
     data.boundary_type[bregionJunction1] = interface_model_surface_recombination
     data.boundary_type[bregionJunction2] = interface_model_surface_recombination                   
@@ -562,18 +561,18 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
 
     end # time loop
 
-    plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = end; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
-    PyPlot.plot(dfusion_grid', (dfusion_psi[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
-    PyPlot.plot(dfusion_grid', (-dfusion_phin[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
-    PyPlot.plot(dfusion_grid', (-dfusion_phip[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
-    #####
-    PyPlot.plot(dfusion_grid', (dfusion_psi_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
-    PyPlot.plot(dfusion_grid', (-dfusion_phin_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
-    PyPlot.plot(dfusion_grid', (-dfusion_phip_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
-    PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
-    PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
-    PyPlot.xlim(h_pdoping-1.2e-8, h_pdoping + h_intrinsic+1.2e-8)
-    PyPlot.ylim(-0.1, 1.25)
+    # plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = end; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+    # PyPlot.plot(dfusion_grid', (dfusion_psi[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
+    # PyPlot.plot(dfusion_grid', (-dfusion_phin[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
+    # PyPlot.plot(dfusion_grid', (-dfusion_phip[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="black")
+    # #####
+    # PyPlot.plot(dfusion_grid', (dfusion_psi_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
+    # PyPlot.plot(dfusion_grid', (-dfusion_phin_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
+    # PyPlot.plot(dfusion_grid', (-dfusion_phip_interface[1,:]- 3.82*(ones(length(dfusion_grid)))), linewidth = 3, linestyle= ":", color="grey")
+    # PyPlot.axvline(h_pdoping, color="black", linestyle="solid")
+    # PyPlot.axvline(h_pdoping + h_intrinsic, color="black", linestyle="solid")
+    # PyPlot.xlim(h_pdoping-1.2e-8, h_pdoping + h_intrinsic+1.2e-8)
+    #PyPlot.ylim(-0.1, 1.25)
 
 
     ##########################

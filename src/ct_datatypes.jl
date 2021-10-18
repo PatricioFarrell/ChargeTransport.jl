@@ -76,26 +76,6 @@ Abstract type for present ion charges at interfaces.
 """
 abstract type interface_model_ion_charge <: interface_model end
 
-
-"""
-$(TYPEDEF)
-Abstract type for distinction of ion charge interface model
-between left and right of active layer. Distinguishing is necessary
-due to sign of electrochemical reaction.
-
-"""
-abstract type interface_model_ion_charge_left <: interface_model_ion_charge end
-
-
-"""
-$(TYPEDEF)
-Abstract type for distinction of ion charge interface model
-between left and right of active layer. Distinguishing is necessary
-due to sign of electrochemical reaction.
-
-"""
-abstract type interface_model_ion_charge_right <: interface_model_ion_charge end
-
 ##########################################################
 ##########################################################
 """
