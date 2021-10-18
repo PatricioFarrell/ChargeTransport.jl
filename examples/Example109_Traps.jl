@@ -1,5 +1,5 @@
 #=
-# 110: 1D GaAs p-i-n diode: transient with trap
+# 109: 1D GaAs p-i-n diode: transient with trap
 ([source code](SOURCE_URL))
 
 Simulating transient charge transport in a GaAs pin diode with an electron trap.
