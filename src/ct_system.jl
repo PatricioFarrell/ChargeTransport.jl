@@ -687,7 +687,7 @@ function ChargeTransportData(grid, numberOfCarriers)
     data.bulk_recombination       = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recombination_model = bulk_recomb_model_none)
 
     for ii in 1:numberOfBoundaryRegions # as default all boundaries are set to an ohmic contact model.
-        data.boundary_type[ii]    = ohmic_contact
+        data.boundary_type[ii]    = interface_model_none
     end
 
     # enable_ion_vacancies is a struct holding the input information
@@ -890,8 +890,8 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_discon
                                     reaction    = reaction!,
                                     breaction   = breaction!,
                                     storage     = storage!,
+                                    bstorage    = bstorage!,
                                     bflux       = bflux!
-                                    ### DA: insert additionally bstorage
                                     )
 
     # add the defined physics to system
@@ -1062,6 +1062,27 @@ function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_no
     # end
 
 end
+
+function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_surface_recombination})
+
+    iphin = ctsys.data.bulk_recombination.iphin
+    iphip = ctsys.data.bulk_recombination.iphip
+
+    iphin = ctsys.data.chargeCarrierList[iphin]
+    iphip = ctsys.data.chargeCarrierList[iphip]
+
+    ctsys.fvmsys.boundary_factors[iphin, ibreg] = VoronoiFVM.Dirichlet
+    ctsys.fvmsys.boundary_values[iphin, ibreg]  = contact_val
+    ctsys.fvmsys.boundary_factors[iphip, ibreg] = VoronoiFVM.Dirichlet
+    ctsys.fvmsys.boundary_values[iphip, ibreg]  = contact_val
+
+    # for icc = 1:ctsys.data.params.numberOfCarriers
+    #     ctsys.fvmsys.boundary_factors[icc, ibreg] = VoronoiFVM.Dirichlet
+    #     ctsys.fvmsys.boundary_values[icc, ibreg]  = contact_val
+    # end
+
+end
+
 
 function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_discont_qF})
 
