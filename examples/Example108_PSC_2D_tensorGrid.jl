@@ -95,9 +95,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfNodes           = size(grid[Coordinates])[2]
 
     # specify inner regions
-    cellmask!(grid, [0.0, 0.0],                     [h_pdoping, height],                           regionAcceptor, tol = 1.0e-18) # n-doped region   = 1
+    cellmask!(grid, [0.0, 0.0],                     [h_pdoping, height],                           regionAcceptor, tol = 1.0e-18) # p-doped region   = 1
     cellmask!(grid, [h_pdoping, 0.0],               [h_pdoping + h_intrinsic, height],             regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
-    cellmask!(grid, [h_pdoping + h_intrinsic, 0.0], [h_pdoping + h_intrinsic + h_ndoping, height], regionDonor, tol = 1.0e-18)   # p-doped region   = 3
+    cellmask!(grid, [h_pdoping + h_intrinsic, 0.0], [h_pdoping + h_intrinsic + h_ndoping, height], regionDonor, tol = 1.0e-18)   # n-doped region   = 3
     
     # specifiy outer regions
     # metal interfaces
