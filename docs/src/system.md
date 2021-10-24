@@ -1,10 +1,10 @@
-## Numerical Techniques
+# [Numerical Strategy] (@id system)
 refer to VoronoiFVM ... 
 
 put here also some graphics in for better understanding ....
 
-## API for Generating Discrete System
-### Types and Constants
+# API for Generating Discrete System
+## Types and Constants
 
 
 ```@autodocs
@@ -14,7 +14,11 @@ Pages = [
     "ct_distributions.jl"]
 Order = [:type]
 ```
+## methods
 
+
+
+## Constants
 ```@autodocs
 Modules = [ChargeTransportInSolids]
 Pages = [
@@ -22,7 +26,7 @@ Pages = [
     "ct_distributions.jl"]
 Order = [:constant]
 ```
-### Methods
+## Methods
 
 ```@autodocs
 Modules = [ChargeTransportInSolids]

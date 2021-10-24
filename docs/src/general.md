@@ -48,8 +48,8 @@ A guide on how to understand the main parts of the example problems and, thus, h
 
 ```@contents
 Pages = [
-    "examples/example-GaAs.md",
-    "examples/example-PSC.md",
+    "examples/GaAs.md",
+    "examples/PSC.md",
     ]
 Depth = 2
 ```

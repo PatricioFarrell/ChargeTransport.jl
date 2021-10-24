@@ -35,7 +35,8 @@ z_\alpha q \partial_t n_\alpha +  \nabla\cdot \mathbf{j}_\alpha
 ```
 Here,
 $\mathbf{j}_\alpha$
-stands for the carrier current and $ r_\alpha $ for some production/reduction rate.
+stands for the carrier current and $ r_\alpha $ for some production/reduction rate. In our applications we only allow specific recombination processes and generation as the aforementioned rate. Further comments on this can be found in 
+[the information concerning the numerics](@ref system).
 
 ## Analogy to Semiconductor Theory
 This package mainly focuses currently semiconductors as an application. Hence, we assume that the charge carrier density

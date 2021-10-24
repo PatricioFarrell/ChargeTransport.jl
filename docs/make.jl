@@ -11,8 +11,7 @@ makedocs(sitename ="ChargeTransportInSolids.jl",
          repo     = "https://github.com/PatricioFarrell/ChargeTransportInSolids.jl",
          pages    = [ "ChargeTransportInSolids.jl -- A drift-diffusion solver" =>  "general.md",
                       "Mathematical Description of the Problem" => "backgroundinfo.md",
-                      "Numerical Strategy" =>  "system.md",
-                      "Some Applications" => ["examples/GaAs.md", "examples/PSC.md"],
+                      "Some Applications" => ["system.md", "examples/GaAs.md", "examples/PSC.md"],
                       ##
                       "Plotting Functions" => "plot.md"
                       ]
