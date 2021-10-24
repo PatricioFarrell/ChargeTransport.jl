@@ -166,6 +166,55 @@ function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
 
 end
 
+"""
+$(TYPEDSIGNATURES)
+[Note that this way of implementation is not well tested yet. 
+
+Creates Schottky boundary conditions in a first attempt. For the electrostatic potential we assume 
+
+``\\psi = \\psi_S + U, ``
+
+where  ``\\psi_S`` corresponds to a given value and ``U`` to the applied voltage. For now,
+the quantitity ``\\psi_S`` needs to be specified in the main file.
+For the charge carriers we assume the following
+
+``f[n_\\alpha]  =  z_\\alpha q v_\\alpha (n_\\alpha - n_{\\alpha, 0})``,
+
+where ``v_{\\alpha}`` can be treated as a surface recombination mechanism and is given. The parameter
+``n_{\\alpha, 0}`` is a given value, calculated by the statistical relation, when assuming 
+no electrical field and a quasi Fermi level equal to the metal work function ``\\phi``, i.e.
+    
+``n_{\\alpha, 0}= z_\\alpha/ U_T (E_\\alpha - \\phi) / q. ``
+
+"""
+function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
+
+    params        = data.params
+    paramsnodal   = data.paramsnodal
+
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
+    iphin       = data.bulk_recombination.iphin
+    iphip       = data.bulk_recombination.iphip
+
+    # based on user index and regularity of solution quantities or integers are used 
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+    ipsi        = data.indexPsi                
+
+    for icc in [iphin,iphip] 
+       
+        E      = params.bBandEdgeEnergy[icc, bnode.region] + paramsnodal.bandEdgeEnergy[icc, bnode.index]
+        etaFix = params.chargeNumbers[icc] / params.UT * (  (- params.SchottkyBarrier[bnode.region] + E ) / q  )
+        eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + E / q )
+
+        f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  (params.bDensityOfStates[icc, bnode.region] + paramsnodal.densityOfStates[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+
+    end
+
+    return f
+
+end
+
 
 """
 $(TYPEDSIGNATURES)
@@ -181,6 +230,9 @@ $(TYPEDSIGNATURES)
 
 breaction term for surface recombination.
 """
+
+breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombination_and_tangential_flux}) = breaction!(f, u, bnode, data, interface_model_surface_recombination)
+
 
 function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombination})
     if data.calculation_type == inEquilibrium
@@ -199,8 +251,8 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
     etan = params.chargeNumbers[iphin] / params.UT * ( (u[iphin] - u[ipsi]) + params.bBandEdgeEnergy[iphin, bnode.region] / q )
     etap = params.chargeNumbers[iphip] / params.UT * ( (u[iphip] - u[ipsi]) + params.bBandEdgeEnergy[iphip, bnode.region] / q ) 
 
-    n    = ((params.bDensityOfStates[iphin, bnode.region] + paramsnodal.densityOfStates[iphin, bnode.index]) * data.F[icc](etan))
-    p    = ((params.bDensityOfStates[iphip, bnode.region] + paramsnodal.densityOfStates[iphip, bnode.index]) * data.F[icc](etap))
+    n    = ((params.bDensityOfStates[iphin, bnode.region] + paramsnodal.densityOfStates[iphin, bnode.index]) * data.F[iphin](etan))
+    p    = ((params.bDensityOfStates[iphip, bnode.region] + paramsnodal.densityOfStates[iphip, bnode.index]) * data.F[iphip](etap))
 
     exponentialTerm = exp((q * u[iphin] - q  * u[iphip] ) / (kB * params.temperature))
     excessDensTerm  = n * p * (1.0 - exponentialTerm)
@@ -331,22 +383,18 @@ Master bstorage! function. This is the function which enters VoronoiFVM and hand
 for each boundary the time-dependent part of the chosen boundary model.
 
 """
-bstorage!(f, u, bnode, data) = bstorage!(f, u, bnode, data, data.boundary_type[bnode.region])
+bstorage!(f, u, bnode, data) = bstorage!(f, u, bnode, data, data.model_type)
 
 
-"""
-$(TYPEDSIGNATURES)
-No bstorage! is used, if no interface model is chosen.
 
-"""
+bstorage!(f, u, bnode, data, ::Type{model_stationary})  = emptyFunction()
+
+
+bstorage!(f, u, bnode, data, ::Type{model_transient}) = bstorage!(f, u, bnode, data, data.boundary_type[bnode.region])
+
+
 bstorage!(f, u, bnode, data, ::Type{interface_model_none}) = emptyFunction()
 
-"""
-$(TYPEDSIGNATURES)
-No bstorage! is used, if surface recombination model is chosen.
-
-"""
-bstorage!(f, u, bnode, data, ::Type{interface_model_surface_recombination}) = emptyFunction()
 
 
 """
@@ -356,21 +404,46 @@ No bstorage! is used, when assuming discontinuous qF.
 """
 bstorage!(f, u, bnode, data, ::Type{interface_model_discont_qF}) = emptyFunction()
 
+bstorage!(f, u, bnode, data, ::Type{interface_model_surface_recombination}) = emptyFunction()
+
 """
 $(TYPEDSIGNATURES)
-No bstorage! is used, if an ohmic contact model is chosen.
+No bstorage! is used, if an ohmic and schottky contact model is chosen.
 
 """
 bstorage!(f, u, bnode, data, ::Type{ohmic_contact}) = emptyFunction()
 
-"""
-$(TYPEDSIGNATURES)
-No bstorage! is used, if an Schottky contact model is chosen.
-
-"""
 bstorage!(f, u, bnode, data, ::Type{schottky_contact}) = emptyFunction()
 
+bstorage!(f, u, bnode, data, ::Type{interface_model_surface_recombination_and_tangential_flux}) = emptyFunction()
+bstorage!(f, u, bnode, data, ::Type{interface_model_tangential_flux}) = emptyFunction()
 
+function bstorage!(f, u, bnode, data)
+
+    params      = data.params
+    paramsnodal = data.paramsnodal 
+
+    #indices (∈ IN ) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
+    iphin       = data.bulk_recombination.iphin # integer index of φ_n
+    iphip       = data.bulk_recombination.iphip # integer index of φ_p
+
+    # based on user index and regularity of solution quantities or integers are used and depicted here
+    iphin       = data.chargeCarrierList[iphin] # = Quantity or integer
+    iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
+
+    ipsi        = data.indexPsi
+    
+    for icc ∈ [iphin, iphip]
+
+        eta    = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc,ipsi)
+        f[icc] = q * params.chargeNumbers[icc] * (params.bDensityOfStates[icc, bnode.region] + paramsnodal.densityOfStates[icc, bnode.index]) * data.F[icc](eta)
+
+    end
+
+    f[ipsi] =  0.0
+
+    return f
+end
 ##########################################################
 ##########################################################
 """
@@ -387,39 +460,26 @@ In case of equilibrium, the bflux shall not enter.
 """
 bflux!(f, u, bedge, data, ::Type{inEquilibrium}) = emptyFunction()
 
-
-
 """
-Out of equilibrium, we need to additionally check for grid dimension.
+Out of equilibrium, we need to additionally check for boundary type.
 """
-bflux!(f, u, bedge, data, ::Type{outOfEquilibrium}) = bflux!(f, u, bedge, data, data.grid_dimension)
+bflux!(f, u, bedge, data, ::Type{outOfEquilibrium}) = bflux!(f, u, bedge, data, data.boundary_type[bedge.region])
 
+bflux!(f, u, bedge, data, ::Type{interface_model_none}) = emptyFunction()
 
-"""
-In case of one dimensional grid, no bflux entering.
-"""
-bflux!(f, u, bedge, data, ::Type{OneD_grid}) = emptyFunction()
-
-
-"""
-Out of equilibrium and for dimension = 2, the bflux shall only enter, when we have inner interfaces defined.
-"""
-bflux!(f, u, bedge, data, ::Type{TwoD_grid}) = bflux!(f, u, bedge, data, data.boundary_type[bedge.region]) #emptyFunction()#
-
-
-"""
-For outer boundaries.
-"""
 bflux!(f, u, bedge, data, ::Type{ohmic_contact})    = emptyFunction()
 bflux!(f, u, bedge, data, ::Type{schottky_contact}) = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{interface_model_surface_recombination}) = emptyFunction()
+
 
 """
-In this specific case then, we can use the precise flux approximation scheme.
-
+Cases, where we have a tangential flux.
 """
-# DA: does not work with Type{interface_model} only ????
-bflux!(f, u, bedge, data, ::Type{interface_model_none}) = bflux!(f, u, bedge, data, data.flux_approximation)
-bflux!(f, u, bedge, data, ::Type{interface_model_surface_recombination}) = bflux!(f, u, bedge, data, data.flux_approximation)
+
+bflux!(f, u, bedge, data, ::Type{interface_model_surface_recombination_and_tangential_flux}) = bflux!(f, u, bedge, data, data.flux_approximation)
+
+bflux!(f, u, bedge, data, ::Type{interface_model_tangential_flux}) = bflux!(f, u, bedge, data, data.flux_approximation)
+
 
 """
 $(TYPEDSIGNATURES)
@@ -431,18 +491,26 @@ function bflux!(f, u, bedge, data, ::Type{excessChemicalPotential})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
+
     
-    
-    ipsi        =   data.indexPsi
     nodel       =   bedge.node[2]
     nodek       =   bedge.node[1]
     ireg        =   bedge.region
+
+    # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
+    iphin       = data.bulk_recombination.iphin
+    iphip       = data.bulk_recombination.iphip
+
+    # based on user index and regularity of solution quantities or integers are used and depicted here
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+    ipsi        = data.indexPsi                  # final index for electrostatic potential
     
     # ############################################################
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
   
     # k = 1 refers to left side, where as l = 2 refers to right side.
-    for icc ∈ data.chargeCarrierList[1:2]
+    for icc ∈ [iphin, iphip]
 
         j0                 = params.chargeNumbers[icc] * q * params.bMobility[icc, ireg] * params.UT * params.bDensityOfStates[icc, ireg]
 
@@ -1328,59 +1396,6 @@ function flux!(f, u, edge, data, ::Type{generalized_SG})
     return f
 
 end
-
-##########################################################
-##########################################################
-
-"""
-$(TYPEDSIGNATURES)
-[Note that this way of implementation is not well tested yet. 
-
-Creates Schottky boundary conditions in a first attempt. For the electrostatic potential we assume 
-
-``\\psi = \\psi_S + U, ``
-
-where  ``\\psi_S`` corresponds to a given value and ``U`` to the applied voltage. For now,
-the quantitity ``\\psi_S`` needs to be specified in the main file.
-For the charge carriers we assume the following
-
-``f[n_\\alpha]  =  z_\\alpha q v_\\alpha (n_\\alpha - n_{\\alpha, 0})``,
-
-where ``v_{\\alpha}`` can be treated as a surface recombination mechanism and is given. The parameter
-``n_{\\alpha, 0}`` is a given value, calculated by the statistical relation, when assuming 
-no electrical field and a quasi Fermi level equal to the metal work function ``\\phi``, i.e.
-    
-``n_{\\alpha, 0}= z_\\alpha/ U_T (E_\\alpha - \\phi) / q. ``
-
-"""
-function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
-
-    params        = data.params
-    paramsnodal   = data.paramsnodal
-
-    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
-    iphin       = data.bulk_recombination.iphin
-    iphip       = data.bulk_recombination.iphip
-
-    # based on user index and regularity of solution quantities or integers are used 
-    iphin       = data.chargeCarrierList[iphin]
-    iphip       = data.chargeCarrierList[iphip]
-    ipsi        = data.indexPsi                
-
-    for icc in [iphin,iphip] 
-       
-        E      = params.bBandEdgeEnergy[icc, bnode.region] + paramsnodal.bandEdgeEnergy[icc, bnode.index]
-        etaFix = params.chargeNumbers[icc] / params.UT * (  (- params.SchottkyBarrier[bnode.region] + E ) / q  )
-        eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + E / q )
-
-        f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  (params.bDensityOfStates[icc, bnode.region] + paramsnodal.densityOfStates[icc, bnode.index])  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
-
-    end
-
-    return f
-
-end
-
 
 ##########################################################
 ##########################################################

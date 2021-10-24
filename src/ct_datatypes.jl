@@ -44,6 +44,10 @@ is part of boundary model.
 abstract type interface_model <: boundary_model end
 
 
+abstract type interface_model_tangential_flux                           <: interface_model end
+
+abstract type interface_model_surface_recombination_and_tangential_flux <: interface_model end
+
 """
 $(TYPEDEF)
 Abstract type for no interface model.
@@ -237,6 +241,7 @@ Abstract type for out of equilibrium calculations.
 
 """
 abstract type outOfEquilibrium <: calculation_type end
+
 
 """
 $(TYPEDEF)

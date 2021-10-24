@@ -32,7 +32,7 @@ include("ct_datatypes.jl")
 export grid_dimension, OneD_grid, TwoD_grid, ThreeD_gride
 
 export boundary_model, ohmic_contact, schottky_contact
-export interface_model, interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
+export interface_model, interface_model_none, interface_model_surface_recombination, interface_model_ion_charge, interface_model_tangential_flux, interface_model_surface_recombination_and_tangential_flux
 
 export interface_model_discont_qF
 
