@@ -151,7 +151,7 @@ function main(;n = 14, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ###################### adjust Na, Ea here #####################
     Nanion              = 1.21e22               / (cm^3)
-    Ea_i                = -4.86             *  eV
+    Ea_i                = -5.175                *  eV # Fermi level + activation energy = -4.86  (i.e. shift of energy (?))
 
     # for the labels in the figures
     textEa              = Ea_i                 ./  eV
