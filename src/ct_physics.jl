@@ -415,10 +415,9 @@ bstorage!(f, u, bnode, data, ::Type{ohmic_contact}) = emptyFunction()
 
 bstorage!(f, u, bnode, data, ::Type{schottky_contact}) = emptyFunction()
 
-bstorage!(f, u, bnode, data, ::Type{interface_model_surface_recombination_and_tangential_flux}) = emptyFunction()
-bstorage!(f, u, bnode, data, ::Type{interface_model_tangential_flux}) = emptyFunction()
+bstorage!(f, u, bnode, data, ::Type{interface_model_surface_recombination_and_tangential_flux}) = bstorage!(f, u, bnode, data, interface_model_tangential_flux)
 
-function bstorage!(f, u, bnode, data)
+function bstorage!(f, u, bnode, data, ::Type{interface_model_tangential_flux})
 
     params      = data.params
     paramsnodal = data.paramsnodal 
