@@ -1,19 +1,27 @@
+#=
+# 110: 1D PSC p-i-n device with surface recombination.
+([source code](SOURCE_URL))
 
-ENV["LC_NUMERIC"]="C"
+Simulating a three layer PSC device Pedot| MAPI | PCBM.
+The simulations are performed out of equilibrium, time-dependent
+and with abrupt interfaces. 
+A linear I-V measurement protocol is included and the corresponding
+solution vectors after the scan protocol can be depicted.
 
-module L_shape_linear_IV_without_ions
+The paramters are from Calado et al. and can be found here:
+https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_mapi_pcbm.csv.
+(with adjustments on layer lengths)
+=#
+
+module Example110_PSC_surface_recombination
 
 using VoronoiFVM
 using ChargeTransportInSolids
 using ExtendableGrids
 using GridVisualize
-using DelimitedFiles
 using PyPlot
-using SimplexGridFactory
-using Triangulate
 
-
-function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -33,112 +41,65 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     bregionDonor            = 2
     bregionJunction1        = 3
     bregionJunction2        = 4
-    bregionNoFlux           = 5
     bregions                = [bregionAcceptor, bregionDonor, bregionJunction1, bregionJunction2]
     numberOfBoundaryRegions = length(bregions)
 
-
-    # grid
+    # grid (the nearer to interface, the finer)
     h_pdoping               = 3.00e-6 * cm + 1.0e-7 * cm
     h_intrinsic             = 3.00e-5 * cm 
     h_ndoping               = 8.50e-6 * cm + 1.0e-7 * cm
-    height                  = 1.00e-5 * cm
-     
-    function unsuitable(x1,y1,x2,y2,x3,y3,area)
-        bary_x=(x1+x2+x3)/3.0
-        bary_y=(y1+y2+y3)/3.0
-        dx=bary_x-refinement_center[1]
-        dy=bary_y-refinement_center[2]
-        qdist=dx^2+dy^2
-        area>0.1*max(9.0e-18,qdist)
-        # min(area1, area2) > 0.1*max(4.e-17,qdist)
-    end
 
-    # function unsuitable2(x1,y1,x2,y2,x3,y3,area)
+    x0                      = 0.0 * cm 
+    δ                       = 4*n        # the larger, the finer the mesh
+    t                       = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
+    k                       = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    #     bary_x=(x1+x2+x3)/3.0
-    #     bary_y=(y1+y2+y3)/3.0
-    #     dx=bary_x-refinement_center2[1]
-    #     dy=bary_y-refinement_center2[2]
-    #     qdist=dx^2+dy^2
-    #     area>0.1*max(5.e-18,qdist)
-    # end
-    
-    b                = SimplexGridBuilder(Generator=Triangulate)
+    coord_p_u               = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.9*δ)))
+    coord_p_g               = geomspace(h_pdoping/2, 
+                                        h_pdoping, 
+                                        h_pdoping/(1.0*δ), 
+                                        h_pdoping/(1.5*δ), 
+                                        tol=t)
+    coord_i_g1              = geomspace(h_pdoping, 
+                                        h_pdoping+h_intrinsic/k, 
+                                        h_intrinsic/(6.1*δ), 
+                                        h_intrinsic/(3.1*δ), 
+                                        tol=t)
+    coord_i_g2              = geomspace(h_pdoping+h_intrinsic/k, 
+                                        h_pdoping+h_intrinsic,               
+                                        h_intrinsic/(3.1*δ),    
+                                        h_intrinsic/(6.1*δ), 
+                                        tol=t)
+    coord_n_g               = geomspace(h_pdoping+h_intrinsic,               
+                                        h_pdoping+h_intrinsic+h_ndoping/2, 
+                                        h_ndoping/(3.0*δ),   
+                                        h_ndoping/(1.0*δ),      
+                                        tol=t)
+    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.8*δ)))
 
-    # specify boundary nodes
-    length_0    = point!(b, 0.0, 0.0)
-    length_p    = point!(b, h_pdoping, 0.0)
-    length_pi   = point!(b, h_pdoping + h_intrinsic, 0.0)
-    length_pin  = point!(b, h_pdoping + h_intrinsic + h_ndoping, 0.0)
-    height_0    = point!(b, 0.0, height)
-    height_p    = point!(b, h_pdoping, height)
-    
-    # for L shape
-    height_pi12 = point!(b, h_pdoping + h_intrinsic/2, height)
-    height_pi2  = point!(b, h_pdoping + h_intrinsic/2, height/2)
-    height_pi   = point!(b, h_pdoping + h_intrinsic, height/2)
-    height_pin  = point!(b, h_pdoping + h_intrinsic + h_ndoping, height/2)
-    
-    ## specify boundary regions
-    # metal interface
-    facetregion!(b, bregionAcceptor)
-    facet!(b, height_0, height_p)
-    facetregion!(b, bregionDonor)
-    facet!(b, length_pin, height_pin) 
-          
-    # no flux
-    facetregion!(b, bregionNoFlux) # this is the old facet where previously the metal interface was defined.
-    facet!(b, length_0, height_0)
+    coord                   = glue(coord_p_u,coord_p_g,  tol=10*t) 
+    icoord_p                = length(coord)
+    coord                   = glue(coord,    coord_i_g1, tol=10*t)
+    coord                   = glue(coord,    coord_i_g2, tol=10*t) 
+    icoord_pi               = length(coord)
+    coord                   = glue(coord,    coord_n_g,  tol=10*t)
+    coord                   = glue(coord,    coord_n_u,  tol=10*t)
+    grid                    = ExtendableGrids.simplexgrid(coord)
+    numberOfNodes           = length(coord)
 
-    facetregion!(b, bregionNoFlux)
-    facet!(b, length_0, length_pin)    
+    # # cellmask! for defining the subregions and assigning region number (doping profiles do not intersect)
+    cellmask!(grid, [0.0 * μm],                 [h_pdoping],                           regionAcceptor, tol = 1.0e-18)   # p-doped region   = 1
+    cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic],             regionIntrinsic, tol = 1.0e-18)  # intrinsic region = 2
+    cellmask!(grid, [h_pdoping + h_intrinsic],  [h_pdoping + h_intrinsic + h_ndoping], regionDonor, tol = 1.0e-18)      # n-doped region   = 3
 
-    facetregion!(b, bregionNoFlux)
-    facet!(b, height_0, height_pi12)
-
-
-    facetregion!(b, bregionNoFlux)
-    facet!(b, height_pi12, height_pi2)
-    facetregion!(b, bregionNoFlux)
-    facet!(b, height_pi2, height_pin)
-  
-    # inner interface
-    facetregion!(b, bregionJunction1)
-    facet!(b, length_p, height_p)
-    facetregion!(b, bregionJunction2)
-    facet!(b, length_pi, height_pi)
-
-    refinement_center = [h_pdoping + h_intrinsic/2, height/2]
-    #refinement_center2 = [h_pdoping/2, height]
-    # Activate unsuitable callback
-    options!(b,unsuitable=unsuitable)
-
-    #options!(b,unsuitable=unsuitable2)
-    
-    # cell regions
-    cellregion!(b, regionAcceptor)
-    regionpoint!(b, h_pdoping-1.0e-6*cm, height/2-1.0e-6*cm) 
-    cellregion!(b,regionIntrinsic)
-    regionpoint!(b, h_pdoping + h_intrinsic -1.0e-6*cm, height/2-1.0e-6*cm) 
-    cellregion!(b,regionDonor)
-    regionpoint!(b, h_pdoping + h_intrinsic + h_ndoping -1.0e-6*cm, height/2-1.0e-6*cm) 
-
-    options!(b,maxvolume=9.0e-18)
-
-    grid            = simplexgrid(b)
-    numberOfNodes   = size(grid[Coordinates])[2]
-    X               = grid[Coordinates][1,:]
-    Y               = grid[Coordinates][2,:]
+    # bfacemask! for ``active'' boundary regions, i.e. internal interfaces. On the outer boudary regions, the 
+    # conditions will be formulated later
+    bfacemask!(grid, [h_pdoping],               [h_pdoping],                           bregionJunction1)  # first  inner interface
+    bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)  # second inner interface
 
     if plotting
-        PyPlot.figure()
-        GridVisualize.gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.6, legend=:lt) #, legend=:lt
-        Plotter.xlabel("length [m]")
-        Plotter.ylabel("height [m]")
+        GridVisualize.gridplot(grid, Plotter = Plotter)
         Plotter.title("Grid")
-        Plotter.tight_layout()
-        #savefig("grid-l-shape.eps")
         Plotter.figure()
     end
  
@@ -156,8 +117,9 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     iphin               = 1 # electron quasi Fermi potential
     iphip               = 2 # hole quasi Fermi potential
+    iphia               = 3 # anion vacancy quasi Fermi potential
 
-    ichargeCarriers     = [iphin, iphip]   # this is an Array of indices of the charge carriers 
+    ichargeCarriers     = [iphin, iphip, iphia]   # this is an Array of indices of the charge carriers 
     numberOfCarriers    = length(ichargeCarriers) # electrons, holes and anion vacancies
 
     # temperature
@@ -183,11 +145,23 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     Nc_i                = 1.0e19                / (cm^3)
     Nv_i                = 1.0e19                / (cm^3)
 
+    ###################### adjust Na, Ea here #####################
+    Nanion              = 1.21e22               / (cm^3)
+    Ea_i                = -5.175                *  eV 
+
+    # for the labels in the figures
+    textEa              = Ea_i                 ./  eV
+    textNa              = Nanion               .* (cm^3)
+    ###################### adjust Na, Ea here #####################
+
+    EA                  = [0.0,  Ea_i,  0.0]
+
     Nc_d                = 1.0e19                / (cm^3)
     Nv_d                = 1.0e19                / (cm^3)
 
     NC                  = [Nc_a, Nc_i, Nc_d]
     NV                  = [Nv_a, Nv_i, Nv_d]
+    NAnion              = [0.0,  Nanion, 0.0]
 
     # mobilities 
     μn_a                = 0.1                   * (cm^2) / (V * s)  
@@ -195,12 +169,14 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     μn_i                = 2.00e1                * (cm^2) / (V * s)  
     μp_i                = 2.00e1                * (cm^2) / (V * s)
+    μa_i                = 1.00e-10              * (cm^2) / (V * s)
 
     μn_d                = 1.0e-3                * (cm^2) / (V * s) 
     μp_d                = 1.0e-3                * (cm^2) / (V * s) 
 
     μn                  = [μn_a, μn_i, μn_d] 
     μp                  = [μp_a, μp_i, μp_d] 
+    μa                  = [0.0,  μa_i, 0.0 ] 
 
     # relative dielectric permittivity  
     ε_a                 = 4.0                   *  1.0  
@@ -244,6 +220,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     # doping
     Nd                  = 2.089649130192123e17  / (cm^3) 
     Na                  = 4.529587947185444e18  / (cm^3) 
+    C0                  = 1.0e18                / (cm^3) 
 
     # contact voltages: we impose an applied voltage only on one outer boundary.
     # At the other boundary the applied voltage is zero.
@@ -271,19 +248,22 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     data.model_type                      = model_transient
 
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
-    data.F                               = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA]
+    data.F                               = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
     # Following choices are possible for bulk_recombination_model:bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
     # The input iphin, iphip refers to the indices set by the user and needs to be specified
     data.bulk_recombination              = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
-    # For inner boundaries we have interface_model_none, interface_model_surface_recombination, interface_model_ion_charge
-    # (distinguish between left and right).
+    # For inner boundaries we have interface_model_none, interface_model_surface_recombination.
     data.boundary_type[bregionAcceptor]  = ohmic_contact  
-    data.boundary_type[bregionJunction1] = interface_model_surface_recombination_and_tangential_flux#interface_model_surface_recombination#
-    data.boundary_type[bregionJunction2] = interface_model_surface_recombination_and_tangential_flux##interface_model_surface_recombination#                  
+    data.boundary_type[bregionJunction1] = interface_model_surface_recombination
+    data.boundary_type[bregionJunction2] = interface_model_surface_recombination                   
     data.boundary_type[bregionDonor]     = ohmic_contact   
+
+    # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
+    # In this application ion vacancies only live in active perovskite layer
+    data.enable_ion_vacancies            = enable_ion_vacancies(ionic_vacancies = [iphia], regions = [regionIntrinsic])
     
     # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
     # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
@@ -301,62 +281,57 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     # Params is a struct which contains all necessary physical parameters. If one wants to simulate
     # space-dependent variables, one additionally needs to generate a ParamsNodal struct, see Example102 or Example104.
-    params                                              = ChargeTransportParams(grid, numberOfCarriers)
+    params                                                       = ChargeTransportParams(grid, numberOfCarriers)
 
-    params.temperature                                  = T
-    params.UT                                           = (kB * params.temperature) / q
-    params.chargeNumbers[iphin]                         = -1
-    params.chargeNumbers[iphip]                         =  1
+    params.temperature                                           = T
+    params.UT                                                    = (kB * params.temperature) / q
+    params.chargeNumbers[iphin]                                  = -1
+    params.chargeNumbers[iphip]                                  =  1
+    params.chargeNumbers[iphia]                                  =  1
 
     # interior region data
     for ireg in 1:numberOfRegions
 
-        params.dielectricConstant[ireg]                 = ε[ireg]
+        params.dielectricConstant[ireg]                          = ε[ireg]
 
         # effective dos, band edge energy and mobilities
-        params.densityOfStates[iphin, ireg]             = NC[ireg]
-        params.densityOfStates[iphip, ireg]             = NV[ireg]
+        params.densityOfStates[iphin, ireg]                      = NC[ireg]
+        params.densityOfStates[iphip, ireg]                      = NV[ireg]
+        params.densityOfStates[iphia, ireg]                      = NAnion[ireg]
 
-        params.bandEdgeEnergy[iphin, ireg]              = EC[ireg] 
-        params.bandEdgeEnergy[iphip, ireg]              = EV[ireg] 
+        params.bandEdgeEnergy[iphin, ireg]                       = EC[ireg] 
+        params.bandEdgeEnergy[iphip, ireg]                       = EV[ireg] 
+        params.bandEdgeEnergy[iphia, ireg]                       = EA[ireg] 
 
-        params.mobility[iphin, ireg]                    = μn[ireg]
-        params.mobility[iphip, ireg]                    = μp[ireg]
+        params.mobility[iphin, ireg]                             = μn[ireg]
+        params.mobility[iphip, ireg]                             = μp[ireg]
+        params.mobility[iphia, ireg]                             = μa[ireg]
 
         # recombination parameters
-        params.recombinationRadiative[ireg]             = r0[ireg]
-        params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
-        params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
-        params.recombinationSRHTrapDensity[iphin, ireg] = trap_density!(iphin, ireg, data, EI[ireg])
-        params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, data, EI[ireg])
-        params.recombinationAuger[iphin, ireg]          = Auger
-        params.recombinationAuger[iphip, ireg]          = Auger
+        params.recombinationRadiative[ireg]                      = r0[ireg]
+        params.recombinationSRHLifetime[iphin, ireg]             = τn[ireg]
+        params.recombinationSRHLifetime[iphip, ireg]             = τp[ireg]
+        params.recombinationSRHTrapDensity[iphin, ireg]          = trap_density!(iphin, ireg, data, EI[ireg])
+        params.recombinationSRHTrapDensity[iphip, ireg]          = trap_density!(iphip, ireg, data, EI[ireg])
+        params.recombinationAuger[iphin, ireg]                   = Auger
+        params.recombinationAuger[iphip, ireg]                   = Auger
     end
 
     ## outer boundary region data
-    params.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
-    params.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
+    params.bDensityOfStates[iphin, bregionAcceptor]              = Nc_a
+    params.bDensityOfStates[iphip, bregionAcceptor]              = Nv_a
 
-    params.bDensityOfStates[iphin, bregionDonor]        = Nc_d
-    params.bDensityOfStates[iphip, bregionDonor]        = Nv_d
+    params.bDensityOfStates[iphin, bregionDonor]                 = Nc_d
+    params.bDensityOfStates[iphip, bregionDonor]                 = Nv_d
 
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
+    params.bBandEdgeEnergy[iphin, bregionAcceptor]               = Ec_a
+    params.bBandEdgeEnergy[iphip, bregionAcceptor]               = Ev_a
 
-    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
-    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
+    params.bBandEdgeEnergy[iphin, bregionDonor]                  = Ec_d
+    params.bBandEdgeEnergy[iphip, bregionDonor]                  = Ev_d
 
     ##############################################################
     ## inner boundary region data
-
-    # mobility needed for bflux! 
-    prefactor_mobility                                           = 1.0
-    params.bMobility[iphin, bregionJunction1]                    = prefactor_mobility * μn_i
-    params.bMobility[iphip, bregionJunction1]                    = prefactor_mobility * μp_i
-
-    params.bMobility[iphin, bregionJunction2]                    = prefactor_mobility * μn_i
-    params.bMobility[iphip, bregionJunction2]                    = prefactor_mobility * μp_i
-
     params.bDensityOfStates[iphin, bregionJunction1]             = Nc_i
     params.bDensityOfStates[iphip, bregionJunction1]             = Nv_i
 
@@ -381,28 +356,32 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
     params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
+
+    ##############################################################
     
     # interior doping
-    params.doping[iphin,  regionDonor]                  = Nd 
-    params.doping[iphip,  regionAcceptor]               = Na      
-              
+    params.doping[iphin,  regionDonor]                           = Nd 
+    params.doping[iphip,  regionAcceptor]                        = Na      
+    params.doping[iphia,  regionIntrinsic]                       = C0                 
     # boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd 
-    params.bDoping[iphip, bregionAcceptor]              = Na    
+    params.bDoping[iphin, bregionDonor]                          = Nd 
+    params.bDoping[iphip, bregionAcceptor]                       = Na    
 
     # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
     # in a next step.
-    data.params                                         = params
+    data.params                                                  = params
 
     # in the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
     # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
     # but rather on default data.
-    ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
+    ctsys                                                        = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
 
     # print all params stored in ctsys.data.params
     if test == false
         show_params(ctsys)
     end
+   
+
 
     if test == false
         println("*** done\n")
@@ -418,7 +397,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     # we compute equilibrium solutions, i.e. the boundary values at the ohmic contacts
     # are zero.
     set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
+    set_ohmic_contact!(ctsys, bregionDonor,    0.0)
 
     if test == false
         println("*** done\n")
@@ -452,13 +431,20 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     control.damp_initial      = 0.05
     control.damp_growth       = 1.21 # >= 1
     control.max_round         = 5
+
+    # initialize solution and starting vectors
     initialGuess              = unknowns(ctsys)
     solution                  = unknowns(ctsys)
 
     solution                  = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
     initialGuess             .= solution 
-                  
+
+    if test == false
+        println("*** done\n")
+    end
+
+
     if test == false
         println("*** done\n")
     end
@@ -478,8 +464,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     # there are different way to control timestepping
     # Here we assume these primary data
     scanrate                      = 0.04 * V/s
-    ntsteps                       = 51
-    vend                          = 1.0#voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    ntsteps                       = 101
+    vend                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     v0                            = 0.0
 
     # The end time then is calculated here:
@@ -495,8 +481,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     for istep = 2:ntsteps
         
-        t                         = tvalues[istep] # Actual time
-        Δu                        = v0 + t*scanrate # Applied voltage 
+        t                         = tvalues[istep]       # Actual time
+        Δu                        = v0 + t*scanrate      # Applied voltage 
         Δt                        = t - tvalues[istep-1] # Time step size
         
         # Apply new voltage (set non-equilibrium values)
@@ -517,79 +503,14 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
         push!(IV, current)
         push!(biasValues, Δu)
-       
+
+        if plotting
+            plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        end
+
     end # time loop
 
-    #writedlm("sol-2D-tangential-flux-off-surface-reco-off.dat", [X Y solution'])
-
-    res = [biasValues IV]
-    #writedlm("IV-2D-tangential-flux-off-surface-reco-off.dat", res)
-     
-    function tran32!(a,b)
-        a[1] = b[2]
-    end
-
-    p                 = GridVisualizer(;Plotter=Plotter,layout=(2,2),clear=true,resolution=(800,500))
-
-    bgrid1            = subgrid(grid, [1], boundary = true)
-    bgrid2            = subgrid(grid, [2], boundary = true, transform = tran32!)
-    bgrid3            = subgrid(grid, [3], boundary = true, transform = tran32!)
-    bgrid4            = subgrid(grid, [4], boundary = true, transform = tran32!)
-
-    U_iphin_left      = view(solution[iphin,:], bgrid1)
-    U_iphin_right     = view(solution[iphin,:], bgrid2)
-    U_iphin_junction1 = view(solution[iphin,:], bgrid3)
-    U_iphin_junction2 = view(solution[iphin,:], bgrid4)
-    
-    scalarplot!(p[1,1],bgrid1, U_iphin_left,      show=true, cellwise = true, xlabel = "x-axis [m]", ylabel = "voltage [V]", title = "Left contact")
-    scalarplot!(p[2,1],bgrid3, U_iphin_junction1, show=true, cellwise = true, xlabel = "y-axis [m]", ylabel = "voltage [V]", title = "Left junction")
-    scalarplot!(p[2,2],bgrid4, U_iphin_junction2, show=true, cellwise = true, xlabel = "y-axis [m]", ylabel = "voltage [V]", title = "Right junction")
-    scalarplot!(p[1,2],bgrid2, U_iphin_right,     show=true, cellwise = true, xlabel = "x-axis [m]", ylabel = "voltage [V]", title = "Right contact")
-    Plotter.tight_layout()
-    #savefig("boundary-iphin-tangential-flux-on-prefactor-mobility-$(prefactor_mobility)-surface-reco-on.eps")
-
-    if plotting
-
-        lengthNaN = 61
-        xx        = collect( range(1.83e-5 * cm, stop = h_pdoping + h_intrinsic + h_ndoping, length = lengthNaN) )
-        yy        = collect( range(0.63e-5 * cm, stop = height,                              length = lengthNaN) )     
-        ipsi      = 3
-
-        phin      = append!(solution[iphin, :], NaN*ones( lengthNaN ))
-        psi       = append!(solution[ipsi, :],  NaN*ones( lengthNaN ))
-        Xsurf     = X
-        Ysurf     = Y
-        Xsurf     = append!(Xsurf, xx)
-        Ysurf     = append!(Ysurf, yy)
-
-
-        Plotter.figure()
-        Plotter.surf(X[:], Y[:], psi)
-        Plotter.title("Electrostatic potential \$ \\psi \$ at end time")
-        Plotter.xlabel("length [m]")
-        Plotter.ylabel("height [m]")
-        Plotter.zlabel("potential [V]")
-        #savefig("ipsi-2D-tangential-flux-on-prefactor-mobility-$(prefactor_mobility)-surface-reco-on.eps")
-        ##########################
-        Plotter.figure()
-        Plotter.surf(X[:], Y[:], phin )
-        Plotter.title("quasi Fermi potential \$ \\varphi_n \$ at end time")
-        Plotter.xlabel("length [m]")
-        Plotter.ylabel("height [m]")
-        Plotter.zlabel("potential [V]")
-        #savefig("iphin-2D-tangential-flux-on-prefactor-mobility-$(prefactor_mobility)-surface-reco-on.eps")
-
-        #########################
-        Plotter.figure()
-        ########
-        Plotter.plot(biasValues, abs.(IV.*(cm)^2), label = "simulation (prefactor mobility = $(prefactor_mobility) [\$ \\frac{\\mathrm{cm}^2}{\\mathrm{Vs}}\$] )",  linewidth= 3, linestyle="--", color="red")
-        PyPlot.legend()
-        Plotter.title("Forward I-V scan protocol")
-        Plotter.ylabel("total current [A]") # 
-        Plotter.xlabel("Applied Voltage [V]")
-        #PyPlot.ylim(0.0, 0.006*1.0e3)
-    end
-
+    #res = [biasValues, IV]
 
     if test == false
         println("*** done\n")
@@ -602,24 +523,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 end #  main
 
 function test()
-    # voltageAcceptor = 1.0 and ntsteps: 51, mesh: maxvolume=9.0e-18
-    ################################################################################################################
-    #
-    #  norm values: (mobility_interface = prefactor_mobility * mobility_bulk)
-    # 1. without tangential flux and without surface recombination:                 215.04468531184676
-    #
-    # 2. without tangential flux and with surface recombination:                    215.04457300209455
-    #
-    # 3. with tangential flux and without surface recombination:
-    #    prefactor_mobility = 1.0:                                                  214.8638294731805
-    #    prefactor_mobility = 1.0e2:                                                214.96762540843613
-    #
-    #
-    # 4. with tangential flux and with surface recombination: 
-    #    prefactor_mobility = 1.0:                                                  214.86382567944307
-    #    prefactor_mobility = 1.0e2:                                                214.96762920024418
-    ################################################################################################################
-    main(test = true, unknown_storage=:dense) ≈ testval
+    testval = 54.913949735570306
+    main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 if test == false
