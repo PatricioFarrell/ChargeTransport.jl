@@ -432,9 +432,17 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # @show max(abs.(solution_stationary_bias[iphit,:].-solution[iphit,:])...)
     # @show max(abs.(solution_stationary_bias[ipsi,:].-solution[ipsi,:])...)
 
+    testval = solution[ipsi, 10]
+    return testval
+
     println("*** done\n")
 
 end #  main
+
+function test()
+    testval = 1.3214196490674017
+    main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
+end
 
 println("This message should show when the PIN module has successfully recompiled.")
 
