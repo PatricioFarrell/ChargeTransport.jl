@@ -577,7 +577,7 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
     ############################################################
     for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
 
-        f[icc] = u[icc] - 0.0
+        f[icc] = u[icc]
 
     end
 
@@ -668,7 +668,7 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     ############################################################
     for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
 
-        f[icc]  = u[icc] - 0.0 # set for all charge carriers (electric and possible present ionic) zero conditions
+        f[icc]  = u[icc] # set for all charge carriers (electric and possible present ionic) zero conditions
 
     end
 
