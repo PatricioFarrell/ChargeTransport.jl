@@ -81,10 +81,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     εr                 = 12.9                 *  1.0              # relative dielectric permittivity of GAs
     T                  = 300.0                *  K
 
-
-    # recombination model
-    bulk_recombination = bulk_recomb_model_trap_assisted
-
     # recombination parameters
     SRH_TrapDensity_n  = 4.760185435081902e5    / cm^3       
     SRH_TrapDensity_p  = 9.996936448738406e6    / cm^3
@@ -114,8 +110,13 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    # Following choices are possible for recombination model: bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
-    data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
+    # Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination 
+    # processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by 
+    # the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+                                                                  bulk_recomb_Auger = false,
+                                                                  bulk_recomb_radiative = false,
+                                                                  bulk_recomb_SRH = true)
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination.

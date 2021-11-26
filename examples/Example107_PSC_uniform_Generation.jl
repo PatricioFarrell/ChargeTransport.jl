@@ -178,9 +178,6 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ε                   = [ε_a, ε_i, ε_d] 
 
-    # recombination model
-    bulk_recombination  = bulk_recomb_model_full
-
     # radiative recombination
     r0_a                = 6.3e-11               * cm^3 / s 
     r0_i                = 3.6e-12               * cm^3 / s  
@@ -249,9 +246,13 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
-    # The input iphin, iphip refers to the indices set by the user.
-    # Following choices are possible for bulk_recombination_model: bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
-    data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
+    # Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination 
+    # processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by 
+    # the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+                                                                  bulk_recomb_Auger = true,
+                                                                  bulk_recomb_radiative = true,
+                                                                  bulk_recomb_SRH = true)
 
     # Following choices are possibile for generation: generation_none, generation_uniform, generation_beer_lambert. No generation is default; beer-lambert not properly tested yet.
     data.generation_model               = generation_model

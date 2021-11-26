@@ -101,14 +101,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     εr                  = 12.9                              *  1.0              # relative dielectric permittivity of GAs
     T                   = 300.0                             *  K
 
-
-    # recombination model
-    bulk_recombination  = bulk_recomb_model_full
-
     # recombination parameters
-    ni                  = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) # intrinsic concentration
-    n0                  = Nc * Boltzmann( (Et-Ec) / (kB*T) )             # Boltzmann equilibrium concentration
-    p0                  = ni^2 / n0                                      # Boltzmann equilibrium concentration
+    ni                  = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T))        # intrinsic concentration
+    n0                  = Nc * Boltzmann( (Et-Ec) / (kB*T) )                    # Boltzmann equilibrium concentration
+    p0                  = ni^2 / n0                                             # Boltzmann equilibrium concentration
     Auger               = 1.0e-29                           * cm^6 / s          # 1.0e-41
     SRH_LifeTime        = 1.0e-3                            * ns               
     Radiative           = 1.0e-10                           * cm^3 / s          # 1.0e-16
@@ -144,8 +140,15 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
-    # Following choices are possible for recombination model: bulk_recombination_model_none, bulk_recombination_model_trap_assisted, bulk_recombination_radiative, bulk_recombination_full <: bulk_recombination_model 
-    data.bulk_recombination             = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination) 
+    # Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination 
+    # processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by 
+    # the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+                                                                  bulk_recomb_Auger = true,
+                                                                  bulk_recomb_radiative = true,
+                                                                  bulk_recomb_SRH = true)
+
+    enable_traps!(data = data, traps = iphit, regions = regions)
 
     # Following choices are possibile for generation: generation_none, generation_uniform, generation_beer_lambert. No generation is default; beer-lambert not properly tested yet.
     data.generation_model               = generation_uniform
@@ -331,7 +334,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("Embed life times and increase generation")
     end
     ################################################################################
-    ctsys.data.calculation_type   = outOfEquilibrium_trap
+    ctsys.data.calculation_type   = outOfEquilibrium
 
     # Scan rate and time steps
     scanrate                      = 1.0 * V/s

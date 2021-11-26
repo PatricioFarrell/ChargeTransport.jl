@@ -573,58 +573,193 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
     f[ipsi] = - data.λ1 * q * f[ipsi]
 
     ############################################################
-    ####          simple zero reaction for all icc          ####
+    ####            zero reaction term for all icc          ####
     ############################################################
     for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
-
         f[icc] = u[icc]
-
     end
 
     return f
 
 end
 
-recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recomb_model_none}) = 0.0
 
+"""
+$(TYPEDSIGNATURES)
+SRH kernel for case of non-existing rate.
 
-function recombination_kernel(data, ireg, iphin, iphip,  n, p, ::Type{bulk_recomb_model_radiative})
+"""
+function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{SRH_model_off})
 
-    params = data.params
+    return 0.0
 
-    return params.recombinationRadiative[ireg]
+end
+
+"""
+$(TYPEDSIGNATURES)
+SRH kernel for case of using stationary formula, i.e. case where no present traps are assumed.
+
+"""
+function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{SRH_model_stationary})
+
+    return  1.0 / (  data.params.recombinationSRHLifetime[iphip, ireg] * (n + data.params.recombinationSRHTrapDensity[iphin, ireg]) + data.params.recombinationSRHLifetime[iphin, ireg] * (p + data.params.recombinationSRHTrapDensity[iphip, ireg]) )
 
 end
 
 
-function recombination_kernel(data, ireg, iphin, iphip, n, p,::Type{bulk_recomb_model_trap_assisted})
 
-    params = data.params
+"""
+$(TYPEDSIGNATURES)
+Function which builds right-hand side of Poisson equation, i.e. which builds
+the space charge density for outOfEquilibrium calculations.
 
-    kernelSRH = 1.0 / (  params.recombinationSRHLifetime[iphip, ireg] * (n + params.recombinationSRHTrapDensity[iphin, ireg]) + params.recombinationSRHLifetime[iphin, ireg] * (p + params.recombinationSRHTrapDensity[iphip, ireg]) )
+"""
+function addElectricPotential!(f, u, node, data, ipsi)
 
-    return kernelSRH
+    ###########################################################
+    ####         right-hand side of nonlinear Poisson      ####
+    ####         equation (space charge density)           ####
+    ###########################################################
+    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+        
+        eta     = etaFunction(u, node, data, icc, ipsi) 
+        f[ipsi] = f[ipsi] - data.params.chargeNumbers[icc] * ( data.params.doping[icc, node.region] )  # subtract doping
+        f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * (data.params.densityOfStates[icc, node.region] + data.paramsnodal.densityOfStates[icc, node.index]) * data.F[icc](eta)   # add charge carrier
+
+    end
+
+    f[ipsi]     = f[ipsi] - data.paramsnodal.doping[node.index]
+
+    f[ipsi]     = - q * f[ipsi]
+
+    return f
 
 end
 
+"""
+$(TYPEDSIGNATURES)
+Function which builds right-hand side of charge carriers.
 
-function recombination_kernel(data, ireg, iphin, iphip, n, p, ::Type{bulk_recomb_model_full})
+"""
+function addChargeCarriers!(f, u, node, data, ipsi, iphin, iphip, n, p)
 
-    params = data.params
+    ###########################################################
+    ####       right-hand side of continuity equations     ####
+    ####       for φ_n and φ_p (bipolar reaction)          ####
+    ###########################################################
 
-    # radiative recombination
-    kernelRadiative = recombination_kernel(data, ireg, iphin, iphip, n, p, bulk_recomb_model_radiative)
-
-    # SRH recombination
-    kernelSRH       = recombination_kernel(data, ireg, iphin, iphip, n, p, bulk_recomb_model_trap_assisted)
-
-    # Auger recombination
-    kernelAuger     = (params.recombinationAuger[iphin, ireg] * n + params.recombinationAuger[iphip, ireg] * p)
-
-
-    return kernelRadiative + kernelAuger + kernelSRH
+    # dependent on user information concerncing recombination, RHS will be build
+    addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, data.bulk_recombination.bulk_recomb_SRH)
+   
+    return f
 
 end
+
+function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}) where T<:SRH_model_without_traps
+
+    ireg        = node.region
+
+    exponentialTerm = exp((q *u[iphin] - q * u[iphip]) / (kB * data.params.temperature))
+    excessDensTerm  = n * p * (1.0 - exponentialTerm)
+
+    for icc ∈ [iphin, iphip] 
+
+        # gives you the recombination kernel based on choice of user
+        # by default parameters of Auger and radiative are 0.0. Hence, adding them here, has no influence since
+        # we simply add by 0.0.
+        kernel      = data.params.recombinationRadiative[ireg] + (data.params.recombinationAuger[iphin, ireg] * n + data.params.recombinationAuger[iphip, ireg] * p)
+        kernel      = kernel + kernelSRH(data, ireg, iphin, iphip, n, p, data.bulk_recombination.bulk_recomb_SRH)
+                
+        f[icc]      = q * data.params.chargeNumbers[icc] *  kernel *  excessDensTerm  - q * data.params.chargeNumbers[icc] * generation(data, ireg,  node.coord[node.index], data.generation_model)
+    end
+
+    return f
+end
+
+function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{SRH_model_traps_transient})
+
+    params      = data.params
+    paramsnodal = data.paramsnodal
+    ireg        = node.region
+    inode       = node.index
+
+    # indices (∈ IN ) of traps used by user (they pass it through recombination)
+    itrap       = data.enable_traps.traps
+
+    # based on user index and regularity of solution quantities or integers are used 
+    itrap       = data.chargeCarrierList[itrap]
+
+    ###########################################################
+    ####       right-hand side of continuity equations     ####
+    ####       for φ_n and φ_p (bipolar reaction)          ####
+    ###########################################################
+
+    Nt = params.densityOfStates[itrap, ireg]
+    t  = Nt * data.F[itrap](etaFunction(u, node, data, itrap, ipsi))
+
+    taun                  = params.recombinationSRHLifetime[iphin, ireg]
+    n0                    = params.recombinationSRHTrapDensity[iphin, ireg]
+    taup                  = params.recombinationSRHLifetime[iphip, ireg]
+    p0                    = params.recombinationSRHTrapDensity[iphip, ireg]
+
+    # Rn, Rp agree up to sign with *On the Shockley-Read-Hall Model: Generation-Recombination 
+    # in Semiconductors* in SIAM Journal on Applied Mathematics, Vol. 67, No. 4 (2007), pp. 1183-1201.
+    # The sign is chosen according to *Supporting Information: Consistent Device Simulation Model 
+    # Describing Perovskite Solar Cells in Steady-State, Transient and Frequency Domain* in ACS (2018)
+    if params.chargeNumbers[itrap] == -1
+        Rn =  1 / taun * (n * (1-t/Nt) - n0 * t/Nt)
+        Rp =  1 / taup * (p * t/Nt     - p0 * (1-t/Nt))
+    elseif params.chargeNumbers[itrap] == 1
+        Rn =  1 / taun * (n * t/Nt     - n0 * (1-t/Nt))
+        Rp =  1 / taup * (p * (1-t/Nt) - p0 * t/Nt)
+    end
+
+    f[iphin] = q * params.chargeNumbers[iphin] * (Rn - generation(data, ireg,  node.coord[node.index], data.generation_model))
+    f[iphip] = q * params.chargeNumbers[iphip] * (Rp - generation(data, ireg,  node.coord[node.index], data.generation_model))
+    f[itrap] = q * params.chargeNumbers[itrap] * (Rp-Rn)
+
+
+    return f
+end
+
+
+"""
+$(TYPEDSIGNATURES)
+Function which adds additional trap density to right-hand side of Poisson equation
+without modeling traps as own charge carrier.
+Note that this one may be deleted in future version.
+
+"""
+addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p) = addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, data.bulk_recombination.SRH_2species_trap)
+
+
+function addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}) where T<:SRH_model
+    return
+end
+
+function addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{SRH_2species_present_trap_dens})
+
+    params      = data.params
+    ireg        = node.region
+
+    n0   = params.recombinationSRHTrapDensity[iphin, ireg]
+    p0   = params.recombinationSRHTrapDensity[iphip, ireg]
+    taun = params.recombinationSRHLifetime[iphin, ireg]
+    taup = params.recombinationSRHLifetime[iphip, ireg]
+    z = 1
+
+    if ireg == 3
+        Nt = 5e14                / (cm^3) 
+    else
+        Nt = 5e14                / (cm^3) 
+    end
+
+    # add equilibrium trap density
+    f[ipsi] = f[ipsi] - q * z * Nt * (taun*p0 + taup*n) / (taun*(p0+p) + taup*(n0+n))
+
+    return f
+end
+
 
 """
 $(TYPEDSIGNATURES)
@@ -647,12 +782,7 @@ The recombination is only implemented for electron and holes and assumes
 that the electron index is 1 and the hole index is 2. 
 
 """
-function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
-
-    params      = data.params
-    paramsnodal = data.paramsnodal
-    ireg        = node.region
-    inode       = node.index
+function reaction!(f, u, node, data, ::Type{outOfEquilibrium}) 
 
     # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
     iphin       = data.bulk_recombination.iphin
@@ -664,264 +794,23 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     ipsi        = data.indexPsi                  # final index for electrostatic potential
     
     ############################################################
-    ####          simple zero reaction for all icc          ####
+    ####   set RHS to zero for all icc (stability purpose)  ####
     ############################################################
     for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
 
-        f[icc]  = u[icc] # set for all charge carriers (electric and possible present ionic) zero conditions
+        f[icc]  = u[icc] # set for all charge carriers right hand-side to zero
 
     end
 
-    ###########################################################
-    ####         right-hand side of nonlinear Poisson      ####
-    ####         equation (space charge density)           ####
-    ###########################################################
-    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
-        
-        eta     = etaFunction(u, node, data, icc, ipsi) 
-        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, node.region] )  # subtract doping
-        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.densityOfStates[icc, node.region] + paramsnodal.densityOfStates[icc, node.index]) * data.F[icc](eta)   # add charge carrier
+    n           = (data.params.densityOfStates[iphin, node.region] + data.paramsnodal.densityOfStates[iphin, node.index]) * data.F[iphin](etaFunction(u, node, data, iphin, ipsi))
+    p           = (data.params.densityOfStates[iphip, node.region] + data.paramsnodal.densityOfStates[iphip, node.index]) * data.F[iphip](etaFunction(u, node, data, iphip, ipsi))
 
-    end
-
-    f[ipsi]     = f[ipsi] - paramsnodal.doping[inode]
-
-    f[ipsi]     = - q * data.λ1 * f[ipsi]
-
-    ###########################################################
-    ####       right-hand side of continuity equations     ####
-    ####       for φ_n and φ_p (bipolar reaction)          ####
-    ###########################################################
-
-    n               = (params.densityOfStates[iphin, ireg] + paramsnodal.densityOfStates[iphin, inode]) * data.F[iphin](etaFunction(u, node, data, iphin, ipsi))
-    p               = (params.densityOfStates[iphip, ireg] + paramsnodal.densityOfStates[iphip, inode]) * data.F[iphip](etaFunction(u, node, data, iphip, ipsi))
-
-    exponentialTerm = exp((q *u[iphin] - q * u[iphip]) / (kB * params.temperature))
-    excessDensTerm  = n * p * (1.0 - exponentialTerm)
-
-    for icc ∈ [iphin, iphip] 
-
-        # gives you the recombination kernel based on choice of user
-        kernel      = recombination_kernel(data, ireg, iphin, iphip, n, p, data.bulk_recombination.bulk_recomb_model)
-                
-        f[icc]      = q * params.chargeNumbers[icc] *  kernel *  excessDensTerm  - q * params.chargeNumbers[icc] * generation(data, ireg,  node.coord[node.index], data.generation_model)
-    end
-
-    return f
-
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-Like ``reaction!(f, u, node, data, ::Type{outOfEquilibrium})`` but including a trap density for transient simulations.
-
-"""
-function reaction!(f, u, node, data, ::Type{outOfEquilibrium_trap})
-
-    params      = data.params
-    paramsnodal = data.paramsnodal
-    ireg        = node.region
-    inode       = node.index
-
-    # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
-    iphin       = data.bulk_recombination.iphin
-    iphip       = data.bulk_recombination.iphip
-
-    # based on user index and regularity of solution quantities or integers are used 
-    iphin       = data.chargeCarrierList[iphin]
-    iphip       = data.chargeCarrierList[iphip]
-    itrap       = data.chargeCarrierList[3]
-    ipsi        = data.indexPsi                  
-
-    ###########################################################
-    ####         right-hand side of nonlinear Poisson      ####
-    ####         equation (space charge density)           ####
-    ###########################################################
-    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
-        
-        eta     = etaFunction(u, node, data, icc, ipsi) 
-        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, node.region] )  # subtract doping
-        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.densityOfStates[icc, node.region] + paramsnodal.densityOfStates[icc, node.index]) * data.F[icc](eta)   # add charge carrier
-
-    end
-
-    f[ipsi]     = f[ipsi] - paramsnodal.doping[inode]
-    f[ipsi]     = - q * f[ipsi]
-
-    ###########################################################
-    ####       right-hand side of continuity equations     ####
-    ####       for φ_n and φ_p (bipolar reaction)          ####
-    ###########################################################
-
-    Nc = params.densityOfStates[iphin, ireg] + paramsnodal.densityOfStates[iphin, inode]
-    Nv = params.densityOfStates[iphip, ireg] + paramsnodal.densityOfStates[iphip, inode]
-    Nt = params.densityOfStates[itrap, ireg]
-    n  = Nc * data.F[iphin](etaFunction(u, node, data, iphin, ipsi))
-    p  = Nv * data.F[iphip](etaFunction(u, node, data, iphip, ipsi))
-    t  = Nt * data.F[itrap](etaFunction(u, node, data, itrap, ipsi))
-
-    taun                  = params.recombinationSRHLifetime[iphin, ireg]
-    n0                    = params.recombinationSRHTrapDensity[iphin, ireg]
-    taup                  = params.recombinationSRHLifetime[iphip, ireg]
-    p0                    = params.recombinationSRHTrapDensity[iphip, ireg]
-
-    # Rn, Rp agree up to sign with *On the Shockley-Read-Hall Model: Generation-Recombination 
-    # in Semiconductors* in SIAM Journal on Applied Mathematics, Vol. 67, No. 4 (2007), pp. 1183-1201.
-    # The sign is chosen according to *Supporting Information: Consistent Device Simulation Model 
-    # Describing Perovskite Solar Cells in Steady-State, Transient and Frequency Domain* in ACS (2018)
-    if params.chargeNumbers[itrap] == -1
-        Rn =  1 / taun * (n * (1-t/Nt) - n0 * t/Nt)
-        Rp =  1 / taup * (p * t/Nt     - p0 * (1-t/Nt))
-    elseif params.chargeNumbers[itrap] == 1
-        Rn =  1 / taun * (n * t/Nt     - n0 * (1-t/Nt))
-        Rp =  1 / taup * (p * (1-t/Nt) - p0 * t/Nt)
-    end
-
-    #@show generation(data, ireg,  node.coord[node.index], data.generation_model)
-    f[iphin] = q * params.chargeNumbers[iphin] * (Rn - generation(data, ireg,  node.coord[node.index], data.generation_model))
-    f[iphip] = q * params.chargeNumbers[iphip] * (Rp - generation(data, ireg,  node.coord[node.index], data.generation_model))
-    f[itrap] = q * params.chargeNumbers[itrap] * (Rp-Rn)
-
-    return f    
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-Like ``reaction!(f, u, node, data, ::Type{outOfEquilibrium_trap})`` but for stationary simulations.
-
-"""
-function reaction!(f, u, node, data, ::Type{outOfEquilibrium_trap_stationary})
-
-    params      = data.params
-    paramsnodal = data.paramsnodal
-    ireg        = node.region
-    inode       = node.index
-
-    # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
-    iphin       = data.bulk_recombination.iphin
-    iphip       = data.bulk_recombination.iphip
-
-    # based on user index and regularity of solution quantities or integers are used and depicted here
-    iphin       = data.chargeCarrierList[iphin]
-    iphip       = data.chargeCarrierList[iphip]
-    itrap       = 3
-    ipsi        = data.indexPsi                  # final index for electrostatic potential
-    
-    ###########################################################
-    ####         right-hand side of nonlinear Poisson      ####
-    ####         equation (space charge density)           ####
-    ###########################################################
-
-    for icc ∈ data.chargeCarrierList 
-        
-        eta     = etaFunction(u, node, data, icc, ipsi) 
-        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, node.region] )  # subtract doping
-        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.densityOfStates[icc, node.region] + paramsnodal.densityOfStates[icc, node.index]) * data.F[icc](eta)   # add charge carrier
-
-    end
-
-    f[ipsi]     = f[ipsi] - paramsnodal.doping[inode]
-    f[ipsi]     = - q * f[ipsi]
-
-    ###########################################################
-    ####       right-hand side of continuity equations     ####
-    ####       for φ_n and φ_p (bipolar reaction)          ####
-    ###########################################################
-
-    n  = (params.densityOfStates[iphin, ireg] + paramsnodal.densityOfStates[iphin, inode]) * data.F[iphin](etaFunction(u, node, data, iphin, ipsi))
-    p  = (params.densityOfStates[iphip, ireg] + paramsnodal.densityOfStates[iphip, inode]) * data.F[iphip](etaFunction(u, node, data, iphip, ipsi))
-
-    exponentialTerm = exp((q *u[iphin] - q * u[iphip]) / (kB * params.temperature))
-    excessDensTerm  = n * p * (1.0 - exponentialTerm)
-
-    for icc ∈ [iphin, iphip] 
-
-        # gives you the recombination kernel based on choice of user
-        kernel      = recombination_kernel(data, ireg, iphin, iphip, n, p, data.bulk_recombination.bulk_recomb_model)
-                
-        f[icc]      = q * params.chargeNumbers[icc] *  kernel *  excessDensTerm  - q * params.chargeNumbers[icc] * generation(data, ireg,  node.coord[node.index], data.generation_model)
-    end
-
-    # switch off traps by inserting unit matrix into Jacobian
-    f[itrap]  = u[itrap] - 0.0
-
-    return f
-
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-Like ``reaction!(f, u, node, data, ::Type{outOfEquilibrium_trap})`` but for stationary simulations and only two species. The trap density is explicitly added to the right-hand side.
-
-"""
-function reaction!(f, u, node, data, ::Type{outOfEquilibrium_trap_stationary_2_species})
-
-    params      = data.params
-    paramsnodal = data.paramsnodal
-    ireg        = node.region
-    inode       = node.index
-
-    # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
-    iphin       = data.bulk_recombination.iphin
-    iphip       = data.bulk_recombination.iphip
-
-    # based on user index and regularity of solution quantities or integers are used and depicted here
-    iphin       = data.chargeCarrierList[iphin]
-    iphip       = data.chargeCarrierList[iphip]
-    ipsi        = data.indexPsi                  # final index for electrostatic potential
-    
-    ###########################################################
-    ####         right-hand side of nonlinear Poisson      ####
-    ####         equation (space charge density)           ####
-    ###########################################################
-
-    for icc ∈ data.chargeCarrierList 
-        
-        eta     = etaFunction(u, node, data, icc, ipsi) 
-        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, node.region] )  # subtract doping
-        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * (params.densityOfStates[icc, node.region] + paramsnodal.densityOfStates[icc, node.index]) * data.F[icc](eta)   # add charge carrier
-
-    end
-
-    n  = (params.densityOfStates[iphin, ireg] + paramsnodal.densityOfStates[iphin, inode]) * data.F[iphin](etaFunction(u, node, data, iphin, ipsi))
-    p  = (params.densityOfStates[iphip, ireg] + paramsnodal.densityOfStates[iphip, inode]) * data.F[iphip](etaFunction(u, node, data, iphip, ipsi))
-    n0 = params.recombinationSRHTrapDensity[iphin, ireg]
-    p0 = params.recombinationSRHTrapDensity[iphip, ireg]
-    taun = params.recombinationSRHLifetime[iphin, ireg]
-    taup = params.recombinationSRHLifetime[iphip, ireg]
-    z = 1
-
-    if ireg == 3
-        Nt = 5e14                / (cm^3) 
-    else
-        Nt = 5e14                / (cm^3) 
-    end
-
-    # add equilibrium trap density
-    f[ipsi] = f[ipsi] + z * Nt * (taun*p0 + taup*n) / (taun*(p0+p) + taup*(n0+n))
-
-
-    f[ipsi]     = f[ipsi] - paramsnodal.doping[inode]
-    f[ipsi]     = - q * f[ipsi]
-
-    ###########################################################
-    ####       right-hand side of continuity equations     ####
-    ####       for φ_n and φ_p (bipolar reaction)          ####
-    ###########################################################
-
-    exponentialTerm = exp((q *u[iphin] - q * u[iphip]) / (kB * params.temperature))
-    excessDensTerm  = n * p * (1.0 - exponentialTerm)
-
-    for icc ∈ [iphin, iphip] 
-
-        # gives you the recombination kernel based on choice of user
-        kernel      = recombination_kernel(data, ireg, iphin, iphip, n, p, data.bulk_recombination.bulk_recomb_model)
-                
-        f[icc]      = q * params.chargeNumbers[icc] *  kernel *  excessDensTerm  - q * params.chargeNumbers[icc] * generation(data, ireg,  node.coord[node.index], data.generation_model)
-    end
+    # RHS of Poisson
+    f = addElectricPotential!(f, u, node, data, ipsi)
+    # RHS of Charge Carriers with special treatment of recombination
+    f = addChargeCarriers!(f, u, node, data, ipsi, iphin, iphip, n, p)
+    # if desired, add trap density to RHS of Poisson
+    f = addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p)
 
     return f
 
@@ -1047,21 +936,6 @@ function flux!(f, u, edge, data, ::Type{inEquilibrium})
 end
 
 flux!(f, u, edge, data, ::Type{outOfEquilibrium}) = flux!(f, u, edge, data, data.flux_approximation)
-
-function flux!(f, u, edge, data, ::Type{outOfEquilibrium_trap}) 
-    flux!(f, u, edge, data, outOfEquilibrium) 
-end
-
-function flux!(f, u, edge, data, ::Type{outOfEquilibrium_trap_stationary}) 
-    flux!(f, u, edge, data, outOfEquilibrium) 
-end
-
-function flux!(f, u, edge, data, ::Type{outOfEquilibrium_trap_stationary_2_species}) 
-    flux!(f, u, edge, data, outOfEquilibrium) 
-end
-
-
-flux!(f, u, edge, data, ::Type{flux_approximation}) = emptyFunction()
 
 """
 $(TYPEDSIGNATURES)

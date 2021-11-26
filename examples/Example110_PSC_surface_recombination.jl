@@ -185,9 +185,6 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ε                   = [ε_a, ε_i, ε_d] 
 
-    # recombination model
-    bulk_recombination  = bulk_recomb_model_full
-
     # radiative recombination
     r0_a                = 6.3e-11               * cm^3 / s 
     r0_i                = 3.6e-12               * cm^3 / s  
@@ -214,9 +211,6 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     EI                  = [Ei_a, Ei_i, Ei_d]
         
-    # Auger recombination
-    Auger               = 0.0
-
     # doping
     Nd                  = 2.089649130192123e17  / (cm^3) 
     Na                  = 4.529587947185444e18  / (cm^3) 
@@ -250,9 +244,13 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                               = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
-    # Following choices are possible for bulk_recombination_model:bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_radiative, bulk_recomb_full <: bulk_recombination_model 
-    # The input iphin, iphip refers to the indices set by the user and needs to be specified
-    data.bulk_recombination              = set_bulk_recombination(iphin = iphin, iphip = iphip, bulk_recombination_model = bulk_recombination)
+    # Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination 
+    # processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by 
+    # the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+                                                                  bulk_recomb_Auger = false,
+                                                                  bulk_recomb_radiative = true,
+                                                                  bulk_recomb_SRH = true)
 
     # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
     # For inner boundaries we have interface_model_none, interface_model_surface_recombination.
@@ -313,8 +311,6 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.recombinationSRHLifetime[iphip, ireg]             = τp[ireg]
         params.recombinationSRHTrapDensity[iphin, ireg]          = trap_density!(iphin, ireg, data, EI[ireg])
         params.recombinationSRHTrapDensity[iphip, ireg]          = trap_density!(iphip, ireg, data, EI[ireg])
-        params.recombinationAuger[iphin, ireg]                   = Auger
-        params.recombinationAuger[iphip, ireg]                   = Auger
     end
 
     ## outer boundary region data

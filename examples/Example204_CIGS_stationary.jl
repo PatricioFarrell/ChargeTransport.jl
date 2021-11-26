@@ -110,10 +110,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     vp                = Ap * T^2 / (q*Nv)
     barrier           = 0.1 * eV
 
-
-    # recombination model
-    bulk_recombination = bulk_recomb_model_full
-
     # recombination parameters
     ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) # intrinsic concentration
     n0                = Nc * Boltzmann( (Et-Ec) / (kB*T) )             # Boltzmann equilibrium concentration
@@ -145,11 +141,15 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # Fermi-Dirac statistics for electron and holes & Fermi-Dirac of order -1 for traps
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
-    # set recombination model
-    data.bulk_recombination = set_bulk_recombination(iphin = iphin, 
-                                                     iphip = iphip, 
-                                                     bulk_recombination_model = bulk_recombination)
-    data.calculation_type               = inEquilibrium 
+    # Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination 
+    # processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by 
+    # the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+                                                                  bulk_recomb_Auger = true,
+                                                                  bulk_recomb_radiative = true,
+                                                                  bulk_recomb_SRH = true)
+    
+    # Following choices are possibile for generation: generation_none, generation_uniform, generation_beer_lambert. No generation is default; beer-lambert not properly tested yet.
     data.generation_model               = generation_uniform
 
     # declare boundary models
@@ -280,6 +280,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     initialGuess          = unknowns(ctsys)
     solution              = unknowns(ctsys)
 
+    data.calculation_type = inEquilibrium 
+
     # solve thermodynamic equilibrium and update initial guess
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
     initialGuess         .= solution 
@@ -298,7 +300,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("Stationary bias loop")
     ################################################################################
 
-    ctsys.data.calculation_type   = outOfEquilibrium_trap_stationary # Rn = Rp = R
+    ctsys.data.calculation_type   = outOfEquilibrium                 # Rn = Rp = R, since the model type is stationary
     endVoltage                    = voltageAcceptor                  # final bias value
 
     IV         = zeros(0)   
@@ -444,7 +446,7 @@ function test()
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
-println("This message should show when the PIN module has successfully recompiled.")
+println("This message should show when this module has successfully recompiled.")
 
 
 end # module

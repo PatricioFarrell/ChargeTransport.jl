@@ -37,14 +37,16 @@ export interface_model, interface_model_none, interface_model_surface_recombinat
 export interface_model_discont_qF
 
 export model_type, model_transient, model_stationary
-export bulk_recombination_model, bulk_recomb_model_none, bulk_recomb_model_trap_assisted, bulk_recomb_model_radiative, bulk_recomb_model_full
 
+export abstract_SRH_model, SRH_model, SRH_model_off, SRH_model_without_traps, SRH_model_without_traps_stationary, SRH_model_with_traps,  SRH_model_traps_transient
+
+export SRH_2species_present_trap_dens
 ##################################################################
 
 include("ct_physics.jl")
 
 export ScharfetterGummel, excessChemicalPotential, diffusionEnhanced, generalized_SG 
-export inEquilibrium, outOfEquilibrium, outOfEquilibrium_trap, outOfEquilibrium_trap_stationary, outOfEquilibrium_trap_stationary_2_species
+export inEquilibrium, outOfEquilibrium
 export ScharfetterGummel_Graded, excessChemicalPotential_Graded
 export generation_model, generation_none, generation_beer_lambert, generation_uniform
 export breaction!, bstorage!, reaction!, storage!, flux!
@@ -61,6 +63,7 @@ export compute_densities!, compute_energies!, electroNeutralSolution!, print_jac
 export show_params, trap_density!
 export linearScanProtocol, scan_protocol_type, set_time_mesh, get_current_val
 export chargeDensity
+export enable_traps!
 
 ##################################################################
 

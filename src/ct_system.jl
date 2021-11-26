@@ -16,38 +16,124 @@ mutable struct ChargeTransportBulkRecombination
     """
     index for data construction of quasi Fermi potential of electrons
     """
-	iphin                ::  Int64 # here the id's of the AbstractQuantities or the integer indices are parsed.
+	iphin                 ::  Int64 # here the id's of the AbstractQuantities or the integer indices are parsed.
 
     """
     index for data construction of quasi Fermi potential of holes
     """
-    iphip                ::  Int64 # here the id's of the AbstractQuantities or the integer indices are parsed.
+    iphip                 ::  Int64 # here the id's of the AbstractQuantities or the integer indices are parsed.
 
     """
-    the chosen bulk recombination model.
+    boolean for present Auger recombination in bulk
     """
-    bulk_recomb_model    ::  DataType
+    bulk_recomb_Auger     ::  Bool
 
+    """
+    boolean for present radiative recombination in bulk
+    """
+    bulk_recomb_radiative ::  Bool
+
+    """
+    DataType for present SRH recombination in bulk
+    """
+    bulk_recomb_SRH       ::  DataType
+
+    """
+    Auxiliary quantitiy for simulations with present trap density in Poisson, but without
+    traps as own unknowns. May be deleted in future versions.
+    """
+    SRH_2species_trap     ::  DataType 
     ChargeTransportBulkRecombination() = new()
 
 end
 
-
 """
 Corresponding constructor for the bulk recombination model.
 """
-function set_bulk_recombination(; iphin = 1, iphip = 2, bulk_recombination_model = bulk_recomb_model_full)
+function set_bulk_recombination(; iphin = 1, iphip = 2, 
+                                  bulk_recomb_Auger = true,
+                                  bulk_recomb_radiative = true,
+                                  bulk_recomb_SRH = true)
 
     bulk_recombination = ChargeTransportBulkRecombination()
 
-    bulk_recombination.iphin             = iphin
-    bulk_recombination.iphip             = iphip
-    bulk_recombination.bulk_recomb_model = bulk_recombination_model
+    bulk_recombination.iphin                 = iphin
+    bulk_recombination.iphip                 = iphip
+
+    # these quantities may be unnecessary and will be deleted in future versions.
+    bulk_recombination.bulk_recomb_Auger     = bulk_recomb_Auger
+    bulk_recombination.bulk_recomb_radiative = bulk_recomb_radiative
+
+    # we need to have here a distinction, sincen Auger and radiative are zero if not defined due to predefinition.
+    # but we need to here, before get information on which exact SRH, this Data Type will be adjusted, if user puts on: enable_traps ...
+    if bulk_recomb_SRH == true
+        bulk_recombination.bulk_recomb_SRH   = SRH_model_stationary
+    else
+        bulk_recombination.bulk_recomb_SRH   = SRH_model_off
+    end
+
+    # DA: will be deleted in future versions.
+    bulk_recombination.SRH_2species_trap     = SRH_model
 
     return bulk_recombination
 
 end
 
+"""
+$(TYPEDEF)
+
+A struct holding all information necessary for enabling traps
+in the SRH recombination.
+With help of this constructor we can read out the index the user chooses for
+trap quasi Fermi potentials and the respective regions in which they are
+defined.
+
+$(TYPEDFIELDS)
+
+"""
+mutable struct ChargeTransportTraps
+
+    """
+    Array with the index of traps.
+    """
+    traps       ::  Int64
+
+    """
+    Corresponding regions where traps are assumed to be present.
+    """
+    regions     ::  Array{Int64, 1}
+
+    ChargeTransportTraps() = new()
+
+end
+
+"""
+Corresponding constructor for the present trap density and the respective regions.
+"""
+function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
+
+    enable_traps                            = ChargeTransportTraps()
+
+    enable_traps.traps                      = traps
+    enable_traps.regions                    = regions
+
+    if data.model_type == model_transient
+        data.bulk_recombination.bulk_recomb_SRH = SRH_model_traps_transient
+    else
+        data.bulk_recombination.bulk_recomb_SRH = SRH_model_stationary
+    end
+
+    data.enable_traps = enable_traps
+    
+end
+
+"""
+Corresponding constructor for the present trap density and the respective regions.
+Note that, this one will may be deleted in future versions.
+"""
+function enable_traps!(data)
+    data.bulk_recombination.SRH_2species_trap = SRH_2species_present_trap_dens
+end
 ###########################################################
 ###########################################################
 
@@ -385,6 +471,7 @@ $(TYPEDFIELDS)
 """
 mutable struct ChargeTransportData
 
+    enable_traps                 :: ChargeTransportTraps
     ###############################################################
     ####                   model information                   ####
     ###############################################################
@@ -676,6 +763,7 @@ function ChargeTransportData(grid, numberOfCarriers)
     ###############################################################
     data = ChargeTransportData()
 
+    data.enable_traps = ChargeTransportTraps()
     ###############################################################
     ####                   model information                   ####
     ###############################################################
@@ -684,7 +772,8 @@ function ChargeTransportData(grid, numberOfCarriers)
     data.boundary_type            = Array{DataType,1}(undef, numberOfBoundaryRegions)
 
     # bulk_recombination is a struct holding the input information
-    data.bulk_recombination       = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recombination_model = bulk_recomb_model_none)
+    data.bulk_recombination       = set_bulk_recombination(; iphin = 1, iphip = 2, bulk_recomb_Auger = false, bulk_recomb_radiative = false,           
+                                                             bulk_recomb_SRH = false)
 
     for ii in 1:numberOfBoundaryRegions # as default all boundaries are set to an ohmic contact model.
         data.boundary_type[ii]    = interface_model_none

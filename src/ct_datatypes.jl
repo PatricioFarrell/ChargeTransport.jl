@@ -84,44 +84,47 @@ abstract type interface_model_ion_charge <: interface_model end
 ##########################################################
 """
 $(TYPEDEF)
-Abstract type for bulk recombination model.
+Abstract type for SRH bulk recombination model
+(Note that this one will be deleted in future versions).
 
 """
-abstract type bulk_recombination_model end
+abstract type abstract_SRH_model end
+
+"""
+$(TYPEDEF)
+SRH_model as parent of several different subtypes.
+
+"""
+abstract type SRH_model                          <: abstract_SRH_model      end
 
 
 """
 $(TYPEDEF)
-Abstract type for no bulk recombination model.
+SRH_model_without_traps as parent of several different subtypes.
 
 """
-abstract type bulk_recomb_model_none <: bulk_recombination_model end 
+abstract type SRH_model_without_traps            <: SRH_model               end
+
+abstract type SRH_model_stationary               <: SRH_model_without_traps end
+abstract type SRH_model_off                      <: SRH_model_without_traps end
+
+"""
+$(TYPEDEF)
+SRH_model_with_traps as parent of several different subtypes.
+
+"""
+abstract type SRH_model_with_traps               <: SRH_model               end
+
+abstract type SRH_model_traps_transient          <: SRH_model_with_traps    end
+
 
 
 """
 $(TYPEDEF)
-Abstract type for trap assisted bulk recombination model, i.e.
-only Schockley-Read-Hall recombination is used.
+This Datatype will be deleted soon.
 
 """
-abstract type bulk_recomb_model_trap_assisted <: bulk_recombination_model end
-
-
-"""
-$(TYPEDEF)
-Abstract type for only radiative recombination model.
-
-"""
-abstract type bulk_recomb_model_radiative <: bulk_recombination_model end
-
-
-"""
-$(TYPEDEF)
-Abstract type for full bulk recombination model.
-Currently, Schockley-Read-Hall, radiative and Auger are implemented.
-
-"""
-abstract type bulk_recomb_model_full <: bulk_recombination_model end
+abstract type SRH_2species_present_trap_dens <: abstract_SRH_model end
 
 ##########################################################
 ##########################################################
@@ -241,37 +244,6 @@ Abstract type for out of equilibrium calculations.
 
 """
 abstract type outOfEquilibrium <: calculation_type end
-
-
-"""
-$(TYPEDEF)
-
-Abstract type for out of equilibrium calculations with a trap density,
-see *On the Shockley-Read-Hall Model: Generation-Recombination in Semiconductors*
-in SIAM Journal on Applied Mathematics, Vol. 67, No. 4 (2007), pp. 1183-1201.
-
-"""
-abstract type outOfEquilibrium_trap <: outOfEquilibrium end
-
-"""
-$(TYPEDEF)
-
-Abstract type for out of equilibrium calculations with a trap density for stationary 
-simulations.
-
-"""
-abstract type outOfEquilibrium_trap_stationary <: outOfEquilibrium end
-
-"""
-$(TYPEDEF)
-
-Abstract type for out of equilibrium calculations with a trap density for stationary 
-simulations with only two species.
-
-"""
-abstract type outOfEquilibrium_trap_stationary_2_species <: outOfEquilibrium end
-
-
 
 ##########################################################
 ##########################################################
