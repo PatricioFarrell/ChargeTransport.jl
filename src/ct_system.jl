@@ -471,7 +471,6 @@ $(TYPEDFIELDS)
 """
 mutable struct ChargeTransportData
 
-    enable_traps                 :: ChargeTransportTraps
     ###############################################################
     ####                   model information                   ####
     ###############################################################
@@ -496,6 +495,11 @@ mutable struct ChargeTransportData
     enable_ion_vacancies         ::  ChargeTransportIonicChargeCarriers
 
     """
+    An AbstractVector which contains information on present SRH traps.
+    """
+    enable_traps                 ::  ChargeTransportTraps
+
+    """
     DataType which stores information about which inner interface model is chosen by user.
     """
     inner_interface_model        ::  DataType
@@ -516,17 +520,17 @@ mutable struct ChargeTransportData
     """
     A DataType for equilibrium or out of equilibrium calculations.
     """
-    calculation_type             :: DataType
+    calculation_type             ::  DataType
 
     """
     A DataType for transient or stationary calculations.
     """
-    model_type                   :: DataType
+    model_type                   ::  DataType
 
     """
     A DataType for for generation model.
     """
-    generation_model             :: DataType
+    generation_model             ::  DataType
 
     """
     An embedding parameter used to solve the nonlinear Poisson problem, which results
@@ -543,6 +547,38 @@ mutable struct ChargeTransportData
     An embedding parameter for electrochemical reaction.
     """
     λ3                           ::  Float64
+
+    ###############################################################
+    ####             Templates for DOS and BEE                 ####
+    ###############################################################
+
+    """
+    Within this template informations concerning the band-edge energy
+    of each carrier is stored locally. We have to due to the two point
+    flux approximation schemes.
+    """
+    tempBEE1                     ::  Array{Float64, 1}
+
+    """
+    Within this template informations concerning the band-edge energy
+    of each carrier is stored locally. We have to due to the two point
+    flux approximation schemes.
+    """
+    tempBEE2                     ::  Array{Float64, 1}
+
+    """
+    Within this template informations concerning the effective DOS
+    of each carrier is stored locally. We have to due to the two point
+    flux approximation schemes.
+    """
+    tempDOS1                     ::  Array{Float64, 1}
+
+    """
+    Within this template informations concerning the effective DOS
+    of each carrier is stored locally. We have to due to the two point
+    flux approximation schemes.
+    """
+    tempDOS2                     ::  Array{Float64, 1}
 
     ###############################################################
     ####        Quantities (for discontinuous solving)         ####
@@ -758,12 +794,10 @@ including the physical parameters are located.
 function ChargeTransportData(grid, numberOfCarriers)
 
     numberOfBoundaryRegions = grid[NumBFaceRegions]
-    numberOfRegions         = grid[NumCellRegions]
 
     ###############################################################
     data = ChargeTransportData()
 
-    data.enable_traps = ChargeTransportTraps()
     ###############################################################
     ####                   model information                   ####
     ###############################################################
@@ -782,8 +816,9 @@ function ChargeTransportData(grid, numberOfCarriers)
     # enable_ion_vacancies is a struct holding the input information
     data.enable_ion_vacancies    = enable_ion_vacancies(ionic_vacancies = [3], regions = [2])
 
-    data.inner_interface_model   = interface_model_none
+    data.enable_traps            = ChargeTransportTraps()
 
+    data.inner_interface_model   = interface_model_none
 
     # DA: do not like this. It is needed for the bflux, but working with integers seem to did not work ...
     grid_dimension               = ExtendableGrids.dim_space(grid)
@@ -814,10 +849,19 @@ function ChargeTransportData(grid, numberOfCarriers)
     data.λ3                       = 0.0                     # λ3: embedding parameter for electro chemical reaction
 
     ###############################################################
+    ####             Templates for DOS and BEE                 ####
+    ###############################################################
+
+    data.tempBEE1                 = spzeros(Float64, numberOfCarriers)
+    data.tempBEE2                 = spzeros(Float64, numberOfCarriers)
+    data.tempDOS1                 = spzeros(Float64, numberOfCarriers)
+    data.tempDOS2                 = spzeros(Float64, numberOfCarriers)
+    
+    ###############################################################
     ####        Quantities (for discontinuous solving)         ####
     ###############################################################
     data.isContinuous             = Array{Bool, 1}(undef, numberOfCarriers)
-    data.isContinuous            .= true
+    data.isContinuous            .= true  
     # default values for most simple case 
     data.chargeCarrierList        = collect(1:numberOfCarriers)
 
