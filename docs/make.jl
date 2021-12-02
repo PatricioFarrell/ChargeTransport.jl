@@ -9,14 +9,16 @@ makedocs(sitename ="ChargeTransportInSolids.jl",
          doctest  = false,
          authors  = "D. Abdel, P. Farrell, J. Fuhrmann",
          repo     = "https://github.com/PatricioFarrell/ChargeTransportInSolids.jl",
-         pages    = [ "ChargeTransportInSolids.jl -- A drift-diffusion solver" =>  "general.md",
-                      "Mathematical Description of the Problem" => "backgroundinfo.md",
-                      "Some Applications" => ["system.md", "examples/GaAs.md", "examples/PSC.md"],
-                      ##
-                      "Plotting Functions" => "plot.md"
-                      ]
+         pages    = Any[
+            "ChargeTransportInSolids.jl -- A drift-diffusion solver" =>  "general.md",
+            "Mathematical Description of the Problem" => "backgroundinfo.md",
+            "Some Applications" => ["GeneralInformation.md",
+                                    "examples/GaAs.md",
+                                    "examples/PSC.md"],
+            "Overview on Types and Constructors" => "allindex.md"
+            ]
          )
 
-# deploydocs(
-#     repo = "github.com/PatricioFarrell/ChargeTransportInSolids.jl.git",
-# )
+deploydocs(
+    repo = "github.com/PatricioFarrell/ChargeTransportInSolids.jl.git"
+)

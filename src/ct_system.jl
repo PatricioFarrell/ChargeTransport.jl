@@ -40,14 +40,16 @@ mutable struct ChargeTransportBulkRecombination
 
     """
     Auxiliary quantitiy for simulations with present trap density in Poisson, but without
-    traps as own unknowns. May be deleted in future versions.
+    traps as own unknowns. Note that this one may be deleted in future versions.
     """
-    SRH_2species_trap     ::  DataType 
+    model_SRH_2species_trap     ::  DataType 
     ChargeTransportBulkRecombination() = new()
 
 end
 
 """
+$(SIGNATURES)
+
 Corresponding constructor for the bulk recombination model.
 """
 function set_bulk_recombination(; iphin = 1, iphip = 2, 
@@ -67,13 +69,13 @@ function set_bulk_recombination(; iphin = 1, iphip = 2,
     # we need to have here a distinction, sincen Auger and radiative are zero if not defined due to predefinition.
     # but we need to here, before get information on which exact SRH, this Data Type will be adjusted, if user puts on: enable_traps ...
     if bulk_recomb_SRH == true
-        bulk_recombination.bulk_recomb_SRH   = SRH_model_stationary
+        bulk_recombination.bulk_recomb_SRH   = model_SRH_stationary
     else
-        bulk_recombination.bulk_recomb_SRH   = SRH_model_off
+        bulk_recombination.bulk_recomb_SRH   = model_SRH_off
     end
 
     # DA: will be deleted in future versions.
-    bulk_recombination.SRH_2species_trap     = SRH_model
+    bulk_recombination.model_SRH_2species_trap     = model_SRH
 
     return bulk_recombination
 
@@ -108,6 +110,8 @@ mutable struct ChargeTransportTraps
 end
 
 """
+$(TYPEDEF)
+
 Corresponding constructor for the present trap density and the respective regions.
 """
 function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
@@ -118,9 +122,9 @@ function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
     enable_traps.regions                    = regions
 
     if data.model_type == model_transient
-        data.bulk_recombination.bulk_recomb_SRH = SRH_model_traps_transient
+        data.bulk_recombination.bulk_recomb_SRH = model_SRH_traps_transient
     else
-        data.bulk_recombination.bulk_recomb_SRH = SRH_model_stationary
+        data.bulk_recombination.bulk_recomb_SRH = model_SRH_stationary
     end
 
     data.enable_traps = enable_traps
@@ -132,7 +136,7 @@ Corresponding constructor for the present trap density and the respective region
 Note that, this one will may be deleted in future versions.
 """
 function enable_traps!(data)
-    data.bulk_recombination.SRH_2species_trap = SRH_2species_present_trap_dens
+    data.bulk_recombination.model_SRH_2species_trap = model_SRH_2species_present_trap_dens
 end
 ###########################################################
 ###########################################################
@@ -142,8 +146,8 @@ $(TYPEDEF)
 
 A struct holding all information necessary on the ionic charge carriers.
 With help of this constructor we can read out the indices the user chooses for
-ionic vacancy quasi Fermi potentials and the respective regions in which they are
-defined.
+ionic charge carrier quasi Fermi potentials and the respective regions in which they are
+defined. Note that it is possible to use ions as well as ion vacancies.
 
 $(TYPEDFIELDS)
 
@@ -153,12 +157,12 @@ mutable struct ChargeTransportIonicChargeCarriers
     """
     Array with the indices of ionic charge carriers.
     """
-    ionic_vacancies       ::  Array{Int64, 1}
+    ionic_carriers       ::  Array{Int64, 1}
 
     """
     Corresponding regions where ionic charge carriers are assumed to be present.
     """
-    regions               ::  Array{Int64, 1}
+    regions              ::  Array{Int64, 1}
 
     ChargeTransportIonicChargeCarriers() = new()
 
@@ -168,12 +172,12 @@ end
 """
 Corresponding constructor for the present ionic charge carriers and the respective regions.
 """
-function enable_ion_vacancies(;ionic_vacancies = [3], regions = [2])
+function enable_ionic_carriers(;ionic_carriers = [3], regions = [2])
 
     enable_ions = ChargeTransportIonicChargeCarriers()
 
-    enable_ions.ionic_vacancies = ionic_vacancies
-    enable_ions.regions               = regions
+    enable_ions.ionic_carriers   = ionic_carriers
+    enable_ions.regions          = regions
 
     return enable_ions
     
@@ -202,7 +206,7 @@ mutable struct ChargeTransportParams
     numberOfNodes                ::  Int64
 
     """
-    number of regions ``\\mathbf{\\Omega}_k`` within the domain ``\\mathbf{\\Omega}``.
+    number of subregions ``\\mathbf{\\Omega}_k`` within the domain ``\\mathbf{\\Omega}``.
     """
     numberOfRegions              ::  Int64
 
@@ -219,15 +223,9 @@ mutable struct ChargeTransportParams
 
 
     """
-    number of present inner interface carriers.
+    number of present interface carriers which solely live on the boundary.
     """ 
     numberOfInterfaceCarriers    :: Int64
-
-
-    """
-    number of species we need for the numerics system.
-    """ 
-    numberOfSpeciesSystem        :: Int64
 
 
     ###############################################################
@@ -244,14 +242,6 @@ mutable struct ChargeTransportParams
     UT                           ::  Float64
 
     """
-    A reference energy, which is only used for numerical computations.
-    """
-    # DA: I think that, when using Schottky contacts we need to set the reference
-    # energy to the Fermi Level to get a physical reasonable electrostatic potential,
-    # but I am not sure yet and did not test it well ...
-    Eref                         ::  Float64
-
-    """
     The parameter of the Blakemore statistics.
     """
     γ                            ::  Float64
@@ -265,10 +255,6 @@ mutable struct ChargeTransportParams
     ###############################################################
     ####              number of boundary regions               ####
     ###############################################################
-    """
-    An array for the given applied voltages at the contacts.
-    """
-    contactVoltage               ::  Array{Float64,1}
 
     """
     An array for the given Schottky barriers at present Schotkky contacts.
@@ -289,13 +275,13 @@ mutable struct ChargeTransportParams
     ####    number of boundary regions x number of carriers    ####
     ###############################################################
     """
-    A 2D array with the corresponding boundary band-edge energy values
-    ``E_\\alpha`` for each carrier ``\\alpha``.
+    An array with the corresponding boundary band-edge energy values
+    ``E_\\alpha`` in each region for each carrier ``\\alpha``.
     """
     bBandEdgeEnergy              ::  Array{Float64,2}
  
     """
-    A 2D array with the corresponding boundary effective density of states values
+    An array with the corresponding boundary effective density of states values
     ``N_\\alpha`` for each carrier ``\\alpha``.
     """
     bDensityOfStates             ::  Array{Float64,2}
@@ -303,7 +289,7 @@ mutable struct ChargeTransportParams
 
     """
     A 2D array with the corresponding boundary mobility values `` \\mu_\\alpha``
-    for each carrier ``\\alpha``.
+    in each region for each carrier ``\\alpha``.
     """
     bMobility                    ::  Array{Float64,2}
 
@@ -417,7 +403,7 @@ end
 """
 $(TYPEDEF)
 
-A struct holding the physical nodal, i.e. space, dependent parameters for
+A struct holding the physical nodal, i.e. space-dependent parameters for
 a drift-diffusion simulation of a semiconductor device.
 
 $(TYPEDFIELDS)
@@ -485,14 +471,15 @@ mutable struct ChargeTransportData
     boundary_type                ::  Array{DataType, 1}  
 
     """
-    A DataType for the bulk recombination model.
+    A struct containing information concerning the bulk recombination model.
     """
     bulk_recombination           ::  ChargeTransportBulkRecombination
 
     """
-    An AbstractVector which contains information on the regions, where ion vacancies are present.
+    A struct which contains information on the regions, where ionic charge carriers
+    (ions and/or ion vacancies) are present.
     """
-    enable_ion_vacancies         ::  ChargeTransportIonicChargeCarriers
+    enable_ionic_carriers        ::  ChargeTransportIonicChargeCarriers
 
     """
     An AbstractVector which contains information on present SRH traps.
@@ -501,13 +488,9 @@ mutable struct ChargeTransportData
 
     """
     DataType which stores information about which inner interface model is chosen by user.
+    This quantity cannot be seen by the user and is needed for the core of package.
     """
     inner_interface_model        ::  DataType
-
-    """
-    DataType which stores information on grid dimension.
-    """
-    grid_dimension               ::  DataType
 
     ###############################################################
     ####                 Numerics information                  ####
@@ -533,8 +516,9 @@ mutable struct ChargeTransportData
     generation_model             ::  DataType
 
     """
-    An embedding parameter used to solve the nonlinear Poisson problem, which results
-    in the case of thermodynamic equilibrium and electrocharge neutrality.
+    An embedding parameter used to solve the nonlinear Poisson problem, which corresponds
+    for λ1 = 0 to the case of thermodynamic equilibrium and electrocharge neutrality and
+    for λ1 = 1 to the case of thermodynamic equilibrium.
     """
     λ1                           ::  Float64
 
@@ -554,29 +538,25 @@ mutable struct ChargeTransportData
 
     """
     Within this template informations concerning the band-edge energy
-    of each carrier is stored locally. We have to due to the two point
-    flux approximation schemes.
+    of each carrier is stored locally which saves allocations.
+    We have two of such templates due to the two point flux approximation schemes.
     """
     tempBEE1                     ::  Array{Float64, 1}
 
     """
-    Within this template informations concerning the band-edge energy
-    of each carrier is stored locally. We have to due to the two point
-    flux approximation schemes.
+    see the description of tempBEE1
     """
     tempBEE2                     ::  Array{Float64, 1}
 
     """
     Within this template informations concerning the effective DOS
-    of each carrier is stored locally. We have to due to the two point
-    flux approximation schemes.
+    of each carrier is stored locally which saves allocations.
+    We have two of such templates due to the two point flux approximation schemes.
     """
     tempDOS1                     ::  Array{Float64, 1}
 
     """
-    Within this template informations concerning the effective DOS
-    of each carrier is stored locally. We have to due to the two point
-    flux approximation schemes.
+    see the desciption of tempDOS2
     """
     tempDOS2                     ::  Array{Float64, 1}
 
@@ -586,8 +566,9 @@ mutable struct ChargeTransportData
 
     """
     An array which contains information on whether charge carriers
-    is continuous or discontinuous.
-    This is needed for building the AbstractQuantities.
+    are continuous or discontinuous.
+    This is needed for building the AbstractQuantities which handle the
+    indices of charge carriers on different regions.
     """
     isContinuous                 :: Array{Bool, 1}
 
@@ -682,21 +663,18 @@ function ChargeTransportParams(grid, numberOfCarriers)
     params.numberOfBoundaryRegions      = numberOfBoundaryRegions
     params.numberOfCarriers             = numberOfCarriers
     params.numberOfInterfaceCarriers    = 0
-    params.numberOfSpeciesSystem        = numberOfCarriers + 1
 
     ###############################################################
     ####                     real numbers                      ####
     ###############################################################
     params.temperature                  = 300 * K                 
     params.UT                           = (kB * 300 * K ) / q     # thermal voltage
-    params.Eref                         = 0.0                     # reference energy
     params.γ                            = 0.27                    # parameter for Blakemore statistics
     params.r0                           = 0.0                     # r0 prefactor electro-chemical reaction
 
     ###############################################################
     ####              number of boundary regions               ####
     ###############################################################
-    params.contactVoltage               = spzeros(Float64, numberOfBoundaryRegions)
     params.SchottkyBarrier              = spzeros(Float64, numberOfBoundaryRegions) 
     
     ###############################################################
@@ -787,8 +765,9 @@ end
 $(TYPEDSIGNATURES)
 
 Simplified constructor for ChargeTransportData which only takes the grid
-and the numberOfCarriers as argument. Here all necessary information
-including the physical parameters are located.
+and the numberOfCarriers as argument. Here, all necessary information
+including the physical parameters, but also some numerical information
+are located.
     
 """
 function ChargeTransportData(grid, numberOfCarriers)
@@ -813,34 +792,17 @@ function ChargeTransportData(grid, numberOfCarriers)
         data.boundary_type[ii]    = interface_model_none
     end
 
-    # enable_ion_vacancies is a struct holding the input information
-    data.enable_ion_vacancies    = enable_ion_vacancies(ionic_vacancies = [3], regions = [2])
+    # enable_ionic_carriers is a struct holding the input information
+    data.enable_ionic_carriers    = enable_ionic_carriers(ionic_carriers = [3], regions = [2])
 
-    data.enable_traps            = ChargeTransportTraps()
+    data.enable_traps             = ChargeTransportTraps()
 
-    data.inner_interface_model   = interface_model_none
-
-    # DA: do not like this. It is needed for the bflux, but working with integers seem to did not work ...
-    grid_dimension               = ExtendableGrids.dim_space(grid)
-
-    if grid_dimension == 1
-
-        data.grid_dimension      = OneD_grid
-
-    elseif grid_dimension == 2
-        
-        data.grid_dimension      = TwoD_grid
-
-    elseif grid_dimension == 3
-
-        data.grid_dimension      = ThreeD_grid
-
-    end
-
+    data.inner_interface_model    = interface_model_none
+    
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
-    data.flux_approximation       = ScharfetterGummel
+    data.flux_approximation       = scharfetter_gummel
     data.calculation_type         = inEquilibrium           # do performances inEquilibrium or outOfEquilibrium
     data.model_type               = model_stationary        # indicates if we need additional time dependent part
     data.generation_model         = generation_none         # generation model
@@ -947,11 +909,11 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
     if data.params.numberOfCarriers > 2 # when ionic vacancies are present
 
         # get the ion vacancy indices by user input which where parsed into the struct
-        # data.enable_ion_vacancies
-        ionic_vacancies = data.enable_ion_vacancies.ionic_vacancies
+        # data.enable_ionic_carriers
+        ionic_carriers = data.enable_ionic_carriers.ionic_carriers
 
-        for icc ∈ ionic_vacancies # Then, ion vacancies only present in user defined layers, i.e. adjust previous specification
-            enable_species!(ctsys.fvmsys, icc, data.enable_ion_vacancies.regions) 
+        for icc ∈ ionic_carriers # Then, ion vacancies only present in user defined layers, i.e. adjust previous specification
+            enable_species!(ctsys.fvmsys, icc, data.enable_ionic_carriers.regions) 
         end
     end
 
@@ -992,21 +954,21 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_discon
         end
 
     else # ions are present
-        ionic_vacancies = data.enable_ion_vacancies.ionic_vacancies
+        ionic_carriers = data.enable_ionic_carriers.ionic_carriers
 
         for icc in 1:data.params.numberOfCarriers # Integers
 
             if data.isContinuous[icc] == false # discontinuous quantity
-                if icc ∈ ionic_vacancies # ionic quantity
-                    data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, data.enable_ion_vacancies.regions, id = icc)
+                if icc ∈ ionic_carriers # ionic quantity
+                    data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, data.enable_ionic_carriers.regions, id = icc)
                 else
                     data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
                 end
 
             elseif data.isContinuous[icc] == true # continuous quantity
 
-                if icc ∈ ionic_vacancies  # ionic quantity
-                    data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, data.enable_ion_vacancies.regions, id = icc)
+                if icc ∈ ionic_carriers  # ionic quantity
+                    data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, data.enable_ionic_carriers.regions, id = icc)
                 else
                     data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
                 end
@@ -1029,9 +991,6 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_discon
 
     # add the defined physics to system
     physics!(fvmsys, physics)
-
-    # numberOfSpecies within system changes since we consider discontinuous quasi Fermi potentials
-    data.params.numberOfSpeciesSystem = VoronoiFVM.num_species(fvmsys)
 
     ctsys.fvmsys = fvmsys
     ctsys.data   = data

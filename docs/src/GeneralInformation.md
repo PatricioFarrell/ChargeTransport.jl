@@ -1,0 +1,3 @@
+# [General Information on Code Structure] (@id generalDescription)
+
+... insert here a mindmap ......

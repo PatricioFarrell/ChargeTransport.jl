@@ -41,7 +41,7 @@ function plot_densities(Plotter, grid, data, sol, title, ;plotGridpoints=false)
     iphin     = data.bulk_recombination.iphin
     iphip     = data.bulk_recombination.iphip
     # DA: Caution!!! This can cause problems when plotting!!
-    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+    ionic_vac = 3:4#data.enable_ionic_carriers.ionic_carriers
 
     colors[iphin]     = "green";            linestyles[iphin]     = "-";          densityNames[iphin]     = "n"
     colors[iphip]     = "red";              linestyles[iphip]     = ":";          densityNames[iphip]     = "p"
@@ -189,7 +189,7 @@ function plot_energies(Plotter, grid, data, sol, title, ;plotGridpoints=false)
     iphin     = data.bulk_recombination.iphin
     iphip     = data.bulk_recombination.iphip
     # DA: Caution!!! This can cause problems when plotting!!
-    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+    ionic_vac = 3:4#data.enable_ionic_carriers.ionic_carriers
 
     colors[iphin]     = "green";            linestyles[iphin]     = "-";          labelBandEdgeEnergy[iphin]     = "\$E_c-q\\psi\$"; labelPotential[iphin] = "\$ - q \\varphi_n\$"
     colors[iphip]     = "red";              linestyles[iphip]     = ":";          labelBandEdgeEnergy[iphip]     = "\$E_v-q\\psi\$"; labelPotential[iphip] = "\$ - q \\varphi_n\$"
@@ -269,7 +269,7 @@ function plot_energies(Plotter, grid::ExtendableGrid, data)
     iphin     = data.bulk_recombination.iphin
     iphip     = data.bulk_recombination.iphip
     # DA: Caution!!! This can cause problems when plotting!!
-    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+    ionic_vac = 3:4#data.enable_ionic_carriers.ionic_carriers
 
     colors[iphin]     = "green";            styles[iphin]     = "-";          EnergyNames[iphin]     = "\$E_c\$";
     colors[iphip]     = "red";              styles[iphip]     = ":";          EnergyNames[iphip]     = "\$E_v\$"
@@ -351,7 +351,7 @@ function plot_doping(Plotter, g::ExtendableGrid, data::ChargeTransportData)
     iphin     = data.bulk_recombination.iphin
     iphip     = data.bulk_recombination.iphip
     # DA: Caution!!! This can cause problems when plotting!!
-    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+    ionic_vac = 3:4#data.enable_ionic_carrierss.ionic_carriers
 
     colors[iphin]     = "green";            styles[iphin]     = "-";          densityNames[iphin]     = "n";
     colors[iphip]     = "red";              styles[iphip]     = ":";          densityNames[iphip]     = "p"
@@ -488,14 +488,14 @@ function plot_solution(Plotter, grid, data, solution, title, ;plotGridpoints=fal
     iphin     = data.bulk_recombination.iphin
     iphip     = data.bulk_recombination.iphip
     # DA: Caution!!! This can cause problems when plotting!!
-    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+    ionic_vac = 3:4#data.enable_ionic_carriers.ionic_carriers
 
     colors[iphin]     = "green";            linestyles[iphin]     = "--";       densityNames[iphin]     = "\$\\varphi_n\$"
     colors[iphip]     = "red";              linestyles[iphip]     = "-.";       densityNames[iphip]     = "\$\\varphi_p\$"
     colors[ionic_vac] = ["gold", "purple"]; linestyles[ionic_vac] = ["-", ":"]; densityNames[ionic_vac] = ["\$\\varphi_a\$", "\$\\varphi_c\$"]
 
     Plotter.clf() 
-    Plotter.plot(coord, (solution[ipsi,:] + data.params.Eref/q*ones(length(solution[ipsi,:]))), marker = marker, label = "\$\\psi\$", color="b", linewidth= 3)
+    Plotter.plot(coord, solution[ipsi,:], marker = marker, label = "\$\\psi\$", color="b", linewidth= 3)
 
     for icc in 1:data.params.numberOfCarriers
         Plotter.plot(coord./1, solution[icc,:], label =  densityNames[icc], marker = marker, color= colors[icc], linestyle = linestyles[icc], linewidth= 3)
@@ -511,7 +511,7 @@ function plot_solution(Plotter, grid, data, solution, title, ;plotGridpoints=fal
 
 end
 
-function plot_solution(Plotter, grid, solution, Eref, agrid, t, Δu)
+function plot_solution(Plotter, grid, solution, agrid, t, Δu)
 
 
     # Create a visualizer. Works with Plots (fast once compiled) and PyPlot
@@ -526,14 +526,14 @@ function plot_solution(Plotter, grid, solution, Eref, agrid, t, Δu)
     iphin     = data.bulk_recombination.iphin
     iphip     = data.bulk_recombination.iphip
     # DA: Caution!!! This can cause problems when plotting!!
-    ionic_vac = 3:4#data.enable_ion_vacancies.ionic_vacancies
+    ionic_vac = 3:4#data.enable_ionic_carriers.ionic_carriers
 
     colors[iphin]     = "green";            linestyles[iphin]     = "--";       densityNames[iphin]     = "\$\\varphi_n\$"
     colors[iphip]     = "red";              linestyles[iphip]     = "-.";       densityNames[iphip]     = "\$\\varphi_p\$"
     colors[ionic_vac] = ["gold", "purple"]; linestyles[ionic_vac] = ["-", ":"]; densityNames[ionic_vac] = ["\$\\varphi_a\$", "\$\\varphi_c\$"]
     
     Plotter.clf() 
-    scalarplot!(p[1,1], grid, (solution[ipsi,:] + Eref/q*ones(length(solution[ipsi,:]))), label = "\$\\psi\$", color="b",  marker = "x", 
+    scalarplot!(p[1,1], grid, solution[ipsi,:], label = "\$\\psi\$", color="b",  marker = "x", 
     title="time \$ t =\$ $t, bias \$\\Delta u\$ = $Δu", clear = true)
 
     for icc in [iphin, iphip]

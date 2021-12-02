@@ -29,8 +29,6 @@ export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk, Fe
 
 include("ct_datatypes.jl")
 
-export grid_dimension, OneD_grid, TwoD_grid, ThreeD_gride
-
 export boundary_model, ohmic_contact, schottky_contact
 export interface_model, interface_model_none, interface_model_surface_recombination, interface_model_ion_charge, interface_model_tangential_flux, interface_model_surface_recombination_and_tangential_flux
 
@@ -38,16 +36,17 @@ export interface_model_discont_qF
 
 export model_type, model_transient, model_stationary
 
-export abstract_SRH_model, SRH_model, SRH_model_off, SRH_model_without_traps, SRH_model_without_traps_stationary, SRH_model_with_traps,  SRH_model_traps_transient
+export abstract_model_SRH, model_SRH, model_SRH_off, model_SRH_without_traps, model_SRH_without_traps_stationary, model_SRH_with_traps,  model_SRH_traps_transient
 
-export SRH_2species_present_trap_dens
+export model_SRH_2species_present_trap_dens
+
+export inEquilibrium, outOfEquilibrium
 ##################################################################
 
 include("ct_physics.jl")
 
-export ScharfetterGummel, excessChemicalPotential, diffusionEnhanced, generalized_SG 
-export inEquilibrium, outOfEquilibrium
-export ScharfetterGummel_Graded, excessChemicalPotential_Graded
+export scharfetter_gummel, excess_chemical_potential, diffusion_enhanced, generalized_sg 
+export scharfetter_gummel_graded, excess_chemical_potential_graded
 export generation_model, generation_none, generation_beer_lambert, generation_uniform
 export breaction!, bstorage!, reaction!, storage!, flux!
 
@@ -56,7 +55,7 @@ export breaction!, bstorage!, reaction!, storage!, flux!
 include("ct_system.jl")
 
 export ChargeTransportParams, ChargeTransportParamsNodal, ChargeTransportData, ChargeTransportSystem
-export ChargeTransportBulkRecombination, set_bulk_recombination, ChargeTransportIonicChargeCarriers, enable_ion_vacancies
+export ChargeTransportBulkRecombination, set_bulk_recombination, ChargeTransportIonicChargeCarriers, enable_ionic_carriers
 export equilibrium_solve!
 export set_ohmic_contact!, set_schottky_contact!
 export compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi

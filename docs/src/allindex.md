@@ -1,21 +1,23 @@
-# Index
-
+# Overview -- Types, Constructors and Methods
 ## Types and Constructors
 ```@index
 Modules = [ChargeTransportInSolids]
 Order=[:type]
 ```
-
-## Constants
-
+## Methods
 ```@index
 Modules = [ChargeTransportInSolids]
-Order=[:constant]
+Order=[:function]
 ```
 
+# Description of Types, Constructors and Methods
+## Types and Constructors
+```@autodocs
+Modules = [ChargeTransportInSolids]
+Order=[:type]
+```
 ## Methods
-
-```@index
+```@autodocs
 Modules = [ChargeTransportInSolids]
 Order=[:function]
 ```

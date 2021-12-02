@@ -528,14 +528,12 @@ for each boundary the flux within the boundary.
 """
 bflux!(f, u, bedge, data) = bflux!(f, u, bedge, data, data.calculation_type)
 
-"""
-In case of equilibrium, the bflux shall not enter.
-"""
+
+# In case of equilibrium, the bflux shall not enter.
 bflux!(f, u, bedge, data, ::Type{inEquilibrium})                         = emptyFunction()
 
-"""
-Out of equilibrium, we need to additionally check for boundary type.
-"""
+
+# Out of equilibrium, we need to additionally check for boundary type.
 bflux!(f, u, bedge, data, ::Type{outOfEquilibrium})                      = bflux!(f, u, bedge, data, data.boundary_type[bedge.region])
 
 bflux!(f, u, bedge, data, ::Type{interface_model_none})                  = emptyFunction()
@@ -545,10 +543,8 @@ bflux!(f, u, bedge, data, ::Type{schottky_contact})                      = empty
 bflux!(f, u, bedge, data, ::Type{interface_model_surface_recombination}) = emptyFunction()
 
 
-"""
-Cases, where we have a tangential flux.
-"""
 
+# Cases, where we have a tangential flux.
 bflux!(f, u, bedge, data, ::Type{interface_model_surface_recombination_and_tangential_flux}) = bflux!(f, u, bedge, data, data.flux_approximation)
 
 bflux!(f, u, bedge, data, ::Type{interface_model_tangential_flux}) = bflux!(f, u, bedge, data, data.flux_approximation)
@@ -560,7 +556,7 @@ $(TYPEDSIGNATURES)
 The excess chemical potential flux discretization scheme for inner boundaries.
 
 """
-function bflux!(f, u, bedge, data, ::Type{excessChemicalPotential})
+function bflux!(f, u, bedge, data, ::Type{excess_chemical_potential})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -664,7 +660,7 @@ $(TYPEDSIGNATURES)
 SRH kernel for case of non-existing rate.
 
 """
-function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{SRH_model_off})
+function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{model_SRH_off})
 
     return 0.0
 
@@ -675,7 +671,7 @@ $(TYPEDSIGNATURES)
 SRH kernel for case of using stationary formula, i.e. case where no present traps are assumed.
 
 """
-function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{SRH_model_stationary})
+function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{model_SRH_stationary})
 
     return  1.0 / (  data.params.recombinationSRHLifetime[iphip, ireg] * (n + data.params.recombinationSRHTrapDensity[iphin, ireg]) + data.params.recombinationSRHLifetime[iphin, ireg] * (p + data.params.recombinationSRHTrapDensity[iphip, ireg]) )
 
@@ -734,7 +730,7 @@ function addChargeCarriers!(f, u, node, data, ipsi, iphin, iphip, n, p)
 
 end
 
-function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}) where T<:SRH_model_without_traps
+function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}) where T<:model_SRH_without_traps
 
     ireg        = node.region
 
@@ -755,7 +751,7 @@ function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::
     return f
 end
 
-function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{SRH_model_traps_transient})
+function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{model_SRH_traps_transient})
 
     params      = data.params
     ireg        = node.region
@@ -807,14 +803,14 @@ without modeling traps as own charge carrier.
 Note that this one may be deleted in future version.
 
 """
-addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p) = addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, data.bulk_recombination.SRH_2species_trap)
+addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p) = addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, data.bulk_recombination.model_SRH_2species_trap)
 
 
-function addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}) where T<:SRH_model
+function addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}) where T<:model_SRH
     return
 end
 
-function addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{SRH_2species_present_trap_dens})
+function addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{model_SRH_2species_present_trap_dens})
 
     params = data.params
     ireg   = node.region
@@ -906,7 +902,7 @@ Compute trap densities for a given trap energy.
 function trap_density!(icc, ireg, data, Et) 
     params      = data.params
 
-    params.densityOfStates[icc, ireg] * exp( params.chargeNumbers[icc] * (params.bandEdgeEnergy[icc, ireg] - Et) / (kB * params.temperature)) # need to subtract Eref
+    params.densityOfStates[icc, ireg] * exp( params.chargeNumbers[icc] * (params.bandEdgeEnergy[icc, ireg] - Et) / (kB * params.temperature))
 end
 
 
@@ -1026,7 +1022,7 @@ The classical Scharfetter-Gummel flux scheme. This also works for space-dependen
 not for space-dependent effective DOS.
 
 """
-function flux!(f, u, edge, data, ::Type{ScharfetterGummel})
+function flux!(f, u, edge, data, ::Type{scharfetter_gummel})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -1070,7 +1066,7 @@ possible space-dependent DOS and band-edge energies. For these parameters
 the discretization scheme is modified. [insert continuous flux etc ...]
 
 """
-function flux!(f, u, edge, data, ::Type{ScharfetterGummel_Graded})
+function flux!(f, u, edge, data, ::Type{scharfetter_gummel_graded})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -1121,7 +1117,7 @@ The excess chemical potential flux discretization scheme. This also works for sp
 not for space-dependent effective DOS.
 
 """
-function flux!(f, u, edge, data, ::Type{excessChemicalPotential})
+function flux!(f, u, edge, data, ::Type{excess_chemical_potential})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -1168,7 +1164,7 @@ possible space-dependent DOS and band-edge energies. For these parameters
 the discretization scheme is modified. [insert continuous flux etc ...]
 
 """
-function flux!(f, u, edge, data, ::Type{excessChemicalPotential_Graded})
+function flux!(f, u, edge, data, ::Type{excess_chemical_potential_graded})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -1225,7 +1221,7 @@ used for the regularization of the removable singularity. This also works for sp
 not for space-dependent effective DOS.
 
 """
-function flux!(f, u, edge, data, ::Type{diffusionEnhanced})
+function flux!(f, u, edge, data, ::Type{diffusion_enhanced})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -1281,7 +1277,7 @@ This also works for space-dependent band-edge energy, but
 not for space-dependent effective DOS.
 
 """
-function flux!(f, u, edge, data, ::Type{generalized_SG})
+function flux!(f, u, edge, data, ::Type{generalized_sg})
 
     params        =   data.params
     paramsnodal   =   data.paramsnodal

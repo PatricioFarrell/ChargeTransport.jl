@@ -1,26 +1,16 @@
-##########################################################
-##########################################################
-
-abstract type grid_dimension end
-
-abstract type OneD_grid <: grid_dimension end
-
-abstract type TwoD_grid <: grid_dimension end
-
-abstract type ThreeD_grid <: grid_dimension end
 
 ##########################################################
 ##########################################################
 """
 $(TYPEDEF)
-Abstract type for boundary model.
+Abstract type for boundary model. Subtypes are ohmic_contact, schottky_contact
+and interface_model.
 
 """
 abstract type boundary_model   end 
 
 ############    outer boundary conditions     ############
 """
-$(TYPEDEF)
 Abstract type for ohmic contacts as boundary model.
 
 """
@@ -28,7 +18,6 @@ abstract type ohmic_contact <: boundary_model  end
 
 
 """
-$(TYPEDEF)
 Abstract type for schottky contacts as boundary model.
 
 """
@@ -38,7 +27,7 @@ abstract type schottky_contact <: boundary_model end
 """
 $(TYPEDEF)
 Abstract type for interface model which
-is part of boundary model.
+is part of boundary model. Subtypes are given below.
 
 """
 abstract type interface_model <: boundary_model end
@@ -85,37 +74,39 @@ abstract type interface_model_ion_charge <: interface_model end
 """
 $(TYPEDEF)
 Abstract type for SRH bulk recombination model
-(Note that this one will be deleted in future versions).
+
+    !!! compat  
+    This one will be removed in future versions.
 
 """
-abstract type abstract_SRH_model end
-
-"""
-$(TYPEDEF)
-SRH_model as parent of several different subtypes.
-
-"""
-abstract type SRH_model                          <: abstract_SRH_model      end
-
+abstract type abstract_model_SRH end
 
 """
 $(TYPEDEF)
-SRH_model_without_traps as parent of several different subtypes.
+model_SRH as parent of several different subtypes.
 
 """
-abstract type SRH_model_without_traps            <: SRH_model               end
+abstract type model_SRH                          <: abstract_model_SRH      end
 
-abstract type SRH_model_stationary               <: SRH_model_without_traps end
-abstract type SRH_model_off                      <: SRH_model_without_traps end
 
 """
 $(TYPEDEF)
-SRH_model_with_traps as parent of several different subtypes.
+model_SRH_without_traps as parent of several different subtypes.
 
 """
-abstract type SRH_model_with_traps               <: SRH_model               end
+abstract type model_SRH_without_traps            <: model_SRH               end
 
-abstract type SRH_model_traps_transient          <: SRH_model_with_traps    end
+abstract type model_SRH_stationary               <: model_SRH_without_traps end
+abstract type model_SRH_off                      <: model_SRH_without_traps end
+
+"""
+$(TYPEDEF)
+model_SRH_with_traps as parent of several different subtypes.
+
+"""
+abstract type model_SRH_with_traps               <: model_SRH               end
+
+abstract type model_SRH_traps_transient          <: model_SRH_with_traps    end
 
 
 
@@ -124,7 +115,7 @@ $(TYPEDEF)
 This Datatype will be deleted soon.
 
 """
-abstract type SRH_2species_present_trap_dens <: abstract_SRH_model end
+abstract type model_SRH_2species_present_trap_dens <: abstract_model_SRH end
 
 ##########################################################
 ##########################################################
@@ -168,17 +159,18 @@ Choose this one, when the Boltzmann statistics function is
 chosen as statistics.
 
 """
-abstract type ScharfetterGummel <: flux_approximation end
+abstract type scharfetter_gummel <: flux_approximation end
 
 
 """
 $(TYPEDEF)
 Abstract type for Scharfetter-Gummel flux discretization for graded
-effective density of states and/or graded band-edge energies, i.e.
-when this two quantities are assumed to be space-dependent.
+effective density of states and/or graded band-edge energies. This means,
+use this flux when at least one of these quantities
+is assumed to be space-dependent.
 
 """
-abstract type ScharfetterGummel_Graded <: flux_approximation end
+abstract type scharfetter_gummel_graded <: flux_approximation end
 
 
 """
@@ -186,16 +178,17 @@ $(TYPEDEF)
 Abstract type for excess chemical potential flux discretization.
 
 """
-abstract type excessChemicalPotential <: flux_approximation end
+abstract type excess_chemical_potential <: flux_approximation end
 
 """
 $(TYPEDEF)
 Abstract type for excess chemical potential flux discretization
 for graded effective density of states and/or graded band-edge 
-energies, i.e. when this two quantities are assumed to be space-dependent.
+energies. This means, use this flux when at least one of these quantities
+is assumed to be space-dependent.
 
 """
-abstract type excessChemicalPotential_Graded <: flux_approximation end
+abstract type excess_chemical_potential_graded <: flux_approximation end
 
 
 """
@@ -203,7 +196,7 @@ $(TYPEDEF)
 Abstract type for diffusion enhanced flux discretization.
 
 """
-abstract type diffusionEnhanced <: flux_approximation end
+abstract type diffusion_enhanced <: flux_approximation end
 
 
 """
@@ -214,7 +207,7 @@ solved and is exact for all Blakemore type statistics functions with
 abritary γ.
 
 """
-abstract type generalized_SG <: flux_approximation end
+abstract type generalized_sg <: flux_approximation end
 
 ##########################################################
 ##########################################################

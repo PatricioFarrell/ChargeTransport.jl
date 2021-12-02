@@ -5,10 +5,3 @@ the plot methods defined in this package have as their first argument the module
 the plotting package used.
 
 Currently, only PyPlot was tested.
-
-## API for Plotting methods
-```@autodocs
-Modules = [ChargeTransportInSolids]
-Pages = ["ct_plotting.jl"]
-Order = [:function]
-```

@@ -233,9 +233,9 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundary_type[bregionAcceptor] = ohmic_contact                       
     data.boundary_type[bregionDonor]    = ohmic_contact   
     
-    # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
-    # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
-    data.flux_approximation             = excessChemicalPotential
+    # Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
+    # excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
+    data.flux_approximation             = excess_chemical_potential
 
     if test == false
         println("*** done\n")

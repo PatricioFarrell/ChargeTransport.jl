@@ -287,9 +287,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundary_type[bregionDonor]    = schottky_contact   
     data.boundary_type[bregionAcceptor] = schottky_contact       
      
-    # Following choices are possible for the flux_discretization scheme: ScharfetterGummel, ScharfetterGummel_Graded,
-    # excessChemicalPotential, excessChemicalPotential_Graded, diffusionEnhanced, generalized_SG
-    data.flux_approximation             = ScharfetterGummel_Graded
+    # Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
+    # excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
+    data.flux_approximation             = scharfetter_gummel_graded
     
     ################################################################################
     if test == false
