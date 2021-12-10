@@ -347,9 +347,27 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
         ################################################################################
         println("Plot electroneutral potential, band-edge energies and doping")
         ################################################################################
-        plot_energies(Plotter, grid, data)
+        ##### set legend for plotting routines #####
+        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+        label_BEE      = Array{String, 1}(undef, numberOfCarriers)    # band-edge energie parameters
+        label_density  = Array{String, 1}(undef, numberOfCarriers)
+        label_solution = Array{String, 1}(undef, numberOfCarriers)
+
+        # for electrons 
+        label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"; label_BEE[iphin] = "\$E_c\$"
+        label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
+
+        # for holes 
+        label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"; label_BEE[iphip] = "\$E_v\$"
+        label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
+
+        # for anion vacancy 
+        label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"; label_BEE[iphia] = "\$E_a\$"
+        label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
+        ##### set legend for plotting routines #####
+        plot_energies(Plotter, grid, data, label_BEE)
         Plotter.figure()
-        plot_doping(Plotter, grid, data)
+        plot_doping(Plotter, grid, data, label_density)
         Plotter.figure()
         println("*** done\n")
     end
@@ -402,11 +420,11 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     initialGuess         .= solution 
 
     if plotting 
-        plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        plot_densities(Plotter, grid, data, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        plot_solution(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
     if test == false
@@ -474,11 +492,11 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     #res = [biasValues IV];
 
     if plotting 
-        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
     testval = solution[4, 15] # ipsi has index 4. here a solution val of ipsi is used as test val.

@@ -133,7 +133,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # initialize ChargeTransportData instance and fill in data
     data                                = ChargeTransportData(grid, numberOfCarriers)
-    ipsi                                = data.indexPsi
+    ipsi                                = data.index_psi
 
     # set stationary model
     data.model_type                     = model_stationary
@@ -290,11 +290,28 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("*** done\n")
 
     if plotting 
-        plot_energies(Plotter, grid, data, solution, "equilibrium")
+        ##### set legend for plotting routines #####
+        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+        label_density  = Array{String, 1}(undef, numberOfCarriers)
+        label_solution = Array{String, 1}(undef, numberOfCarriers)
+
+        # for electrons 
+        label_energy[1, iphin] = "\$E_c-q\\psi\$";       label_energy[2, iphin] = "\$ - q \\varphi_n\$"
+        label_density[iphin]   = "n";                    label_solution[iphin]  = "\$ \\varphi_n\$"
+
+        # for holes 
+        label_energy[1, iphip] = "\$E_v-q\\psi\$";       label_energy[2, iphip] = "\$ - q \\varphi_p\$"
+        label_density[iphip]   = "p";                    label_solution[iphip]  = "\$ \\varphi_p\$"
+
+        # for traps 
+        label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
+        label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
+        ##### set legend for plotting routines #####
+        plot_energies(Plotter, grid, data, solution, "Equilibrium", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"equilibrium")
+        plot_densities(Plotter, grid, data, solution,"Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "equilibrium")
+        plot_solution(Plotter, grid, data, solution, "Equilibrium", label_solution)
     end
 
     ################################################################################
@@ -353,11 +370,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
      # plot solution and IV curve
     if plotting 
-        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$")
+        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$")
+        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$")
+        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_solution)
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
         Plotter.figure()
@@ -420,11 +437,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # plot solution and IV curve
     # if plotting 
-    #     plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$")
+    #     plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_energy)
     #     Plotter.figure()
-    #     plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$")
+    #     plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_density)
     #     Plotter.figure()
-    #     plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$")
+    #     plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_solution)
     #     Plotter.figure()
     #     plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
     # end

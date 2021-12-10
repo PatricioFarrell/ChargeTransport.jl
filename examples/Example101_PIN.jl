@@ -252,10 +252,25 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ################################################################################
         println("Plot electroneutral potential, band-edge energies and doping")
         ################################################################################
+        ##### set legend for plotting routines #####
+        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+        label_BEE      = Array{String, 1}(undef, numberOfCarriers)    # band-edge energie parameters
+        label_density  = Array{String, 1}(undef, numberOfCarriers)
+        label_solution = Array{String, 1}(undef, numberOfCarriers)
+
+        # for electrons 
+        label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"; label_BEE[iphin] = "\$E_c\$"
+        label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
+
+        # for holes 
+        label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"; label_BEE[iphip] = "\$E_v\$"
+        label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
+        ##### set legend for plotting routines #####
+
         psi0 = electroNeutralSolution!(grid, data)
-        plot_energies(Plotter, grid, data)
+        plot_energies(Plotter, grid, data, label_BEE)
         Plotter.figure()
-        plot_doping(Plotter, grid, data)
+        plot_doping(Plotter, grid, data, label_density)
         Plotter.figure()
         plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=true)
         Plotter.figure()
@@ -350,11 +365,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # plot solution and IV curve
     if plotting
-        plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = false)
+        plot_energies(Plotter, grid, data, solution,  "Applied voltage Δu = $(biasValues[end])", label_energy,   plotGridpoints = false)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
+        plot_solution(Plotter, grid, data, solution,  "Applied voltage Δu = $(biasValues[end])", label_solution, plotGridpoints = true)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
+        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
     end
