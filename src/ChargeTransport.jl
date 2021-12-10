@@ -54,8 +54,8 @@ export breaction!, bstorage!, reaction!, storage!, flux!
 
 include("ct_system.jl")
 
-export ChargeTransportParams, ChargeTransportParamsNodal, ChargeTransportData, ChargeTransportSystem
-export ChargeTransportBulkRecombination, set_bulk_recombination, ChargeTransportIonicChargeCarriers, enable_ionic_carriers
+export Params, ParamsNodal, Data, System
+export BulkRecombination, set_bulk_recombination, IonicChargeCarriers, enable_ionic_carriers
 export equilibrium_solve!
 export set_ohmic_contact!, set_schottky_contact!
 export compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
