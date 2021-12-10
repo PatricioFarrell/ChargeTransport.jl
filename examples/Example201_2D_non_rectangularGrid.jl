@@ -9,7 +9,7 @@ ENV["LC_NUMERIC"]="C"
 
 module Example201_2D_non_rectangularGrid
 
-using ChargeTransportInSolids
+using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot

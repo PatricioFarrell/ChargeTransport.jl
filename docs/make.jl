@@ -1,16 +1,16 @@
 using Documenter
-using ChargeTransportInSolids
+using ChargeTransport
 using Literate
 
 
-makedocs(sitename ="ChargeTransportInSolids.jl",
-         modules  = [ChargeTransportInSolids],
+makedocs(sitename ="ChargeTransport.jl",
+         modules  = [ChargeTransport],
          clean    = true,
          doctest  = false,
          authors  = "D. Abdel, P. Farrell, J. Fuhrmann",
-         repo     = "https://github.com/PatricioFarrell/ChargeTransportInSolids.jl",
+         repo     = "https://github.com/PatricioFarrell/ChargeTransport.jl",
          pages    = Any[
-            "ChargeTransportInSolids.jl -- A drift-diffusion solver" =>  "general.md",
+            "ChargeTransport.jl -- A drift-diffusion solver" =>  "general.md",
             "Mathematical Description of the Problem" => "backgroundinfo.md",
             "Some Applications" => ["GeneralInformation.md",
                                     "examples/GaAs.md",
@@ -20,5 +20,5 @@ makedocs(sitename ="ChargeTransportInSolids.jl",
          )
 
 deploydocs(
-    repo = "github.com/PatricioFarrell/ChargeTransportInSolids.jl.git"
+    repo = "github.com/PatricioFarrell/ChargeTransport.jl.git"
 )

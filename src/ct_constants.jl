@@ -4,7 +4,7 @@
 """
 
 ### Below is a first try with Unitful/PhysicalConstants. 
-### Problem: Units need to be erased, see Quire #109 in ChargeTransportInSolids
+### Problem: Units need to be erased, see Quire #109 in ChargeTransport
 
 # using Unitful
 # using PhysicalConstants.CODATA2018

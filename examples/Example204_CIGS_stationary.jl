@@ -8,7 +8,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 module Example204_CIGS_stationary
 
 using VoronoiFVM
-using ChargeTransportInSolids
+using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot

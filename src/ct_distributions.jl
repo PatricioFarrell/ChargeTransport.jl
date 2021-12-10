@@ -150,16 +150,16 @@ function plotDiffusionEnhancements()
 
     x = -5:0.01:10;
 
-    f = ChargeTransportInSolids.FermiDiracOneHalfBednarczyk; df = x -> ForwardDiff.derivative(f,x)
+    f = ChargeTransport.FermiDiracOneHalfBednarczyk; df = x -> ForwardDiff.derivative(f,x)
     PyPlot.semilogy(x, f.(x)./df.(x), label="\$F_{1/2}\$");
 
-    f = ChargeTransportInSolids.Boltzmann; df = x -> ForwardDiff.derivative(f,x)
+    f = ChargeTransport.Boltzmann; df = x -> ForwardDiff.derivative(f,x)
     PyPlot.semilogy(x, f.(x)./df.(x), label="Boltzmann");
 
-    f = ChargeTransportInSolids.Blakemore; df = x -> ForwardDiff.derivative(f,x)
+    f = ChargeTransport.Blakemore; df = x -> ForwardDiff.derivative(f,x)
     PyPlot.semilogy(x, f.(x)./df.(x), label="Blakemore (\$\\gamma=0.27\$)");
 
-    f = ChargeTransportInSolids.degenerateLimit; df = x -> ForwardDiff.derivative(f,x)
+    f = ChargeTransport.degenerateLimit; df = x -> ForwardDiff.derivative(f,x)
     PyPlot.semilogy(x, f.(x)./df.(x), label="degenerate limit");
 
     PyPlot.xlabel("\$\\eta\$")

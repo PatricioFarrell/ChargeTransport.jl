@@ -10,7 +10,7 @@ The grid is produced with TetGen.jl.
 
 module Example202_3D_grid
 
-using ChargeTransportInSolids
+using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 

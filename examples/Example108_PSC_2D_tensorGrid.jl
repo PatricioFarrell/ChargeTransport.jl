@@ -17,7 +17,7 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 module Example108_PSC_2D_tensorGrid
 
 using VoronoiFVM
-using ChargeTransportInSolids
+using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot

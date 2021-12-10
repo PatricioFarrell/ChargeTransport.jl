@@ -19,7 +19,7 @@ ENV["LC_NUMERIC"]="C" # put this in to work with Triangulate.jl, where the packa
 module Example201_PSC_2D_unstructuredGrid
 
 using VoronoiFVM
-using ChargeTransportInSolids
+using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 

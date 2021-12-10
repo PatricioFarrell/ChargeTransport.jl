@@ -18,7 +18,7 @@ The procedure will be the following
 4. Solve the problem for an applied bias 
 
 ## Example 1: Solving the Stationary 1D Problem
-We consider a three layer GaAs p-i-n device in one dimension. Here, we discuss [Example101_PIN](https://github.com/PatricioFarrell/ChargeTransportInSolids.jl/blob/master/examples/Example101_PIN.jl).
+We consider a three layer GaAs p-i-n device in one dimension. Here, we discuss [Example101_PIN](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example101_PIN.jl).
 
 
 ### Step 1: Declare grid information
@@ -207,12 +207,12 @@ current = get_current_val(ctsys, solution)
 ```
 we have the possibility to calculate the total current.
 
-Further, there are several different plotting routines which help to assess the quality of the numerical solution, see [ct_plotting.jl](https://github.com/PatricioFarrell/ChargeTransportInSolids.jl/blob/master/src/ct_plotting.jl).
+Further, there are several different plotting routines which help to assess the quality of the numerical solution, see [ct_plotting.jl](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/src/ct_plotting.jl).
 
 ## Example 2: Adding a Nodal Dependent Doping
 
-Now, instead of applying a region dependent doping it is possible to apply a nodal dependent one. (This is indeed also possible for other quantities, see the description of [ChargeTransportParamsNodal](https://github.com/PatricioFarrell/ChargeTransportInSolids.jl/blob/ab0684293845859fb142ea69d786a88b597a8b67/src/ct_system.jl#L426).)
-For this, go to previous Step 2, where you build your parameter set and adjust the doping initialization (code snippet from [Example102\_PIN\_nodal\_doping.jl](https://github.com/PatricioFarrell/ChargeTransportInSolids.jl/blob/master/examples/Example102_PIN_nodal_doping.jl))
+Now, instead of applying a region dependent doping it is possible to apply a nodal dependent one. (This is indeed also possible for other quantities, see the description of [ChargeTransportParamsNodal](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/ab0684293845859fb142ea69d786a88b597a8b67/src/ct_system.jl#L426).)
+For this, go to previous Step 2, where you build your parameter set and adjust the doping initialization (code snippet from [Example102\_PIN\_nodal\_doping.jl](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example102_PIN_nodal_doping.jl))
 
 ```julia
 paramsnodal  = ChargeTransportParamsNodal(grid, numberOfCarriers)

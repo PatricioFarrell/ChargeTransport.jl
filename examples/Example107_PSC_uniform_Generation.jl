@@ -17,7 +17,7 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 module Example107_PSC_uniform_Generation
 
 using VoronoiFVM
-using ChargeTransportInSolids
+using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot

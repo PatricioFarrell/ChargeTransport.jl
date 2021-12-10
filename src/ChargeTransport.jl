@@ -1,4 +1,4 @@
-module ChargeTransportInSolids
+module ChargeTransport
 
 using VoronoiFVM
 using ExtendableGrids

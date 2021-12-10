@@ -12,7 +12,7 @@ stationary problem.
 module Example102_PIN_nodal_doping
 
 using VoronoiFVM
-using ChargeTransportInSolids
+using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot

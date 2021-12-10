@@ -12,11 +12,11 @@ stationary problem.
 
 module Example101_PIN
 
-using VoronoiFVM               # PDE solver with a FVM spatial discretization
-using ChargeTransportInSolids  # drift-diffusion solver
-using ExtendableGrids          # grid initializer
-using GridVisualize            # grid visualizer
-using PyPlot                   # solution visualizer 
+using VoronoiFVM       # PDE solver with a FVM spatial discretization
+using ChargeTransport  # drift-diffusion solver
+using ExtendableGrids  # grid initializer
+using GridVisualize    # grid visualizer
+using PyPlot           # solution visualizer 
 
 
 # function for initializing the grid for a possble extension to other p-i-n devices.

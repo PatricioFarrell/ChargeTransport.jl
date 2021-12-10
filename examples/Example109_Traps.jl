@@ -8,7 +8,7 @@ Simulating transient charge transport in a GaAs pin diode with an electron trap.
 module Example109_Traps
 
 using VoronoiFVM
-using ChargeTransportInSolids
+using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot
