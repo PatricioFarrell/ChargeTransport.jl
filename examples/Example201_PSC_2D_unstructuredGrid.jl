@@ -235,12 +235,12 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
 
     ################################################################################
     if test == false
-        println("Define ChargeTransportSystem and fill in information about model")
+        println("Define System and fill in information about model")
     end
     ################################################################################
 
-    # initialize ChargeTransportData instance and fill in data
-    data                                = ChargeTransportData(grid, numberOfCarriers)
+    # initialize Data instance and fill in data
+    data                                = Data(grid, numberOfCarriers)
 
     #### declare here all necessary information concerning the model ###
 
@@ -277,11 +277,11 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
 
     ################################################################################
     if test == false
-        println("Define ChargeTransportParams and fill in physical parameters")
+        println("Define Params and fill in physical parameters")
     end
     ################################################################################
 
-    params                                              = ChargeTransportParams(grid, numberOfCarriers)
+    params                                              = Params(grid, numberOfCarriers)
 
     params.temperature                                  = T
     params.UT                                           = (kB * params.temperature) / q
@@ -346,7 +346,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     # in the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
     # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
     # but rather on default data.
-    ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
+    ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
     # print data
     if test == false

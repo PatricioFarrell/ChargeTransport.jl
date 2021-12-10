@@ -11,7 +11,7 @@ electron and hole quasi Fermi potentials.
 $(TYPEDFIELDS)
 
 """
-mutable struct ChargeTransportBulkRecombination
+mutable struct BulkRecombination
 
     """
     index for data construction of quasi Fermi potential of electrons
@@ -43,7 +43,7 @@ mutable struct ChargeTransportBulkRecombination
     traps as own unknowns. Note that this one may be deleted in future versions.
     """
     model_SRH_2species_trap     ::  DataType 
-    ChargeTransportBulkRecombination() = new()
+    BulkRecombination() = new()
 
 end
 
@@ -57,7 +57,7 @@ function set_bulk_recombination(; iphin = 1, iphip = 2,
                                   bulk_recomb_radiative = true,
                                   bulk_recomb_SRH = true)
 
-    bulk_recombination = ChargeTransportBulkRecombination()
+    bulk_recombination = BulkRecombination()
 
     bulk_recombination.iphin                 = iphin
     bulk_recombination.iphip                 = iphip
@@ -93,7 +93,7 @@ defined.
 $(TYPEDFIELDS)
 
 """
-mutable struct ChargeTransportTraps
+mutable struct Traps
 
     """
     Array with the index of traps.
@@ -105,7 +105,7 @@ mutable struct ChargeTransportTraps
     """
     regions     ::  Array{Int64, 1}
 
-    ChargeTransportTraps() = new()
+    Traps() = new()
 
 end
 
@@ -116,7 +116,7 @@ Corresponding constructor for the present trap density and the respective region
 """
 function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
 
-    enable_traps                            = ChargeTransportTraps()
+    enable_traps                            = Traps()
 
     enable_traps.traps                      = traps
     enable_traps.regions                    = regions
@@ -152,7 +152,7 @@ defined. Note that it is possible to use ions as well as ion vacancies.
 $(TYPEDFIELDS)
 
 """
-mutable struct ChargeTransportIonicChargeCarriers
+mutable struct IonicChargeCarriers
 
     """
     Array with the indices of ionic charge carriers.
@@ -164,7 +164,7 @@ mutable struct ChargeTransportIonicChargeCarriers
     """
     regions              ::  Array{Int64, 1}
 
-    ChargeTransportIonicChargeCarriers() = new()
+    IonicChargeCarriers() = new()
 
 end
 
@@ -174,7 +174,7 @@ Corresponding constructor for the present ionic charge carriers and the respecti
 """
 function enable_ionic_carriers(;ionic_carriers = [3], regions = [2])
 
-    enable_ions = ChargeTransportIonicChargeCarriers()
+    enable_ions = IonicChargeCarriers()
 
     enable_ions.ionic_carriers   = ionic_carriers
     enable_ions.regions          = regions
@@ -195,7 +195,7 @@ a drift-diffusion simulation of a semiconductor device.
 $(TYPEDFIELDS)
 
 """
-mutable struct ChargeTransportParams
+mutable struct Params
 
     ###############################################################
     ####                   integer numbers                     ####
@@ -395,7 +395,7 @@ mutable struct ChargeTransportParams
     recombinationRadiative       ::  Array{Float64,1}
     
     ###############################################################
-    ChargeTransportParams() = new() # standard constructor
+    Params() = new() # standard constructor
 
 end
 
@@ -409,7 +409,7 @@ a drift-diffusion simulation of a semiconductor device.
 $(TYPEDFIELDS)
 
 """
-mutable struct ChargeTransportParamsNodal
+mutable struct ParamsNodal
     
     ###############################################################
     ####                    number of nodes                    ####
@@ -442,7 +442,7 @@ mutable struct ChargeTransportParamsNodal
     bandEdgeEnergy               ::  Array{Float64,2}
 
     ###############################################################
-    ChargeTransportParamsNodal() = new()
+    ParamsNodal() = new()
 
 end
 
@@ -455,7 +455,7 @@ but also all physical parameters for a drift-diffusion simulation of a semicondu
 $(TYPEDFIELDS)
 
 """
-mutable struct ChargeTransportData
+mutable struct Data
 
     ###############################################################
     ####                   model information                   ####
@@ -473,18 +473,18 @@ mutable struct ChargeTransportData
     """
     A struct containing information concerning the bulk recombination model.
     """
-    bulk_recombination           ::  ChargeTransportBulkRecombination
+    bulk_recombination           ::  BulkRecombination
 
     """
     A struct which contains information on the regions, where ionic charge carriers
     (ions and/or ion vacancies) are present.
     """
-    enable_ionic_carriers        ::  ChargeTransportIonicChargeCarriers
+    enable_ionic_carriers        ::  IonicChargeCarriers
 
     """
     An AbstractVector which contains information on present SRH traps.
     """
-    enable_traps                 ::  ChargeTransportTraps
+    enable_traps                 ::  Traps
 
     """
     DataType which stores information about which inner interface model is chosen by user.
@@ -594,18 +594,18 @@ mutable struct ChargeTransportData
     ###############################################################
     """
     A struct holding all region dependent parameter information. For more information see
-    struct ChargeTransportParams.
+    struct Params.
     """
-    params                       :: ChargeTransportParams
+    params                       :: Params
 
     """
     A struct holding all space dependent parameter information. For more information see
-    struct ChargeTransportParamsNodal.
+    struct ParamsNodal.
     """
-    paramsnodal                  :: ChargeTransportParamsNodal
+    paramsnodal                  :: ParamsNodal
 
     ###############################################################
-    ChargeTransportData() = new()
+    Data() = new()
 
 end
 
@@ -618,12 +618,12 @@ A struct holding all information necessary for a drift-diffusion type system.
 $(TYPEDFIELDS)
 
 """
-mutable struct ChargeTransportSystem
+mutable struct System
 
     """
-    A struct holding all data information, see ChargeTransportData
+    A struct holding all data information, see Data
     """
-    data                         :: ChargeTransportData
+    data                         :: Data
 
     """
     A struct holding system information for the finite volume system.
@@ -631,7 +631,7 @@ mutable struct ChargeTransportSystem
     fvmsys                       :: VoronoiFVM.AbstractSystem
 
     ###############################################################
-    ChargeTransportSystem() = new()
+    System() = new()
 
 end
 
@@ -642,18 +642,18 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Simplified constructor for ChargeTransportParams which only takes the grid
+Simplified constructor for Params which only takes the grid
 and the numberOfCarriers as argument.
     
 """
-function ChargeTransportParams(grid, numberOfCarriers)
+function Params(grid, numberOfCarriers)
 
     numberOfNodes           = length(grid[Coordinates])
     numberOfRegions         = grid[NumCellRegions]
     numberOfBoundaryRegions = grid[NumBFaceRegions]
     ###############################################################
 
-    params = ChargeTransportParams()
+    params = Params()
 
     ###############################################################
     ####                   integer numbers                     ####
@@ -729,17 +729,17 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Simplified constructor for ChargeTransportParamsNodal which only takes the grid
+Simplified constructor for ParamsNodal which only takes the grid
 and the numberOfCarriers as argument.
     
 """
-function ChargeTransportParamsNodal(grid, numberOfCarriers)
+function ParamsNodal(grid, numberOfCarriers)
 
     numberOfNodes                       = length(grid[Coordinates])
 
     ###############################################################
 
-    paramsnodal                         = ChargeTransportParamsNodal()
+    paramsnodal                         = ParamsNodal()
 
     ###############################################################
     ####                    number of nodes                    ####
@@ -764,18 +764,18 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Simplified constructor for ChargeTransportData which only takes the grid
+Simplified constructor for Data which only takes the grid
 and the numberOfCarriers as argument. Here, all necessary information
 including the physical parameters, but also some numerical information
 are located.
     
 """
-function ChargeTransportData(grid, numberOfCarriers)
+function Data(grid, numberOfCarriers)
 
     numberOfBoundaryRegions = grid[NumBFaceRegions]
 
     ###############################################################
-    data = ChargeTransportData()
+    data = Data()
 
     ###############################################################
     ####                   model information                   ####
@@ -795,7 +795,7 @@ function ChargeTransportData(grid, numberOfCarriers)
     # enable_ionic_carriers is a struct holding the input information
     data.enable_ionic_carriers    = enable_ionic_carriers(ionic_carriers = [3], regions = [2])
 
-    data.enable_traps             = ChargeTransportTraps()
+    data.enable_traps             = Traps()
 
     data.inner_interface_model    = interface_model_none
     
@@ -832,8 +832,8 @@ function ChargeTransportData(grid, numberOfCarriers)
     ###############################################################
     ####          Physical parameters as own structs           ####
     ###############################################################
-    data.params                   = ChargeTransportParams(grid, numberOfCarriers)
-    data.paramsnodal              = ChargeTransportParamsNodal(grid, numberOfCarriers)
+    data.params                   = Params(grid, numberOfCarriers)
+    data.paramsnodal              = ParamsNodal(grid, numberOfCarriers)
  
     ###############################################################
 
@@ -854,9 +854,9 @@ on the solving system, with which the calculations are performed,
 are stored.
 
 """
-function ChargeTransportSystem(grid, data ;unknown_storage)
+function System(grid, data ;unknown_storage)
 
-    ctsys                 = ChargeTransportSystem()
+    ctsys                 = System()
 
     interface_model       = inner_interface_model(data)
     # here at this point, based on the interface model, we choose a system based on normal
@@ -877,7 +877,7 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
 
     num_species_sys        = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1
 
-    ctsys                  = ChargeTransportSystem()
+    ctsys                  = System()
 
     # save this information such that there is no need to calculate it again for boundary conditions
     data.inner_interface_model = interface_model_none
@@ -935,7 +935,7 @@ is build.
 """
 function build_system(grid, data, unknown_storage, ::Type{interface_model_discont_qF})
 
-    ctsys        = ChargeTransportSystem()
+    ctsys        = System()
     fvmsys       = VoronoiFVM.System(grid, unknown_storage=unknown_storage)
 
     # save this information such that there is no need to calculate it again for boundary conditions
@@ -1002,7 +1002,7 @@ end
 ###########################################################
 ###########################################################
 
-function show_params(ctsys::ChargeTransportSystem)
+function show_params(ctsys::System)
 
     params = ctsys.data.params
     for name in fieldnames(typeof(params))[1:end] 
@@ -1013,7 +1013,7 @@ function show_params(ctsys::ChargeTransportSystem)
 end
 
 
-function Base.show(io::IO, this::ChargeTransportParamsNodal)
+function Base.show(io::IO, this::ParamsNodal)
     for name in fieldnames(typeof(this))[1:end] 
         @printf("%30s = ",name)
         println(io,getfield(this,name))
@@ -1030,7 +1030,7 @@ Method which determines with input parameters which inner interface model
 was chosen by user.
 
 """
-function inner_interface_model(data::ChargeTransportData)
+function inner_interface_model(data::Data)
 
     countDiscontqF = 0::Int64; countInterfaceCharge = 0::Int64
 
@@ -1076,7 +1076,7 @@ Method which determines with input parameters which inner interface model
 was chosen by user.
 
 """
-function inner_interface_model(ctsys::ChargeTransportSystem)
+function inner_interface_model(ctsys::System)
 
 
     countDiscontqF = 0::Int64; countInterfaceCharge = 0::Int64
@@ -1217,11 +1217,11 @@ end
 ###########################################################
 # Wrappers for methods of VoronoiFVM
 
-VoronoiFVM.enable_species!(ctsys::ChargeTransportSystem, ispecies, regions)            = VoronoiFVM.enable_species!(ctsys.fvmsys, ispecies, regions)
+VoronoiFVM.enable_species!(ctsys::System, ispecies, regions)            = VoronoiFVM.enable_species!(ctsys.fvmsys, ispecies, regions)
 
-VoronoiFVM.enable_boundary_species!(ctsys::ChargeTransportSystem, ispecies, regions)   = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
+VoronoiFVM.enable_boundary_species!(ctsys::System, ispecies, regions)   = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
 
-VoronoiFVM.unknowns(ctsys::ChargeTransportSystem)                                      = VoronoiFVM.unknowns(ctsys.fvmsys)
+VoronoiFVM.unknowns(ctsys::System)                                      = VoronoiFVM.unknowns(ctsys.fvmsys)
 
 VoronoiFVM.solve!(solution, initialGuess, ctsys, ;control=control, tstep=tstep)          = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
 
@@ -1235,7 +1235,7 @@ a given value.
     
 """
 
-function equilibrium_solve!(ctsys::ChargeTransportSystem; control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0)
+function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0)
 
     ctsys.data.calculation_type    = inEquilibrium
 

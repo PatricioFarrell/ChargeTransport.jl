@@ -128,11 +128,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     println("*** done\n")
     ################################################################################
-    println("Define ChargeTransportSystem and fill in information about model")
+    println("Define System and fill in information about model")
     ################################################################################
 
-    # initialize ChargeTransportData instance and fill in data
-    data                                = ChargeTransportData(grid, numberOfCarriers)
+    # initialize Data instance and fill in data
+    data                                = Data(grid, numberOfCarriers)
     ipsi                                = data.index_psi
 
     # set stationary model
@@ -163,11 +163,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("*** done\n")
 
     ################################################################################
-    println("Define ChargeTransportParams and fill in physical parameters")
+    println("Define Params and fill in physical parameters")
     ################################################################################
 
     # physical parameters
-    params                                              = ChargeTransportParams(grid, numberOfCarriers)
+    params                                              = Params(grid, numberOfCarriers)
     params.temperature                                  = T
     params.UT                                           = (kB * params.temperature) / q
     params.chargeNumbers[iphin]                         = -1
@@ -241,7 +241,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.params                                         = params
 
     # charge transport system
-    ctsys                                               = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
+    ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
     show_params(ctsys)
     println("*** done\n")

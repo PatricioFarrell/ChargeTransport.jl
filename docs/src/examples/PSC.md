@@ -55,7 +55,7 @@ Second, since we allow varying parameters within the thin interface layers, the 
 ```julia
 data.flux_approximation = scharfetter_gummel_graded
 
-paramsnodal             = ChargeTransportParamsNodal(grid, numberOfCarriers)
+paramsnodal             = ParamsNodal(grid, numberOfCarriers)
 ```
 
 Lastly, the respective parameters need to be graded. Currently, only a linear grading is implemented.

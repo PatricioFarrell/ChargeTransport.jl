@@ -17,7 +17,7 @@ One input parameter is the boolean plotGridpoints which makes it possible to plo
 which indicate where the nodes are located.
 
 """
-function plot_densities(Plotter, grid, data, sol, title, label_density, ;plotGridpoints=false)
+function plot_densities(Plotter, grid, data::Data, sol, title, label_density, ;plotGridpoints=false)
 
     Plotter.clf()
 
@@ -115,7 +115,7 @@ One input parameter is the boolean plotGridpoints which makes it possible to plo
 which indicate where the nodes are located.
 
 """
-function plot_energies(Plotter, grid, data, sol, title, label_energy, ;plotGridpoints=false)
+function plot_energies(Plotter, grid, data::Data, sol, title, label_energy, ;plotGridpoints=false)
 
     Plotter.clf()
 
@@ -192,7 +192,7 @@ With this method it is possible to depict the band-edge energies ``E_\\alpha ``.
 This can be useful for debugging when dealing with heterojunctions.
 
 """
-function plot_energies(Plotter, grid::ExtendableGrid, data, label_BEE)
+function plot_energies(Plotter, grid::ExtendableGrid, data::Data, label_BEE)
 
     params      = data.params
     paramsnodal = data.paramsnodal 
@@ -264,7 +264,7 @@ Possibility to plot the considered doping. This is especially useful
 for making sure that the interior and the boundary doping agree.
 
 """
-function plot_doping(Plotter, g::ExtendableGrid, data::ChargeTransportData, label_density)
+function plot_doping(Plotter, g::ExtendableGrid, data::Data, label_density)
 
     params      = data.params
     coord       = g[Coordinates]
@@ -332,7 +332,7 @@ end
 """
 Plot doping for nodal dependent doping
 """
-function plot_doping(Plotter, g::ExtendableGrid, paramsnodal::ChargeTransportParamsNodal)
+function plot_doping(Plotter, g::ExtendableGrid, paramsnodal::ParamsNodal)
 
     coord  = g[Coordinates]
 
@@ -391,7 +391,7 @@ index 4: cation vacancies as charge carrier with the corresponding density ``c``
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
 """
-function plot_solution(Plotter, grid, data, solution, title, label_solution, ;plotGridpoints=false)
+function plot_solution(Plotter, grid, data::Data, solution, title, label_solution, ;plotGridpoints=false)
 
     if dim_space(grid) > 1
         error("plot_densities is so far only tested in 1D")

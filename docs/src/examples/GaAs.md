@@ -68,8 +68,8 @@ iphin                    = 1 # electron quasi Fermi potential
 iphip                    = 2 # hole quasi Fermi potential
 numberOfCarriers         = 2
 
-# initialize ChargeTransportData instance and fill in data
-data                     = ChargeTransportData(grid, numberOfCarriers)
+# initialize Data instance and fill in data
+data                     = Data(grid, numberOfCarriers)
 
 # Following variable declares, if we want to solve stationary or transient problem
 data.model_type          = model_stationary
@@ -104,8 +104,7 @@ Lastly, you are filling in your previously defined or externally read in paramet
 # Params is a struct which contains all necessary physical parameters. If one wants to
 # simulate space-dependent variable, one additionally needs to generate a ParamsNodal
 # struct, see Example102.
-params                                              = ChargeTransportParams(grid,
-                                                                            numberOfCarriers)
+params                                              = Params(grid, numberOfCarriers)
 
 params.temperature                                  = T
 params.UT                                           = (kB * params.temperature) / q
@@ -160,7 +159,7 @@ data.params                                         = params
 # in the last step, we initialize our system with previous data which is likewise dependent
 # on the parameters. Important that this is in the end, otherwise our VoronoiFVMSys is
 # not dependent on the data we initialized but rather on default data.
-ctsys                                               = ChargeTransportSystem(grid, data, 
+ctsys                                               = System(grid, data, 
                                                             unknown_storage=unknown_storage)
 ```
 
@@ -211,11 +210,11 @@ Further, there are several different plotting routines which help to assess the 
 
 ## Example 2: Adding a Nodal Dependent Doping
 
-Now, instead of applying a region dependent doping it is possible to apply a nodal dependent one. (This is indeed also possible for other quantities, see the description of [ChargeTransportParamsNodal](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/ab0684293845859fb142ea69d786a88b597a8b67/src/ct_system.jl#L426).)
+Now, instead of applying a region dependent doping it is possible to apply a nodal dependent one. (This is indeed also possible for other quantities, see the description of [ParamsNodal](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/ab0684293845859fb142ea69d786a88b597a8b67/src/ct_system.jl#L426).)
 For this, go to previous Step 2, where you build your parameter set and adjust the doping initialization (code snippet from [Example102\_PIN\_nodal\_doping.jl](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example102_PIN_nodal_doping.jl))
 
 ```julia
-paramsnodal  = ChargeTransportParamsNodal(grid, numberOfCarriers)
+paramsnodal  = ParamsNodal(grid, numberOfCarriers)
 
 # initialize the space dependent doping
 NDoping           =   1.0e17  / cm^3

@@ -258,12 +258,12 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ################################################################################
     if test == false
-        println("Define ChargeTransportSystem and fill in information about model")
+        println("Define System and fill in information about model")
     end
     ################################################################################
 
-    # initialize ChargeTransportData instance and fill in data
-    data                                = ChargeTransportData(grid, numberOfCarriers)
+    # initialize Data instance and fill in data
+    data                                = Data(grid, numberOfCarriers)
 
     #### declare here all necessary information concerning the model ###
 
@@ -292,14 +292,14 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     
     ################################################################################
     if test == false
-        println("Define ChargeTransportParams and fill in physical parameters")
+        println("Define Params and fill in physical parameters")
     end
     ################################################################################
 
     # for region dependent parameters
-    params                                              = ChargeTransportParams(grid, numberOfCarriers)
+    params                                              = Params(grid, numberOfCarriers)
     # for space dependent parameters
-    paramsnodal                                         = ChargeTransportParamsNodal(grid, numberOfCarriers)
+    paramsnodal                                         = ParamsNodal(grid, numberOfCarriers)
 
 
     params.temperature                                  = T
@@ -359,7 +359,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     # in the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
     # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
     # but rather on default data.
-    ctsys                                           = ChargeTransportSystem(grid, data, unknown_storage=unknown_storage)
+    ctsys                                           = System(grid, data, unknown_storage=unknown_storage)
     
     ########### It is also possible to print the nodal dependent data, but for the sake of readibility
     ########### we neglect this here.
