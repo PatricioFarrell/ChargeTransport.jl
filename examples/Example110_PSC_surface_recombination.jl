@@ -54,20 +54,20 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     t                       = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
     k                       = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    coord_p_u               = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.9*δ)))
+    coord_p_u               = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.5*δ)))
     coord_p_g               = geomspace(h_pdoping/2, 
                                         h_pdoping, 
-                                        h_pdoping/(1.0*δ), 
+                                        h_pdoping/(0.8*δ), 
                                         h_pdoping/(1.5*δ), 
                                         tol=t)
     coord_i_g1              = geomspace(h_pdoping, 
                                         h_pdoping+h_intrinsic/k, 
                                         h_intrinsic/(6.1*δ), 
-                                        h_intrinsic/(3.1*δ), 
+                                        h_intrinsic/(2.1*δ), 
                                         tol=t)
     coord_i_g2              = geomspace(h_pdoping+h_intrinsic/k, 
                                         h_pdoping+h_intrinsic,               
-                                        h_intrinsic/(3.1*δ),    
+                                        h_intrinsic/(2.1*δ),    
                                         h_intrinsic/(6.1*δ), 
                                         tol=t)
     coord_n_g               = geomspace(h_pdoping+h_intrinsic,               
@@ -459,8 +459,8 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # there are different way to control timestepping
     # Here we assume these primary data
-    scanrate                      = 0.04 * V/s
-    ntsteps                       = 101
+    scanrate                      = 1.0 * V/s
+    ntsteps                       = 31
     vend                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     v0                            = 0.0
 
@@ -501,7 +501,9 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
         push!(biasValues, Δu)
 
         if plotting
-            plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$")
+            label_solution = Array{String, 1}(undef, numberOfCarriers)
+            label_solution[iphin]  = "\$ \\varphi_n\$"; label_solution[iphip]  = "\$ \\varphi_p\$"; label_solution[iphia]  = "\$ \\varphi_a\$"
+            plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
         end
 
     end # time loop
@@ -519,7 +521,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 54.913949735570306
+    testval = 50.6081957513913
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
