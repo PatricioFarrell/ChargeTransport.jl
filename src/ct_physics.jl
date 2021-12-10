@@ -210,9 +210,8 @@ function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
     paramsnodal = data.paramsnodal 
 
     # parameters
-    ipsi  = data.indexPsi  # final index for electrostatic potential
+    ipsi        = data.index_psi  # final index for electrostatic potential
  
-
     for icc ∈ data.chargeCarrierList # quantities or integer indices
  
         get_DOS!(icc, bnode, data)
@@ -267,7 +266,7 @@ function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
     # based on user index and regularity of solution quantities or integers are used 
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
-    ipsi        = data.indexPsi                
+    ipsi        = data.index_psi               
 
     for icc in [iphin,iphip] 
 
@@ -313,7 +312,7 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
     iphin       = data.bulk_recombination.iphin # integer index of φ_n
     iphip       = data.bulk_recombination.iphip # integer index of φ_p
 
-    ipsi        = data.indexPsi
+    ipsi        = data.index_psi
 
     params      = data.params
     paramsnodal = data.paramsnodal
@@ -355,7 +354,7 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_discont_qF})
 
     end
 
-    ipsi = data.indexPsi
+    ipsi = data.index_psi
 
     #indices (∈ IN ) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
     iphin       = data.bulk_recombination.iphin # integer index of φ_n
@@ -503,7 +502,7 @@ function bstorage!(f, u, bnode, data, ::Type{interface_model_tangential_flux})
     iphin       = data.chargeCarrierList[iphin] # = Quantity or integer
     iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
 
-    ipsi        = data.indexPsi
+    ipsi        = data.index_psi
     
     for icc ∈ [iphin, iphip]
 
@@ -573,7 +572,7 @@ function bflux!(f, u, bedge, data, ::Type{excess_chemical_potential})
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
-    ipsi        = data.indexPsi                  # final index for electrostatic potential
+    ipsi        = data.index_psi                  # final index for electrostatic potential
     
     # ############################################################
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
@@ -625,7 +624,7 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
     ireg        = node.region
     inode       = node.index
 
-    ipsi        = data.indexPsi   # final index for electrostatic potential
+    ipsi        = data.index_psi  # final index for electrostatic potential
 
     ###########################################################
     ####         right-hand side of nonlinear Poisson      ####
@@ -864,7 +863,7 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
-    ipsi        = data.indexPsi                  # final index for electrostatic potential
+    ipsi        = data.index_psi                # final index for electrostatic potential
     
     ############################################################
     ####   set RHS to zero for all icc (stability purpose)  ####
@@ -966,9 +965,8 @@ and for the electrostatic potential
 function storage!(f, u, node, data, ::Type{model_transient})
 
     params      = data.params
-    paramsnodal = data.paramsnodal 
 
-    ipsi        = data.indexPsi
+    ipsi        = data.index_psi
     
     for icc ∈ data.chargeCarrierList
 
@@ -1003,7 +1001,7 @@ function flux!(f, u, edge, data, ::Type{inEquilibrium})
     params      = data.params
     paramsnodal = data.paramsnodal
     
-    ipsi        = data.indexPsi # integer index or Quantity
+    ipsi        = data.index_psi # integer index or Quantity
     ireg        = edge.region
     nodel       = edge.node[2]
     nodek       = edge.node[1]
@@ -1027,7 +1025,7 @@ function flux!(f, u, edge, data, ::Type{scharfetter_gummel})
     params      =   data.params
     paramsnodal =   data.paramsnodal
     
-    ipsi        =   data.indexPsi
+    ipsi        =   data.index_psi
     nodel       =   edge.node[2]
     nodek       =   edge.node[1]
     ireg        =   edge.region
@@ -1071,7 +1069,7 @@ function flux!(f, u, edge, data, ::Type{scharfetter_gummel_graded})
     params      =   data.params
     paramsnodal =   data.paramsnodal
     
-    ipsi        =   data.indexPsi
+    ipsi        =   data.index_psi
     nodel       =   edge.node[2]
     nodek       =   edge.node[1]
     ireg        =   edge.region
@@ -1122,7 +1120,7 @@ function flux!(f, u, edge, data, ::Type{excess_chemical_potential})
     params      =   data.params
     paramsnodal =   data.paramsnodal
     
-    ipsi        =   data.indexPsi
+    ipsi        =   data.index_psi
     nodel       =   edge.node[2]
     nodek       =   edge.node[1]
     ireg        =   edge.region
@@ -1169,7 +1167,7 @@ function flux!(f, u, edge, data, ::Type{excess_chemical_potential_graded})
     params      =   data.params
     paramsnodal =   data.paramsnodal
 
-    ipsi        =   data.indexPsi
+    ipsi        =   data.index_psi
     nodel       =   edge.node[2]
     nodek       =   edge.node[1]
     ireg        =   edge.region
@@ -1228,7 +1226,7 @@ function flux!(f, u, edge, data, ::Type{diffusion_enhanced})
 
     tolReg      =   1.0e-13
     
-    ipsi        =   data.indexPsi
+    ipsi        =   data.index_psi
     nodel       =   edge.node[2]
     nodek       =   edge.node[1]
     ireg        =   edge.region
@@ -1286,7 +1284,7 @@ function flux!(f, u, edge, data, ::Type{generalized_sg})
     it            =   0            # number of iterations (newton)
     damp          =   0.1          # damping factor
     
-    ipsi          =   data.indexPsi
+    ipsi          =   data.index_psi
     nodel         =   edge.node[2]
     nodek         =   edge.node[1]
     ireg          =   edge.region

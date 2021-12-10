@@ -587,7 +587,7 @@ mutable struct ChargeTransportData
     the user choice we have with this new type the opportunity to
     simulate with Quantities or integer indices.
     """
-    indexPsi                     :: Union{VoronoiFVM.AbstractQuantity, Int64}
+    index_psi                    :: Union{VoronoiFVM.AbstractQuantity, Int64}
 
     ###############################################################
     ####          Physical parameters as own structs           ####
@@ -827,7 +827,7 @@ function ChargeTransportData(grid, numberOfCarriers)
     # default values for most simple case 
     data.chargeCarrierList        = collect(1:numberOfCarriers)
 
-    data.indexPsi                 = numberOfCarriers + 1
+    data.index_psi                = numberOfCarriers + 1
 
     ###############################################################
     ####          Physical parameters as own structs           ####
@@ -887,7 +887,7 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
     # DA: caution with the interface_model with ionic interface charges (in future versions,
     # we will work with VoronoiFVM.InterfaceQuantites)
 
-    data.indexPsi          = num_species_sys
+    data.index_psi         = num_species_sys
 
     ctsys.data             = data
     
@@ -917,7 +917,7 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
         end
     end
 
-    enable_species!(ctsys.fvmsys, data.indexPsi , 1:data.params.numberOfRegions) # ipsi defined on whole domain
+    enable_species!(ctsys.fvmsys, data.index_psi, 1:data.params.numberOfRegions) # ipsi defined on whole domain
 
     # for detection of number of species 
     VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species_sys) 
@@ -978,7 +978,7 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_discon
 
     end
     
-    data.indexPsi          = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions) 
+    data.index_psi        = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions) 
 
     physics    = VoronoiFVM.Physics(data        = data,
                                     flux        = flux!,
@@ -1205,7 +1205,7 @@ end
 
 function set_schottky_contact!(ctsys, ibreg; appliedVoltage = 0.0)
 
-    ipsi = ctsys.data.indexPsi
+    ipsi = ctsys.data.index_psi
 
     # set Schottky barrier and applied voltage
     ctsys.fvmsys.boundary_values[ipsi,  ibreg] = (ctsys.data.params.SchottkyBarrier[ibreg]/q ) + appliedVoltage
@@ -1559,6 +1559,6 @@ $(TYPEDSIGNATURES)
 Compute the charge density for each region separately.
 """
 function chargeDensity(ctsys,sol)
-    # integrate(ctsys.fvmsys,ctsys.fvmsys.physics.reaction,sol)#[ctsys.data.indexPsi,:]
-    integrate(ctsys.fvmsys,reaction!,sol)[ctsys.data.indexPsi,:]
+    # integrate(ctsys.fvmsys,ctsys.fvmsys.physics.reaction,sol)#[ctsys.data.index_psi,:]
+    integrate(ctsys.fvmsys,reaction!,sol)[ctsys.data.index_psi,:]
 end

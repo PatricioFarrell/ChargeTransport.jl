@@ -413,7 +413,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     initialGuess         .= solution 
 
     if plotting # currently, plotting the solution was only tested with PyPlot.
-        ipsi = 4
+        ipsi = data.index_psi
         X = grid[Coordinates][1,:]
         Y = grid[Coordinates][2,:]
 
