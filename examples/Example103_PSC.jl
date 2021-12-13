@@ -217,7 +217,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.model_type                     = model_stationary
 
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
-    data.F                             .= Boltzmann
+    data.F                             .= FermiDiracOneHalfTeSCA
 
     # Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination 
     # processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by 
@@ -448,7 +448,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -4.053036050777252
+    testval = -4.052906367630599
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
