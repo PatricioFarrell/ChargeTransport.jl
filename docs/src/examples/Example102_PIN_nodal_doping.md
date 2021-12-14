@@ -1,6 +1,5 @@
-#=
 # GaAs diode with spatially varying doping (1D).
-([source code](SOURCE_URL))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample102_PIN_nodal_doping.jl))
 
 Simulating charge transport in a GaAs pin diode. This means
 the corresponding PDE problem corresponds to the van Roosbroeck
@@ -8,8 +7,8 @@ system of equations.
 The simulations are performed out of equilibrium and for the
 stationary problem.
 A special feature here is that the doping is spatially varying, i.e. node-dependent.
-=#
 
+````julia
 module Example102_PIN_nodal_doping
 
 using VoronoiFVM
@@ -26,14 +25,14 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    ## region numbers
+    # region numbers
     regionAcceptor          = 1                           # p doped region
     regionIntrinsic         = 2                           # intrinsic region
     regionDonor             = 3                           # n doped region
     regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
     numberOfRegions         = length(regions)
 
-    ## boundary region numbers
+    # boundary region numbers
     bregionAcceptor         = 1
     bregionDonor            = 2
     bregions                = [bregionAcceptor, bregionDonor]
@@ -48,7 +47,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     grid                   = simplexgrid(coord)
     numberOfNodes          = length(coord)
 
-    ## set different regions in grid
+    # set different regions in grid
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor,  tol = 1.0e-15)    # p-doped region = 1
     cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic],            regionIntrinsic, tol = 1.0e-15)    # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor,     tol = 1.0e-15)    # n-doped region = 3
@@ -67,12 +66,12 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    ## set indices of the quasi Fermi potentials
+    # set indices of the quasi Fermi potentials
     iphin              = 1 # electron quasi Fermi potential
     iphip              = 2 # hole quasi Fermi potential
-    numberOfCarriers   = 2 
+    numberOfCarriers   = 2
 
-    ## Define the physical data.
+    # Define the physical data.
     Ec                 = 1.424                *  eV
     Ev                 = 0.0                  *  eV
     Nc                 = 4.351959895879690e17 / (cm^3)
@@ -82,12 +81,12 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     εr                 = 12.9                 *  1.0              # relative dielectric permittivity of GAs
     T                  = 300.0                *  K
 
-    ## recombination parameters
-    SRH_TrapDensity_n  = 4.760185435081902e5    / cm^3       
+    # recombination parameters
+    SRH_TrapDensity_n  = 4.760185435081902e5    / cm^3
     SRH_TrapDensity_p  = 9.996936448738406e6    / cm^3
-    SRH_LifeTime       = 1.0                    * ps   
+    SRH_LifeTime       = 1.0                    * ps
 
-    ## contact voltages
+    # contact voltages
     voltageAcceptor    = 1.4 * V
 
     if test == false
@@ -99,28 +98,31 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         println("Define System and fill in information about model")
     end
     ################################################################################
+````
 
-    # We initialize the Data instance and fill in predefined data.
+We initialize the Data instance and fill in predefined data.
+
+````julia
     data                                = Data(grid, numberOfCarriers)
 
-    ## possible choices: model_stationary, model_transient
+    # possible choices: model_stationary, model_transient
     data.model_type                     = model_stationary
 
-    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = false,
                                                                   bulk_recomb_radiative = false,
                                                                   bulk_recomb_SRH = true)
 
-    ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    ## interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact                       
-    data.boundary_type[bregionDonor]    = ohmic_contact   
-    
-    ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
+    # possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
+    # interface_model_surface_recombination (inner boundary).
+    data.boundary_type[bregionAcceptor] = ohmic_contact
+    data.boundary_type[bregionDonor]    = ohmic_contact
+
+    # possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
+    # excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
     data.flux_approximation             = scharfetter_gummel
 
     if test == false
@@ -132,9 +134,12 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         println("Define Params and fill in physical parameters")
     end
     ################################################################################
+````
 
-    # Define the Params struct. Params contains all necessary physical parameters. For
-    # space-dependent variables we have an additional ParamsNodal.
+Define the Params struct. Params contains all necessary physical parameters. For
+space-dependent variables we have an additional ParamsNodal.
+
+````julia
     params                                              = Params(grid, numberOfCarriers)
     paramsnodal                                         = ParamsNodal(grid, numberOfCarriers)
 
@@ -155,7 +160,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
         params.dielectricConstant[ireg]                 = εr
 
-        ## effective DOS, band-edge energy and mobilities
+        # effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
         params.densityOfStates[iphip, ireg]             = Nv
         params.bandEdgeEnergy[iphin, ireg]              = Ec
@@ -163,7 +168,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         params.mobility[iphin, ireg]                    = mun
         params.mobility[iphip, ireg]                    = mup
 
-        ## recombination parameters
+        # recombination parameters
         params.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime
         params.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime
         params.recombinationSRHTrapDensity[iphin, ireg] = SRH_TrapDensity_n
@@ -171,7 +176,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     end
 
-    ## initialize the space dependent doping
+    # initialize the space dependent doping
     NDoping           =   1.0e17  / cm^3
     κ = 500.0
     for icoord = 1:numberOfNodes
@@ -199,14 +204,14 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         plot_doping(Plotter, grid, paramsnodal)
         println("*** done\n")
     end
-    
+
     ################################################################################
     if test == false
         println("Define outerior boundary conditions")
     end
     ################################################################################
 
-    ## set zero voltage ohmic contacts for each charge carrier at all outerior boundaries.
+    # set zero voltage ohmic contacts for each charge carrier at all outerior boundaries.
     set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
     set_ohmic_contact!(ctsys, bregionDonor, 0.0)
 
@@ -239,25 +244,25 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    ## initialize solution and starting vectors
+    # initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
     solution              = unknowns(ctsys)
 
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution 
+    initialGuess         .= solution
 
     if plotting
-        ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+        # ##### set legend for plotting routines #####
+        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
         label_density  = Array{String, 1}(undef, numberOfCarriers)
         label_solution = Array{String, 1}(undef, numberOfCarriers)
-        
-        ## for electrons 
+
+        # for electrons
         label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"
         label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
-        
-        ## for holes 
+
+        # for holes
         label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"
         label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
         ##### set legend for plotting routines #####
@@ -279,10 +284,13 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         println("Bias loop")
     end
     ################################################################################
+````
 
-    # Set calculation type to outOfEquilibrium for starting with respective simulation.
+Set calculation type to outOfEquilibrium for starting with respective simulation.
+
+````julia
     ctsys.data.calculation_type      = outOfEquilibrium
-     
+
     maxBias                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     biasValues                       = range(0, stop = maxBias, length = 41)
     IV                               = zeros(0)
@@ -292,17 +300,17 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     for Δu in biasValues
 
-        ## set non equilibrium boundary conditions
+        # set non equilibrium boundary conditions
         set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
 
         solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
 
         initialGuess .= solution
 
-        ## get IV curve
+        # get IV curve
         factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
 
-        ## testfunction zero in bregionAcceptor and one in bregionDonor
+        # testfunction zero in bregionAcceptor and one in bregionDonor
         tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])
         I      = integrate(ctsys.fvmsys, tf, solution)
 
@@ -310,7 +318,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     end # bias loop
 
-    
+
     if plotting # plot solution and IV curve
         plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])",  label_energy)
         Plotter.figure()
@@ -336,3 +344,9 @@ if test == false
 end
 
 end # module
+````
+
+---
+
+*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
+

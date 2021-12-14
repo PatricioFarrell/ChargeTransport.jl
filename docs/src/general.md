@@ -48,8 +48,8 @@ We recommend on having a look on the example files. A guide on how to understand
 
 ```@contents
 Pages = [
-    "examples/GaAs.md",
-    "examples/PSC.md",
+    "GaAs.md",
+    "PSC.md",
     ]
 Depth = 2
 ```

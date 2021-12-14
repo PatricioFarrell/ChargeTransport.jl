@@ -1,10 +1,9 @@
-#=
 # GaAs diode: transient with traps (1D).
-([source code](SOURCE_URL))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample109_Traps.jl))
 
 Simulating transient charge transport in a GaAs pin diode with an electron trap.
-=#
 
+````julia
 module Example109_Traps
 
 using VoronoiFVM
@@ -13,12 +12,12 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-## function to initialize the grid for a possble extension to other p-i-n devices.
+# function to initialize the grid for a possble extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
     coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 3 * refinementfactor))
     coord_intrinsic  = collect(range(h_ndoping, stop = (h_ndoping + h_intrinsic), length = 3 * refinementfactor))
-    coord_pdoping    = collect(range((h_ndoping + h_intrinsic), 
-                                        stop = (h_ndoping + h_intrinsic + h_pdoping), 
+    coord_pdoping    = collect(range((h_ndoping + h_intrinsic),
+                                        stop = (h_ndoping + h_intrinsic + h_pdoping),
                                         length = 3 * refinementfactor))
     coord            = glue(coord_ndoping, coord_intrinsic)
     coord            = glue(coord, coord_pdoping)
@@ -34,20 +33,20 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## region numbers
+    # region numbers
     regionAcceptor          = 1                           # p doped region
     regionIntrinsic         = 2                           # intrinsic region
     regionDonor             = 3                           # n doped region
     regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
     numberOfRegions         = length(regions)
 
-    ## boundary region numbers
+    # boundary region numbers
     bregionAcceptor         = 1
     bregionDonor            = 2
     bregions                = [bregionAcceptor, bregionDonor]
     numberOfBoundaryRegions = length(bregions)
 
-    ## grid
+    # grid
     refinementfactor        = 2^(n-1)
     h_pdoping               = 2.0    * μm
     h_intrinsic             = 2.0    * μm
@@ -62,10 +61,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     grid                    = simplexgrid(coord)
 
-    ## set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm], [h_pdoping], regionAcceptor)                                        # p-doped 
-    cellmask!(grid, [h_pdoping], [h_pdoping + h_intrinsic], regionIntrinsic)                        # intrinsic 
-    cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)  # n-doped 
+    # set different regions in grid, doping profiles do not intersect
+    cellmask!(grid, [0.0 * μm], [h_pdoping], regionAcceptor)                                        # p-doped
+    cellmask!(grid, [h_pdoping], [h_pdoping + h_intrinsic], regionIntrinsic)                        # intrinsic
+    cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)  # n-doped
 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
@@ -88,35 +87,35 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     iphit              = 3 # index trap quasi Fermi potential
     numberOfCarriers   = 3 # electrons, holes and traps
 
-    ## physical data
+    # physical data
     Ec                  = 1.424                             *  eV
     Ev                  = 0.0                               *  eV
-    Et                  = 0.6                               *  eV               
+    Et                  = 0.6                               *  eV
     Nc                  = 4.351959895879690e17              / (cm^3)
     Nv                  = 9.139615903601645e18              / (cm^3)
-    Nt                  = 1e16                              / (cm^3)            
+    Nt                  = 1e16                              / (cm^3)
     mun                 = 8500.0                            * (cm^2) / (V * s)
     mup                 = 400.0                             * (cm^2) / (V * s)
     mut                 = 0.0                               * (cm^2) / (V * s)  # such that there is no flux
     εr                  = 12.9                              *  1.0              # relative dielectric permittivity of GAs
     T                   = 300.0                             *  K
 
-    ## recombination parameters
+    # recombination parameters
     ni                  = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T))        # intrinsic concentration
     n0                  = Nc * Boltzmann( (Et-Ec) / (kB*T) )                    # Boltzmann equilibrium concentration
     p0                  = ni^2 / n0                                             # Boltzmann equilibrium concentration
     Auger               = 1.0e-29                           * cm^6 / s          # 1.0e-41
-    SRH_LifeTime        = 1.0e-3                            * ns               
+    SRH_LifeTime        = 1.0e-3                            * ns
     Radiative           = 1.0e-10                           * cm^3 / s          # 1.0e-16
     G                   = 1.0e25                            / (cm^3 * s)
 
-    ## doping -- trap doping will not be set and thus automatically zero
+    # doping -- trap doping will not be set and thus automatically zero
     dopingFactorNd      = 1.0
     dopingFactorNa      = 0.46
     Nd                  = dopingFactorNd * Nc
     Na                  = dopingFactorNa * Nv
 
-    ## contact voltages
+    # contact voltages
     voltageAcceptor     = 1.5                               * V
 
     if test == false
@@ -128,35 +127,35 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## initialize Data instance and fill in data
+    # initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
 
-    ## possible choices: model_stationary, model_transient
+    # possible choices: model_stationary, model_transient
     data.model_type                     = model_transient
 
-    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
-    ## Here we enable the traps and parse the respective index and the regions where the trap is defined.
+    # Here we enable the traps and parse the respective index and the regions where the trap is defined.
     enable_traps!(data = data, traps = iphit, regions = regions)
 
-    ## possible choices: generation_none, generation_uniform
+    # possible choices: generation_none, generation_uniform
     data.generation_model               = generation_uniform
 
-    ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    ## interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact                        
-    data.boundary_type[bregionDonor]    = ohmic_contact    
-    
-    ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
+    # possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
+    # interface_model_surface_recombination (inner boundary).
+    data.boundary_type[bregionAcceptor] = ohmic_contact
+    data.boundary_type[bregionDonor]    = ohmic_contact
+
+    # possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
+    # excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
     data.flux_approximation             = excess_chemical_potential
-    
+
     if test == false
         println("*** done\n")
     end
@@ -189,7 +188,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         params.dielectricConstant[ireg]                 = εr
 
-        ## effective DOS, band-edge energy and mobilities
+        # effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
         params.densityOfStates[iphip, ireg]             = Nv
         params.densityOfStates[iphit, ireg]             = Nt
@@ -200,7 +199,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.mobility[iphip, ireg]                    = mup
         params.mobility[iphit, ireg]                    = mut
 
-        ## recombination parameters
+        # recombination parameters
         params.recombinationRadiative[ireg]             = Radiative
         params.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime
         params.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime
@@ -209,18 +208,18 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.recombinationAuger[iphin, ireg]          = Auger
         params.recombinationAuger[iphip, ireg]          = Auger
         params.generationUniform[ireg]                  = G
-        
+
     end
 
-    ## doping -- since we do not set any doping for the traps it is automatically zero
-    params.doping[iphin, regionDonor]                   = Nd       
-    params.doping[iphin, regionIntrinsic]               = ni      
-    params.doping[iphip, regionIntrinsic]               = 0.0    
+    # doping -- since we do not set any doping for the traps it is automatically zero
+    params.doping[iphin, regionDonor]                   = Nd
+    params.doping[iphin, regionIntrinsic]               = ni
+    params.doping[iphip, regionIntrinsic]               = 0.0
     params.doping[iphip, regionAcceptor]                = Na
 
-    ## boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd      
-    params.bDoping[iphip, bregionAcceptor]              = Na     
+    # boundary doping
+    params.bDoping[iphin, bregionDonor]                 = Nd
+    params.bDoping[iphip, bregionAcceptor]              = Na
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
@@ -236,7 +235,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## set zero voltage ohmic contacts for each charge carrier at all outerior boundaries.
+    # set zero voltage ohmic contacts for each charge carrier at all outerior boundaries.
     set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
     set_ohmic_contact!(ctsys, bregionDonor,    0.0)
 
@@ -272,36 +271,36 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     data.calculation_type = inEquilibrium
 
-    ## initialize solution and starting vectors
+    # initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
     solution              = unknowns(ctsys)
 
-    ## solve thermodynamic equilibrium and update initial guess
+    # solve thermodynamic equilibrium and update initial guess
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-    initialGuess         .= solution 
+    initialGuess         .= solution
 
     if test == false
         println("*** done\n")
     end
 
-    if plotting 
-        ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+    if plotting
+        # ##### set legend for plotting routines #####
+        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
         label_density  = Array{String, 1}(undef, numberOfCarriers)
         label_solution = Array{String, 1}(undef, numberOfCarriers)
 
-        ## for electrons 
+        # for electrons
         label_energy[1, iphin] = "\$E_c-q\\psi\$";       label_energy[2, iphin] = "\$ - q \\varphi_n\$"
         label_density[iphin]   = "n";                    label_solution[iphin]  = "\$ \\varphi_n\$"
 
-        ## for holes 
+        # for holes
         label_energy[1, iphip] = "\$E_v-q\\psi\$";       label_energy[2, iphip] = "\$ - q \\varphi_p\$"
         label_density[iphip]   = "p";                    label_solution[iphip]  = "\$ \\varphi_p\$"
 
-        ## for traps 
+        # for traps
         label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
         label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
-        ## ##### set legend for plotting routines #####
+        # ##### set legend for plotting routines #####
         plot_energies(Plotter, grid, data, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution,"Equilibrium", label_density)
@@ -333,10 +332,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## set calculation type to outOfEquilibrium for starting with respective simulation.
+    # set calculation type to outOfEquilibrium for starting with respective simulation.
     ctsys.data.calculation_type   = outOfEquilibrium
 
-    ## Scan rate and time steps
+    # Scan rate and time steps
     scanrate                      = 1.0 * V/s
     number_tsteps                 = 81
     endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
@@ -344,16 +343,16 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     IV                            = zeros(0) # for IV values
     biasValues                    = zeros(0) # for bias values
 
-    ## The end time then is calculated here:
+    # The end time then is calculated here:
     tend                          = endVoltage/scanrate
 
-    ## with fixed timestep sizes we can calculate the times
-    ## a priori
+    # with fixed timestep sizes we can calculate the times
+    # a priori
     tvalues                       = range(0.0, stop = tend, length = number_tsteps)
 
     steps                         = 35
     I                             = collect(steps:-1:0.0)
-    LAMBDA                        = 10 .^ (I) 
+    LAMBDA                        = 10 .^ (I)
     Δt                            = tvalues[2] - tvalues[1]
 
     for i in 1:length(LAMBDA)
@@ -362,7 +361,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         end
         ctsys.data.params.recombinationSRHLifetime[iphin,regions] .= LAMBDA[i] * SRH_LifeTime
         ctsys.data.params.recombinationSRHLifetime[iphip,regions] .= LAMBDA[i] * SRH_LifeTime
-        
+
         data.λ2 = 1 / (LAMBDA[i] )
         VoronoiFVM.solve!(solution, initialGuess, ctsys, control = control, tstep=Δt)
         initialGuess = solution
@@ -380,21 +379,21 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     for istep = 2:number_tsteps
 
         t                     = tvalues[istep]          # Actual time
-        Δu                    = t*scanrate              # Applied voltage 
+        Δu                    = t*scanrate              # Applied voltage
         Δt                    = t - tvalues[istep-1]    # Time step size
 
-        ## Apply new voltage: set non equilibrium boundary conditions
+        # Apply new voltage: set non equilibrium boundary conditions
         set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
 
         if verbose
             println("time value: t = $(t)")
         end
 
-        ## Solve time step problems with timestep Δt. initialGuess plays the role of the solution
-        ## from last timestep
+        # Solve time step problems with timestep Δt. initialGuess plays the role of the solution
+        # from last timestep
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
-        ## get I-V data
+        # get I-V data
         current = get_current_val(ctsys, solution, initialGuess, Δt)
 
         push!(IV, w_device * z_device * current)
@@ -410,8 +409,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("*** done\n")
     end
 
-    ## plot solution and IV curve
-    if plotting 
+    # plot solution and IV curve
+    if plotting
         plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_density)
@@ -440,3 +439,9 @@ if test == false
 end
 
 end # module
+````
+
+---
+
+*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
+

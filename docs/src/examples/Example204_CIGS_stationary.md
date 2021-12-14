@@ -1,10 +1,9 @@
-#=
 # CIGS pn junction: stationary with trap and Schottky contacts.
-([source code](SOURCE_URL))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample204_CIGS_stationary.jl))
 
 Simulating stationary charge transport in a pn junction with hole traps and a Schottky boundary condition.
-=#
 
+````julia
 module Example204_CIGS_stationary
 
 using VoronoiFVM
@@ -13,16 +12,16 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-## function to initialize the grid for a possble extension to other p-i-n devices.
+# function to initialize the grid for a possble extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_pdoping_left, h_pdoping_trap, h_pdoing_right)
     coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 2 * refinementfactor))
     coord_pdoping_left  = collect(range(h_ndoping, stop = (h_ndoping + h_pdoping_left), length = 3 * refinementfactor))
-    coord_pdoping_plus  = collect(range((h_ndoping + h_pdoping_left), 
-                                        stop = (h_ndoping + h_pdoping_left + h_pdoping_trap), 
+    coord_pdoping_plus  = collect(range((h_ndoping + h_pdoping_left),
+                                        stop = (h_ndoping + h_pdoping_left + h_pdoping_trap),
                                         length =  refinementfactor))
-    coord_pdoping_right = collect(range((h_ndoping + h_pdoping_left + h_pdoping_trap), 
-                                        stop = (h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right), 
-                                        length = 3 * refinementfactor))                                    
+    coord_pdoping_right = collect(range((h_ndoping + h_pdoping_left + h_pdoping_trap),
+                                        stop = (h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right),
+                                        length = 3 * refinementfactor))
     coord            = glue(coord_ndoping, coord_pdoping_left)
     coord            = glue(coord, coord_pdoping_plus)
     coord            = glue(coord, coord_pdoping_right)
@@ -36,7 +35,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("Set up grid and regions")
     ################################################################################
 
-    ## region numbers
+    # region numbers
     regionDonor         = 1                           # n doped region
     regionAcceptorLeft  = 2                           # p doped region
     regionAcceptorTrap  = 3                           # p doped region with trap
@@ -44,13 +43,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     regions             = [regionDonor, regionAcceptorLeft, regionAcceptorTrap, regionAcceptorRight]
     numberOfRegions     = length(regions)
 
-    ## boundary region numbers
+    # boundary region numbers
     bregionDonor            = 1
     bregionAcceptor         = 2
     bregions                = [bregionDonor, bregionAcceptor]
     numberOfBoundaryRegions = length(bregions)
 
-    ## grid
+    # grid
     refinementfactor        = 2^(n-1)
     h_ndoping               = 0.5 * μm
     h_pdoping_left          = 1 * μm
@@ -64,15 +63,15 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     grid                    = simplexgrid(coord)
 
-    ## set different regions in grid, doping profiles do not intersect
-    ## n doped 
-    cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)          
-    ## p doped                    
-    cellmask!(grid, [h_ndoping], [h_ndoping + h_pdoping_left], regionAcceptorLeft)    
-    ## p doped with traps
-    cellmask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left + h_pdoping_trap], regionAcceptorTrap)  
-    ## p doped
-    cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right], regionAcceptorRight)   
+    # set different regions in grid, doping profiles do not intersect
+    # n doped
+    cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)
+    # p doped
+    cellmask!(grid, [h_ndoping], [h_ndoping + h_pdoping_left], regionAcceptorLeft)
+    # p doped with traps
+    cellmask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left + h_pdoping_trap], regionAcceptorTrap)
+    # p doped
+    cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right], regionAcceptorRight)
 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
@@ -91,18 +90,18 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     iphit             = 3 # index trap quasi Fermi potential
     numberOfCarriers  = 3 # electrons, holes and traps
 
-    ## physical data
+    # physical data
     Ec                = 1.424                *  eV
     Ev                = 0.0                  *  eV
-    Et                = 0.6                  *  eV               
+    Et                = 0.6                  *  eV
     Nc                = 4.351959895879690e17 / (cm^3)
     Nv                = 9.139615903601645e18 / (cm^3)
-    Nt                = 5e14                / (cm^3)   
-    Nt_low            = Nt#/1e3                        
+    Nt                = 5e14                / (cm^3)
+    Nt_low            = Nt#/1e3
     mun               = 10.0                 * (cm^2) / (V * s)
     mup               = 4.0                  * (cm^2) / (V * s)
     mut               = 0                    * (cm^2) / (V * s)  # no flux for traps
-    εr                = 12.9                 *  1.0              
+    εr                = 12.9                 *  1.0
     T                 = 300.0                *  K
 
     An                = 4 * pi * q * mₑ * kB^2 / Planck_constant^3
@@ -111,20 +110,20 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     vp                = Ap * T^2 / (q*Nv)
     barrier           = 0.1 * eV
 
-    ## recombination parameters
+    # recombination parameters
     ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) # intrinsic concentration
     n0                = Nc * Boltzmann( (Et-Ec) / (kB*T) )             # Boltzmann equilibrium concentration
     p0                = ni^2 / n0                                      # Boltzmann equilibrium concentration
     Auger             = 1.0e-29  * cm^6 / s          # 1.0e-41 m^6 / s
-    SRH_LifeTime      = 1.0e-3   * ns               
+    SRH_LifeTime      = 1.0e-3   * ns
     Radiative         = 1.0e-10  * cm^3 / s          # 1.0e-16 m^3 / s
     G                 = 1.0e20  / (cm^3 * s)
 
-    ## doping -- trap doping will not be set and thus automatically zero
+    # doping -- trap doping will not be set and thus automatically zero
     Nd                = Nc
-    Na                = 1.0e16 / (cm^3)   
+    Na                = 1.0e16 / (cm^3)
 
-    ## we will impose this applied voltage on one boundary
+    # we will impose this applied voltage on one boundary
     voltageAcceptor   = 2.0 * V
 
     println("*** done\n")
@@ -132,40 +131,40 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("Define System and fill in information about model")
     ################################################################################
 
-    ## initialize Data instance and fill in data
+    # initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
 
-    ## possible choices: model_stationary, model_transient
+    # possible choices: model_stationary, model_transient
     data.model_type                     = model_stationary
 
-    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
-    
-    ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    ## interface_model_surface_recombination (inner boundary).
+
+    # possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
+    # interface_model_surface_recombination (inner boundary).
     data.generation_model               = generation_uniform
 
-    ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
-    ## In this application ion vacancies only live in active perovskite layer
-    data.boundary_type[bregionAcceptor] = schottky_contact                       
-    data.boundary_type[bregionDonor]    = ohmic_contact    
-    
-    ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
+    # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
+    # In this application ion vacancies only live in active perovskite layer
+    data.boundary_type[bregionAcceptor] = schottky_contact
+    data.boundary_type[bregionDonor]    = ohmic_contact
+
+    # possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
+    # excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
     data.flux_approximation             = excess_chemical_potential
-   
+
     println("*** done\n")
 
     ################################################################################
     println("Define Params and fill in physical parameters")
     ################################################################################
 
-    ## physical parameters
+    # physical parameters
     params                                              = Params(grid, numberOfCarriers)
     params.temperature                                  = T
     params.UT                                           = (kB * params.temperature) / q
@@ -187,7 +186,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         params.dielectricConstant[ireg]                 = εr
 
-        ## effective DOS, band-edge energy and mobilities
+        # effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
         params.densityOfStates[iphip, ireg]             = Nv
         params.bandEdgeEnergy[iphin, ireg]              = Ec
@@ -197,7 +196,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.mobility[iphip, ireg]                    = mup
         params.mobility[iphit, ireg]                    = mut
 
-        ## recombination parameters
+        # recombination parameters
         params.recombinationRadiative[ireg]             = Radiative
         params.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime
         params.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime
@@ -205,35 +204,35 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.recombinationSRHTrapDensity[iphip, ireg] = p0
         params.recombinationAuger[iphin, ireg]          = Auger
         params.recombinationAuger[iphip, ireg]          = Auger
-        
+
     end
 
-    ## (uniform) generation only in donor region: can be improved later with exp decay
+    # (uniform) generation only in donor region: can be improved later with exp decay
     params.generationUniform[regionDonor]          = 0.0
     params.generationUniform[regionAcceptorLeft]   = G
     params.generationUniform[regionAcceptorTrap]   = G
     params.generationUniform[regionAcceptorRight]  = G
 
-    ## hole trap density only high in grain
+    # hole trap density only high in grain
     params.densityOfStates[iphit, regionDonor]          = Nt_low
     params.densityOfStates[iphit, regionAcceptorLeft]   = Nt_low
     params.densityOfStates[iphit, regionAcceptorTrap]   = Nt
     params.densityOfStates[iphit, regionAcceptorRight]  = Nt_low
 
-    ## doping -- since we do not set any doping for the traps it is automatically zero
-    params.doping[iphin, regionDonor]                   = Nd        
-    params.doping[iphip, regionAcceptorLeft]            = Na        
-    params.doping[iphip, regionAcceptorTrap]            = Na        
+    # doping -- since we do not set any doping for the traps it is automatically zero
+    params.doping[iphin, regionDonor]                   = Nd
+    params.doping[iphip, regionAcceptorLeft]            = Na
+    params.doping[iphip, regionAcceptorTrap]            = Na
     params.doping[iphip, regionAcceptorRight]           = Na
 
-    ## boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd        
-    params.bDoping[iphip, bregionAcceptor]              = Na   
-    
-    ## values for the schottky contacts
+    # boundary doping
+    params.bDoping[iphin, bregionDonor]                 = Nd
+    params.bDoping[iphip, bregionAcceptor]              = Na
+
+    # values for the schottky contacts
     params.SchottkyBarrier[bregionAcceptor]             = barrier
-    params.bVelocity[iphin,bregionAcceptor]             = vn 
-    params.bVelocity[iphip,bregionAcceptor]             = vp 
+    params.bVelocity[iphin,bregionAcceptor]             = vn
+    params.bVelocity[iphip,bregionAcceptor]             = vp
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
@@ -245,7 +244,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("Define outerior boundary conditions and enabled layers")
     ################################################################################
 
-    ## set ohmic contact in bregionDonor and schottky contact in bregionAcceptor
+    # set ohmic contact in bregionDonor and schottky contact in bregionAcceptor
     set_ohmic_contact!(ctsys, bregionDonor, 0.0)
     set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = 0.0)
 
@@ -272,36 +271,36 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("Compute solution in thermodynamic equilibrium")
     ################################################################################
 
-    ## initialize solution and starting vectors
+    # initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
     solution              = unknowns(ctsys)
 
-    data.calculation_type = inEquilibrium 
+    data.calculation_type = inEquilibrium
 
-    ## solve thermodynamic equilibrium and update initial guess
+    # solve thermodynamic equilibrium and update initial guess
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-    initialGuess         .= solution 
+    initialGuess         .= solution
 
     println("*** done\n")
 
-    if plotting 
-        ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+    if plotting
+        # ##### set legend for plotting routines #####
+        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
         label_density  = Array{String, 1}(undef, numberOfCarriers)
         label_solution = Array{String, 1}(undef, numberOfCarriers)
 
-        ## for electrons 
+        # for electrons
         label_energy[1, iphin] = "\$E_c-q\\psi\$";       label_energy[2, iphin] = "\$ - q \\varphi_n\$"
         label_density[iphin]   = "n";                    label_solution[iphin]  = "\$ \\varphi_n\$"
 
-        ## for holes 
+        # for holes
         label_energy[1, iphip] = "\$E_v-q\\psi\$";       label_energy[2, iphip] = "\$ - q \\varphi_p\$"
         label_density[iphip]   = "p";                    label_solution[iphip]  = "\$ \\varphi_p\$"
 
-        ## for traps 
+        # for traps
         label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
         label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
-        ## ##### set legend for plotting routines #####
+        # ##### set legend for plotting routines #####
         plot_energies(Plotter, grid, data, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution,"Equilibrium", label_density)
@@ -313,19 +312,19 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("Stationary bias loop")
     ################################################################################
 
-    ## set calculation type to outOfEquilibrium for starting with respective simulation.
+    # set calculation type to outOfEquilibrium for starting with respective simulation.
     ctsys.data.calculation_type   = outOfEquilibrium      # Rn = Rp = R, since the model type is stationary
     endVoltage                    = voltageAcceptor       # final bias value
 
-    IV         = zeros(0)   
-    maxBias    = voltageAcceptor    
+    IV         = zeros(0)
+    maxBias    = voltageAcceptor
     biasValues = collect(range(0, stop = maxBias, length = 52))
     chargeDensities = zeros(0)
 
     w_device = 0.5    * μm  # width of device
     z_device = 1.0e-4 * cm  # depth of device
 
-    ## adjust Newton parameters
+    # adjust Newton parameters
     control.tol_absolute      = 1.0e-10
     control.tol_relative      = 1.0e-10
     control.tol_round         = 1.0e-7
@@ -338,21 +337,21 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         Δu = biasValues[i] # bias
 
-        ## set non equilibrium boundary condition
+        # set non equilibrium boundary condition
         set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = Δu)
 
         if verbose
             println("bias: Δu = $(Δu)")
         end
 
-        ## solve time step problems with timestep Δt
+        # solve time step problems with timestep Δt
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 
-        ## save IV data
+        # save IV data
         current = get_current_val(ctsys, solution)
         push!(IV, w_device * z_device * current)
 
-        ## story charge density in donor region (ZnO)
+        # story charge density in donor region (ZnO)
         push!(chargeDensities,chargeDensity(ctsys,solution)[regionDonor])
 
         initialGuess .= solution
@@ -361,11 +360,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     println("*** done\n")
 
-    ## compute static capacitance: check this is correctly computed
+    # compute static capacitance: check this is correctly computed
     staticCapacitance = diff(chargeDensities) ./ diff(biasValues)
 
-    ## plot solution and IV curve
-    if plotting 
+    # plot solution and IV curve
+    if plotting
         plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_density)
@@ -381,73 +380,73 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         plot_IV(Plotter, biasValues,staticCapacitance, biasValues[end-1], plotGridpoints = true)
         Plotter.title("Static capacitance in donor region")
         Plotter.ylabel("Static capacitance [C/V]")
-        
-        ## Plotter.figure()
-        ## Plotter.yscale("symlog")
-        ## dens = compute_densities!(grid, data, solution)
-        ## n = dens[iphin,:] #.*1e6 # cm^(-3)
-        ## p = dens[iphip,:] #.*1e6 # cm^(-3)
-        ## t = dens[iphit,:]
-        ## # p_tr = N_t - n_tr
-        ## plot(coord, 1e-6*(Nt .- (p0*Nt .+ n.*Nt) ./ ((p0 .+p) .+ (n0 .+n))) )
-        ## Plotter.title("Check p_traps agrees with computed traps" )
 
-        ## Plotter.figure()
-        ## Plotter.yscale("symlog")
-        ## plot(coord, 1e-6*t .- 1e-6*(Nt .- (p0*Nt .+ n.*Nt) ./ ((p0 .+p) .+ (n0 .+n))) )
-        ## Plotter.title("Error" )
-        
+        # Plotter.figure()
+        # Plotter.yscale("symlog")
+        # dens = compute_densities!(grid, data, solution)
+        # n = dens[iphin,:] #.*1e6 # cm^(-3)
+        # p = dens[iphip,:] #.*1e6 # cm^(-3)
+        # t = dens[iphit,:]
+        # # p_tr = N_t - n_tr
+        # plot(coord, 1e-6*(Nt .- (p0*Nt .+ n.*Nt) ./ ((p0 .+p) .+ (n0 .+n))) )
+        # Plotter.title("Check p_traps agrees with computed traps" )
+
+        # Plotter.figure()
+        # Plotter.yscale("symlog")
+        # plot(coord, 1e-6*t .- 1e-6*(Nt .- (p0*Nt .+ n.*Nt) ./ ((p0 .+p) .+ (n0 .+n))) )
+        # Plotter.title("Error" )
+
     end
 
 
-    ## ipsi                          = data.index_psi
-    ## number_tsteps                 = 41
-    ## tend                          = 1*s
-    ## tvalues                       = range(0,stop=tend,length=number_tsteps)
+    # ipsi                          = data.index_psi
+    # number_tsteps                 = 41
+    # tend                          = 1*s
+    # tvalues                       = range(0,stop=tend,length=number_tsteps)
 
-    ## time loop
-    ## for istep = 2:number_tsteps
+    # time loop
+    # for istep = 2:number_tsteps
 
-    ##     t                     = tvalues[istep]          # Actual time
-    ##     Δt                    = t - tvalues[istep-1]    # Time step size
+    #     t                     = tvalues[istep]          # Actual time
+    #     Δt                    = t - tvalues[istep-1]    # Time step size
 
-    ##     if verbose
-    ##         println("time:  = $(t)")
-    ##     end
+    #     if verbose
+    #         println("time:  = $(t)")
+    #     end
 
-    ##      # Solve time step problems with timestep Δt
-    ##     solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+    #      # Solve time step problems with timestep Δt
+    #     solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
-    ##     # get I-V data
-    ##     current = get_current_val(ctsys, solution)
+    #     # get I-V data
+    #     current = get_current_val(ctsys, solution)
 
-    ##     push!(IV, w_device * z_device * current)
-    ##     push!(biasValues,endVoltage)
+    #     push!(IV, w_device * z_device * current)
+    #     push!(biasValues,endVoltage)
 
-    ##     initialGuess .= solution
+    #     initialGuess .= solution
 
-    ## end # time loop
+    # end # time loop
 
-    ## if test == false
-    ##     println("*** done\n")
-    ## end    
+    # if test == false
+    #     println("*** done\n")
+    # end
 
-    ## plot solution and IV curve
-    ## if plotting 
-    ##     plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_energy)
-    ##     Plotter.figure()
-    ##     plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_density)
-    ##     Plotter.figure()
-    ##     plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_solution)
-    ##     Plotter.figure()
-    ##     plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
-    ## end
+    # plot solution and IV curve
+    # if plotting
+    #     plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_energy)
+    #     Plotter.figure()
+    #     plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_density)
+    #     Plotter.figure()
+    #     plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_solution)
+    #     Plotter.figure()
+    #     plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+    # end
 
-    ## println("Max error")
-    ## @show max(abs.(solution_stationary_bias[iphin,:].-solution[iphin,:])...)
-    ## @show max(abs.(solution_stationary_bias[iphip,:].-solution[iphip,:])...)
-    ## @show max(abs.(solution_stationary_bias[iphit,:].-solution[iphit,:])...)
-    ## @show max(abs.(solution_stationary_bias[ipsi,:].-solution[ipsi,:])...)
+    # println("Max error")
+    # @show max(abs.(solution_stationary_bias[iphin,:].-solution[iphin,:])...)
+    # @show max(abs.(solution_stationary_bias[iphip,:].-solution[iphip,:])...)
+    # @show max(abs.(solution_stationary_bias[iphit,:].-solution[iphit,:])...)
+    # @show max(abs.(solution_stationary_bias[ipsi,:].-solution[ipsi,:])...)
 
     testval = solution[data.index_ipsi, 10]
     return testval
@@ -465,3 +464,9 @@ println("This message should show when this module has successfully recompiled."
 
 
 end # module
+````
+
+---
+
+*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
+

@@ -1,5 +1,5 @@
 #=
-# 104: 1D PSC p-i-n device with graded interfaces & Schottky contacts.
+# PSC device with graded interfaces & Schottky contacts (1D).
 ([source code](SOURCE_URL))
 
 Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions.
@@ -8,7 +8,7 @@ two junctions between perovskite layer and transport layers, to
 which we refer as graded interfaces.
 Hence, a graded flux discretization with space dependent
 band-edge energies and density of states is tested here.
-Additionally, to that instead of the usual ohmic contacts, we tested here Schottky contacts.
+Additionally to that instead of the usual ohmic contacts, we tested here Schottky contacts.
 
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
@@ -25,7 +25,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-# function for grading the physical parameters 
+## function for grading the physical parameters 
 function gradingParameter(physicalParameter, coord, regionTransportLayers, regionJunctions, h, heightLayers, lengthLayers, values)
     for ireg in regionTransportLayers
 
@@ -60,7 +60,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # region numbers
+    ## region numbers
     regionDonor             = 1                           # n doped region
     regionJunction1         = 2
     regionIntrinsic         = 3                           # intrinsic region
@@ -71,13 +71,13 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     regionJunctions         = [regionJunction1, regionJunction2]
     numberOfRegions         = length(regions)
 
-    # boundary region numbers
+    ## boundary region numbers
     bregionDonor            = 1
     bregionAcceptor         = 2
     bregions                = [bregionDonor, bregionAcceptor]
     numberOfBoundaryRegions = length(bregions)
 
-    # grid
+    ## grid
     h_ndoping               = 9.90e-6 * cm 
     h_junction1             = 1.0e-7  * cm
     h_intrinsic             = 4.00e-5 * cm
@@ -118,7 +118,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfNodes           = length(coord)
     lengthLayers            = [1, length_n, length_j1, length_i, length_j2, numberOfNodes]
 
-    # set different regions in grid, doping profiles do not intersect
+    ## set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor)       # n-doped region   = 1
     cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionJunction1)   # first junction   = 2  
     cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionIntrinsic)   # intrinsic region = 3  
@@ -141,17 +141,17 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # set indices of the quasi Fermi potentials
+    ## set indices of the quasi Fermi potentials
     iphin                   = 1 # electron quasi Fermi potential
     iphip                   = 2 # hole quasi Fermi potential
     numberOfCarriers        = 2 
 
-    ##########      physical data      ##########
-    # temperature
+    ## ##########      physical data      ##########
+    ## temperature
     T                       = 300.0                 *  K
 
     Eref                    = 4.1                   *  eV  # reference energy
-    # band edge energies    
+    ## band edge energies    
     Ec_d                    = -4.0                  *  eV  + Eref
     Ev_d                    = -6.0                  *  eV  + Eref
 
@@ -161,14 +161,14 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     Ec_a                    = -3.1                  *  eV  + Eref 
     Ev_a                    = -5.1                  *  eV  + Eref 
     
-    # these parameters at the junctions for E_\alpha and N_\alpha will be overwritten.
+    ## these parameters at the junctions for E_\alpha and N_\alpha will be overwritten.
     Ec_j1                   = Ec_d;     Ec_j2     = Ec_i
     Ev_j1                   = Ev_d;     Ev_j2     = Ev_i
           
     EC                      = [Ec_d, Ec_j1, Ec_i, Ec_j2, Ec_a] 
     EV                      = [Ev_d, Ev_j1, Ev_i, Ev_j2, Ev_a] 
 
-    # effective densities of state
+    ## effective densities of state
     Nc_d                    = 5.0e19                / (cm^3)
     Nv_d                    = 5.0e19                / (cm^3)
 
@@ -184,7 +184,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     NC                      = [Nc_d, Nc_j1, Nc_i, Nc_j2, Nc_a]
     NV                      = [Nv_d, Nv_j1, Nv_i, Nv_j2, Nv_a]
  
-    # mobilities 
+    ## mobilities 
     μn_d                    = 3.89                  * (cm^2) / (V * s)  
     μp_d                    = 3.89                  * (cm^2) / (V * s)  
 
@@ -200,7 +200,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     μn                      = [μn_d, μn_j1, μn_i, μn_j2, μn_a] 
     μp                      = [μp_d, μp_j1, μp_i, μp_j2, μp_a] 
 
-    # relative dielectric permittivity  
+    ## relative dielectric permittivity  
     ε_d                     = 10.0                  *  1.0  
     ε_i                     = 24.1                  *  1.0 
     ε_a                     = 3.0                   *  1.0 
@@ -209,7 +209,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
  
     ε                       = [ε_d, ε_j1, ε_i, ε_j2, ε_a] 
 
-    # radiative recombination
+    ## radiative recombination
     r0_d                   = 0.0e+0               * cm^3 / s 
     r0_i                   = 1.0e-12              * cm^3 / s  
     r0_a                   = 0.0e+0               * cm^3 / s
@@ -218,7 +218,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         
     r0                     = [r0_d, r0_j1, r0_i, r0_j2, r0_a]
         
-    # life times and trap densities 
+    ## life times and trap densities 
     τn_d                   = 1.0e100              * s 
     τp_d                   = 1.0e100              * s
         
@@ -233,7 +233,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     τn                     = [τn_d, τn_j1, τn_i, τn_j2, τn_a]
     τp                     = [τp_d, τp_j1, τp_i, τp_j2, τp_a]
         
-    # SRH trap energies (needed for calculation of trap_density! (SRH))
+    ## SRH trap energies (needed for calculation of trap_density! (SRH))
     Ei_d                   = -5.0                 * eV   
     Ei_i                   = -4.55                * eV   
     Ei_a                   = -4.1                 * eV   
@@ -242,15 +242,14 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     EI                     = [Ei_d, Ei_j1, Ei_i, Ei_j2, Ei_a]
         
-    # Auger recombination
+    ## Auger recombination
     Auger                  = 0.0
 
-    # doping (doping values are from Driftfusion)
+    ## doping (doping values are from Driftfusion)
     Nd                     = 1.03e18             / (cm^3) 
     Na                     = 1.03e18             / (cm^3) 
 
-    # contact voltages: we impose an applied voltage only on one boundary.
-    # At the other boundary the applied voltage is zero.
+    ## contact voltages
     voltageAcceptor        =  1.2                 * V 
 
     if test == false
@@ -263,32 +262,29 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # initialize Data instance and fill in data
+    ## initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
 
-    #### declare here all necessary information concerning the model ###
+    ## #### declare here all necessary information concerning the model ###
 
-    # Following variable declares, if we want to solve stationary or transient problem
+    ## possible choices: model_stationary, model_transient
     data.model_type                     = model_stationary
     
-    # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    # Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination 
-    # processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by 
-    # the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
-    # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
-    # For inner boundaries we have interface_model_none, interface_model_surface_recombination.
+    ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
+    ## interface_model_surface_recombination (inner boundary).
     data.boundary_type[bregionDonor]    = schottky_contact   
     data.boundary_type[bregionAcceptor] = schottky_contact       
      
-    # Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
-    # excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
+    ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
+    ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
     data.flux_approximation             = scharfetter_gummel_graded
     
     ################################################################################
@@ -297,9 +293,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # for region dependent parameters
+    ## for region dependent parameters
     params                                              = Params(grid, numberOfCarriers)
-    # for space dependent parameters
+    ## for space dependent parameters
     paramsnodal                                         = ParamsNodal(grid, numberOfCarriers)
 
 
@@ -308,29 +304,29 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
 
-    # nodal band-edge energies
+    ## nodal band-edge energies
     paramsnodal.bandEdgeEnergy[iphin, :]  = gradingParameter(paramsnodal.bandEdgeEnergy[iphin, :],
                                                              coord, regionTransportLayers, regionJunctions, h,
                                                              heightLayers, lengthLayers, EC)
     paramsnodal.bandEdgeEnergy[iphip, :]  = gradingParameter(paramsnodal.bandEdgeEnergy[iphip, :],
                                                              coord, regionTransportLayers, regionJunctions, h,
                                                              heightLayers, lengthLayers, EV)
-    # nodal effective density of states
+    ## nodal effective density of states
     paramsnodal.densityOfStates[iphin, :] = gradingParameter(paramsnodal.densityOfStates[iphin, :],
                                                              coord, regionTransportLayers, regionJunctions, h,
                                                              heightLayers, lengthLayers, NC)
     paramsnodal.densityOfStates[iphip, :] = gradingParameter(paramsnodal.densityOfStates[iphip, :],
                                                              coord, regionTransportLayers, regionJunctions, h,
                                                              heightLayers, lengthLayers, NV)
-    # region dependent data
+    ## region dependent data
     for ireg in 1:numberOfRegions
 
-        # mobility
+        ## mobility
         params.mobility[iphin, ireg]                    = μn[ireg]
         params.mobility[iphip, ireg]                    = μp[ireg]
 
         params.dielectricConstant[ireg]                 = ε[ireg]
-        # recombination parameters
+        ## recombination parameters
         params.recombinationRadiative[ireg]             = r0[ireg]
         params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
         params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
@@ -341,41 +337,27 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     end           
     
-    # interior doping
+    ## interior doping
     params.doping[iphin, regionDonor]               = Nd   
     params.doping[iphip, regionAcceptor]            = Na     
                              
-    # boundary doping
+    ## boundary doping
     params.bDoping[iphip, bregionAcceptor]          = Na        # data.bDoping  = [Na  0.0;
     params.bDoping[iphin, bregionDonor]             = Nd        #                  0.0  Nd]
 
-    # values for the schottky contacts
+    ## values for the schottky contacts
     params.SchottkyBarrier[bregionDonor]            =  0.0
     params.SchottkyBarrier[bregionAcceptor]         = -5.0  * eV  -  (-4.1  * eV) # difference between boundary Fermi level 
     params.bVelocity                                = [1.0e7 * cm/s    0.0   * cm/s;
                                                        0.0   * cm/s    1.0e7 * cm/s]
 
-    # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
-    # in next step.
+
     data.params                                     = params
-
-
-
-    # same holds true for space dependent params
     data.paramsnodal                                = paramsnodal
-
-    # in the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
-    # important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
-    # but rather on default data.
     ctsys                                           = System(grid, data, unknown_storage=unknown_storage)
     
-    ########### It is also possible to print the nodal dependent data, but for the sake of readibility
-    ########### we neglect this here.
-    # print data
+
     if test == false
-        # show region dependent physical parameters. show_params() only supports region dependent parameters, but, if one wishes to
-        # print nodal dependent parameters, currently this is possible with println(ctsys.data.paramsnodal). We neglected here, since
-        # in most applications where the numberOfNodes is >> 10 this would results in a large output in the terminal.
         show_params(ctsys)
     end
 
@@ -388,8 +370,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # set Schottky contacts. For this we need to know at which outer boundary the contact
-    # voltage shall be applied (which is in this case bregionAcceptor)
+    ## set Schottky contacts. For this we need to know at which outer boundary the contact
+    ## voltage shall be applied (which is in this case bregionAcceptor)
     set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = 0.0)
     set_schottky_contact!(ctsys, bregionDonor, appliedVoltage = 0.0)
 
@@ -431,19 +413,19 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     initialGuess         .= solution 
 
     if plotting
-        ##### set legend for plotting routines #####
+        ## ##### set legend for plotting routines #####
         label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
         label_density  = Array{String, 1}(undef, numberOfCarriers)
         label_solution = Array{String, 1}(undef, numberOfCarriers)
                 
-        # for electrons 
+        ## for electrons 
         label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"
         label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
                 
-        # for holes 
+        ## for holes 
         label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"
         label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
-        ##### set legend for plotting routines #####
+        ## ##### set legend for plotting routines #####
         plot_energies(Plotter,  grid, data, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution, "Equilibrium", label_density)
@@ -476,7 +458,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
             println("Bias value: Δu = $(Δu)")
         end
 
-        # set non equilibrium boundary conditions
+        ## set non equilibrium boundary conditions
         set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = Δu)
 
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
@@ -485,7 +467,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     end # bias loop
 
-    #plotting
+    ## plotting
     if plotting
         plot_energies(Plotter,  grid, data, solution, "Applied voltage Δu = $maxBias", label_energy)
         Plotter.figure()
