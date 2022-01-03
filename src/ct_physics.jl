@@ -4,7 +4,7 @@
 """
 $(TYPEDSIGNATURES)
 
-Defining locally the effective DOS for interior nodes.
+Defining locally the effective DOS for interior nodes (analogously for boundary nodes and edges).
 """
 function get_DOS!(icc, node::VoronoiFVM.Node, data)
 
@@ -12,22 +12,14 @@ function get_DOS!(icc, node::VoronoiFVM.Node, data)
 
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-Defining locally the effective DOS for boundary nodes.
-"""
+# Defining locally the effective DOS for boundary nodes.
 function get_DOS!(icc, bnode::VoronoiFVM.BNode, data)
 
     data.tempDOS1[icc] = data.params.bDensityOfStates[icc, bnode.region] + data.paramsnodal.densityOfStates[icc, bnode.index]
 
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-Defining locally the effective DOS for edges.
-"""
+# Defining locally the effective DOS for edges.
 function get_DOS!(icc, edge::VoronoiFVM.Edge, data)
 
     data.tempDOS1[icc] = data.params.densityOfStates[icc, edge.region] + data.paramsnodal.densityOfStates[icc, edge.node[1]]
@@ -39,7 +31,7 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defining locally the band-edge energy for interior nodes.
+Defining locally the band-edge energy for interior nodes (analougesly for boundary nodes and edges).
 """
 function get_BEE!(icc, node::VoronoiFVM.Node, data)
 
@@ -47,22 +39,14 @@ function get_BEE!(icc, node::VoronoiFVM.Node, data)
 
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-Defining locally the band-edge energy for boundary nodes.
-"""
+# Defining locally the band-edge energy for boundary nodes.
 function get_BEE!(icc, bnode::VoronoiFVM.BNode, data)
 
     data.tempBEE1[icc] = data.params.bBandEdgeEnergy[icc, bnode.region] + data.paramsnodal.bandEdgeEnergy[icc, bnode.index]
 
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-Defining locally the band-edge energy for edges.
-"""
+# Defining locally the band-edge energy for edges.
 function get_BEE!(icc, edge::VoronoiFVM.Edge, data)
 
     data.tempBEE1[icc] = data.params.bandEdgeEnergy[icc, edge.region] + data.paramsnodal.bandEdgeEnergy[icc, edge.node[1]]
@@ -76,11 +60,7 @@ end
 """
 $(TYPEDSIGNATURES)
 
-The argument of the distribution function
-
-``z_\\alpha / U_T  ( (\\varphi_\\alpha - \\psi) + E_\\alpha / q )``
-
-for interior nodes.
+The argument of the distribution function for interior nodes.
 """
 function etaFunction(u, node::VoronoiFVM.Node, data, icc, ipsi)
 
@@ -92,14 +72,27 @@ function etaFunction(u, node::VoronoiFVM.Node, data, icc, ipsi)
 
 end
 
+
 """
 $(TYPEDSIGNATURES)
 
-The argument of the distribution function
+The argument of the distribution function for floats.
+"""
+function etaFunction(u, data, node, region, icc, ipsi, in_region::Bool)
 
-``z_\\alpha / U_T  ( (\\varphi_\\alpha - \\psi) + E_\\alpha / q )``
+    if in_region == true
+        E  = data.params.bandEdgeEnergy[icc, region] + data.paramsnodal.bandEdgeEnergy[icc, node]
+    elseif in_region == false
+        E  = data.params.bBandEdgeEnergy[icc, region] + data.paramsnodal.bandEdgeEnergy[icc, node]
+    end
 
-for boundary nodes.
+    return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc]) 
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+The argument of the distribution function for boundary nodes.
 """
 function etaFunction(u, bnode::VoronoiFVM.BNode, data, icc, ipsi) # bnode.index refers to index in overall mesh
 
@@ -114,11 +107,7 @@ end
 """
 $(TYPEDSIGNATURES)
 
-The argument of the distribution function
-
-``z_\\alpha / U_T  ( (\\varphi_\\alpha - \\psi) + E_\\alpha / q )``
-
-for edges.
+The argument of the distribution function for edges.
 """
 
 function etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi)
@@ -145,27 +134,6 @@ right-hand side of the Poisson equation.
 """
 function etaFunction(psi, phi, UT, E, z)
     z ./ UT .* ( (phi - psi) .+ E / q )
-end
-
-
-"""
-$(TYPEDSIGNATURES)
-
-The argument of the distribution function
-
-``z_\\alpha / U_T  ( (\\varphi_\\alpha - \\psi) + E_\\alpha / q )``
-
-for floats.
-"""
-function etaFunction(u, data, node, region, icc, ipsi, in_region::Bool)
-
-    if in_region == true
-        E  = data.params.bandEdgeEnergy[icc, region] + data.paramsnodal.bandEdgeEnergy[icc, node]
-    elseif in_region == false
-        E  = data.params.bBandEdgeEnergy[icc, region] + data.paramsnodal.bandEdgeEnergy[icc, node]
-    end
-
-    return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc]) 
 end
 
 ##########################################################
@@ -235,8 +203,6 @@ end
 
 """
 $(TYPEDSIGNATURES)
-[Note that this way of implementation is not well tested yet. 
-
 Creates Schottky boundary conditions in a first attempt. For the electrostatic potential we assume 
 
 ``\\psi = \\psi_S + U, ``
@@ -285,21 +251,11 @@ function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
 end
 
 
-"""
-$(TYPEDSIGNATURES)
-
-This breaction! function is chosen when no interface model is chosen.
-
-"""
+# This breaction! function is chosen when no interface model is chosen.
 breaction!(f, u, bnode, data, ::Type{interface_model_none}) = emptyFunction()
 
 
-"""
-$(TYPEDSIGNATURES)
-
-breaction term for surface recombination.
-"""
-
+# breaction term for surface recombination.
 breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombination_and_tangential_flux}) = breaction!(f, u, bnode, data, interface_model_surface_recombination)
 
 
@@ -338,14 +294,7 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
 
 end
 
-
-
-"""
-$(TYPEDSIGNATURES)
-
-breaction term for case where qF are discontinuous.
-"""
-
+# breaction term for case where qF are discontinuous.
 function breaction!(f, u, bnode, data, ::Type{interface_model_discont_qF})
 
     if data.calculation_type == inEquilibrium
@@ -468,21 +417,12 @@ bstorage!(f, u, bnode, data, ::Type{model_transient}) = bstorage!(f, u, bnode, d
 bstorage!(f, u, bnode, data, ::Type{interface_model_none}) = emptyFunction()
 
 
-
-"""
-$(TYPEDSIGNATURES)
-No bstorage! is used, when assuming discontinuous qF.
-
-"""
+# No bstorage! is used, when assuming discontinuous qF.
 bstorage!(f, u, bnode, data, ::Type{interface_model_discont_qF}) = emptyFunction()
 
 bstorage!(f, u, bnode, data, ::Type{interface_model_surface_recombination}) = emptyFunction()
 
-"""
-$(TYPEDSIGNATURES)
-No bstorage! is used, if an ohmic and schottky contact model is chosen.
-
-"""
+# No bstorage! is used, if an ohmic and schottky contact model is chosen.
 bstorage!(f, u, bnode, data, ::Type{ohmic_contact}) = emptyFunction()
 
 bstorage!(f, u, bnode, data, ::Type{schottky_contact}) = emptyFunction()
@@ -549,12 +489,7 @@ bflux!(f, u, bedge, data, ::Type{interface_model_surface_recombination_and_tange
 bflux!(f, u, bedge, data, ::Type{interface_model_tangential_flux}) = bflux!(f, u, bedge, data, data.flux_approximation)
 
 
-"""
-$(TYPEDSIGNATURES)
-
-The excess chemical potential flux discretization scheme for inner boundaries.
-
-"""
+# excess chemical potential flux discretization scheme for inner boundaries.
 function bflux!(f, u, bedge, data, ::Type{excess_chemical_potential})
 
     params      =   data.params
@@ -795,13 +730,11 @@ function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::
 end
 
 
-"""
-$(TYPEDSIGNATURES)
-Function which adds additional trap density to right-hand side of Poisson equation
-without modeling traps as own charge carrier.
-Note that this one may be deleted in future version.
 
-"""
+# Function which adds additional trap density to right-hand side of Poisson equation
+# without modeling traps as own charge carrier.
+# Note that this one may be deleted in future version.
+
 addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p) = addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, data.bulk_recombination.model_SRH_2species_trap)
 
 
@@ -904,13 +837,8 @@ function trap_density!(icc, ireg, data, Et)
     params.densityOfStates[icc, ireg] * exp( params.chargeNumbers[icc] * (params.bandEdgeEnergy[icc, ireg] - Et) / (kB * params.temperature))
 end
 
-
-"""
-$(TYPEDSIGNATURES)
-
-The generation rate ``G``, which occurs in the right-hand side of the
-continuity equations with a uniform generation rate.
-"""
+# The generation rate ``G``, which occurs in the right-hand side of the
+# continuity equations with a uniform generation rate.
 function generation(data, ireg, node, ::Type{generation_uniform}) # only works in 1D till now; adjust node, when multidimensions
 
     params = data.params
@@ -919,12 +847,8 @@ function generation(data, ireg, node, ::Type{generation_uniform}) # only works i
 end
 
 
-"""
-$(TYPEDSIGNATURES)
-
-The generation rate ``G``, which occurs in the right-hand side of the
-continuity equations obeying the Beer-Lambert law.
-"""
+# The generation rate ``G``, which occurs in the right-hand side of the
+# continuity equations obeying the Beer-Lambert law.
 function generation(data, ireg, node, ::Type{generation_beer_lambert}) # only works in 1D till now; adjust node, when multidimensions
 
     params = data.params
@@ -987,13 +911,12 @@ end
 ##########################################################
 """
 $(TYPEDSIGNATURES)
-Flux discretization scheme is chosen in two steps. First, we need
+Master flux functions which enters VoronoiFVM. Flux discretization scheme is chosen in two steps. First, we need
 to see, if we are in or out of equilibrium. If, inEquilibrium, then
-no flux is passed. If out of equilibrium, we choose the flux approximation
+no flux is passed. If outOfEquilibrium, we choose the flux approximation
 which the user chose.
 
 """
-
 flux!(f, u, edge, data) = flux!(f, u, edge, data, data.calculation_type)
 
 function flux!(f, u, edge, data, ::Type{inEquilibrium})
@@ -1013,13 +936,8 @@ end
 
 flux!(f, u, edge, data, ::Type{outOfEquilibrium}) = flux!(f, u, edge, data, data.flux_approximation)
 
-"""
-$(TYPEDSIGNATURES)
 
-The classical Scharfetter-Gummel flux scheme. This also works for space-dependent band-edge energy, but
-not for space-dependent effective DOS.
-
-"""
+# The classical Scharfetter-Gummel flux scheme. This also works for space-dependent band-edge energy, but not for space-dependent effective DOS.
 function flux!(f, u, edge, data, ::Type{scharfetter_gummel})
 
     params      =   data.params
@@ -1056,14 +974,8 @@ function flux!(f, u, edge, data, ::Type{scharfetter_gummel})
 
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-The classical Scharfetter-Gummel flux scheme for 
-possible space-dependent DOS and band-edge energies. For these parameters
-the discretization scheme is modified. [insert continuous flux etc ...]
-
-"""
+# The classical Scharfetter-Gummel flux scheme for 
+# possible space-dependent DOS and band-edge energies. For these parameters the discretization scheme is modified. 
 function flux!(f, u, edge, data, ::Type{scharfetter_gummel_graded})
 
     params      =   data.params
@@ -1107,14 +1019,8 @@ function flux!(f, u, edge, data, ::Type{scharfetter_gummel_graded})
 
 end
 
-
-"""
-$(TYPEDSIGNATURES)
-
-The excess chemical potential flux discretization scheme. This also works for space-dependent band-edge energy, but
-not for space-dependent effective DOS.
-
-"""
+# The excess chemical potential flux discretization scheme. This also works for space-dependent band-edge energy, but
+# not for space-dependent effective DOS.
 function flux!(f, u, edge, data, ::Type{excess_chemical_potential})
 
     params      =   data.params
@@ -1153,15 +1059,8 @@ function flux!(f, u, edge, data, ::Type{excess_chemical_potential})
 
 end
 
-
-"""
-$(TYPEDSIGNATURES)
-
-The excess chemical potential flux scheme for 
-possible space-dependent DOS and band-edge energies. For these parameters
-the discretization scheme is modified. [insert continuous flux etc ...]
-
-"""
+# The excess chemical potential flux scheme for 
+# possible space-dependent DOS and band-edge energies. For these parameters the discretization scheme is modified.
 function flux!(f, u, edge, data, ::Type{excess_chemical_potential_graded})
 
     params      =   data.params
@@ -1210,15 +1109,9 @@ function flux!(f, u, edge, data, ::Type{excess_chemical_potential_graded})
 
 end
 
-
-"""
-$(TYPEDSIGNATURES)
-
-The diffusion enhanced scheme by Bessemoulin-Chatard. Currently, the Pietra-Jüngel scheme is 
-used for the regularization of the removable singularity. This also works for space-dependent band-edge energy, but
-not for space-dependent effective DOS.
-
-"""
+# The diffusion enhanced scheme by Bessemoulin-Chatard. Currently, the Pietra-Jüngel scheme is 
+# used for the regularization of the removable singularity. This also works for space-dependent band-edge energy, but
+# not for space-dependent effective DOS.
 function flux!(f, u, edge, data, ::Type{diffusion_enhanced})
 
     params      =   data.params
@@ -1265,16 +1158,11 @@ function flux!(f, u, edge, data, ::Type{diffusion_enhanced})
 
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-The Koprucki-Gärtner scheme. This scheme is calculated by solving a fixed point equation which arise
-when considering the generalized Scharfetter-Gummel scheme in case of Blakemore statistics.
-Hence, it should be exclusively worked with, when considering the Blakemore distribution.
-This also works for space-dependent band-edge energy, but
-not for space-dependent effective DOS.
-
-"""
+# The Koprucki-Gärtner scheme. This scheme is calculated by solving a fixed point equation which arise
+# when considering the generalized Scharfetter-Gummel scheme in case of Blakemore statistics.
+# Hence, it should be exclusively worked with, when considering the Blakemore distribution.
+# This also works for space-dependent band-edge energy, but
+# not for space-dependent effective DOS.
 function flux!(f, u, edge, data, ::Type{generalized_sg})
 
     params        =   data.params

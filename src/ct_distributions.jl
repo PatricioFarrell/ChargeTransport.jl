@@ -19,7 +19,7 @@ $(TYPEDSIGNATURES)
 
 
 The Blakemore approximation ``1/(\\exp(-x) + γ)`` with variable real scalar ``γ``, see 
-[Blakemore1952, "The parameters of partially degenerate semiconductors"].
+J. S. Blakemore. “The Parameters of Partially Degenerate Semiconductors”. In: Proceedings of the Physical Society. Section A 65 (1952), pp. 460–461.
 
 """
 function Blakemore(x::Real, γ::Real )
@@ -27,14 +27,8 @@ function Blakemore(x::Real, γ::Real )
 end
 
 
-"""
-$(TYPEDSIGNATURES)
 
-
-The Blakemore approximation ``1/(\\exp(-x) + γ)`` with
-``γ = 0.27``, see 
-[Blakemore1952, "The parameters of partially degenerate semiconductors"].
-"""
+# The Blakemore approximation ``1/(\\exp(-x) + γ)`` with ``γ = 0.27``
 function Blakemore(x::Real)
     Blakemore(x, 0.27)
 end
@@ -45,7 +39,8 @@ $(TYPEDSIGNATURES)
 
 
 The Fermi-Dirac integral of order ``-1`` which reads 
-``1/(\\exp(-x) + 1)``, see [Blakemore1982: "Approximations for Fermi-Dirac integrals, especially the function ``F_{1/2} (η)`` used to describe electron density in a semiconductor"].
+``1/(\\exp(-x) + 1)``, see J.S. Blakemore, Approximations for Fermi-Dirac integrals, especially the function ``F_{1/2} (\\eta)`` used to 
+describe electron density in a semiconductor, Solid-State Electronics 25 (11) (1982) 1067 – 1076.
 """
 function FermiDiracMinusOne(x::Real)
     Blakemore(x, 1.0)
@@ -58,7 +53,7 @@ $(TYPEDSIGNATURES)
 
 The incomplete Fermi-Dirac integral of order 1/2, 
 implemented according to [Bednarczyk1978, 
-"The Approximation of the Fermi-Dirac integral ``F_{1/2}()``"].
+"The Approximation of the Fermi-Dirac integral ``F_{1/2}(\\eta)``"].
 """
 function FermiDiracOneHalfBednarczyk(x::Real)
 

@@ -131,10 +131,8 @@ function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
     
 end
 
-"""
-Corresponding constructor for the present trap density and the respective regions.
-Note that, this one will may be deleted in future versions.
-"""
+# Corresponding constructor for the present trap density and the respective regions.
+# DA: Note that, this one will may be deleted in future versions.
 function enable_traps!(data)
     data.bulk_recombination.model_SRH_2species_trap = model_SRH_2species_present_trap_dens
 end
@@ -213,6 +211,7 @@ mutable struct Params
     """
     number of boundary regions ``(\\partial \\mathbf{\\Omega})_k`` such that 
     `` \\partial \\mathbf{\\Omega} = \\cup_k (\\partial \\mathbf{\\Omega})_k``.
+    Note that here are interior and outerior boundaries calculated.
     """
     numberOfBoundaryRegions      ::  Int64
 
@@ -220,13 +219,6 @@ mutable struct Params
     number of moving charge carriers.
     """ 
     numberOfCarriers             ::  Int64
-
-
-    """
-    number of present interface carriers which solely live on the boundary.
-    """ 
-    numberOfInterfaceCarriers    :: Int64
-
 
     ###############################################################
     ####                     real numbers                      ####
@@ -289,7 +281,7 @@ mutable struct Params
 
     """
     A 2D array with the corresponding boundary mobility values `` \\mu_\\alpha``
-    in each region for each carrier ``\\alpha``.
+    in each boundary region for each carrier ``\\alpha``.
     """
     bMobility                    ::  Array{Float64,2}
 
@@ -356,7 +348,7 @@ mutable struct Params
     recombinationSRHLifetime     ::  Array{Float64,2}
 
     """
-    A 2D array with the corresponding SRH trap densities ``n_{\\tau}, p_{\\tau}`` for electrons and holes.
+    A 2D array with the corresponding time-independent SRH trap densities ``n_{\\tau}, p_{\\tau}`` for electrons and holes.
     """
     recombinationSRHTrapDensity  ::  Array{Float64,2}
 
@@ -575,7 +567,7 @@ mutable struct Data
 
     """
     This list stores all charge carriers.
-    Here, we can have a vector holding all abstract quantities
+    Here, we can have a vector holding all AbstractQuantities
     or a vector holding an integer array depending on the interface model
     and the the regularity of unknowns.
     """
@@ -585,7 +577,7 @@ mutable struct Data
     """
     This variable stores the index of the electric potential. Based on
     the user choice we have with this new type the opportunity to
-    simulate with Quantities or integer indices.
+    simulate with AbstractQuantities or integer indices.
     """
     index_psi                    :: Union{VoronoiFVM.AbstractQuantity, Int64}
 
@@ -662,7 +654,6 @@ function Params(grid, numberOfCarriers)
     params.numberOfRegions              = numberOfRegions
     params.numberOfBoundaryRegions      = numberOfBoundaryRegions
     params.numberOfCarriers             = numberOfCarriers
-    params.numberOfInterfaceCarriers    = 0
 
     ###############################################################
     ####                     real numbers                      ####
@@ -867,15 +858,11 @@ function System(grid, data ;unknown_storage)
 
 end
 
-"""
-$(SIGNATURES)
 
-The core of the system constructor. Here, the system for no additional interface model is build.
-
-"""
+# The core of the system constructor. Here, the system for no additional interface model is build.
 function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
 
-    num_species_sys        = data.params.numberOfCarriers + data.params.numberOfInterfaceCarriers + 1
+    num_species_sys        = data.params.numberOfCarriers + 1
 
     ctsys                  = System()
 
@@ -926,13 +913,9 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
 
 end
 
-"""
-$(SIGNATURES)
 
-The core of the new system constructor. Here, the system for discontinuous quantities
-is build.
-
-"""
+# The core of the new system constructor. Here, the system for discontinuous quantities
+# is build.
 function build_system(grid, data, unknown_storage, ::Type{interface_model_discont_qF})
 
     ctsys        = System()
@@ -1023,13 +1006,7 @@ end
 ###########################################################
 ###########################################################
 
-"""
-$(SIGNATURES)
-
-Method which determines with input parameters which inner interface model 
-was chosen by user.
-
-"""
+# Method which determines with input parameters which inner interface model was chosen by user.
 function inner_interface_model(data::Data)
 
     countDiscontqF = 0::Int64; countInterfaceCharge = 0::Int64
@@ -1069,13 +1046,8 @@ function inner_interface_model(data::Data)
 
 end
 
-"""
-$(SIGNATURES)
 
-Method which determines with input parameters which inner interface model 
-was chosen by user.
-
-"""
+# Method which determines with input parameters which inner interface model was chosen by user.
 function inner_interface_model(ctsys::System)
 
 
@@ -1273,21 +1245,6 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
 end
 ###########################################################
 ###########################################################
-"""
-$(TYPEDEF)
-Abstract type for scan protocol type
-
-"""
-abstract type scan_protocol_type end
-
-
-"""
-$(TYPEDEF)
-Abstract type for linear scan protocol.
-
-"""
-abstract type linearScanProtocol <: scan_protocol_type end
-
 
 """
 Gives the user a linear time mesh, this mesh is used for a linear I-V scan protocol.
@@ -1302,10 +1259,9 @@ end
 
 
 """
-Calculates current for time dependent problem. But caution, still need some small modification!
-
+Calculates current for time dependent problem.
 """
-function get_current_val(ctsys, U, Uold, Δt)
+function get_current_val(ctsys, U, Uold, Δt) # DA: But caution, still need some small modification!
 
     factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
 
@@ -1325,10 +1281,9 @@ end
 ###########################################################
 
 """
-Calculates current for stationary problem. But caution, still need some small modification!
-
+Calculates current for stationary problem. 
 """
-function get_current_val(ctsys, U)
+function get_current_val(ctsys, U) # DA: But caution, still need some small modification!
 
     factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
 
@@ -1538,7 +1493,6 @@ $(TYPEDSIGNATURES)
 First try of debugger. Print the Jacobi matrix for a given node, i.e.
 the number of the node in the grid and not the excact coordinate.
 This is only done for the one dimensional case so far.
-[insert some information about VoronoiFVM]
 """
 function printJacobi(node, sys)
     ctdata = data(sys)
@@ -1558,7 +1512,7 @@ $(TYPEDSIGNATURES)
 
 Compute the charge density for each region separately.
 """
-function chargeDensity(ctsys,sol)
+function chargeDensity(ctsys, sol)
     # integrate(ctsys.fvmsys,ctsys.fvmsys.physics.reaction,sol)#[ctsys.data.index_psi,:]
     integrate(ctsys.fvmsys,reaction!,sol)[ctsys.data.index_psi,:]
 end

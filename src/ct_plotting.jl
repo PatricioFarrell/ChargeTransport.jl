@@ -2,17 +2,7 @@
 $(TYPEDSIGNATURES)
 Plotting routine, where the charge carrier densities are depicted
 in dependence of space. The case of heterojunctions is tested, but yet
-multidimensional calculations are missing.
-Currently, for a matching legend, we need the following order:
-
-index 1: electrons as charge carrier with the corresponding density ``n``,
-
-index 2: holes as charge carrier with the corresponding density ``p``,
-
-index 3: anion vacancies as charge carrier with the corresponding density ``a``,
-
-index 4: cation vacancies as charge carrier with the corresponding density ``c``.
-
+multidimensional plottings are not included.
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
 
@@ -100,16 +90,7 @@ With this method it is possible to plot the energies
 ``E_\\alpha - q \\psi \\quad \\text{w.r.t. space.}``
 
 The case of heterojunctions is tested, but yet
-multidimensional calculations are missing. 
-Currently, for a matching legend, we need the following order:
-
-index 1: electrons as charge carrier with the corresponding density ``n``,
-
-index 2: holes as charge carrier with the corresponding density ``p``,
-
-index 3: anion vacancies as charge carrier with the corresponding density ``a``,
-
-index 4: cation vacancies as charge carrier with the corresponding density ``c``.
+multidimensional plottings are not included.
 
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
@@ -378,16 +359,7 @@ $(TYPEDSIGNATURES)
 Method for plotting the solution vectors: the electrostatic potential ``\\psi``
 as well as the charge carriers.
 The case of heterojunctions is tested, but yet
-multidimensional calculations are missing. 
-Currently, for a matching legend, we need the following order:
-
-index 1: electrons as charge carrier with the corresponding density ``n``,
-
-index 2: holes as charge carrier with the corresponding density ``p``,
-
-index 3: anion vacancies as charge carrier with the corresponding density ``a``,
-
-index 4: cation vacancies as charge carrier with the corresponding density ``c``.
+multidimensional plottings are not included.
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
 """

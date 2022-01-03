@@ -1,7 +1,7 @@
 
 Mathematical Description of the Problem
 ================================
-## Why are we interested in charge transport?
+# Why are we interested in charge transport?
 Understanding charge transport in a medium is one of the keys to understand the (exact) physical operations taken place in this medium.
 Where charge transport happens, there is also an electric current flowing. 
 
@@ -13,7 +13,7 @@ Hence, on the one hand reliable and physically correct models and on the other h
 
 As one might surmised, there is not only one correct way to go for the model and for the simulations tools. Hence, we introduce in the following the theoretical models we exclusively work with.
 
-## Charge Transport Description via Drift-Diffusion Equations
+# Charge Transport Description via Drift-Diffusion Equations
 For describing the charge transport of carriers, denoted by 
 $\alpha$ with a respective density
 $n_\alpha$,
@@ -48,7 +48,7 @@ stands for the carrier current and $ r_\alpha $ for some production/reduction ra
 In our current applications we only allow specific recombination and generation processes. Further comments on this can be found in the following or in
 [the general description of the code](@ref generalDescription).
 
-## Analogy to Semiconductor Theory
+# Analogy to Semiconductor Theory
 This package mainly focuses currently semiconductors as an application. Hence, we assume that the charge carrier density
 $n_\alpha$
 can be linked to corresponding quasi Fermi potentials $\varphi_\alpha$ via the state equation 
@@ -84,7 +84,7 @@ For a comprehensive overview on drift-diffusion models and semiconductor applica
 3. S. M. Sze and K. K. Ng. [Physics of Semiconductor Devices](https://onlinelibrary.wiley.com/doi/book/10.1002/0470068329). Wiley, 2006.
 
 
-## List of Notations
+# List of Notations
 
 | **symbol** | **physical quantity** |   |   |   |   | **symbol** | **physical quantity** |
 | :---:         |     :---:      |          :---: |          :---: |          :---: |          :---: |          :---: |          :---: |
