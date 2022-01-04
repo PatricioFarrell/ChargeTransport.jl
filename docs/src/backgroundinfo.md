@@ -2,14 +2,14 @@
 Mathematical Description of the Problem
 ================================
 # Why are we interested in charge transport?
-Understanding charge transport in a medium is one of the keys to understand the (exact) physical operations taken place in this medium.
+Understanding charge transport in a medium is one of the keys to identifying the (exact) physical operations that are taken place in this medium.
 Where charge transport happens, there is also an electric current flowing. 
 
 These charge transport mechanisms can be captured in mathematical models. The model itself sometimes cannot be solved analytically and numerical simulations help us to solve the underlying model.
 
-Now, ongoing interdisciplinary research is made for improving existing electronic devices or providing new technologies -- sophisticated theoretical tools can help us to predict the behavior of these devices of interest.
+In today's society, ongoing interdisciplinary research is made for improving existing electronic devices or providing new technologies -- sophisticated theoretical tools can help us to predict the behavior of these devices of interest.
 
-Hence, on the one hand reliable and physically correct models and on the other hand physics preserving numerical techniques are powerful utensils for a potentially optimizations of device designs without actually building cost-worthy prototypes, just by understanding the charge transport.
+Hence, on the one hand reliable and physically correct models and on the other hand physics preserving numerical techniques are powerful utensils for a potential optimization of device designs without actually building cost-worthy prototypes, just by understanding the charge transport.
 
 As one might surmised, there is not only one correct way to go for the model and for the simulations tools. Hence, we introduce in the following the theoretical models we exclusively work with.
 
