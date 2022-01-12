@@ -205,19 +205,19 @@ end
 $(TYPEDSIGNATURES)
 Creates Schottky boundary conditions in a first attempt. For the electrostatic potential we assume 
 
-``\\psi = \\psi_S + U, ``
+``\\psi = \\phi_S/q + U, ``
 
-where  ``\\psi_S`` corresponds to a given value and ``U`` to the applied voltage. For now,
-the quantitity ``\\psi_S`` needs to be specified in the main file.
+where  ``\\phi_S`` corresponds to a given value (Schottky barrier) and ``U`` to the applied voltage. For now,
+the quantitity ``\\phi_S`` needs to be specified in the main file.
 For the charge carriers we assume the following
 
 ``f[n_\\alpha]  =  z_\\alpha q v_\\alpha (n_\\alpha - n_{\\alpha, 0})``,
 
 where ``v_{\\alpha}`` can be treated as a surface recombination mechanism and is given. The parameter
 ``n_{\\alpha, 0}`` is a given value, calculated by the statistical relation, when assuming 
-no electrical field and a quasi Fermi level equal to the metal work function ``\\phi``, i.e.
+no electrical field and a quasi Fermi level equal to the Schottky barrier ``\\phi_S``, i.e.
     
-``n_{\\alpha, 0}= z_\\alpha/ U_T (E_\\alpha - \\phi) / q. ``
+``n_{\\alpha, 0}= z_\\alpha/ U_T (E_\\alpha - \\phi_S) / q. ``
 
 """
 function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
