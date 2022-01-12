@@ -17,6 +17,6 @@ VoronoiFVM = "82b139dc-5afc-11e9-35da-9b9bdfd336f3"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 
 [compat]
-ExtendableGrids = "0.8"
-GridVisualize =  "0.3"
-VoronoiFVM = "0.13"
+ExtendableGrids = "^0.8"
+GridVisualize =  "^0.4"
+VoronoiFVM = "^0.15"
