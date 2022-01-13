@@ -75,7 +75,7 @@ makedocs(sitename = "ChargeTransport.jl",
     authors = "D. Abdel, P. Farrell, J. Fuhrmann",
     repo = "https://github.com/PatricioFarrell/ChargeTransport.jl",
     pages = Any[
-    #    "ChargeTransport.jl -- Simulating charge transport in semiconductors"=>"general.md",
+        "ChargeTransport.jl -- Simulating charge transport in semiconductors"=>"general.md",
         "Mathematical drift-diffusion models"=>"backgroundinfo.md",
         "How to get started"=>["GeneralInformation.md",
             "GaAs.md",
