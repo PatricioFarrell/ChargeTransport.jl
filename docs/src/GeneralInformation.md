@@ -1,5 +1,5 @@
-# [General Information on Code Structure] (@id generalDescription)
+# [Code overview] (@id generalDescription)
 
-The following flow charts should give an impression how own examples can be build. The crucial information on the model which shall be simulated is stored within the Data struct.
+The following flow charts explains what needs to be defined when designing new examples. The important information is stored in the `Data` struct.
 
 ![Code Structure](images/code-docs.png)

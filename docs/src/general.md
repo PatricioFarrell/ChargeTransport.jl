@@ -1,4 +1,4 @@
-ChargeTransport.jl -- A drift-diffusion solver 
+ChargeTransport.jl -- Simulating charge transport in semiconductors
 ================================
 
 [![Build status](https://github.com/PatricioFarrell/ChargeTransport.jl/workflows/linux-macos-windows/badge.svg)](https://github.com/PatricioFarrell/ChargeTransport.jl/actions)
@@ -6,45 +6,37 @@ ChargeTransport.jl -- A drift-diffusion solver
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://PatricioFarrell.github.io/ChargeTransport.jl/dev)
 
 
-This package is a prototype for solving drift-diffusion equations for the simulation of charge transport in solids that centers physics preserving discretization schemes.
+`ChargeTransport.jl` simulates charge transport in semiconductors. To this end, it discretizes 
+the semiconductor drift-diffusion equations via the Voronoi finite volume method as implemented in [VoronoiFVM.jl](https://github.com/j-fu/VoronoiFVM.jl).
 
-Concerning the spatial discretization we rely on a Voronoi finite volume method implemented within the solver [VoronoiFVM.jl](https://github.com/j-fu/VoronoiFVM.jl). Currently, we use for the time discretization an implicit Euler method.
+### Special features 
 
-!!! note
+- heterostructures
+- 1D, 2D and 3D simulations 
+- stationary and transient simulations
+- IV curves and scan protocols
+- an arbitrary amount of charge carriers may be added 
+- thermodynamically consistent, physics preserving numerical methods
+- different charge carrier statistics per species (Boltzmann, Blakemore, Fermi-Dirac, Gauss-Fermi)
 
-    This package exclusively assumes charge transport portrayed by drift-diffusion equations (Poisson equation + continuity equation(s)).
-
-
-The simulations in following papers are based on ChargeTransport.jl
-
-[1.] D. Abdel, P. Farrell and J. Fuhrmann.[ Assessing the quality of the excess chemical potential flux scheme for degenerate semiconductor device simulation.](https://link.springer.com/article/10.1007/s11082-021-02803-4) Optical and Quantum Electronics 53 (163) (2021).
-
-[2.] D. Abdel, P. Vágner, J. Fuhrmann and P. Farrell. [Modelling charge transport in perovskite solar cells: Potential-based and limiting ion depletion.](https://www.sciencedirect.com/science/article/abs/pii/S0013468621009865) Electrochimica Acta 390 (2021).
-
-Installation and First Steps
+Installation and first steps
 ================================
-The installation can be easily done via the Julia REPL by the following commands
+The installation can easily be done via the Julia REPL with the following commands
 
 ```julia
 julia> using Pkg
 julia> Pkg.add("ChargeTransport")
-
-## or within the package environment
-julia> ]
-(@v1.6.1) pkg> add ChargeTransport
 ```
 
-For the construction of an example the following packages need to be loaded
+
+The following packages need to be loaded
 
 ```julia
-# concrete application dependent numerical tools
-julia> using ChargeTransport
-# nonlinear partial differential equations solver (based on a Voronoi finite volume method)
-julia> using VoronoiFVM
-# package for storing grid information
-julia> using ExtendableGrids
+julia> using ChargeTransport 
+julia> using VoronoiFVM      # nonlinear PDE solver 
+julia> using ExtendableGrids # grid package
 ```
-We recommend on having a look on the example files. A guide on how to understand the main parts of the example problems and, thus, how to properly build your own class of problems is explained here:
+We recommend to have a look at the example files:
 
 ```@contents
 Pages = [
@@ -54,17 +46,21 @@ Pages = [
 Depth = 2
 ```
 
-Further, the examples can be loaded and run by 
+You can load an example as follows
 
 ```julia
 julia> include("Example103_PSC.jl")
-Main.Example103_PSC
-julia> Example103_PSC.main()
-
-## or if you are interested in visualization of solutions ## (currently, predefined functions only tested with PyPlot)
-julia> include("Example103_PSC.jl")
-Main.Example103_PSC
-julia> Example103_PSC.main(plotting = true)
+julia> Example103_PSC.main()                
+julia> Example103_PSC.main(plotting = true) # show plots 
 ```
-Due to the encapsulation of the examples into modules, you can load as many examples as you like. If you want to modify one of the examples, consider using [Revise.jl](https://github.com/timholy/Revise.jl) and `includet`.
+Since the examples are encapsulated into modules, you can load as many examples as you wish. If you would like to modify one of the examples, consider using [Revise.jl](https://github.com/timholy/Revise.jl) and `includet`.
+
+Literature
+===========
+
+The simulations in the following papers are based on ChargeTransport.jl:
+
+[1] D. Abdel, P. Farrell and J. Fuhrmann.[Assessing the quality of the excess chemical potential flux scheme for degenerate semiconductor device simulation.](https://link.springer.com/article/10.1007/s11082-021-02803-4) Optical and Quantum Electronics 53 (163) (2021).
+
+[2] D. Abdel, P. Vágner, J. Fuhrmann and P. Farrell. [Modelling charge transport in perovskite solar cells: Potential-based and limiting ion depletion.](https://www.sciencedirect.com/science/article/abs/pii/S0013468621009865) Electrochimica Acta 390 (2021).
 
