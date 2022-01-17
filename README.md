@@ -17,7 +17,7 @@ the semiconductor drift-diffusion equations via the Voronoi finite volume method
 - IV curves and scan protocols
 - an arbitrary amount of charge carriers may be added 
 - thermodynamically consistent, physics preserving numerical methods
-- different charge carrier statistics per species (Boltzmann, Blakemore, Fermi-Dirac, Gauss-Fermi)
+- different charge carrier statistics per species (Boltzmann, Blakemore, Fermi-Dirac)
 
 ### The following papers rely on `ChargeTransport.jl`
 
