@@ -515,12 +515,12 @@ mutable struct Data
     λ1                           ::  Float64
 
     """
-    An embedding parameter for turning the generation rate ``G`` on.
+    An embedding parameter for the generation rate ``G``.
     """
     λ2                           ::  Float64
 
     """
-    An embedding parameter for electrochemical reaction.
+    An embedding parameter for the electrochemical reaction.
     """
     λ3                           ::  Float64
 
