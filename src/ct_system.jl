@@ -797,9 +797,9 @@ function Data(grid, numberOfCarriers)
     data.calculation_type         = inEquilibrium           # do performances inEquilibrium or outOfEquilibrium
     data.model_type               = model_stationary        # indicates if we need additional time dependent part
     data.generation_model         = generation_none         # generation model
-    data.λ1                       = 0.0                     # λ1: embedding parameter for NLP
-    data.λ2                       = 0.0                     # λ2: embedding parameter for G
-    data.λ3                       = 0.0                     # λ3: embedding parameter for electro chemical reaction
+    data.λ1                       = 1.0                     # λ1: embedding parameter for NLP
+    data.λ2                       = 1.0                     # λ2: embedding parameter for G
+    data.λ3                       = 1.0                     # λ3: embedding parameter for electro chemical reaction
 
     ###############################################################
     ####             Templates for DOS and BEE                 ####
