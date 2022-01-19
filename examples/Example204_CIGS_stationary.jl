@@ -92,17 +92,27 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfCarriers  = 3 # electrons, holes and traps
 
     ## physical data
-    Ec                = 1.424                *  eV
-    Ev                = 0.0                  *  eV
-    Et                = 0.6                  *  eV               
+    # Ec                = 1.424                *  eV
+    # Ev                = 0.0                  *  eV
+    # Et                = 0.6                  *  eV      
+    
+    Ec_CIGS           = 3.4                  *  eV
+    Ev_CIGS           = 2.3                  *  eV
+    Ec_ZnO            = 3.4                  *  eV
+    Ev_ZnO            = 0.0                  *  eV
+    Et                = 2.8                  *  eV   
+
     Nc                = 4.351959895879690e17 / (cm^3)
     Nv                = 9.139615903601645e18 / (cm^3)
     Nt                = 5e14                / (cm^3)   
     Nt_low            = Nt#/1e3                        
-    mun               = 10.0                 * (cm^2) / (V * s)
-    mup               = 4.0                  * (cm^2) / (V * s)
+    mun_CIGS          = 100.0                * (cm^2) / (V * s)
+    mup_CIGS          = 25                   * (cm^2) / (V * s)
+    mun_ZnO           = 100                  * (cm^2) / (V * s)
+    mup_ZnO           = 25                   * (cm^2) / (V * s)
     mut               = 0                    * (cm^2) / (V * s)  # no flux for traps
-    εr                = 12.9                 *  1.0              
+    εr_CIGS           = 13.6                 *  1.0              
+    εr_ZnO            = 9                    *  1.0                
     T                 = 300.0                *  K
 
     An                = 4 * pi * q * mₑ * kB^2 / Planck_constant^3
@@ -112,9 +122,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     barrier           = 0.1 * eV
 
     ## recombination parameters
-    ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) # intrinsic concentration
-    n0                = Nc * Boltzmann( (Et-Ec) / (kB*T) )             # Boltzmann equilibrium concentration
-    p0                = ni^2 / n0                                      # Boltzmann equilibrium concentration
+    ni_CIGS           = sqrt(Nc * Nv) * exp(-(Ec_CIGS - Ev_CIGS) / (2 * kB * T)) # intrinsic concentration
+    n0_CIGS           = Nc * Boltzmann( (Et-Ec_CIGS) / (kB*T) )             # Boltzmann equilibrium concentration
+    p0_CIGS           = ni_CIGS^2 / n0_CIGS                                      # Boltzmann equilibrium concentration
+    ni_ZnO            = sqrt(Nc * Nv) * exp(-(Ec_ZnO - Ev_ZnO) / (2 * kB * T)) # intrinsic concentration
+    n0_ZnO            = Nc * Boltzmann( (Et-Ec_ZnO) / (kB*T) )             # Boltzmann equilibrium concentration
+    p0_ZnO            = ni_ZnO^2 / n0_ZnO                                      # Boltzmann equilibrium concentration
     Auger             = 1.0e-29  * cm^6 / s          # 1.0e-41 m^6 / s
     SRH_LifeTime      = 1.0e-3   * ns               
     Radiative         = 1.0e-10  * cm^3 / s          # 1.0e-16 m^3 / s
@@ -124,8 +137,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     N0                = 1e17     / cm^2/s
 
     ## doping -- trap doping will not be set and thus automatically zero
-    Nd                = Nc
-    Na                = 1.0e16 / (cm^3)   
+    Nd                = 1.0e18 / (cm^3) 
+    Na                = 5.5e15 / (cm^3)   
 
     ## we will impose this applied voltage on one boundary
     voltageAcceptor   = 2.0 * V
@@ -149,9 +162,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
     
-    ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    ## interface_model_surface_recombination (inner boundary).
-    data.generation_model               = generation_beer_lambert#generation_uniform #generation_beer_lambert
+    data.generation_model               = generation_beer_lambert #generation_uniform #generation_beer_lambert
 
     ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
     ## In this application ion vacancies only live in active perovskite layer
@@ -177,51 +188,58 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.chargeNumbers[iphit]                         =  1  # +1: hole trap is used
 
     for ibreg in 1:numberOfBoundaryRegions   # boundary region data
-
         params.bDensityOfStates[iphin, ibreg]           = Nc
         params.bDensityOfStates[iphip, ibreg]           = Nv
         params.bDensityOfStates[iphit, ibreg]           = Nt_low
-        params.bBandEdgeEnergy[iphin, ibreg]            = Ec
-        params.bBandEdgeEnergy[iphip, ibreg]            = Ev
         params.bBandEdgeEnergy[iphit, ibreg]            = Et
     end
 
+    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_ZnO
+    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_ZnO
+    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_CIGS
+    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_CIGS
+
     for ireg in 1:numberOfRegions           # interior region data
 
-        params.dielectricConstant[ireg]                 = εr
+        params.dielectricConstant[ireg]                 = εr_CIGS       
 
         ## effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
         params.densityOfStates[iphip, ireg]             = Nv
-        params.bandEdgeEnergy[iphin, ireg]              = Ec
-        params.bandEdgeEnergy[iphip, ireg]              = Ev
+        params.bandEdgeEnergy[iphin, ireg]              = Ec_CIGS
+        params.bandEdgeEnergy[iphip, ireg]              = Ev_CIGS
         params.bandEdgeEnergy[iphit, ireg]              = Et
-        params.mobility[iphin, ireg]                    = mun
-        params.mobility[iphip, ireg]                    = mup
+        params.mobility[iphin, ireg]                    = mun_CIGS
+        params.mobility[iphip, ireg]                    = mup_CIGS
         params.mobility[iphit, ireg]                    = mut
 
         ## recombination parameters
         params.recombinationRadiative[ireg]             = Radiative
         params.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime
         params.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime
-        params.recombinationSRHTrapDensity[iphin, ireg] = n0
-        params.recombinationSRHTrapDensity[iphip, ireg] = p0
+        params.recombinationSRHTrapDensity[iphin, ireg] = n0_CIGS
+        params.recombinationSRHTrapDensity[iphip, ireg] = p0_CIGS
         params.recombinationAuger[iphin, ireg]          = Auger
         params.recombinationAuger[iphip, ireg]          = Auger
 
         ## generation parameters
-        params.generationAbsorption[ireg]          = A_CIGS
-        params.generationIncidentPhotonFlux[ireg]  = N0
+        params.generationAbsorption[ireg]               = A_CIGS
+        params.generationIncidentPhotonFlux[ireg]       = N0
+        params.generationUniform[ireg]                  = G
         
     end
 
-    ## (uniform) generation only in donor region: can be improved later with exp decay
-    params.generationUniform[regionDonor]          = 0.0        # only used if for "generation_uniform"
-    params.generationUniform[regionAcceptorLeft]   = G
-    params.generationUniform[regionAcceptorTrap]   = G
-    params.generationUniform[regionAcceptorRight]  = G
-    params.generationAbsorption[regionDonor]         = A_ZnO    # only used if for "generation_beer_lambert"
-    params.generationIncidentPhotonFlux[regionDonor] = N0
+    ## overwrite parameters in ZnO donor region
+    params.generationUniform[regionDonor]                  = 0.0      # only used if for "generation_uniform"
+    params.generationAbsorption[regionDonor]               = A_ZnO    # only used if for "generation_beer_lambert"
+    params.generationIncidentPhotonFlux[regionDonor]       = N0
+    params.recombinationSRHTrapDensity[iphin, regionDonor] = n0_ZnO
+    params.recombinationSRHTrapDensity[iphip, regionDonor] = p0_ZnO
+    params.bandEdgeEnergy[iphin, regionDonor]              = Ec_ZnO
+    params.bandEdgeEnergy[iphip, regionDonor]              = Ev_ZnO
+    params.dielectricConstant[regionDonor]                 = εr_ZnO 
+    params.mobility[iphin, regionDonor]                    = mun_ZnO
+    params.mobility[iphip, regionDonor]                    = mup_ZnO
 
     ## hole trap density only high in grain
     params.densityOfStates[iphit, regionDonor]          = Nt_low
@@ -365,7 +383,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         current = get_current_val(ctsys, solution)
         push!(IV, w_device * z_device * current)
 
-        ## story charge density in donor region (ZnO)
+        ## store charge density in donor region (ZnO)
         push!(chargeDensities,chargeDensity(ctsys,solution)[regionDonor])
 
         initialGuess .= solution
