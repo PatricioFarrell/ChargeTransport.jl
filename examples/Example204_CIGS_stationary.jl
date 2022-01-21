@@ -13,15 +13,15 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-## function to initialize the grid for a possble extension to other p-i-n devices.
-function initialize_pin_grid(refinementfactor, h_ndoping, h_pdoping_left, h_pdoping_trap, h_pdoing_right)
+## function to initialize the grid for a possible extension to other p-i-n devices.
+function initialize_pin_grid(refinementfactor, h_ndoping, h_pdoping_left, h_pdoping_trap, h_pdoping_right)
     coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 2 * refinementfactor))
     coord_pdoping_left  = collect(range(h_ndoping, stop = (h_ndoping + h_pdoping_left), length = 3 * refinementfactor))
     coord_pdoping_plus  = collect(range((h_ndoping + h_pdoping_left), 
                                         stop = (h_ndoping + h_pdoping_left + h_pdoping_trap), 
                                         length =  refinementfactor))
     coord_pdoping_right = collect(range((h_ndoping + h_pdoping_left + h_pdoping_trap), 
-                                        stop = (h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right), 
+                                        stop = (h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoping_right), 
                                         length = 3 * refinementfactor))                                    
     coord            = glue(coord_ndoping, coord_pdoping_left)
     coord            = glue(coord, coord_pdoping_plus)
@@ -55,12 +55,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     h_ndoping               = 0.5 * μm
     h_pdoping_left          = 1 * μm
     h_pdoping_trap          = 0.01 * μm#0.01 * μm
-    h_pdoing_right          = 1 * μm
+    h_pdoping_right          = 1 * μm
     coord                   = initialize_pin_grid(refinementfactor,
                                                   h_ndoping,
                                                   h_pdoping_left,
                                                   h_pdoping_trap,
-                                                  h_pdoing_right)
+                                                  h_pdoping_right)
 
     grid                    = simplexgrid(coord)
 
@@ -72,7 +72,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## p doped with traps
     cellmask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left + h_pdoping_trap], regionAcceptorTrap)  
     ## p doped
-    cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right], regionAcceptorRight)   
+    cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoping_right], regionAcceptorRight)   
 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
@@ -269,7 +269,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("*** done\n")
 
     ################################################################################
-    println("Define outerior boundary conditions and enabled layers")
+    println("Define outer boundary conditions and enabled layers")
     ################################################################################
 
     ## set ohmic contact in bregionDonor and schottky contact in bregionAcceptor
@@ -519,15 +519,15 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 # using GridVisualize
 # using PyPlot
 
-# ## function to initialize the grid for a possble extension to other p-i-n devices.
-# function initialize_pin_grid(refinementfactor, h_ndoping, h_pdoping_left, h_pdoping_trap, h_pdoing_right)
+# ## function to initialize the grid for a possible extension to other p-i-n devices.
+# function initialize_pin_grid(refinementfactor, h_ndoping, h_pdoping_left, h_pdoping_trap, h_pdoping_right)
 #     coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 2 * refinementfactor))
 #     coord_pdoping_left  = collect(range(h_ndoping, stop = (h_ndoping + h_pdoping_left), length = 3 * refinementfactor))
 #     coord_pdoping_plus  = collect(range((h_ndoping + h_pdoping_left), 
 #                                         stop = (h_ndoping + h_pdoping_left + h_pdoping_trap), 
 #                                         length =  refinementfactor))
 #     coord_pdoping_right = collect(range((h_ndoping + h_pdoping_left + h_pdoping_trap), 
-#                                         stop = (h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right), 
+#                                         stop = (h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoping_right), 
 #                                         length = 3 * refinementfactor))                                    
 #     coord            = glue(coord_ndoping, coord_pdoping_left)
 #     coord            = glue(coord, coord_pdoping_plus)
@@ -561,12 +561,12 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     h_ndoping               = 0.5 * μm
 #     h_pdoping_left          = 1 * μm
 #     h_pdoping_trap          = 0.01 * μm#0.01 * μm
-#     h_pdoing_right          = 1 * μm
+#     h_pdoping_right          = 1 * μm
 #     coord                   = initialize_pin_grid(refinementfactor,
 #                                                   h_ndoping,
 #                                                   h_pdoping_left,
 #                                                   h_pdoping_trap,
-#                                                   h_pdoing_right)
+#                                                   h_pdoping_right)
 
 #     grid                    = simplexgrid(coord)
 
@@ -578,7 +578,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     ## p doped with traps
 #     cellmask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left + h_pdoping_trap], regionAcceptorTrap)  
 #     ## p doped
-#     cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right], regionAcceptorRight)   
+#     cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoping_right], regionAcceptorRight)   
 
 #     if plotting
 #         gridplot(grid, Plotter = Plotter, legend=:lt)
@@ -780,7 +780,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     println("*** done\n")
 
 #     ################################################################################
-#     println("Define outerior boundary conditions and enabled layers")
+#     println("Define outer boundary conditions and enabled layers")
 #     ################################################################################
 
 #     ## set ohmic contact in bregionDonor and schottky contact in bregionAcceptor
