@@ -8,7 +8,7 @@ and with abrupt interfaces.
 A linear I-V measurement protocol is included and the corresponding
 solution vectors after the scan protocol can be depicted.
 
-The paramters are from Calado et al. and can be found here:
+The parameters are from Calado et al. and can be found here:
 https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_mapi_pcbm.csv.
 (with adjustments on layer lengths)
 =#
@@ -92,7 +92,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic],             regionIntrinsic, tol = 1.0e-18)  # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic],  [h_pdoping + h_intrinsic + h_ndoping], regionDonor, tol = 1.0e-18)      # n-doped region   = 3
 
-    ## bfacemask! for ``active'' boundary regions, i.e. internal interfaces. On the outer boudary regions, the 
+    ## bfacemask! for ``active'' boundary regions, i.e. internal interfaces. On the outer boundary regions, the 
     ## conditions will be formulated later
     bfacemask!(grid, [h_pdoping],               [h_pdoping],                           bregionJunction1)  # first  inner interface
     bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)  # second inner interface
@@ -433,7 +433,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.damp_growth           = 1.21
     control.max_round             = 5
 
-    ## there are different way to control timestepping
+    ## there are different way to control time stepping
     ## Here we assume these primary data
     scanrate                      = 1.0 * V/s
     ntsteps                       = 31
