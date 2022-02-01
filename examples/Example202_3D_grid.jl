@@ -10,18 +10,16 @@ The grid is produced with TetGen.jl.
 
 module Example202_3D_grid
 
-using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 
 ## For using this example, one additionally needs to add TetGen. SimplexGridFactory is a wrapper for using this meshgenerator.
-##using SimplexGridFactory
-##using TetGen
+# using SimplexGridFactory
+# using TetGen
 
+function main(;Plotter = GLMakie, plotting = true) # plotting is currently only tested with GLMakie and PyPlot
 
-function main(;Plotter = nothing, plotting = false) # plotting is currently only tested with GLMakie and PyPlot
-
-
+    cm = 0.01
     builder3d=let
 
         b=SimplexGridBuilder(Generator=TetGen)
@@ -149,7 +147,7 @@ function main(;Plotter = nothing, plotting = false) # plotting is currently only
 
     grid = simplexgrid(builder3d)
 
-    if plotting == true # plotting is currently only tested with GLMakie
+    if plotting == true # plotting is currently only tested with GLMakie and PyPlot
         gridplot(Plotter = Plotter, grid,zplane=1.50e-7,azim=20,elev=60,linewidth=0.5, legend=:lt)
     end
 
