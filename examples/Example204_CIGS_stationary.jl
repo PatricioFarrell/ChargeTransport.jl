@@ -104,7 +104,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     Nc                = 4.351959895879690e17 / (cm^3)
     Nv                = 9.139615903601645e18 / (cm^3)
-    Nt                = 5e14                / (cm^3)   
+    Nt                = 5e14                 / (cm^3)   
     Nt_low            = Nt#/1e3                        
     mun_CIGS          = 100.0                * (cm^2) / (V * s)
     mup_CIGS          = 25                   * (cm^2) / (V * s)
@@ -119,7 +119,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     Ap                = 4 * pi * q * mₑ * kB^2 / Planck_constant^3
     vn                = An * T^2 / (q*Nc)
     vp                = Ap * T^2 / (q*Nv)
-    barrier           = 0.1 * eV
+    barrier           = 0.0 * eV
 
     ## recombination parameters
     ni_CIGS           = sqrt(Nc * Nv) * exp(-(Ec_CIGS - Ev_CIGS) / (2 * kB * T)) # intrinsic concentration
