@@ -682,7 +682,6 @@ function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::
         f[icc]      = q * data.params.chargeNumbers[icc] *  kernel *  excessDensTerm  - q * data.params.chargeNumbers[icc] * generation(data, ireg,  node.coord[node.index], data.generation_model)
     end
 
-    return f
 end
 
 function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{model_SRH_traps_transient})
@@ -725,8 +724,6 @@ function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::
     f[iphip] = q * params.chargeNumbers[iphip] * (Rp - generation(data, ireg,  node.coord[node.index], data.generation_model))
     f[itrap] = q * params.chargeNumbers[itrap] * (Rp-Rn)
 
-
-    return f
 end
 
 
@@ -762,7 +759,6 @@ function addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{mode
     # add equilibrium trap density
     f[ipsi] = f[ipsi] - q * z * Nt * (taun*p0 + taup*n) / (taun*(p0+p) + taup*(n0+n))
 
-    return f
 end
 
 
@@ -815,9 +811,9 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     p           = Nv * data.F[iphip](etaFunction(u, node, data, iphip, ipsi))
 
     
-    f = addElectricPotential!(f, u, node, data, ipsi)                  # RHS of Poisson
-    f = addChargeCarriers!(f, u, node, data, ipsi, iphin, iphip, n, p) # RHS of Charge Carriers with special treatment of recombination
-    f = addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p)    # if desired, add trap density to RHS of Poisson
+    addElectricPotential!(f, u, node, data, ipsi)                  # RHS of Poisson
+    addChargeCarriers!(f, u, node, data, ipsi, iphin, iphip, n, p) # RHS of Charge Carriers with special treatment of recombination
+    addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p)    # if desired, add trap density to RHS of Poisson
 
     return f
 
