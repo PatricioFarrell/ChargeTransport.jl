@@ -757,7 +757,7 @@ function addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{mode
     end
 
     # add equilibrium trap density
-    f[ipsi] = f[ipsi] - q * z * Nt * (taun*p0 + taup*n) / (taun*(p0+p) + taup*(n0+n))
+    f[ipsi] = f[ipsi] - q * z * Nt * ( 1 - (taun*p0 + taup*n) / (taun*(p0+p) + taup*(n0+n)) )
 
 end
 
