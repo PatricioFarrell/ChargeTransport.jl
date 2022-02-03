@@ -63,6 +63,7 @@ export show_params, trap_density!
 export linearScanProtocol, scan_protocol_type, set_time_mesh, get_current_val
 export chargeDensity
 export enable_traps!
+export enable_interface_carrier!
 
 ##################################################################
 

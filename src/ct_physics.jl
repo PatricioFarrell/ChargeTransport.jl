@@ -180,7 +180,7 @@ function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
     # parameters
     ipsi        = data.index_psi  # final index for electrostatic potential
  
-    for icc ∈ data.chargeCarrierList # quantities or integer indices
+    for icc ∈ data.chargeCarrierList[1:2] # quantities or integer indices
  
         get_DOS!(icc, bnode, data)
         Ni      = data.tempDOS1[icc]
@@ -316,56 +316,156 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_discont_qF})
     params      = data.params
     paramsnodal = data.paramsnodal
 
-    recombinationVelocity    = [1.0e1 1.0e7;
-                                    1.0e5 1.0e1]
+    # without interface species
+    if params.numberOfCarriers == 2
+        for icc in [iphin, iphip]
+
+            d         =  [1.0e3 1.0e3; 1.0e3 1.0e3]
     
-    ######### left values  ##########
-    etan1 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 1] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[1]] / q ) # left
-    etap1 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 1] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[1]] / q ) # left
+            etan1 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 1] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # left
+            etan2 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 2] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[2]] / q ) # right
+    
+            n1 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan1)
+            n2 = params.densityOfStates[icc, bnode.cellregions[2]] * data.F[icc](etan2)
+    
+            react     = q * params.chargeNumbers[icc] * d[icc, bnode.region-2] *   (n1 - n2)
+    
+            println("species: ", icc.id)
+            @show react.value
+            @show -react.value
+            println( "----")
 
-    n1    = ((params.densityOfStates[iphin, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphin, bnode.index])* data.F[iphin](etan1))
-    p1    = ((params.densityOfStates[iphip, bnode.cellregions[1]] + paramsnodal.densityOfStates[iphip, bnode.index])* data.F[iphip](etap1))
+            f[icc, 1] =   react
+            f[icc, 2] = - react
+        end
+    end
 
-    exponentialTerm1 = exp((q * u[iphin, 1] - q  * u[iphip, 1] ) / (kB * params.temperature))
-    excessDensTerm1  = n1 * p1 * (1.0 - exponentialTerm1)
+    # with interface species
+    if params.numberOfCarriers > 2
 
-    kernelSRH1 = 1.0 / (  1.0/recombinationVelocity[iphip, bnode.region-2] * (n1 + params.recombinationSRHTrapDensity[iphin, bnode.cellregions[1]]) + 1.0/recombinationVelocity[iphin, bnode.region-2] * (p1 + params.recombinationSRHTrapDensity[iphip, bnode.cellregions[1]] ) )
+        if bnode.region == 3
+            iphin_b1 = data.chargeCarrierList[3]
+            iphip_b1 = data.chargeCarrierList[4]
+            
+            d         =  [2.0e5 2.0e5; 1.0e20 1.0e20]
+            
+            #left values
+            etan1 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 1] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[1]] / q ) # left
+            etap1 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 1] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[1]] / q ) # left
 
+            n1    = params.densityOfStates[iphin, bnode.cellregions[1]] * data.F[iphin](etan1)
+            p1    = params.densityOfStates[iphip, bnode.cellregions[1]] * data.F[iphip](etap1)
+    
+            # interface values 
+            etan_b1 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin_b1] - u[ipsi]) + params.bBandEdgeEnergy[iphin_b1] / q ) # interface
+            etap_b1 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip_b1] - u[ipsi]) + params.bBandEdgeEnergy[iphip_b1] / q ) # interface
+    
+            n_b1    = params.bDensityOfStates[iphin_b1, 3] * data.F[iphin_b1](etan_b1)
+            p_b1    = params.bDensityOfStates[iphip_b1, 3] * data.F[iphip_b1](etap_b1)
+    
+            # right values
+            etan2 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 2] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[2]] / q ) # right
+            etap2 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 2] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[2]] / q ) # right
 
-    ######### right values  ##########
-    etan2 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 2] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[2]] / q ) # right
-    etap2 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 2] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[2]] / q ) # right
+            n2    = params.densityOfStates[iphin, bnode.cellregions[2]] * data.F[iphin](etan2)
+            p2    = params.densityOfStates[iphip, bnode.cellregions[2]] * data.F[iphip](etap2)
+            ##############################################################
+            reactn1     = d[iphin, 1] *   q *  params.chargeNumbers[iphin] * (n1/params.densityOfStates[iphin, bnode.cellregions[1]] - n_b1/params.bDensityOfStates[iphin_b1, 3])
+            reactn2     = d[iphin, 2] *   q * params.chargeNumbers[iphin] *  (n2/params.densityOfStates[iphin, bnode.cellregions[2]] - n_b1/params.bDensityOfStates[iphin_b1, 3])
 
-    n2    = ((params.densityOfStates[iphin, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphin, bnode.index])* data.F[iphin](etan2))
-    p2    = ((params.densityOfStates[iphip, bnode.cellregions[2]] + paramsnodal.densityOfStates[iphip, bnode.index])* data.F[iphip](etap2))
+            f[iphin, 1] = reactn1
+            f[iphin, 2] = -reactn2 # minus, ja nein vllt??
 
-    exponentialTerm2 = exp((q * u[iphin, 2] - q  * u[iphip, 2] ) / (kB * params.temperature))
-    excessDensTerm2   = n2 * p2 * (1.0 - exponentialTerm2)
+            # @show f[iphin, 1].value
+            # @show f[iphin, 2].value
+            # println( " ")
+            reactp1     = d[iphip, 1] * params.chargeNumbers[iphip] * q *   (p1/params.densityOfStates[iphip, bnode.cellregions[1]] - p_b1/params.bDensityOfStates[iphip_b1, 3])
+            reactp2     = d[iphip, 2] * params.chargeNumbers[iphip] * q *   (p2/params.densityOfStates[iphip, bnode.cellregions[2]] - p_b1/params.bDensityOfStates[iphip_b1, 3])
 
-    kernelSRH2 = 1.0 / (  1.0/recombinationVelocity[iphip, bnode.region-2] * (n2 + params.recombinationSRHTrapDensity[iphin, bnode.cellregions[2]])+ 1.0/recombinationVelocity[iphin, bnode.region-2] * (p2 + params.recombinationSRHTrapDensity[iphip, bnode.cellregions[2]]))
+            f[iphip, 1] = reactp1
+            f[iphip, 2] = reactp2        
 
-    for icc ∈ [iphin, iphip] # equations for qF potentials 
-        react1     =  q *  params.chargeNumbers[icc] *  kernelSRH1 *  excessDensTerm1 
-        react2     =  q *  params.chargeNumbers[icc] *  kernelSRH2 *  excessDensTerm2 
+            # @show f[iphip, 1].value
+            # @show f[iphip, 2].value
+            # println(".......")
+            #interface species reaction
+            f[iphin_b1] =  - (f[iphin, 1] + f[iphin, 2]) # since its a reaction we need it with a minus
+            f[iphip_b1] =  - (f[iphip, 1] + f[iphip, 2]) # since its a reaction we need it with a minus
 
-        f[icc, 1] = react1
-        f[icc, 2] = react2 # same plot with minus sign here
+        elseif bnode.region == 4
+            for icc in [iphin, iphip]
+    
+                d         =  1.0e3.*[1.0e3 1.0e3; 1.0e3 1.0e3]
+
+                etan1 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 1] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # left
+                etan2 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 2] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[2]] / q ) # right
+    
+                n1 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan1)
+                n2 = params.densityOfStates[icc, bnode.cellregions[2]] * data.F[icc](etan2)
+    
+                react     = q * params.chargeNumbers[icc] * d[icc, bnode.region-2]  * (n1 - n2)
+    
+                f[icc, 1] =   react
+                f[icc, 2] = - react
+        end
+    end
 
     end
 
-    # for icc ∈ [iphin, iphip] # equations for qF potentials 
-            
-    #     #to see continuity
-    #     d         = [1.0e7 1.0e7;
-    #                1.0e7 1.0e7]
 
-    #     # to see discontinuity
-    #     # d         = [1.0e1 1.0e3;
-    #     #                 1.0e7 1.0e1]
-    #     react     =d[icc, bnode.region-2] *   (u[icc, 1] - u[icc, 2])
 
-    #     f[icc, 1] =   react
-    #     f[icc, 2] = - react
+
+
+    # ### CODE SNIPPET FOR INTERFACE QUANTITIES ###########
+
+    # iphin_b1    = data.chargeCarrierList[3]
+    # iphip_b1    = data.chargeCarrierList[4]
+
+    # if bnode.region == 3 
+
+    #     d         =  0.0.*[1.0e7 1.0e7; 1.0e5 1.0e5]
+
+    #     # left values
+    #     etan1 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 1] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[1]] / q ) # left
+    #     etap1 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 1] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[1]] / q ) # left
+
+    #     n1    = params.densityOfStates[iphin, bnode.cellregions[1]] * data.F[iphin](etan1)
+    #     p1    = params.densityOfStates[iphip, bnode.cellregions[1]] * data.F[iphip](etap1)
+
+    #     # interface values 
+    #     etan_b1 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin_b1] - u[ipsi]) + params.bBandEdgeEnergy[iphin_b1] / q ) # interface
+    #     etap_b1 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip_b1] - u[ipsi]) + params.bBandEdgeEnergy[iphip_b1] / q ) # interface
+
+    #     n_b1    = params.bDensityOfStates[iphin_b1] * data.F[iphin_b1](etan_b1)
+    #     p_b1    = params.bDensityOfStates[iphip_b1] * data.F[iphip_b1](etap_b1)
+
+    #     # right values
+    #     etan2 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 2] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[2]] / q ) # right
+    #     etap2 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 2] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[2]] / q ) # right
+
+    #     n2    = params.densityOfStates[iphin, bnode.cellregions[2]] * data.F[iphin](etan2)
+    #     p2    = params.densityOfStates[iphip, bnode.cellregions[2]] * data.F[iphip](etap2)
+
+    #     ###############################################################
+    #     reactn1     = d[iphin, bnode.region-2] * params.chargeNumbers[iphin] * q *   (n1 - n_b1)
+    #     reactn2     = d[iphin, bnode.region-2] * params.chargeNumbers[iphin] * q *   (n2 - n_b1)
+
+    #     # @show reactn1.value
+    #     # @show reactn2.value
+
+    #     f[iphin, 1] = reactn1
+    #     f[iphin, 2] = reactn2
+
+    #     reactp1     = d[iphip, bnode.region-2] * params.chargeNumbers[iphip] * q *   (p1 - p_b1)
+    #     reactp2     = d[iphip, bnode.region-2] * params.chargeNumbers[iphip] * q *   (p2 - p_b1)
+
+    #     f[iphip, 1] = reactp1
+    #     f[iphip, 2] = reactp2        
+
+    #     #interface species reaction
+    #     f[iphin_b1] =  - (f[iphin, 1] + f[iphin, 2]) # since its a reaction we need it with a minus
+    #     f[iphip_b1] =  - (f[iphip, 1] + f[iphip, 2]) # since its a reaction we need it with a minus
+
     # end
 
 end
@@ -565,12 +665,12 @@ function reaction!(f, u, node, data, ::Type{inEquilibrium})
     ####         right-hand side of nonlinear Poisson      ####
     ####         equation (space charge density)           ####
     ###########################################################
-    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+    for icc ∈ data.chargeCarrierList[1:2] # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
         get_DOS!(icc, node, data)
         Ni      = data.tempDOS1[icc]
         eta     = etaFunction(u, node, data, icc, ipsi) 
         f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.doping[icc, ireg] )   # subtract doping
-        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)   # add charge carrier
+        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)          # add charge carrier
 
     end
     f[ipsi] = f[ipsi] - paramsnodal.doping[inode]
@@ -625,7 +725,7 @@ function addElectricPotential!(f, u, node, data, ipsi)
     ####         right-hand side of nonlinear Poisson      ####
     ####         equation (space charge density)           ####
     ###########################################################
-    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+    for icc ∈ data.chargeCarrierList[1:2] # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
 
         get_DOS!(icc, node, data)
 
@@ -948,7 +1048,7 @@ function flux!(f, u, edge, data, ::Type{scharfetter_gummel})
     f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
     
     # k = 1 refers to left side, where as l = 2 refers to right side.
-    for icc ∈ data.chargeCarrierList
+    for icc ∈ data.chargeCarrierList[1:2]
 
         get_DOS!(icc, edge, data)
 
