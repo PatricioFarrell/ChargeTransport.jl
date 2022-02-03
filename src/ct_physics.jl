@@ -827,41 +827,6 @@ function addRecombinationProcess!(f, u, node, data, ipsi, iphin, iphip, n, p, ::
 end
 
 
-
-# Function which adds additional trap density to right-hand side of Poisson equation
-# without modeling traps as own charge carrier.
-# Note that this one may be deleted in future version.
-
-addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p) = addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, data.bulk_recombination.model_SRH_2species_trap)
-
-
-function addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}) where T<:model_SRH
-    return
-end
-
-function addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{model_SRH_2species_present_trap_dens})
-
-    params = data.params
-    ireg   = node.region
-
-    n0     = params.recombinationSRHTrapDensity[iphin, ireg]
-    p0     = params.recombinationSRHTrapDensity[iphip, ireg]
-    taun   = params.recombinationSRHLifetime[iphin, ireg]
-    taup   = params.recombinationSRHLifetime[iphip, ireg]
-    z      = 1
-
-    if ireg == 3
-        Nt = 5e14                / (cm^3) 
-    else
-        Nt = 5e14                / (cm^3) 
-    end
-
-    # add equilibrium trap density
-    f[ipsi] = f[ipsi] - q * z * Nt * ( 1 - (taun*p0 + taup*n) / (taun*(p0+p) + taup*(n0+n)) )
-
-end
-
-
 """
 $(TYPEDSIGNATURES)
 
@@ -913,7 +878,6 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     
     addElectricPotential!(f, u, node, data, ipsi)                  # RHS of Poisson
     addChargeCarriers!(f, u, node, data, ipsi, iphin, iphip, n, p) # RHS of Charge Carriers with special treatment of recombination
-    addTrapDensity!(f, u, node, data, ipsi, iphin, iphip, n, p)    # if desired, add trap density to RHS of Poisson
 
     return f
 

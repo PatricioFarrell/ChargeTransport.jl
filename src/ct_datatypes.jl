@@ -109,14 +109,6 @@ abstract type model_SRH_with_traps               <: model_SRH               end
 abstract type model_SRH_traps_transient          <: model_SRH_with_traps    end
 
 
-
-# """
-# $(TYPEDEF)
-# This Datatype will be deleted soon.
-
-# """
-abstract type model_SRH_2species_present_trap_dens <: abstract_model_SRH end
-
 ##########################################################
 ##########################################################
 """

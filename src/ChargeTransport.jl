@@ -38,8 +38,6 @@ export model_type, model_transient, model_stationary
 
 export abstract_model_SRH, model_SRH, model_SRH_off, model_SRH_without_traps, model_SRH_without_traps_stationary, model_SRH_with_traps,  model_SRH_traps_transient
 
-export model_SRH_2species_present_trap_dens
-
 export inEquilibrium, outOfEquilibrium
 ##################################################################
 
