@@ -1100,20 +1100,35 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Functions which sets at a given outer boundary
-a given Dirichlet value.
+Master function which applies the voltage ``\\Delta u``at the
+boundary ibreg for the chosen contact model.
     
 """
 
-function set_ohmic_contact!(ctsys, ibreg, contact_val)
+set_contact!(ctsys, ibreg, ;Δu) = __set_contact!(ctsys, ibreg, Δu, ctsys.data.boundary_type[ibreg])
+
+# For schottky contacts
+function __set_contact!(ctsys, ibreg, Δu, ::Type{schottky_contact})
+
+    ipsi = ctsys.data.index_psi
+
+    # set Schottky barrier and applied voltage
+    ctsys.fvmsys.boundary_values[ipsi,  ibreg] = (ctsys.data.params.SchottkyBarrier[ibreg]/q ) + Δu
+    ctsys.fvmsys.boundary_factors[ipsi, ibreg] = VoronoiFVM.Dirichlet
+
+end
+
+
+function __set_contact!(ctsys, ibreg, Δu, ::Type{ohmic_contact})
 
     interface_model       = ctsys.data.inner_interface_model
 
-    set_ohmic_contact!(ctsys, ibreg, contact_val, interface_model)
- 
+    set_ohmic_contact!(ctsys, ibreg, Δu, interface_model)
+
 end
 
-function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_none})
+# DA: need to check, if the distinction here is necessary in future version (correlates with question of DiscontinuousQuantities)
+function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{interface_model_none})
 
     iphin = ctsys.data.bulk_recombination.iphin
     iphip = ctsys.data.bulk_recombination.iphip
@@ -1122,14 +1137,9 @@ function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_no
     iphip = ctsys.data.chargeCarrierList[iphip]
 
     ctsys.fvmsys.boundary_factors[iphin, ibreg] = VoronoiFVM.Dirichlet
-    ctsys.fvmsys.boundary_values[iphin, ibreg]  = contact_val
+    ctsys.fvmsys.boundary_values[iphin, ibreg]  = Δu
     ctsys.fvmsys.boundary_factors[iphip, ibreg] = VoronoiFVM.Dirichlet
-    ctsys.fvmsys.boundary_values[iphip, ibreg]  = contact_val
-
-    # for icc = 1:ctsys.data.params.numberOfCarriers
-    #     ctsys.fvmsys.boundary_factors[icc, ibreg] = VoronoiFVM.Dirichlet
-    #     ctsys.fvmsys.boundary_values[icc, ibreg]  = contact_val
-    # end
+    ctsys.fvmsys.boundary_values[iphip, ibreg]  = Δu
 
 end
 
@@ -1180,17 +1190,6 @@ function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_di
 
 end
 
-
-function set_schottky_contact!(ctsys, ibreg; appliedVoltage = 0.0)
-
-    ipsi = ctsys.data.index_psi
-
-    # set Schottky barrier and applied voltage
-    ctsys.fvmsys.boundary_values[ipsi,  ibreg] = (ctsys.data.params.SchottkyBarrier[ibreg]/q ) + appliedVoltage
-    ctsys.fvmsys.boundary_factors[ipsi, ibreg] = VoronoiFVM.Dirichlet
-
-
-end
 ###########################################################
 ###########################################################
 # Wrappers for methods of VoronoiFVM

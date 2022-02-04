@@ -350,8 +350,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## set zero voltage ohmic contacts for each charge carrier at all outerior boundaries.
-    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
+    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
+    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
     if test == false
         println("*** done\n")
@@ -447,7 +447,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Δt                    = t - tvalues[istep-1] # Time step size
         
         ## Apply new voltage; set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
         
         if verbose
             println("time value: t = $(t)")

@@ -273,8 +273,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## set ohmic contact in bregionDonor and schottky contact in bregionAcceptor
-    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
-    set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = 0.0)
+    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
+    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
 
     println("*** done\n")
 
@@ -367,7 +367,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Δu = biasValues[i] # bias
 
         ## set non equilibrium boundary condition
-        set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = Δu)
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         ## increase generation rate with bias
         ctsys.data.λ2 = 10.0^(-biasSteps + i)
@@ -784,8 +784,8 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     ################################################################################
 
 #     ## set ohmic contact in bregionDonor and schottky contact in bregionAcceptor
-#     set_ohmic_contact!(ctsys, bregionDonor, 0.0)
-#     set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = 0.0)
+#     set_contact!(ctsys, bregionDonor,    Δu = 0.0)
+#     set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
 
 #     println("*** done\n")
 
@@ -877,7 +877,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #         Δu = biasValues[i] # bias
 
 #         ## set non equilibrium boundary condition
-#         set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = Δu)
+#         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
 #         if verbose
 #             println("bias: Δu = $(Δu)")
