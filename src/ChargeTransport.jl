@@ -38,8 +38,6 @@ export model_type, model_transient, model_stationary
 
 export abstract_model_SRH, model_SRH, model_SRH_off, model_SRH_without_traps, model_SRH_without_traps_stationary, model_SRH_with_traps,  model_SRH_traps_transient
 
-export model_SRH_2species_present_trap_dens
-
 export inEquilibrium, outOfEquilibrium
 ##################################################################
 
@@ -63,6 +61,7 @@ export show_params, trap_density!
 export linearScanProtocol, scan_protocol_type, set_time_mesh, get_current_val
 export chargeDensity
 export enable_traps!
+export enable_interface_carrier!
 
 ##################################################################
 
