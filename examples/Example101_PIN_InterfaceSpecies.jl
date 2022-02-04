@@ -366,12 +366,20 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     biasValues = range(0, stop = maxBias, length = 31)
     IV         = zeros(0)
 
+    ## these values are needed for putting the generation slightly on
+    I      = collect(length(biasValues):-1:0.0)
+    LAMBDA = 10 .^ (-I)
+
+    i = 0
     for Δu in biasValues
 
+        i = i+1
         println("Δu  = ", Δu )
 
         ## set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
+
+        ctsys.fvmsys.physics.data.λ2   = LAMBDA[i]
 
         solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
 
