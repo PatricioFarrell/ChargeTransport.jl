@@ -223,8 +223,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## inner boundary region data
     params.bDensityOfStates[iphin_b1, bregionJunction1]          = d * params.densityOfStates[iphin, regionIntrinsic] 
-    println(params.bDensityOfStates[iphin_b1, bregionJunction1] )
-    params.bDensityOfStates[iphip_b1, bregionJunction1]          = d * params.densityOfStates[iphip, regionIntrinsic] 
+        params.bDensityOfStates[iphip_b1, bregionJunction1]          = d * params.densityOfStates[iphip, regionIntrinsic] 
 
     params.bBandEdgeEnergy[iphin_b1, bregionJunction1]           = params.bandEdgeEnergy[iphin, regionIntrinsic] + delta1
     params.bBandEdgeEnergy[iphip_b1, bregionJunction1]           = params.bandEdgeEnergy[iphip, regionIntrinsic] + delta2
@@ -252,13 +251,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # but rather on default data.
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
-    if test == false
+    #if test == false
         ## Here we cn show region dependent physical parameters. show_params() only supports region dependent parameters, but, if one wishes to
         ## print nodal dependent parameters, currently this is possible with println(ctsys.data.paramsnodal). We neglected here, since
         ## in most applications where the numberOfNodes is >> 10 this would results in a large output in the terminal.
         show_params(ctsys)
-        println("*** done\n")
-    end
+        #println("*** done\n")
+    #end
 
     ################################################################################
     if test == false
@@ -367,12 +366,20 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     biasValues = range(0, stop = maxBias, length = 31)
     IV         = zeros(0)
 
+    ## these values are needed for putting the generation slightly on 
+    I      = collect(length(biasValues):-1:0.0)
+    LAMBDA = 10 .^ (-I) 
+
+    i = 0
     for Δu in biasValues
 
+        i = i+1
         println("Δu  = ", Δu )
 
         ## set non equilibrium boundary conditions
         set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+
+        ctsys.fvmsys.physics.data.λ2   = LAMBDA[i]
 
         solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
 
