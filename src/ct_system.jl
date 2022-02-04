@@ -47,7 +47,7 @@ $(SIGNATURES)
 
 Corresponding constructor for the bulk recombination model.
 """
-function set_bulk_recombination(; iphin = 1, iphip = 2, 
+function set_bulk_recombination(;iphin = 1, iphip = 2, 
                                   bulk_recomb_Auger = true,
                                   bulk_recomb_radiative = true,
                                   bulk_recomb_SRH = true)
@@ -763,7 +763,7 @@ function Data(grid, numberOfCarriers)
     data.boundary_type            = Array{DataType,1}(undef, numberOfBoundaryRegions)
 
     # bulk_recombination is a struct holding the input information
-    data.bulk_recombination       = set_bulk_recombination(; iphin = 1, iphip = 2, bulk_recomb_Auger = false, bulk_recomb_radiative = false,           
+    data.bulk_recombination       = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = false, bulk_recomb_radiative = false,           
                                                              bulk_recomb_SRH = false)
 
     for ii in 1:numberOfBoundaryRegions # as default all boundaries are set to an ohmic contact model.
@@ -861,6 +861,15 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
     # DA: caution with the interface_model with ionic interface charges (in future versions,
     # we will work with VoronoiFVM.InterfaceQuantites)
 
+    # put Auger and radiative on or off
+    if data.bulk_recombination.bulk_recomb_Auger == false
+        data.params.recombinationAuger .= 0.0
+    end
+
+    if data.bulk_recombination.bulk_recomb_radiative == false
+        data.params.recombinationRadiative .= 0.0
+    end
+
     data.index_psi         = num_species_sys
 
     ctsys.data             = data
@@ -949,6 +958,16 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_discon
     end
     
     data.index_psi        = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions) 
+
+
+    # put Auger and radiative on or off
+    if data.bulk_recombination.bulk_recomb_Auger == false
+        data.params.recombinationAuger .= 0.0
+    end
+    
+    if data.bulk_recombination.bulk_recomb_radiative == false
+        data.params.recombinationRadiative .= 0.0
+    end
 
     physics    = VoronoiFVM.Physics(data        = data,
                                     flux        = flux!,
