@@ -55,7 +55,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     h_ndoping               = 0.5 * μm
     h_pdoping_left          = 1 * μm
     h_pdoping_trap          = 0.01 * μm#0.01 * μm
-    h_pdoping_right          = 1 * μm
+    h_pdoping_right         = 1 * μm
     coord                   = initialize_pin_grid(refinementfactor,
                                                   h_ndoping,
                                                   h_pdoping_left,

@@ -119,7 +119,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     Ap                = 4 * pi * q * mₑ * kB^2 / Planck_constant^3
     vn                = An * T^2 / (q*Nc)
     vp                = Ap * T^2 / (q*Nv)
-    barrier           = 0.1 * eV
+    barrier           = Ec_CIGS - 0.1 * eV
 
     ## recombination parameters
     ni_CIGS           = sqrt(Nc * Nv) * exp(-(Ec_CIGS - Ev_CIGS) / (2 * kB * T)) # intrinsic concentration
@@ -161,6 +161,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
+
+    enable_traps!(data)
     
     data.generation_model               = generation_beer_lambert #generation_uniform #generation_beer_lambert
 
@@ -334,6 +336,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         plot_densities(Plotter, grid, data, solution,"Equilibrium", label_density)
         Plotter.figure()
         plot_solution(Plotter, grid, data, solution, "Equilibrium", label_solution)
+        Plotter.figure()
     end
 
     ################################################################################
@@ -372,9 +375,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## increase generation rate with bias
         ctsys.data.λ2 = 10.0^(-biasSteps + i)
 
-        if verbose
-            println("bias: Δu = $(Δu)")
-        end
+        println("bias: Δu = $(Δu)")
 
         ## solve time step problems with timestep Δt
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
