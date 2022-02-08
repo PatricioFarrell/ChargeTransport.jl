@@ -148,9 +148,15 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination
     ## processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by
     ## the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
+<<<<<<< HEAD
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
+=======
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                                  bulk_recomb_Auger = false,
+                                                                  bulk_recomb_radiative = false,
+>>>>>>> fixed bug in interface reaction
                                                                   bulk_recomb_SRH = false)
 
     data.isContinuous[iphin]             = false
@@ -167,8 +173,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
     ## excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
+<<<<<<< HEAD
     data.flux_approximation             = ScharfetterGummel
 
+=======
+    data.flux_approximation             = excess_chemical_potential
+
+>>>>>>> fixed bug in interface reaction
     if test == false
         println("*** done\n")
     end
@@ -226,11 +237,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bDensityOfStates[iphin_b1, bregionJunction1]          = d * params.densityOfStates[iphin, regionIntrinsic]
     params.bDensityOfStates[iphip_b1, bregionJunction1]          = d * params.densityOfStates[iphip, regionIntrinsic]
 
-    params.bBandEdgeEnergy[iphin_b1, bregionJunction1]           = params.bandEdgeEnergy[iphin, regionIntrinsic] + delta1
-    params.bBandEdgeEnergy[iphip_b1, bregionJunction1]           = params.bandEdgeEnergy[iphip, regionIntrinsic] + delta2
+    #params.bBandEdgeEnergy[iphin_b1, bregionJunction1]  = params.bandEdgeEnergy[iphin, regionIntrinsic] + delta1
+    #params.bBandEdgeEnergy[iphip_b1, bregionJunction1]  = params.bandEdgeEnergy[iphip, regionIntrinsic] + delta2
 
-    params.bMobility[iphin_b1, bregionJunction1]                 = params.mobility[iphin, regionIntrinsic]
-    params.bMobility[iphip_b1, bregionJunction1]                 = params.mobility[iphip, regionIntrinsic]
+    #params.bMobility[iphin_b1, bregionJunction1]        = params.mobility[iphin, regionIntrinsic]
+    #params.bMobility[iphip_b1, bregionJunction1]        = params.mobility[iphip, regionIntrinsic]
 
 
     ## interior doping
@@ -363,7 +374,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
 
     maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 31)
+    biasValues = range(0, stop = maxBias, length = 21)
     IV         = zeros(0)
 
     ## these values are needed for putting the generation slightly on
