@@ -6,7 +6,7 @@ referred to as van Roosbroeck system. This nonlinear system of partial different
 couples Poisson's equation to several continuity equations. The precise type and amount will vary with the specific application. 
 
 In this section, we would like to 
-describe the mathematical theory a bit more in detail. We denote with $\alpha$ with the charge 
+describe the mathematical theory a bit more in detail. We denote with $\alpha$ the charge 
 carrier, with $n_\alpha$ its corresponding density in a device region $\mathbf{\Omega}$ during a 
 finite time interval $[0, t_F]$. 
 
@@ -38,10 +38,10 @@ z_\alpha q \partial_t n_\alpha +  \nabla\cdot \mathbf{j}_\alpha
 ```
 Here, the flux
 $\mathbf{j}_\alpha$
-refers to the the carrier's current density and $r_\alpha$ for some production/reduction rates.
+refers to the the carrier's current density and $r_\alpha$ to some production/reduction rates.
 These rates may be chosen to represent different recombination or generation models such as Shockley-Read-Hall, Auger or direct recombination. Further details on which recombination or generation models are implemented can be found in [the general description of the code](@ref generalDescription).
 
-The amount and type of charge carriers will dependent on the specific application. The standard semiconductor equations use electrons $\alpha=n$ and holes $\alpha=p$.
+The amount and type of charge carriers will be dependent on the specific application. The standard semiconductor equations use electrons $\alpha=n$ and holes $\alpha=p$.
 
 ## Drift-diffusion fluxes
 Our code uses as independent variables the electrostatic potential $\psi$ as well as the quasi Fermi
@@ -51,7 +51,7 @@ potentials $\varphi_\alpha$. The charge carrier densities $n_\alpha$ are linked 
 n_\alpha = N_\alpha \mathcal{F}_\alpha \Bigl(\eta_\alpha(\psi, \varphi_\alpha) \Bigr), \quad \eta_\alpha = z_\alpha \frac{q (\varphi_\alpha - \psi) + E_\alpha}{k_B T},
 \end{aligned}
 ```
-where the physical quantities are defined in the list at the very end. With this definition we can formulate the carrier current given by
+where the physical quantities are defined [in the list of notations](@ref notation). With this definition we can formulate the carrier current given by
 ```math
 \begin{aligned}
     \mathbf{j}_\alpha 
@@ -66,7 +66,7 @@ with the negative gradients of the quasi Fermi potentials as driving forces. Usi
 
 !!! note
 
-    The unknowns in `ChargeTransport.jl` are always defined as the quasi Fermi potentials $ \varphi_a$ and the electric potential $\psi$.
+    The unknowns in `ChargeTransport.jl` are always defined as the quasi Fermi potentials $ \varphi_\alpha$ and the electric potential $\psi$.
 
 
 ## Background literature
@@ -78,7 +78,7 @@ For a comprehensive overview of drift-diffusion models, semiconductor applicatio
 3. S. M. Sze and K. K. Ng. [Physics of Semiconductor Devices](https://onlinelibrary.wiley.com/doi/book/10.1002/0470068329). Wiley, 2006.
 
 
-# Notation
+# [Notation] (@id notation)
 
 | **symbol** | **physical quantity** |   |   |   |   | **symbol** | **physical quantity** |
 | :---:         |     :---:      |          :---: |          :---: |          :---: |          :---: |          :---: |          :---: |

@@ -14,22 +14,22 @@ $(TYPEDFIELDS)
 mutable struct BulkRecombination
 
     """
-    index for data construction of quasi Fermi potential of electrons
+    Index for data construction of quasi Fermi potential of electrons
     """
 	iphin                 ::  Int64 # here the id's of the AbstractQuantities or the integer indices are parsed.
 
     """
-    index for data construction of quasi Fermi potential of holes
+    Index for data construction of quasi Fermi potential of holes
     """
     iphip                 ::  Int64 # here the id's of the AbstractQuantities or the integer indices are parsed.
 
     """
-    boolean for present Auger recombination in bulk
+    Boolean for present Auger recombination in bulk
     """
     bulk_recomb_Auger     ::  Bool
 
     """
-    boolean for present radiative recombination in bulk
+    Boolean for present radiative recombination in bulk
     """
     bulk_recomb_radiative ::  Bool
 
@@ -186,24 +186,24 @@ mutable struct Params
     ####                   integer numbers                     ####
     ###############################################################
     """
-    number of nodes used for the disretization of the domain ``\\mathbf{\\Omega}``.
+    Number of nodes used for the disretization of the domain ``\\mathbf{\\Omega}``.
     """
     numberOfNodes                ::  Int64
 
     """
-    number of subregions ``\\mathbf{\\Omega}_k`` within the domain ``\\mathbf{\\Omega}``.
+    Number of subregions ``\\mathbf{\\Omega}_k`` within the domain ``\\mathbf{\\Omega}``.
     """
     numberOfRegions              ::  Int64
 
     """
-    number of boundary regions ``(\\partial \\mathbf{\\Omega})_k`` such that 
+    Number of boundary regions ``(\\partial \\mathbf{\\Omega})_k`` such that 
     `` \\partial \\mathbf{\\Omega} = \\cup_k (\\partial \\mathbf{\\Omega})_k``.
     Note that here are interior and outerior boundaries calculated.
     """
     numberOfBoundaryRegions      ::  Int64
 
     """
-    number of moving charge carriers.
+    Number of moving charge carriers.
     """ 
     numberOfCarriers             ::  Int64
 
@@ -495,9 +495,9 @@ mutable struct Data
     generation_model             ::  DataType
 
     """
-    An embedding parameter used to solve the nonlinear Poisson problem, which corresponds
-    for λ1 = 0 to the case of thermodynamic equilibrium and electrocharge neutrality and
-    for λ1 = 1 to the case of thermodynamic equilibrium.
+    An embedding parameter used to solve the nonlinear Poisson problem, where for 
+    λ1 = 0 the right hand-side is set to zero whereas for
+    for λ1 = 1 we have a full space charge density.
     """
     λ1                           ::  Float64
 
@@ -523,7 +523,7 @@ mutable struct Data
     tempBEE1                     ::  Array{Float64, 1}
 
     """
-    see the description of tempBEE1
+    See the description of tempBEE1
     """
     tempBEE2                     ::  Array{Float64, 1}
 
@@ -535,7 +535,7 @@ mutable struct Data
     tempDOS1                     ::  Array{Float64, 1}
 
     """
-    see the desciption of tempDOS2
+    See the desciption of tempDOS2
     """
     tempDOS2                     ::  Array{Float64, 1}
 

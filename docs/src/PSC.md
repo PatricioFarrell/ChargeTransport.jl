@@ -36,9 +36,9 @@ Differences to the previous example include
 A quick survey on how to use `ChargeTransport.jl` to adjust the input parameters such that these features can be simulated will be given in the following.
 
 ## Example 1: Graded interfaces
-By default, we assume abrupt inner interfaces. If one wishes to simulate graded interfaces, where for example the effective density of states and the band-edge energy may vary, we refer to [Example105](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example105_PSC_gradedFlux.jl).
+By default, we assume abrupt inner interfaces. If one wishes to simulate graded interfaces, where for example the effective density of states and the band-edge energy may vary, we refer to [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example105_PSC_gradedFlux.jl).
 
-We sketch the relevant part here. First, we need to define two additional thin interface layers
+We sketch the relevant parts here. First, we need to define two additional thin interface layers
 
 ```julia
 # region numbers
@@ -67,7 +67,7 @@ paramsnodal.bandEdgeEnergy[iphin, :]  = gradingParameter(paramsnodal.bandEdgeEne
 ```
 
 ## Example 2: Linear IV scan protocol
-Here, we summarize the main parts of [Example106](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example106_PSC_withIons_IVMeasurement.jl).
+Here, we summarize the main parts of [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example106_PSC_withIons_IVMeasurement.jl).
 Define three charge carriers.
 ```julia
 iphin                       = 2 # electrons 
@@ -97,7 +97,7 @@ for istep = 2:number_tsteps
     t             = tvalues[istep]                  # current time
     Δu            = t * scanrate                    # applied voltage 
     Δt            = t - tvalues[istep-1]            # time step 
-    set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+    set_contact!(ctsys, bregionAcceptor, Δu = Δu)
     solve!(solution, initialGuess, ctsys, control = control, tstep = Δt) # provide time step
     initialGuess .= solution
 
@@ -117,11 +117,11 @@ for ireg in 1:numberOfRegions
 end
 ```
 for given data  stored in `generationUniform`. Note that also Beer-Lambert generation is implemented but yet not well tested.
-Furthermore, we recommend to perform a time loop while increasing the generation rate and afterwards applying the scan protocol with a full generation due to numerical stability, see for this [Example107](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example107_PSC_uniform_Generation.jl).
+Furthermore, we recommend to perform a time loop while increasing the generation rate and afterwards applying the scan protocol with a full generation due to numerical stability, see this [example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example107_PSC_uniform_Generation.jl).
 
 ## Example 4: 2D and 3D problems
 It is also possible to perform multi-dimensional simulations.
 
-For a 2D mesh you may use a structured grid via [ExtendableGrids.jl](https://github.com/j-fu/ExtendableGrids.jl), see [Example108](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example108_PSC_2D_tensorGrid.jl) or an unstructured mesh via the Julia wrapper [Triangulate.jl](https://github.com/JuliaGeometry/Triangulate.jl) for Jonathan Richard Shewchuk's Triangle mesh generator, see [Example201 for the simulation on a rectangular grid](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example201_PSC_2D_unstructuredGrid.jl) or [Example201 for a non-rectangular one](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example201_2D_non_rectangularGrid.jl).
+For a 2D mesh you may use a structured grid via [ExtendableGrids.jl](https://github.com/j-fu/ExtendableGrids.jl), see [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example108_PSC_2D_tensorGrid.jl) or an unstructured mesh via the Julia wrapper [Triangulate.jl](https://github.com/JuliaGeometry/Triangulate.jl) for Jonathan Richard Shewchuk's Triangle mesh generator, see [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example201_PSC_2D_unstructuredGrid.jl) for the simulation on a rectangular grid or [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example201_2D_non_rectangularGrid.jl) for a non-rectangular one.
 
-Lastly, with help of the [TetGen.jl](https://github.com/JuliaGeometry/TetGen.jl) wrapper, three dimensional tetrahedral meshes can be generated, see [Example202](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example202_3D_grid.jl).
+Lastly, with help of the [TetGen.jl](https://github.com/JuliaGeometry/TetGen.jl) wrapper, three dimensional tetrahedral meshes can be generated, see [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example202_3D_grid.jl).
