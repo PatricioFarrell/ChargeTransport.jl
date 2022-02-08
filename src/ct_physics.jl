@@ -346,78 +346,75 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_discont_qF})
         if bnode.region == 3
             iphin_b1 = data.chargeCarrierList[3]
             iphip_b1 = data.chargeCarrierList[4]
+
+            zn  = params.chargeNumbers[iphin]
+            zp  = params.chargeNumbers[iphip]
+            UT  = params.UT
+
+            Nc  = params.densityOfStates[iphin, 1]
+            Nv  = params.densityOfStates[iphip, 1]
+            Ec  = params.bandEdgeEnergy[iphin, 1]
+            Ev  = params.bandEdgeEnergy[iphip, 1]
+            mun = params.mobility[iphin, 1]
+            mup = params.mobility[iphip, 1]
+
+            Nc_b = params.bDensityOfStates[iphin_b1, 3]
+            Nv_b = params.bDensityOfStates[iphip_b1, 3]
             
-            #d         =  [2.0e5 2.0e5; 1.0e20 1.0e20]
             d      = 6.28 * 10e-8 * cm
+            scalen = 1.0#1.0e6
+            scalep = 1.0#1.0e6
 
-            k0n = q * params.chargeNumbers[iphin] * params.bMobility[iphin_b1, 3] * params.UT * params.bDensityOfStates[iphin_b1, 3]/d
-            k0p = q * params.chargeNumbers[iphip] * params.bMobility[iphip_b1, 3] * params.UT * params.bDensityOfStates[iphip_b1, 3]/d
+            k0n = - q * zn * UT * mun *  params.bDensityOfStates[iphin_b1, 3]/d
+            k0p = - q * zp * UT * mup * params.bDensityOfStates[iphip_b1, 3]/d
 
-            scale = 1.0e-30
             #left values
-            etan1 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 1] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[1]] / q ) # left
-            etap1 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 1] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[1]] / q ) # left
+            etan1 = zn / UT * ( (u[iphin, 1] - u[ipsi]) + Ec / q ) # left
+            etap1 = zp / UT * ( (u[iphip, 1] - u[ipsi]) + Ev / q ) # left
 
-            n1    = params.densityOfStates[iphin, bnode.cellregions[1]] * data.F[iphin](etan1)
-            p1    = params.densityOfStates[iphip, bnode.cellregions[1]] * data.F[iphip](etap1)
+            n1    = Nc * data.F[iphin](etan1)
+            p1    = Nv * data.F[iphip](etap1)
     
             # interface values 
-            etan_b1 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin_b1] - u[ipsi]) + params.bBandEdgeEnergy[iphin_b1] / q ) # interface
-            etap_b1 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip_b1] - u[ipsi]) + params.bBandEdgeEnergy[iphip_b1] / q ) # interface
+            etan_b1 = zn / UT * ( (u[iphin_b1] - u[ipsi]) + Ec / q ) # interface
+            etap_b1 = zp / UT * ( (u[iphip_b1] - u[ipsi]) + Ev / q ) # interface
     
-            n_b1    = params.bDensityOfStates[iphin_b1, 3] * data.F[iphin_b1](etan_b1)
-            p_b1    = params.bDensityOfStates[iphip_b1, 3] * data.F[iphip_b1](etap_b1)
+            n_b1    = Nc_b * data.F[iphin](etan_b1)
+            p_b1    = Nv_b * data.F[iphip](etap_b1)
     
+            # right values
+            etan2 = zn / UT * ( (u[iphin, 2] - u[ipsi]) + Ec / q ) # right
+            etap2 = zp / UT * ( (u[iphip, 2] - u[ipsi]) + Ev / q ) # right
+
+            n2    = Nc * data.F[iphin](etan2)
+            p2    = Nv * data.F[iphip](etap2)
+
             @show n_b1.value
             @show p_b1.value
+            @show n1.value
+            @show p1.value
 
-            @show u[iphin_b1].value
-            @show u[iphip_b1].value
-            @show u[iphin, 1].value
-            @show u[iphip, 1].value
-            # right values
-            etan2 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 2] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[2]] / q ) # right
-            etap2 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 2] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[2]] / q ) # right
-
-            n2    = params.densityOfStates[iphin, bnode.cellregions[2]] * data.F[iphin](etan2)
-            p2    = params.densityOfStates[iphip, bnode.cellregions[2]] * data.F[iphip](etap2)
             ##############################################################
-            reactn1     = scale * k0n * (n1/params.densityOfStates[iphin, bnode.cellregions[1]] - n_b1/params.bDensityOfStates[iphin_b1, 3])
-            reactn2     = scale * k0n * (n2/params.densityOfStates[iphin, bnode.cellregions[2]] - n_b1/params.bDensityOfStates[iphin_b1, 3])
+            reactn1     = scalen * k0n * (n1/Nc - n_b1/params.bDensityOfStates[iphin_b1, 3])
+            reactn2     = scalen * k0n * (n2/Nc - n_b1/params.bDensityOfStates[iphin_b1, 3])
 
-            f[iphin, 1] =   reactn1
-            f[iphin, 2] = - reactn2
+            f[iphin, 1] = - reactn1
+            f[iphin, 2] =   reactn2
 
-            # a = n1/params.densityOfStates[iphin, bnode.cellregions[1]] #0.22960193810982674
-            # b = n_b1/params.bDensityOfStates[iphin_b1, 3]
-            # println("...... electrons:")
-            # @show a.value
-            # @show b.value
+            reactp1     = scalep * k0p * (p1/Nv - p_b1/params.bDensityOfStates[iphip_b1, 3])
+            reactp2     = scalep * k0p * (p2/Nv - p_b1/params.bDensityOfStates[iphip_b1, 3])
 
-            # @show f[iphin, 1].value
-            # @show f[iphin, 2].value
-            # println( " ")
-            reactp1     = -scale * k0p * (p1/params.densityOfStates[iphip, bnode.cellregions[1]] - p_b1/params.bDensityOfStates[iphip_b1, 3])
-            reactp2     = -scale *k0p * (p2/params.densityOfStates[iphip, bnode.cellregions[2]] - p_b1/params.bDensityOfStates[iphip_b1, 3])
+            f[iphip, 1] =  - reactp1
+            f[iphip, 2] =    reactp2        
 
-            # a = ( p1/params.densityOfStates[iphip, bnode.cellregions[1]] ) #0.22960193810982674
-            # b = p_b1/params.bDensityOfStates[iphip_b1, 3]
-            # @show a.value
-            # @show b.value
-            f[iphip, 1] =   reactp1
-            f[iphip, 2] = - reactp2        
-
-            # @show f[iphip, 1].value
-            # @show f[iphip, 2].value
-            # println(".......")
             #interface species reaction
-            f[iphin_b1] =  - (f[iphin, 1] + f[iphin, 2]) # since its a reaction we need it with a minus
-            f[iphip_b1] =  - (f[iphip, 1] + f[iphip, 2]) # since its a reaction we need it with a minus
+            f[iphin_b1] =  f[iphin, 1] + f[iphin, 2] 
+            f[iphip_b1] =  f[iphip, 1] + f[iphip, 2] 
 
         elseif bnode.region == 4
             for icc in [iphin, iphip]
     
-                d         =  1.0e3.*[1.0e3 1.0e3; 1.0e3 1.0e3]
+                xx         =  [1.0e14 1.0e14; 1.0e14 1.0e14]
 
                 etan1 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 1] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # left
                 etan2 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 2] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[2]] / q ) # right
@@ -425,7 +422,7 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_discont_qF})
                 n1 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan1)
                 n2 = params.densityOfStates[icc, bnode.cellregions[2]] * data.F[icc](etan2)
     
-                react     = q * params.chargeNumbers[icc] * d[icc, bnode.region-2]  * (n1 - n2)
+                react     = q * params.chargeNumbers[icc] * xx[icc, bnode.region-2]  * (n1 - n2)
     
                 f[icc, 1] =   react
                 f[icc, 2] = - react
