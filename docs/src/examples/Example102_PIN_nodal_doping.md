@@ -212,8 +212,8 @@ space-dependent variables we have an additional ParamsNodal.
     ################################################################################
 
     # set zero voltage ohmic contacts for each charge carrier at all outerior boundaries.
-    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
+    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
+    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
     if test == false
         println("*** done\n")
@@ -301,7 +301,7 @@ Set calculation type to outOfEquilibrium for starting with respective simulation
     for Δu in biasValues
 
         # set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
 

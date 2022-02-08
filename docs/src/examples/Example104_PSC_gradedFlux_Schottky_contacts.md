@@ -371,8 +371,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # set Schottky contacts. For this we need to know at which outer boundary the contact
     # voltage shall be applied (which is in this case bregionAcceptor)
-    set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = 0.0)
-    set_schottky_contact!(ctsys, bregionDonor, appliedVoltage = 0.0)
+    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
+    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
     if test == false
         println("*** done\n")
@@ -458,7 +458,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         end
 
         # set non equilibrium boundary conditions
-        set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = Δu)
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 
