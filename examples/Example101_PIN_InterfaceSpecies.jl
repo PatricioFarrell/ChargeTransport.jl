@@ -14,7 +14,7 @@ using VoronoiFVM       # PDE solver with a FVM spatial discretization
 using ChargeTransport  # drift-diffusion solver
 using ExtendableGrids  # grid initializer
 using GridVisualize    # grid visualizer
-using PyPlot           # solution visualizer 
+using PyPlot           # solution visualizer
 using DelimitedFiles
 
 
@@ -108,10 +108,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     T                  = 300.0                *  K
 
     ## recombination parameters
-    Auger             = 0.0#1.0e-29              * cm^6 / s     
-    SRH_TrapDensity   = 1.0e10               / cm^3            
-    SRH_LifeTime      = 1.0                  * ns             
-    Radiative         = 0.0#1.0e-10              * cm^3 / s 
+    Auger             = 0.0#1.0e-29              * cm^6 / s
+    SRH_TrapDensity   = 1.0e10               / cm^3
+    SRH_LifeTime      = 1.0                  * ns
+    Radiative         = 0.0#1.0e-10              * cm^3 / s
 
     ## doping
     dopingFactorNd    = 1.0
@@ -120,7 +120,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     Na                = dopingFactorNa * Nv
 
     ## intrinsic concentration
-    ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) 
+    ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T))
 
     ## contact voltages: we impose an applied voltage only on one boundary.
     ## At the other boundary the applied voltage is zero.
@@ -144,14 +144,14 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    ## Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination 
-    ## processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by 
+    ## Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination
+    ## processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by
     ## the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = false,
                                                                   bulk_recomb_radiative = false,
                                                                   bulk_recomb_SRH = false)
-    
+
     data.isContinuous[iphin]             = false
     data.isContinuous[iphip]             = false
 
@@ -161,13 +161,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## For inner boundaries we have interface_model_none, interface_model_surface_recombination.
     data.boundary_type[bregionAcceptor]  = ohmic_contact
     data.boundary_type[bregionJunction1] = interface_model_discont_qF
-    data.boundary_type[bregionJunction2] = interface_model_discont_qF                        
-    data.boundary_type[bregionDonor]     = ohmic_contact   
-    
+    data.boundary_type[bregionJunction2] = interface_model_discont_qF
+    data.boundary_type[bregionDonor]     = ohmic_contact
+
     ## Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
     ## excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
-    
+    data.flux_approximation             = scharfetter_gummel
+
     if test == false
         println("*** done\n")
     end
@@ -222,8 +222,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     delta2 = 0.0 * eV
 
     ## inner boundary region data
-    params.bDensityOfStates[iphin_b1, bregionJunction1] = d * params.densityOfStates[iphin, regionIntrinsic] 
-    params.bDensityOfStates[iphip_b1, bregionJunction1] = d * params.densityOfStates[iphip, regionIntrinsic] 
+    params.bDensityOfStates[iphin_b1, bregionJunction1] = d * params.densityOfStates[iphin, regionIntrinsic]
+    params.bDensityOfStates[iphip_b1, bregionJunction1] = d * params.densityOfStates[iphip, regionIntrinsic]
 
     #params.bBandEdgeEnergy[iphin_b1, bregionJunction1]  = params.bandEdgeEnergy[iphin, regionIntrinsic] + delta1
     #params.bBandEdgeEnergy[iphip_b1, bregionJunction1]  = params.bandEdgeEnergy[iphip, regionIntrinsic] + delta2
@@ -242,11 +242,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bDoping[iphin, bregionDonor]                 = Nd        # data.bDoping  = [0.0  Na;
     params.bDoping[iphip, bregionAcceptor]              = Na        #                  Nd  0.0]
 
-    # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
+    # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed
     # in next step.
     data.params                                         = params
 
-    # In the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
+    # In the last step, we initialize our system with previous data which is likewise dependent on the parameters.
     # It is important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
     # but rather on default data.
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
@@ -311,7 +311,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution 
+    initialGuess         .= solution
 
     if plotting == true
 
@@ -321,7 +321,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         phin_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
         phip_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
         psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
-    
+
         for i = 1:length(phin_sol)
             scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
             scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
@@ -366,9 +366,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     biasValues = range(0, stop = maxBias, length = 21)
     IV         = zeros(0)
 
-    ## these values are needed for putting the generation slightly on 
+    ## these values are needed for putting the generation slightly on
     I      = collect(length(biasValues):-1:0.0)
-    LAMBDA = 10 .^ (-I) 
+    LAMBDA = 10 .^ (-I)
 
     i = 0
     for Δu in biasValues
@@ -411,7 +411,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         phin_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
         phip_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
         psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
-    
+
         for i = 1:length(phin_sol)
             scalarplot!(vis[2, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
             scalarplot!(vis[2, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
