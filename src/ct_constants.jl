@@ -1,9 +1,9 @@
 
-""" 
+"""
     Famous constants in SI units
 """
 
-### Below is a first try with Unitful/PhysicalConstants. 
+### Below is a first try with Unitful/PhysicalConstants.
 ### Problem: Units need to be erased, see Quire #109 in ChargeTransport
 
 # using Unitful

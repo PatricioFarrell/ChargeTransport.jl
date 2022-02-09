@@ -43,4 +43,4 @@ function run_all_tests()
     end
 end
 
-run_all_tests() 
+run_all_tests()

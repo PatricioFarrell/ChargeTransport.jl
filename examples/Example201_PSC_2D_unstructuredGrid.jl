@@ -2,7 +2,7 @@
 # PSC device on 2D domain (unstructured grid).
 ([source code](SOURCE_URL))
 
-Simulating a three layer PSC device Pedot| MAPI | PCBM with mobile ions 
+Simulating a three layer PSC device Pedot| MAPI | PCBM with mobile ions
 where the ion vacancy accumulation is limited by the Fermi-Dirac integral of order -1.
 The simulations are performed in 2D on an unstructured grid, out of equilibrium and with
 abrupt interfaces. A linear I-V measurement protocol is included and the corresponding
@@ -57,36 +57,36 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
 
     ## grid
     h_pdoping       = 3.00e-6 * cm + 1.0e-7 *cm
-    h_intrinsic     = 3.00e-5 * cm 
+    h_intrinsic     = 3.00e-5 * cm
     h_ndoping       = 8.50e-6 * cm + 1.0e-7 *cm
     height          = 1.00e-5 * cm
 
     b               = SimplexGridBuilder(Generator=Triangulate)
-    
+
     ## specify boundary nodes
     length_0        = point!(b, 0.0, 0.0)
     length_p        = point!(b, h_pdoping, 0.0)
     length_pi       = point!(b, h_pdoping + h_intrinsic, 0.0)
     length_pin      = point!(b, h_pdoping + h_intrinsic + h_ndoping, 0.0)
-            
+
     height_0        = point!(b, 0.0, height)
     height_p        = point!(b, h_pdoping, height)
     height_pi       = point!(b, h_pdoping + h_intrinsic, height)
     height_pin      = point!(b, h_pdoping + h_intrinsic + h_ndoping, height)
-        
+
     ## specify boundary regions
     ## metal interface
     facetregion!(b, bregionAcceptor)
     facet!(b, length_0, height_0)
     facetregion!(b, bregionDonor)
     facet!(b, length_pin, height_pin)
-            
+
     ## no flux
     facetregion!(b, bregionNoFlux)
     facet!(b, length_0, length_pin)
     facetregion!(b, bregionNoFlux)
     facet!(b, height_0, height_pin)
-    
+
     ## inner interface
     facetregion!(b, bregionJunction1)
     facet!(b, length_p, height_p)
@@ -95,11 +95,11 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
 
     ## cell regions
     cellregion!(b, regionAcceptor)
-	regionpoint!(b, h_pdoping/2, height/2) 
+	regionpoint!(b, h_pdoping/2, height/2)
     cellregion!(b,regionIntrinsic)
-	regionpoint!(b, (h_pdoping + h_intrinsic)/2, height/2) 
+	regionpoint!(b, (h_pdoping + h_intrinsic)/2, height/2)
     cellregion!(b,regionDonor)
-	regionpoint!(b, h_pdoping + h_intrinsic + h_ndoping/2, height/2) 
+	regionpoint!(b, h_pdoping + h_intrinsic + h_ndoping/2, height/2)
 
     options!(b,maxvolume=1.0e-16)
 
@@ -111,7 +111,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
         Plotter.title("Grid")
         Plotter.figure()
     end
- 
+
     if test == false
         println("*** done\n")
     end
@@ -131,19 +131,19 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     ## temperature
     T                =  300.0                 *  K
 
-    ## band edge energies    
-    Ec_a             = -3.0                  *  eV 
-    Ev_a             = -5.1                  *  eV 
+    ## band edge energies
+    Ec_a             = -3.0                  *  eV
+    Ev_a             = -5.1                  *  eV
 
-    Ec_i             = -3.8                  *  eV 
-    Ev_i             = -5.4                  *  eV 
+    Ec_i             = -3.8                  *  eV
+    Ev_i             = -5.4                  *  eV
 
-    Ec_d             = -3.8                  *  eV 
-    Ev_d             = -6.2                  *  eV 
+    Ec_d             = -3.8                  *  eV
+    Ev_d             = -6.2                  *  eV
 
-    EC               = [Ec_a, Ec_i, Ec_d] 
+    EC               = [Ec_a, Ec_i, Ec_d]
     EV               = [Ev_a, Ev_i, Ev_d]
-    
+
     ## effective densities of state
     Nc_a             = 1.0e20                / (cm^3)
     Nv_a             = 1.0e20                / (cm^3)
@@ -153,7 +153,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
 
     ## ###################### adjust Na, Ea here #####################
     Nanion           = 1.0e18                / (cm^3)
-    Ea_i             = -4.4                  *  eV 
+    Ea_i             = -4.4                  *  eV
     ## for the labels in the figures
     textEa           = Ea_i./eV
     textNa           = Nanion.*cm^3
@@ -167,61 +167,61 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     NV               = [Nv_a, Nv_i, Nv_d]
     NAnion           = [0.0,  Nanion, 0.0]
 
-    ## mobilities 
-    μn_a             = 0.1                   * (cm^2) / (V * s)  
-    μp_a             = 0.1                   * (cm^2) / (V * s)  
+    ## mobilities
+    μn_a             = 0.1                   * (cm^2) / (V * s)
+    μp_a             = 0.1                   * (cm^2) / (V * s)
 
-    μn_i             = 2.00e1                * (cm^2) / (V * s)  
+    μn_i             = 2.00e1                * (cm^2) / (V * s)
     μp_i             = 2.00e1                * (cm^2) / (V * s)
     μa_i             = 1.00e-10              * (cm^2) / (V * s)
 
-    μn_d             = 1.0e-3                * (cm^2) / (V * s) 
-    μp_d             = 1.0e-3                * (cm^2) / (V * s) 
+    μn_d             = 1.0e-3                * (cm^2) / (V * s)
+    μp_d             = 1.0e-3                * (cm^2) / (V * s)
 
-    μn               = [μn_a, μn_i, μn_d] 
-    μp               = [μp_a, μp_i, μp_d] 
-    μa               = [0.0,  μa_i, 0.0 ] 
+    μn               = [μn_a, μn_i, μn_d]
+    μp               = [μp_a, μp_i, μp_d]
+    μa               = [0.0,  μa_i, 0.0 ]
 
-    ## relative dielectric permittivity  
-    ε_a              = 4.0                   *  1.0  
-    ε_i              = 23.0                  *  1.0 
-    ε_d              = 3.0                   *  1.0 
+    ## relative dielectric permittivity
+    ε_a              = 4.0                   *  1.0
+    ε_i              = 23.0                  *  1.0
+    ε_d              = 3.0                   *  1.0
 
-    ε               = [ε_a, ε_i, ε_d] 
+    ε               = [ε_a, ε_i, ε_d]
 
     ## radiative recombination
-    r0_a            = 6.3e-11               * cm^3 / s 
-    r0_i            = 3.6e-12               * cm^3 / s  
+    r0_a            = 6.3e-11               * cm^3 / s
+    r0_i            = 3.6e-12               * cm^3 / s
     r0_d            = 6.8e-11               * cm^3 / s
-        
+
     r0              = [r0_a, r0_i, r0_d]
-        
-    ## life times and trap densities 
-    τn_a            = 1.0e-6              * s 
+
+    ## life times and trap densities
+    τn_a            = 1.0e-6              * s
     τp_a            = 1.0e-6              * s
-        
+
     τn_i            = 1.0e-7              * s
     τp_i            = 1.0e-7              * s
     τn_d            = τn_a
     τp_d            = τp_a
-        
+
     τn              = [τn_a, τn_i, τn_d]
     τp              = [τp_a, τp_i, τp_d]
-        
+
     ## SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
-    Ei_a            = -4.05              * eV   
-    Ei_i            = -4.60              * eV   
-    Ei_d            = -5.00              * eV   
+    Ei_a            = -4.05              * eV
+    Ei_i            = -4.60              * eV
+    Ei_d            = -5.00              * eV
 
     EI              = [Ei_a, Ei_i, Ei_d]
 
     ## doping (doping values are from Phils paper, not stated in the parameter list online)
-    Nd              =   2.089649130192123e17 / (cm^3) 
-    Na              =   4.529587947185444e18 / (cm^3) 
-    C0              =   1.0e18               / (cm^3) 
+    Nd              =   2.089649130192123e17 / (cm^3)
+    Na              =   4.529587947185444e18 / (cm^3)
+    C0              =   1.0e18               / (cm^3)
 
     ## contact voltages
-    voltageAcceptor =  1.0                  * V 
+    voltageAcceptor =  1.0                  * V
 
     if test == false
         println("*** done\n")
@@ -242,20 +242,20 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = false,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
     ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
     ## interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact                       
-    data.boundary_type[bregionDonor]    = ohmic_contact   
+    data.boundary_type[bregionAcceptor] = ohmic_contact
+    data.boundary_type[bregionDonor]    = ohmic_contact
 
     ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
     ## In this application ion vacancies only live in active perovskite layer
     data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
-    
+
     ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
     ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
     data.flux_approximation             = excess_chemical_potential
@@ -277,7 +277,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
     params.chargeNumbers[iphia]                         =  1
-    
+
     ## boundary region data
     params.bDensityOfStates[iphin, bregionDonor]        = Nc_d
     params.bDensityOfStates[iphip, bregionDonor]        = Nv_d
@@ -290,7 +290,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
 
     params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
     params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
-  
+
     for ireg in 1:numberOfRegions # interior region data
 
         params.dielectricConstant[ireg]                 = ε[ireg]
@@ -320,11 +320,11 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     ## interior doping
     params.doping[iphin, regionDonor]                   = Nd
     params.doping[iphia, regionIntrinsic]               = C0
-    params.doping[iphip, regionAcceptor]                = Na  
+    params.doping[iphip, regionAcceptor]                = Na
 
     ## boundary doping
-    params.bDoping[iphip, bregionAcceptor]              = Na      
-    params.bDoping[iphin, bregionDonor]                 = Nd 
+    params.bDoping[iphip, bregionAcceptor]              = Na
+    params.bDoping[iphin, bregionDonor]                 = Nd
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
@@ -334,7 +334,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
         show_params(ctsys)
         println("*** done\n")
     end
-    
+
     ################################################################################
     if test == false
         println("Define outerior boundary conditions")
@@ -380,7 +380,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
 
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution 
+    initialGuess         .= solution
 
     if plotting # currently, plotting the solution was only tested with PyPlot.
         ipsi = data.index_psi
@@ -401,7 +401,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
         Plotter.xlabel("length [m]")
         Plotter.ylabel("height [m]")
         Plotter.zlabel("potential [V]")
-        Plotter.tight_layout() 
+        Plotter.tight_layout()
     end
 
     if test == false
@@ -421,7 +421,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     scanrate                      = 0.04 * V/s
     number_tsteps                 = 41
     endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    
+
     ## with fixed timestep sizes we can calculate the times
     ## a priori
     tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
@@ -431,14 +431,14 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     biasValues                   = zeros(0) # for bias values
 
     for istep = 2:length(tvalues)
-        
+
         t                     = tvalues[istep]       # Actual time
-        Δu                    = t * scanrate         # Applied voltage 
+        Δu                    = t * scanrate         # Applied voltage
         Δt                    = t - tvalues[istep-1] # Time step size
-        
+
         ## Apply new voltage; set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
-        
+
         if verbose
             println("time value: t = $(t)")
         end
@@ -474,7 +474,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
         Plotter.figure()
         Plotter.plot(biasValues, IV.*(cm)^2/height, label = "\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (without internal BC)",  linewidth= 3, linestyle="--", color="red")
         Plotter.title("Forward; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ ")
-        Plotter.ylabel("total current [A]") # 
+        Plotter.ylabel("total current [A]") #
         Plotter.xlabel("Applied Voltage [V]")
     end
 

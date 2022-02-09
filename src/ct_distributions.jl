@@ -18,7 +18,7 @@ end
 $(TYPEDSIGNATURES)
 
 
-The Blakemore approximation ``1/(\\exp(-x) + γ)`` with variable real scalar ``γ``, see 
+The Blakemore approximation ``1/(\\exp(-x) + γ)`` with variable real scalar ``γ``, see
 J. S. Blakemore. “The Parameters of Partially Degenerate Semiconductors”. In: Proceedings of the Physical Society. Section A 65 (1952), pp. 460–461.
 
 """
@@ -38,8 +38,8 @@ end
 $(TYPEDSIGNATURES)
 
 
-The Fermi-Dirac integral of order ``-1`` which reads 
-``1/(\\exp(-x) + 1)``, see J.S. Blakemore, Approximations for Fermi-Dirac integrals, especially the function ``F_{1/2} (\\eta)`` used to 
+The Fermi-Dirac integral of order ``-1`` which reads
+``1/(\\exp(-x) + 1)``, see J.S. Blakemore, Approximations for Fermi-Dirac integrals, especially the function ``F_{1/2} (\\eta)`` used to
 describe electron density in a semiconductor, Solid-State Electronics 25 (11) (1982) 1067 – 1076.
 """
 function FermiDiracMinusOne(x::Real)
@@ -51,8 +51,8 @@ end
 $(TYPEDSIGNATURES)
 
 
-The incomplete Fermi-Dirac integral of order 1/2, 
-implemented according to [Bednarczyk1978, 
+The incomplete Fermi-Dirac integral of order 1/2,
+implemented according to [Bednarczyk1978,
 "The Approximation of the Fermi-Dirac integral ``F_{1/2}(\\eta)``"].
 """
 function FermiDiracOneHalfBednarczyk(x::Real)
@@ -66,7 +66,7 @@ end
 $(TYPEDSIGNATURES)
 
 
-The incomplete Fermi-Dirac integral of order 1/2, 
+The incomplete Fermi-Dirac integral of order 1/2,
 implemented according to the software package TeSCA, see https://wias-berlin.de/software/index.jsp?lang=1&id=TeSCA.
 """
 function FermiDiracOneHalfTeSCA(x::Real)
@@ -118,7 +118,7 @@ function plotDistributions(;Plotter=nothing)
     Plotter.semilogy(x, FermiDiracOneHalfTeSCA.(x), label="\$F_{1/2} \$ (TeSCA)");
     Plotter.semilogy(x, Boltzmann.(x), label="Boltzmann");
     Plotter.semilogy(x, ones(size(x))/0.27, "--", label="\$1/\\gamma=3.\\overline{703}\$", color=(0.6,0.6,0.6,1));
-    Plotter.semilogy(x, Blakemore.(x), label="Blakemore (\$\\gamma=0.27\$)");   
+    Plotter.semilogy(x, Blakemore.(x), label="Blakemore (\$\\gamma=0.27\$)");
     Plotter.semilogy(x, degenerateLimit.(x),label="degenerate limit");
 
     Plotter.xlabel("\$\\eta\$")

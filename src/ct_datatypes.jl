@@ -3,13 +3,13 @@
 """
 
 $(TYPEDEF)
-Abstract type for boundary model. Subtypes are 
+Abstract type for boundary model. Subtypes are
 ohmic_contact,
 schottky_contact
 and interface_model.
 
 """
-abstract type boundary_model   end 
+abstract type boundary_model   end
 
 ############    outer boundary conditions     ############
 """
@@ -49,7 +49,7 @@ abstract type interface_model_none <: interface_model end
 
 #
 #$(TYPEDEF)
-#Abstract type for an interface model where discontinuous 
+#Abstract type for an interface model where discontinuous
 #quasi Fermi potentials are needed.
 #
 abstract type interface_model_discont_qF <: interface_model end
@@ -75,7 +75,7 @@ abstract type interface_model_ion_charge <: interface_model end
 #
 # Abstract type for SRH bulk recombination model
 #
-#    !!! compat  
+#    !!! compat
 #    This one will be removed in future versions.
 #
 #
@@ -113,7 +113,7 @@ abstract type model_SRH_traps_transient          <: model_SRH_with_traps    end
 ##########################################################
 """
 $(TYPEDEF)
-Abstract type for model type which indicates, if we consider stationary 
+Abstract type for model type which indicates, if we consider stationary
 or transient problem.
 
 """
@@ -176,7 +176,7 @@ abstract type excess_chemical_potential <: flux_approximation end
 """
 $(TYPEDEF)
 Abstract type for excess chemical potential flux discretization
-for graded effective density of states and/or graded band-edge 
+for graded effective density of states and/or graded band-edge
 energies. This means, use this flux when at least one of these quantities
 is assumed to be space-dependent.
 
@@ -186,7 +186,7 @@ abstract type excess_chemical_potential_graded <: flux_approximation end
 
 """
 $(TYPEDEF)
-Abstract type for diffusion enhanced flux discretization, check 
+Abstract type for diffusion enhanced flux discretization, check
 M. Bessemoulin-Chatard, “A finite volume scheme for convection–diffusion equations with nonlinear diffusion derived from the Scharfetter–Gummel scheme”, Numerische Mathematik, vol. 121, pp. 637–670, 2012.
 
 """

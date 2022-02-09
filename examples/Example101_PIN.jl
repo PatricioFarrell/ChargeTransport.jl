@@ -14,7 +14,7 @@ using VoronoiFVM       # PDE solver with a FVM spatial discretization
 using ChargeTransport  # drift-diffusion solver
 using ExtendableGrids  # grid initializer
 using GridVisualize    # grid visualizer
-using PyPlot           # solution visualizer 
+using PyPlot           # solution visualizer
 
 
 ## This function is used to initialize the grid for a possible extension to other p-i-n devices.
@@ -85,7 +85,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## set indices of the quasi Fermi potentials
     iphin              = 1 # electron quasi Fermi potential
     iphip              = 2 # hole quasi Fermi potential
-    numberOfCarriers   = 2 
+    numberOfCarriers   = 2
 
     # We define the physical data.
     Ec                 = 1.424                *  eV
@@ -98,10 +98,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     T                  = 300.0                *  K
 
     ## recombination parameters
-    Auger             = 1.0e-29              * cm^6 / s     
-    SRH_TrapDensity   = 1.0e10               / cm^3            
-    SRH_LifeTime      = 1.0                  * ns             
-    Radiative         = 1.0e-10              * cm^3 / s 
+    Auger             = 1.0e-29              * cm^6 / s
+    SRH_TrapDensity   = 1.0e10               / cm^3
+    SRH_LifeTime      = 1.0                  * ns
+    Radiative         = 1.0e-10              * cm^3 / s
 
     ## doping
     dopingFactorNd    = 1.0
@@ -110,7 +110,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     Na                = dopingFactorNa * Nv
 
     ## intrinsic concentration
-    ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T)) 
+    ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T))
 
     ## contact voltages: we impose an applied voltage only on one boundary.
     ## At the other boundary the applied voltage is zero.
@@ -134,23 +134,23 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    ## Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination 
-    ## processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by 
+    ## Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination
+    ## processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by
     ## the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
     ## Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
     ## For inner boundaries we have interface_model_none, interface_model_surface_recombination.
-    data.boundary_type[bregionAcceptor] = ohmic_contact                       
-    data.boundary_type[bregionDonor]    = ohmic_contact   
-    
+    data.boundary_type[bregionAcceptor] = ohmic_contact
+    data.boundary_type[bregionDonor]    = ohmic_contact
+
     ## Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
     ## excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
     data.flux_approximation             = excess_chemical_potential
-    
+
     if test == false
         println("*** done\n")
     end
@@ -210,11 +210,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bDoping[iphin, bregionDonor]                 = Nd        # data.bDoping  = [0.0  Na;
     params.bDoping[iphip, bregionAcceptor]              = Na        #                  Nd  0.0]
 
-    # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed 
+    # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed
     # in next step.
     data.params                                         = params
 
-    # In the last step, we initialize our system with previous data which is likewise dependent on the parameters. 
+    # In the last step, we initialize our system with previous data which is likewise dependent on the parameters.
     # It is important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
     # but rather on default data.
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
@@ -247,16 +247,16 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("Plot electroneutral potential, band-edge energies and doping")
         ################################################################################
         ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
         label_BEE      = Array{String, 1}(undef, numberOfCarriers)    # band-edge energie parameters
         label_density  = Array{String, 1}(undef, numberOfCarriers)
         label_solution = Array{String, 1}(undef, numberOfCarriers)
 
-        ## for electrons 
+        ## for electrons
         label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"; label_BEE[iphin] = "\$E_c\$"
         label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
 
-        ## for holes 
+        ## for holes
         label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"; label_BEE[iphip] = "\$E_v\$"
         label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
         ## ##### set legend for plotting routines #####
@@ -307,9 +307,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution 
+    initialGuess         .= solution
 
-    
+
     if test == false
         println("*** done\n")
     end

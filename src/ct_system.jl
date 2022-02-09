@@ -47,7 +47,7 @@ $(SIGNATURES)
 
 Corresponding constructor for the bulk recombination model.
 """
-function set_bulk_recombination(;iphin = 1, iphip = 2, 
+function set_bulk_recombination(;iphin = 1, iphip = 2,
                                   bulk_recomb_Auger = true,
                                   bulk_recomb_radiative = true,
                                   bulk_recomb_SRH = true)
@@ -120,7 +120,7 @@ function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
     end
 
     data.enable_traps = enable_traps
-    
+
 end
 
 ###########################################################
@@ -165,7 +165,7 @@ function enable_ionic_carriers(;ionic_carriers = [3], regions = [2])
     enable_ions.regions          = regions
 
     return enable_ions
-    
+
 end
 
 ###########################################################
@@ -196,7 +196,7 @@ mutable struct Params
     numberOfRegions              ::  Int64
 
     """
-    Number of boundary regions ``(\\partial \\mathbf{\\Omega})_k`` such that 
+    Number of boundary regions ``(\\partial \\mathbf{\\Omega})_k`` such that
     `` \\partial \\mathbf{\\Omega} = \\cup_k (\\partial \\mathbf{\\Omega})_k``.
     Note that here are interior and outerior boundaries calculated.
     """
@@ -204,7 +204,7 @@ mutable struct Params
 
     """
     Number of moving charge carriers.
-    """ 
+    """
     numberOfCarriers             ::  Int64
 
     ###############################################################
@@ -248,7 +248,7 @@ mutable struct Params
     ``z_\\alpha`` for all carriers ``\\alpha``.
     """
     chargeNumbers                ::  Array{Float64,1}
-    
+
 
     ###############################################################
     ####    number of boundary regions x number of carriers    ####
@@ -258,7 +258,7 @@ mutable struct Params
     ``E_\\alpha`` in each region for each carrier ``\\alpha``.
     """
     bBandEdgeEnergy              ::  Array{Float64,2}
- 
+
     """
     An array with the corresponding boundary effective density of states values
     ``N_\\alpha`` for each carrier ``\\alpha``.
@@ -276,7 +276,7 @@ mutable struct Params
     A 2D array with the corresponding boundary doping values for each carrier ``\\alpha``.
     """
     bDoping                      ::  Array{Float64,2}
- 
+
     """
     A 2D array with the corresponding boundary velocity values for each carrier ``\\alpha``,
     when assuming Schottky contacts.
@@ -286,7 +286,7 @@ mutable struct Params
 
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
-    ############################################################### 
+    ###############################################################
     """
     A 2D array with the corresponding recombination surface boundary velocity values
     for electrons and holes.
@@ -297,7 +297,7 @@ mutable struct Params
     for electrons and holes.
     """
     bRecombinationSRHTrapDensity ::  Array{Float64,2}
- 
+
 
     ###############################################################
     ####        number of regions x number of carriers         ####
@@ -306,7 +306,7 @@ mutable struct Params
     A 2D array with the corresponding doping values for each carrier ``\\alpha`` on each region.
     """
     doping                       ::  Array{Float64,2}
- 
+
     """
     A 2D array with the corresponding effective density of states values ``N_\\alpha``
     for each carrier ``\\alpha`` on each region.
@@ -328,7 +328,7 @@ mutable struct Params
 
     ###############################################################
     #### number of regions x 2 (for electrons and holes only!) ####
-    ############################################################### 
+    ###############################################################
     """
     A 2D array with the corresponding SRH lifetimes ``\\tau_n, \\tau_p`` for electrons and holes.
     """
@@ -347,7 +347,7 @@ mutable struct Params
 
     ###############################################################
     ####                   number of regions                   ####
-    ############################################################### 
+    ###############################################################
     """
     A region dependent dielectric constant.
     """
@@ -372,7 +372,7 @@ mutable struct Params
     A region dependent array for the radiative recombination rate.
     """
     recombinationRadiative       ::  Array{Float64,1}
-    
+
     ###############################################################
     Params() = new() # standard constructor
 
@@ -389,7 +389,7 @@ $(TYPEDFIELDS)
 
 """
 mutable struct ParamsNodal
-    
+
     ###############################################################
     ####                    number of nodes                    ####
     ###############################################################
@@ -397,7 +397,7 @@ mutable struct ParamsNodal
     A node dependent dielectric constant.
     """
     dielectricConstant           ::  Array{Float64,1}
- 
+
     """
     A 1D array with the corresponding doping values on each node.
     """
@@ -409,12 +409,12 @@ mutable struct ParamsNodal
     A 2D array with the corresponding mobility values ``\\mu_\\alpha`` for each carrier ``\\alpha`` on each node.
     """
     mobility                     ::  Array{Float64,2}
- 
+
     """
     A 2D array with the corresponding effective density of states values ``N_\\alpha`` for each carrier ``\\alpha`` on each node.
     """
     densityOfStates              ::  Array{Float64,2}
- 
+
     """
     A 2D array with the corresponding band-edge energy values ``E_\\alpha`` for each carrier ``\\alpha`` on each node.
     """
@@ -447,7 +447,7 @@ mutable struct Data
     """
     An array of DataTypes with the type of boundary model for each boundary (interior and exterior).
     """
-    boundary_type                ::  Array{DataType, 1}  
+    boundary_type                ::  Array{DataType, 1}
 
     """
     A struct containing information concerning the bulk recombination model.
@@ -495,7 +495,7 @@ mutable struct Data
     generation_model             ::  DataType
 
     """
-    An embedding parameter used to solve the nonlinear Poisson problem, where for 
+    An embedding parameter used to solve the nonlinear Poisson problem, where for
     λ1 = 0 the right hand-side is set to zero whereas for
     for λ1 = 1 we have a full space charge density.
     """
@@ -623,7 +623,7 @@ $(TYPEDSIGNATURES)
 
 Simplified constructor for Params which only takes the grid
 and the numberOfCarriers as argument.
-    
+
 """
 function Params(grid, numberOfCarriers)
 
@@ -645,7 +645,7 @@ function Params(grid, numberOfCarriers)
     ###############################################################
     ####                     real numbers                      ####
     ###############################################################
-    params.temperature                  = 300 * K                 
+    params.temperature                  = 300 * K
     params.UT                           = (kB * 300 * K ) / q     # thermal voltage
     params.γ                            = 0.27                    # parameter for Blakemore statistics
     params.r0                           = 0.0                     # r0 prefactor electro-chemical reaction
@@ -653,12 +653,12 @@ function Params(grid, numberOfCarriers)
     ###############################################################
     ####              number of boundary regions               ####
     ###############################################################
-    params.SchottkyBarrier              = spzeros(Float64, numberOfBoundaryRegions) 
-    
+    params.SchottkyBarrier              = spzeros(Float64, numberOfBoundaryRegions)
+
     ###############################################################
     ####                  number of carriers                   ####
     ###############################################################
-    params.chargeNumbers                = spzeros(Float64, numberOfCarriers) 
+    params.chargeNumbers                = spzeros(Float64, numberOfCarriers)
 
     ###############################################################
     ####    number of boundary regions x number of carriers    ####
@@ -671,7 +671,7 @@ function Params(grid, numberOfCarriers)
 
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
-    ############################################################### 
+    ###############################################################
     params.bRecombinationSRHTrapDensity = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)                 # for surface reco
     params.recombinationSRHvelocity     = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)                 # for surface reco
 
@@ -692,7 +692,7 @@ function Params(grid, numberOfCarriers)
 
     ###############################################################
     ####                   number of regions                   ####
-    ############################################################### 
+    ###############################################################
     params.dielectricConstant           = spzeros(Float64, numberOfRegions)
     params.generationUniform            = spzeros(Float64, numberOfRegions)
     params.generationIncidentPhotonFlux = spzeros(Float64, numberOfRegions)
@@ -709,7 +709,7 @@ $(TYPEDSIGNATURES)
 
 Simplified constructor for ParamsNodal which only takes the grid
 and the numberOfCarriers as argument.
-    
+
 """
 function ParamsNodal(grid, numberOfCarriers)
 
@@ -722,10 +722,10 @@ function ParamsNodal(grid, numberOfCarriers)
     ###############################################################
     ####                    number of nodes                    ####
     ###############################################################
-    paramsnodal.dielectricConstant      = spzeros(Float64, numberOfNodes) 
+    paramsnodal.dielectricConstant      = spzeros(Float64, numberOfNodes)
     paramsnodal.doping                  = spzeros(Float64, numberOfNodes)
- 
- 
+
+
     ###############################################################
     ####          number of nodes x number of carriers         ####
     ###############################################################
@@ -746,7 +746,7 @@ Simplified constructor for Data which only takes the grid
 and the numberOfCarriers as argument. Here, all necessary information
 including the physical parameters, but also some numerical information
 are located.
-    
+
 """
 function Data(grid, numberOfCarriers)
 
@@ -763,7 +763,7 @@ function Data(grid, numberOfCarriers)
     data.boundary_type            = Array{DataType,1}(undef, numberOfBoundaryRegions)
 
     # bulk_recombination is a struct holding the input information
-    data.bulk_recombination       = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = false, bulk_recomb_radiative = false,           
+    data.bulk_recombination       = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = false, bulk_recomb_radiative = false,
                                                              bulk_recomb_SRH = false)
 
     for ii in 1:numberOfBoundaryRegions # as default all boundaries are set to an ohmic contact model.
@@ -776,7 +776,7 @@ function Data(grid, numberOfCarriers)
     data.enable_traps             = Traps()
 
     data.inner_interface_model    = interface_model_none
-    
+
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
@@ -796,13 +796,13 @@ function Data(grid, numberOfCarriers)
     data.tempBEE2                 = spzeros(Float64, numberOfCarriers)
     data.tempDOS1                 = spzeros(Float64, numberOfCarriers)
     data.tempDOS2                 = spzeros(Float64, numberOfCarriers)
-    
+
     ###############################################################
     ####        Quantities (for discontinuous solving)         ####
     ###############################################################
     data.isContinuous             = Array{Bool, 1}(undef, numberOfCarriers)
-    data.isContinuous            .= true  
-    # default values for most simple case 
+    data.isContinuous            .= true
+    # default values for most simple case
     data.chargeCarrierList        = collect(1:numberOfCarriers)
 
     data.index_psi                = numberOfCarriers + 1
@@ -812,7 +812,7 @@ function Data(grid, numberOfCarriers)
     ###############################################################
     data.params                   = Params(grid, numberOfCarriers)
     data.paramsnodal              = ParamsNodal(grid, numberOfCarriers)
- 
+
     ###############################################################
 
     return data
@@ -840,7 +840,7 @@ function System(grid, data ;unknown_storage)
     # here at this point, based on the interface model, we choose a system based on normal
     # integer indexing or quantity indexing.
     ctsys                 = build_system(grid, data, unknown_storage, interface_model)
-    
+
     return ctsys
 
 end
@@ -873,7 +873,7 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
     data.index_psi         = num_species_sys
 
     ctsys.data             = data
-    
+
     physics      = VoronoiFVM.Physics(data        = data,
                                       flux        = flux!,
                                       reaction    = reaction!,
@@ -886,7 +886,7 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
     ctsys.fvmsys = VoronoiFVM.System(grid, physics, unknown_storage = unknown_storage)
 
     for icc ∈ data.chargeCarrierList # first simply define all charge carriers on whole domain
-        enable_species!(ctsys.fvmsys, icc, 1:data.params.numberOfRegions) 
+        enable_species!(ctsys.fvmsys, icc, 1:data.params.numberOfRegions)
     end
 
     if data.params.numberOfCarriers > 2 # when ionic vacancies are present
@@ -896,14 +896,14 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
         ionic_carriers = data.enable_ionic_carriers.ionic_carriers
 
         for icc ∈ ionic_carriers # Then, ion vacancies only present in user defined layers, i.e. adjust previous specification
-            enable_species!(ctsys.fvmsys, icc, data.enable_ionic_carriers.regions) 
+            enable_species!(ctsys.fvmsys, icc, data.enable_ionic_carriers.regions)
         end
     end
 
     enable_species!(ctsys.fvmsys, data.index_psi, 1:data.params.numberOfRegions) # ipsi defined on whole domain
 
-    # for detection of number of species 
-    VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species_sys) 
+    # for detection of number of species
+    VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species_sys)
 
     return ctsys
 
@@ -956,15 +956,15 @@ function build_system(grid, data, unknown_storage, ::Type{interface_model_discon
         end
 
     end
-    
-    data.index_psi        = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions) 
+
+    data.index_psi        = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)
 
 
     # put Auger and radiative on or off
     if data.bulk_recombination.bulk_recomb_Auger == false
         data.params.recombinationAuger .= 0.0
     end
-    
+
     if data.bulk_recombination.bulk_recomb_radiative == false
         data.params.recombinationRadiative .= 0.0
     end
@@ -994,7 +994,7 @@ end
 function show_params(ctsys::System)
 
     params = ctsys.data.params
-    for name in fieldnames(typeof(params))[1:end] 
+    for name in fieldnames(typeof(params))[1:end]
         @printf("%30s = ",name)
         println(getfield(params,name))
     end
@@ -1003,7 +1003,7 @@ end
 
 
 function Base.show(io::IO, this::ParamsNodal)
-    for name in fieldnames(typeof(this))[1:end] 
+    for name in fieldnames(typeof(this))[1:end]
         @printf("%30s = ",name)
         println(io,getfield(this,name))
     end
@@ -1019,7 +1019,7 @@ function inner_interface_model(data::Data)
 
     # detect which interface model the user chooses by counting
     for ireg in 1:data.params.numberOfBoundaryRegions
-        
+
         if     data.boundary_type[ireg] ==  interface_model_discont_qF
 
             countDiscontqF = countDiscontqF + 1
@@ -1037,10 +1037,10 @@ function inner_interface_model(data::Data)
 
         return interface_model_discont_qF
 
-    elseif countInterfaceCharge > 0 # build ion interface charge system 
+    elseif countInterfaceCharge > 0 # build ion interface charge system
 
         # DA: currently for this case, since InterfaceQuantites is not well tested we stick with the no inferface case, i.e.
-        #     the known case how we build the system. Since we did not change anything, the code in 
+        #     the known case how we build the system. Since we did not change anything, the code in
         #     Example107 works perfectly fine since the choice of species number is already set.
         return interface_model_none
 
@@ -1061,7 +1061,7 @@ function inner_interface_model(ctsys::System)
 
     # detect which interface model the user chooses by counting
     for ireg in 1:ctsys.data.params.numberOfBoundaryRegions
-        
+
         if     ctsys.data.boundary_type[ireg] ==  interface_model_discont_qF
 
             countDiscontqF = countDiscontqF + 1
@@ -1079,10 +1079,10 @@ function inner_interface_model(ctsys::System)
 
         return interface_model_discont_qF
 
-    elseif countInterfaceCharge > 0 # build ion interface charge system 
+    elseif countInterfaceCharge > 0 # build ion interface charge system
 
         # DA: currently for this case, since InterfaceQuantites is not well tested we stick with the no inferface case, i.e.
-        #     the known case how we build the system. Since we did not change anything, the code in 
+        #     the known case how we build the system. Since we did not change anything, the code in
         #     Example107 works perfectly fine since the choice of species number is already set.
         return interface_model_none
 
@@ -1102,7 +1102,7 @@ $(TYPEDSIGNATURES)
 
 Master function which applies the voltage ``\\Delta u``at the
 boundary ibreg for the chosen contact model.
-    
+
 """
 
 set_contact!(ctsys, ibreg, ;Δu) = __set_contact!(ctsys, ibreg, Δu, ctsys.data.boundary_type[ibreg])
@@ -1178,7 +1178,7 @@ function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_di
             ctsys.fvmsys.boundary_factors[icc.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
             ctsys.fvmsys.boundary_values[icc.regionspec[ibreg], ibreg] = contact_val
         end
-        
+
     else
 
         for icc ∈ [iphin, iphip]
@@ -1209,7 +1209,7 @@ $(TYPEDSIGNATURES)
 
 Functions which sets for given charge carrier at a given boundary
 a given value.
-    
+
 """
 
 function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0)
@@ -1219,11 +1219,11 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
     # initialize solution and starting vectors
     initialGuess                   = unknowns(ctsys)
     solution                       = unknowns(ctsys)
-    @views initialGuess           .= 0.0 
+    @views initialGuess           .= 0.0
 
     # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
     I      = collect(nonlinear_steps:-1:0.0)
-    LAMBDA = 10 .^ (-I) 
+    LAMBDA = 10 .^ (-I)
     prepend!(LAMBDA, 0.0)
 
     for i in 1:length(LAMBDA)
@@ -1231,7 +1231,7 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
         if control.verbose
             println("λ1 = $(LAMBDA[i])")
         end
-        ctsys.fvmsys.physics.data.λ1 = LAMBDA[i] 
+        ctsys.fvmsys.physics.data.λ1 = LAMBDA[i]
         try
 
             VoronoiFVM.solve!(solution, initialGuess, ctsys, control = control, tstep=Inf)
@@ -1241,7 +1241,7 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
                 error("try to adjust nonlinear_steps, currently set to $(nonlinear_steps) or adjust Newton control parameters.")
             end
         end
-    
+
         initialGuess = solution
     end
 
@@ -1286,7 +1286,7 @@ end
 ###########################################################
 
 """
-Calculates current for stationary problem. 
+Calculates current for stationary problem.
 """
 function get_current_val(ctsys, U) # DA: But caution, still need some small modification!
 
@@ -1318,14 +1318,14 @@ for the method, plotting the densities.
 function compute_densities!(u, data, inode, region, icc, ipsi, in_region::Bool)
 
     params      = data.params
-    paramsnodal = data.paramsnodal 
+    paramsnodal = data.paramsnodal
 
     if in_region == false
         (params.bDensityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode] ) * data.F[icc](etaFunction(u, data, inode, region, icc, ipsi, in_region::Bool))
     elseif in_region == true
-        (params.densityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode])* data.F[icc](etaFunction(u, data, inode, region, icc, ipsi, in_region::Bool)) 
+        (params.densityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode])* data.F[icc](etaFunction(u, data, inode, region, icc, ipsi, in_region::Bool))
     end
-        
+
 end
 
 
@@ -1340,18 +1340,18 @@ function compute_densities!(grid, data, sol)
     params       = data.params
     paramsnodal  = data.paramsnodal
 
-    ipsi         = params.numberOfCarriers + 1 
+    ipsi         = params.numberOfCarriers + 1
     densities    = Array{Real,2}(undef, params.numberOfCarriers, size(sol, 2))
-        
+
     bfacenodes   = grid[BFaceNodes]
     bfaceregions = grid[BFaceRegions]
     cellRegions  = copy(grid[CellRegions])
     cellRegions  = push!(cellRegions, grid[CellRegions][end]) #  enlarge region by final cell
-    
+
     if dim_space(grid) > 1
         println("compute_densities! is so far only tested in 1D")
     end
-    
+
     for icc in 1:params.numberOfCarriers
 
         for node in 1:params.numberOfNodes
@@ -1367,9 +1367,9 @@ function compute_densities!(grid, data, sol)
 
             densities[icc, node] = compute_densities!(u, data, node, region, icc, ipsi, in_region)
         end
-    
+
     end
-    
+
     return densities
 
 end
@@ -1388,14 +1388,14 @@ function compute_energies!(grid, data, sol)
 
     params       = data.params
     paramsnodal  = data.paramsnodal
-    
+
     ipsi         = params.numberOfCarriers + 1
     energies     = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
     fermiLevel   = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
-    
+
     cellregions  = grid[CellRegions]
     cellregions  = push!(cellregions, cellregions[end])
-    
+
     for icc in 1:params.numberOfCarriers
 
         for inode in 1:params.numberOfNodes
@@ -1403,9 +1403,9 @@ function compute_energies!(grid, data, sol)
              energies[icc, inode]   = E - q * sol[ipsi, inode]
              fermiLevel[icc, inode] = -q * sol[icc, inode]
         end
-    
+
     end
-    
+
     return energies, fermiLevel
 
 end
@@ -1415,7 +1415,7 @@ end
 
 $(TYPEDSIGNATURES)
 
-Compute the electro-neutral solution for the Boltzmann approximation. 
+Compute the electro-neutral solution for the Boltzmann approximation.
 It is obtained by setting the left-hand side in
 the Poisson equation equal to zero and solving for ``\\psi``.
 The charge carriers may obey different statitics functions.
@@ -1440,7 +1440,7 @@ function electroNeutralSolution!(grid, data; Newton=false)
     psi0_initial    = 0.5
 
     for index = 1:length(regionsAllCells) - 1
-        
+
         ireg          = regionsAllCells[index]
         zVector       = params.chargeNumbers[iccVector]
         FVector       = data.F[iccVector]
@@ -1460,12 +1460,12 @@ function electroNeutralSolution!(grid, data; Newton=false)
         if !Newton
             try
                 solution[index + 1] = fzero(f, psi0_initial)
-            catch 
+            catch
                 psi0_initial        = 2.0
                 solution[index + 1] = fzero(f, psi0_initial)
                 psi0_initial        = 0.25
             end
-        else 
+        else
             D(f)                    = psi0 -> ForwardDiff.derivative(f, float(psi0))
             solution[index + 1]     = find_zero((f, D(f)), psi0_initial)
         end

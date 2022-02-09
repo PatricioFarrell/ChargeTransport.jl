@@ -70,7 +70,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ## set indices of the quasi Fermi potentials
     iphin              = 1 # electron quasi Fermi potential
     iphip              = 2 # hole quasi Fermi potential
-    numberOfCarriers   = 2 
+    numberOfCarriers   = 2
 
     ## Define the physical data.
     Ec                 = 1.424                *  eV
@@ -83,9 +83,9 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     T                  = 300.0                *  K
 
     ## recombination parameters
-    SRH_TrapDensity_n  = 4.760185435081902e5    / cm^3       
+    SRH_TrapDensity_n  = 4.760185435081902e5    / cm^3
     SRH_TrapDensity_p  = 9.996936448738406e6    / cm^3
-    SRH_LifeTime       = 1.0                    * ps   
+    SRH_LifeTime       = 1.0                    * ps
 
     ## contact voltages
     voltageAcceptor    = 1.4 * V
@@ -109,16 +109,16 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = false,
                                                                   bulk_recomb_radiative = false,
                                                                   bulk_recomb_SRH = true)
 
     ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
     ## interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact                       
-    data.boundary_type[bregionDonor]    = ohmic_contact   
-    
+    data.boundary_type[bregionAcceptor] = ohmic_contact
+    data.boundary_type[bregionDonor]    = ohmic_contact
+
     ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
     ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
     data.flux_approximation             = scharfetter_gummel
@@ -199,7 +199,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         plot_doping(Plotter, grid, paramsnodal)
         println("*** done\n")
     end
-    
+
     ################################################################################
     if test == false
         println("Define outerior boundary conditions")
@@ -245,19 +245,19 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution 
+    initialGuess         .= solution
 
     if plotting
         ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
         label_density  = Array{String, 1}(undef, numberOfCarriers)
         label_solution = Array{String, 1}(undef, numberOfCarriers)
-        
-        ## for electrons 
+
+        ## for electrons
         label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"
         label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
-        
-        ## for holes 
+
+        ## for holes
         label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"
         label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
         ##### set legend for plotting routines #####
@@ -282,7 +282,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     # Set calculation type to outOfEquilibrium for starting with respective simulation.
     ctsys.data.calculation_type      = outOfEquilibrium
-     
+
     maxBias                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     biasValues                       = range(0, stop = maxBias, length = 41)
     IV                               = zeros(0)
@@ -310,7 +310,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     end # bias loop
 
-    
+
     if plotting # plot solution and IV curve
         plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])",  label_energy)
         Plotter.figure()

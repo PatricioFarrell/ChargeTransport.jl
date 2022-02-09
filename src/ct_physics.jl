@@ -51,7 +51,7 @@ function get_BEE!(icc, edge::VoronoiFVM.Edge, data)
 
     data.tempBEE1[icc] = data.params.bandEdgeEnergy[icc, edge.region] + data.paramsnodal.bandEdgeEnergy[icc, edge.node[1]]
     data.tempBEE2[icc] = data.params.bandEdgeEnergy[icc, edge.region] + data.paramsnodal.bandEdgeEnergy[icc, edge.node[2]]
-    
+
 end
 
 ##########################################################
@@ -67,7 +67,7 @@ function etaFunction(u, node::VoronoiFVM.Node, data, icc, ipsi)
     get_BEE!(icc, node::VoronoiFVM.Node, data)
 
     E  = data.tempBEE1[icc]
-    
+
     return data.params.chargeNumbers[icc] / data.params.UT * ( (u[icc] - u[ipsi]) + E / q )
 
 end
@@ -86,7 +86,7 @@ function etaFunction(u, data, node, region, icc, ipsi, in_region::Bool)
         E  = data.params.bBandEdgeEnergy[icc, region] + data.paramsnodal.bandEdgeEnergy[icc, node]
     end
 
-    return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc]) 
+    return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc])
 end
 
 """
@@ -99,8 +99,8 @@ function etaFunction(u, bnode::VoronoiFVM.BNode, data, icc, ipsi) # bnode.index 
     get_BEE!(icc, bnode::VoronoiFVM.BNode, data)
 
     E  = data.tempBEE1[icc]
-    
-    return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc]) 
+
+    return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc])
 end
 
 
@@ -116,7 +116,7 @@ function etaFunction(u, edge::VoronoiFVM.Edge, data, icc, ipsi)
 
     E1 = data.tempBEE1[icc];  E2 = data.tempBEE2[icc]
 
-    return etaFunction(u[ipsi, 1], u[icc, 1], data.params.UT, E1, data.params.chargeNumbers[icc]), etaFunction(u[ipsi, 2], u[icc, 2], data.params.UT, E2, data.params.chargeNumbers[icc]) 
+    return etaFunction(u[ipsi, 1], u[icc, 1], data.params.UT, E1, data.params.chargeNumbers[icc]), etaFunction(u[ipsi, 2], u[icc, 2], data.params.UT, E2, data.params.chargeNumbers[icc])
 end
 
 
@@ -130,7 +130,7 @@ and ``\\psi``
 
 The parameters ``E_\\alpha`` and ``z_\\alpha`` are given as vectors.
 This function may be used to compute the charge density, i.e. the
-right-hand side of the Poisson equation.   
+right-hand side of the Poisson equation.
 """
 function etaFunction(psi, phi, UT, E, z)
     z ./ UT .* ( (phi - psi) .+ E / q )
@@ -175,23 +175,23 @@ for all charge carriers ``\\alpha``.
 function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
 
     params      = data.params
-    paramsnodal = data.paramsnodal 
+    paramsnodal = data.paramsnodal
 
     # parameters
     ipsi        = data.index_psi  # final index for electrostatic potential
- 
+
     for icc ∈ data.chargeCarrierList # quantities or integer indices
- 
+
         get_DOS!(icc, bnode, data)
         Ni      = data.tempDOS1[icc]
         eta     = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
- 
+
         f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )   # subtract doping
         f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)                   # add charge carrier
- 
+
         # boundary conditions for charge carriers are set in main program
         f[icc]  = 0.0
- 
+
     end
     f[ipsi] = f[ipsi] - paramsnodal.doping[bnode.index]
 
@@ -201,7 +201,7 @@ end
 
 """
 $(TYPEDSIGNATURES)
-Creates Schottky boundary conditions in a first attempt. For the electrostatic potential we assume 
+Creates Schottky boundary conditions in a first attempt. For the electrostatic potential we assume
 
 ``\\psi = \\phi_S/q + U, ``
 
@@ -212,9 +212,9 @@ For the charge carriers we assume the following
 ``f[n_\\alpha]  =  z_\\alpha q v_\\alpha (n_\\alpha - n_{\\alpha, 0})``,
 
 where ``v_{\\alpha}`` can be treated as a surface recombination mechanism and is given. The parameter
-``n_{\\alpha, 0}`` is a given value, calculated by the statistical relation, when assuming 
+``n_{\\alpha, 0}`` is a given value, calculated by the statistical relation, when assuming
 no electrical field and a quasi Fermi level equal to the Schottky barrier ``\\phi_S``, i.e.
-    
+
 ``n_{\\alpha, 0}= z_\\alpha/ U_T (E_\\alpha - \\phi_S) / q. ``
 
 """
@@ -227,12 +227,12 @@ function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
     iphin       = data.bulk_recombination.iphin
     iphip       = data.bulk_recombination.iphip
 
-    # based on user index and regularity of solution quantities or integers are used 
+    # based on user index and regularity of solution quantities or integers are used
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
-    ipsi        = data.index_psi               
+    ipsi        = data.index_psi
 
-    for icc in [iphin,iphip] 
+    for icc in [iphin,iphip]
 
         get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
         Ni     = data.tempDOS1[icc]
@@ -268,7 +268,7 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
 
     params      = data.params
     paramsnodal = data.paramsnodal
-    
+
     get_DOS!(iphin, bnode, data); get_DOS!(iphip, bnode, data)
     Nc   = data.tempDOS1[iphin]
     Nv   = data.tempDOS1[iphip]
@@ -282,7 +282,7 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
     excessDensTerm  = n * p * (1.0 - exponentialTerm)
 
     kernelSRH = 1.0 / (  1.0/params.recombinationSRHvelocity[iphip, bnode.region] * (n + params.bRecombinationSRHTrapDensity[iphin, bnode.region]) + 1.0/params.recombinationSRHvelocity[iphin, bnode.region] * (p + params.bRecombinationSRHTrapDensity[iphip, bnode.region] ) )
-   
+
     for icc ∈ [iphin, iphip]
         f[icc] =  q * params.chargeNumbers[icc] * kernelSRH *  excessDensTerm
     end
@@ -314,7 +314,7 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_discont_qF})
 
     recombinationVelocity    = [1.0e1 1.0e7;
                                     1.0e5 1.0e1]
-    
+
     ######### left values  ##########
     etan1 = params.chargeNumbers[iphin] / params.UT * ( (u[iphin, 1] - u[ipsi]) + params.bandEdgeEnergy[iphin, bnode.cellregions[1]] / q ) # left
     etap1 = params.chargeNumbers[iphip] / params.UT * ( (u[iphip, 1] - u[ipsi]) + params.bandEdgeEnergy[iphip, bnode.cellregions[1]] / q ) # left
@@ -340,17 +340,17 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_discont_qF})
 
     kernelSRH2 = 1.0 / (  1.0/recombinationVelocity[iphip, bnode.region-2] * (n2 + params.recombinationSRHTrapDensity[iphin, bnode.cellregions[2]])+ 1.0/recombinationVelocity[iphin, bnode.region-2] * (p2 + params.recombinationSRHTrapDensity[iphip, bnode.cellregions[2]]))
 
-    for icc ∈ [iphin, iphip] # equations for qF potentials 
-        react1     =  q *  params.chargeNumbers[icc] *  kernelSRH1 *  excessDensTerm1 
-        react2     =  q *  params.chargeNumbers[icc] *  kernelSRH2 *  excessDensTerm2 
+    for icc ∈ [iphin, iphip] # equations for qF potentials
+        react1     =  q *  params.chargeNumbers[icc] *  kernelSRH1 *  excessDensTerm1
+        react2     =  q *  params.chargeNumbers[icc] *  kernelSRH2 *  excessDensTerm2
 
         f[icc, 1] = react1
         f[icc, 2] = react2 # same plot with minus sign here
 
     end
 
-    # for icc ∈ [iphin, iphip] # equations for qF potentials 
-            
+    # for icc ∈ [iphin, iphip] # equations for qF potentials
+
     #     #to see continuity
     #     d         = [1.0e7 1.0e7;
     #                1.0e7 1.0e7]
@@ -378,9 +378,9 @@ in case of an ion charge interface model.
 function electrochemicalReaction(data, u, iphia, ipsi, iphiaJunction, ipsiJunction, β, κ, DOS, E) # (1.4.9)
 
     params             = data.params
- 
 
-    etaExp             = params.chargeNumbers[iphia] / params.UT * ( (u[iphia] - u[iphiaJunction]) + E / q ) 
+
+    etaExp             = params.chargeNumbers[iphia] / params.UT * ( (u[iphia] - u[iphiaJunction]) + E / q )
     expTerm            =  exp( β * etaExp ) - exp( (β - 1) * etaExp)
 
     etaInterfaceAnion  = params.chargeNumbers[iphia] / params.UT * ( (u[iphiaJunction] - u[ipsiJunction]) + E / q )
@@ -428,7 +428,7 @@ bstorage!(f, u, bnode, data, ::Type{interface_model_surface_recombination_and_ta
 function bstorage!(f, u, bnode, data, ::Type{interface_model_tangential_flux})
 
     params      = data.params
-    paramsnodal = data.paramsnodal 
+    paramsnodal = data.paramsnodal
 
     #indices (∈ IN ) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
     iphin       = data.bulk_recombination.iphin # integer index of φ_n
@@ -439,7 +439,7 @@ function bstorage!(f, u, bnode, data, ::Type{interface_model_tangential_flux})
     iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
 
     ipsi        = data.index_psi
-    
+
     for icc ∈ [iphin, iphip]
 
         get_DOS!(icc, bnode, data)
@@ -490,7 +490,7 @@ function bflux!(f, u, bedge, data, ::Type{excess_chemical_potential})
     params      =   data.params
     paramsnodal =   data.paramsnodal
 
-    
+
     nodel       =   bedge.node[2]
     nodek       =   bedge.node[1]
     ireg        =   bedge.region
@@ -503,10 +503,10 @@ function bflux!(f, u, bedge, data, ::Type{excess_chemical_potential})
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
     ipsi        = data.index_psi                  # final index for electrostatic potential
-    
+
     # ############################################################
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
-  
+
     # k = 1 refers to left side, where as l = 2 refers to right side.
     for icc ∈ [iphin, iphip]
 
@@ -547,8 +547,8 @@ Reaction in case of equilibrium, i.e. no generation and recombination is conside
 """
 function reaction!(f, u, node, data, ::Type{inEquilibrium})
 
-    # RHS of Poisson 
-    RHSPoisson!(f, u, node, data, data.index_psi) 
+    # RHS of Poisson
+    RHSPoisson!(f, u, node, data, data.index_psi)
 
     # zero reaction term for all icc (stability purpose)
     for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
@@ -591,15 +591,15 @@ function addRecombination!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}
     ####       right-hand side of continuity equations     ####
     ####       for φ_n and φ_p (bipolar reaction)          ####
     ###########################################################
-    for icc ∈ [iphin, iphip] 
+    for icc ∈ [iphin, iphip]
 
         # gives you the recombination kernel based on choice of user
         # If user, adjusted Auger or radiative recombination, they are set to 0. Hence, adding them here, has no influence since
         # we simply add by 0.0.
         kernel      = data.params.recombinationRadiative[ireg] + (data.params.recombinationAuger[iphin, ireg] * n + data.params.recombinationAuger[iphip, ireg] * p)
         kernel      = kernel + kernelSRH(data, ireg, iphin, iphip, n, p, data.bulk_recombination.bulk_recomb_SRH)
-                
-        f[icc]      = q * data.params.chargeNumbers[icc] *  kernel *  excessDensTerm  
+
+        f[icc]      = q * data.params.chargeNumbers[icc] *  kernel *  excessDensTerm
     end
 
 end
@@ -613,7 +613,7 @@ function addRecombination!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{mo
     # indices (∈ IN ) of traps used by user (they pass it through recombination)
     itrap       = data.enable_traps.traps
 
-    # based on user index and regularity of solution quantities or integers are used 
+    # based on user index and regularity of solution quantities or integers are used
     itrap       = data.chargeCarrierList[itrap]
 
     Nt    = params.densityOfStates[itrap, ireg]
@@ -624,9 +624,9 @@ function addRecombination!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{mo
     taup  = params.recombinationSRHLifetime[iphip, ireg]
     p0    = params.recombinationSRHTrapDensity[iphip, ireg]
 
-    # Rn, Rp agree up to sign with *On the Shockley-Read-Hall Model: Generation-Recombination 
+    # Rn, Rp agree up to sign with *On the Shockley-Read-Hall Model: Generation-Recombination
     # in Semiconductors* in SIAM Journal on Applied Mathematics, Vol. 67, No. 4 (2007), pp. 1183-1201.
-    # The sign is chosen according to *Supporting Information: Consistent Device Simulation Model 
+    # The sign is chosen according to *Supporting Information: Consistent Device Simulation Model
     # Describing Perovskite Solar Cells in Steady-State, Transient and Frequency Domain* in ACS (2018)
     if params.chargeNumbers[itrap] == -1
         Rn =  1 / taun * (n * (1-t/Nt) - n0 * t/Nt)
@@ -644,7 +644,7 @@ end
 
 function addGeneration!(f, u, node, data, iphin, iphip)
 
-    for icc ∈ [iphin, iphip] 
+    for icc ∈ [iphin, iphip]
         f[icc] = f[icc] - q * data.params.chargeNumbers[icc] * generation(data, node.region,  node.coord[node.index], data.generation_model)
     end
 
@@ -667,7 +667,7 @@ function RHSPoisson!(f, u, node, data, ipsi)
         get_DOS!(icc, node, data)
 
         Ni      = data.tempDOS1[icc]
-        eta     = etaFunction(u, node, data, icc, ipsi) 
+        eta     = etaFunction(u, node, data, icc, ipsi)
 
         f[ipsi] = f[ipsi] - data.params.chargeNumbers[icc] * ( data.params.doping[icc, node.region] )  # subtract doping
         f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * Ni * data.F[icc](eta)   # add charge carrier
@@ -713,10 +713,10 @@ The recombination includes radiative, Auger and Shockley-Read-Hall
 recombination. For latter recombination process the stationary simplification is implemented.
 
 The recombination is only implemented for electron and holes and assumes
-that the electron index is 1 and the hole index is 2. 
+that the electron index is 1 and the hole index is 2.
 
 """
-function reaction!(f, u, node, data, ::Type{outOfEquilibrium}) 
+function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
 
     # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
     iphin       = data.bulk_recombination.iphin
@@ -726,7 +726,7 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
     ipsi        = data.index_psi                # final index for electrostatic potential
-    
+
     ############################################################
     ####   set RHS to zero for all icc (stability purpose)  ####
     ############################################################
@@ -743,7 +743,7 @@ function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
     n  = Nc * data.F[iphin](etaFunction(u, node, data, iphin, ipsi))
     p  = Nv * data.F[iphip](etaFunction(u, node, data, iphip, ipsi))
 
-    
+
     RHSPoisson!(f, u, node, data, ipsi)                  # RHS of Poisson
     RHSContinuityEquations!(f, u, node, data, ipsi, iphin, iphip, n, p) # RHS of Charge Carriers with special treatment of recombination
     # if one is interested in further reaction terms they can be added here
@@ -758,7 +758,7 @@ Compute trap densities for a given trap energy.
 [Currently, only done for the Boltzmann statistics and for region dependent parameters.]
 
 """
-function trap_density!(icc, ireg, data, Et) 
+function trap_density!(icc, ireg, data, Et)
     params      = data.params
 
     params.densityOfStates[icc, ireg] * exp( params.chargeNumbers[icc] * (params.bandEdgeEnergy[icc, ireg] - Et) / (kB * params.temperature))
@@ -803,9 +803,9 @@ $(TYPEDSIGNATURES)
 
 The storage term for time-dependent problems.
 Currently, for the time-dependent current densities the implicit Euler scheme is used.
-Hence, we have 
+Hence, we have
 
-``f[n_\\alpha] =  z_\\alpha  q ∂_t n_\\alpha`` 
+``f[n_\\alpha] =  z_\\alpha  q ∂_t n_\\alpha``
 
 and for the electrostatic potential
 ``f[ψ] = 0``.
@@ -815,7 +815,7 @@ function storage!(f, u, node, data, ::Type{model_transient})
 
     params = data.params
     ipsi   = data.index_psi
-    
+
     for icc ∈ data.chargeCarrierList
 
         get_DOS!(icc, node, data)
@@ -846,7 +846,7 @@ function flux!(f, u, edge, data, ::Type{inEquilibrium})
 
     params      = data.params
     paramsnodal = data.paramsnodal
-    
+
     ipsi        = data.index_psi # integer index or Quantity
     ireg        = edge.region
     nodel       = edge.node[2]
@@ -854,7 +854,7 @@ function flux!(f, u, edge, data, ::Type{inEquilibrium})
 
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
     f[ipsi]     = - (params.dielectricConstant[ireg] + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2) * ε0 * dpsi
-    
+
 end
 
 flux!(f, u, edge, data, ::Type{outOfEquilibrium}) = flux!(f, u, edge, data, data.flux_approximation)
@@ -865,15 +865,15 @@ function flux!(f, u, edge, data, ::Type{scharfetter_gummel})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
-    
+
     ipsi        =   data.index_psi
     nodel       =   edge.node[2]
     nodek       =   edge.node[1]
     ireg        =   edge.region
-    
+
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
     f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
-    
+
     # k = 1 refers to left side, where as l = 2 refers to right side.
     for icc ∈ data.chargeCarrierList
 
@@ -890,27 +890,27 @@ function flux!(f, u, edge, data, ::Type{scharfetter_gummel})
 
         bp, bm       = fbernoulli_pm(params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT)
         f[icc]       = - j0 * ( bm * Nil * data.F[icc](etal) - bp * Nik * data.F[icc](etak) )
-    
+
     end
 
 end
 
-# The classical Scharfetter-Gummel flux scheme for 
-# possible space-dependent DOS and band-edge energies. For these parameters the discretization scheme is modified. 
+# The classical Scharfetter-Gummel flux scheme for
+# possible space-dependent DOS and band-edge energies. For these parameters the discretization scheme is modified.
 function flux!(f, u, edge, data, ::Type{scharfetter_gummel_graded})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
-    
+
     ipsi        =   data.index_psi
     nodel       =   edge.node[2]
     nodek       =   edge.node[1]
     ireg        =   edge.region
-    
+
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
     dpsiEps     =   (params.dielectricConstant[ireg]  + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2) * dpsi
     f[ipsi]     = - ε0 * dpsiEps
-    
+
     # k = 1 refers to left side, where as l = 2 refers to right side.
     for icc ∈ data.chargeCarrierList
 
@@ -925,11 +925,11 @@ function flux!(f, u, edge, data, ::Type{scharfetter_gummel_graded})
 
         bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
         mobility     = params.mobility[icc, ireg] + (paramsnodal.mobility[icc, nodel] + paramsnodal.mobility[icc, nodek])/2
-        
+
         if paramsnodal.densityOfStates[icc, nodel] ≈ 0.0 || paramsnodal.densityOfStates[icc, nodek] ≈ 0.0
-            bp, bm         = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT ) 
+            bp, bm         = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT )
         else
-            bp, bm         = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT - (log(paramsnodal.densityOfStates[icc, nodel]) -log(paramsnodal.densityOfStates[icc, nodek])) ) 
+            bp, bm         = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT - (log(paramsnodal.densityOfStates[icc, nodel]) -log(paramsnodal.densityOfStates[icc, nodek])) )
         end
 
         f[icc]       = - j0  * mobility * ( bm  * Nil * data.F[icc](etal) - bp *  Nik * data.F[icc](etak) )
@@ -944,15 +944,15 @@ function flux!(f, u, edge, data, ::Type{excess_chemical_potential})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
-    
+
     ipsi        =   data.index_psi
     nodel       =   edge.node[2]
     nodek       =   edge.node[1]
     ireg        =   edge.region
-    
+
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
     f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
-    
+
 
     # k = 1 refers to left side, where as l = 2 refers to right side.
     for icc ∈ data.chargeCarrierList
@@ -976,7 +976,7 @@ function flux!(f, u, edge, data, ::Type{excess_chemical_potential})
 
 end
 
-# The excess chemical potential flux scheme for 
+# The excess chemical potential flux scheme for
 # possible space-dependent DOS and band-edge energies. For these parameters the discretization scheme is modified.
 function flux!(f, u, edge, data, ::Type{excess_chemical_potential_graded})
 
@@ -987,17 +987,17 @@ function flux!(f, u, edge, data, ::Type{excess_chemical_potential_graded})
     nodel       =   edge.node[2]
     nodek       =   edge.node[1]
     ireg        =   edge.region
-    
+
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
     dpsiEps     =   (params.dielectricConstant[ireg]  + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2) * dpsi
     f[ipsi]     = - ε0 * dpsiEps
-    
-    
+
+
     # k = 1 refers to left side, where as l = 2 refers to right side.
     for icc ∈ data.chargeCarrierList
 
         j0                 = params.chargeNumbers[icc] * q * params.UT
- 
+
         get_DOS!(icc, edge, data)
 
         Nik          = data.tempDOS1[icc]
@@ -1019,12 +1019,12 @@ function flux!(f, u, edge, data, ::Type{excess_chemical_potential_graded})
 
         bp, bm       = fbernoulli_pm(Q)
         f[icc]       = - j0  * ( bm  * mobilityl * Nil * data.F[icc](etal) - bp * mobilityk * Nik * data.F[icc](etak) )
-    
+
     end
 
 end
 
-# The diffusion enhanced scheme by Bessemoulin-Chatard. Currently, the Pietra-Jüngel scheme is 
+# The diffusion enhanced scheme by Bessemoulin-Chatard. Currently, the Pietra-Jüngel scheme is
 # used for the regularization of the removable singularity. This also works for space-dependent band-edge energy, but
 # not for space-dependent effective DOS.
 function flux!(f, u, edge, data, ::Type{diffusion_enhanced})
@@ -1033,16 +1033,16 @@ function flux!(f, u, edge, data, ::Type{diffusion_enhanced})
     paramsnodal =   data.paramsnodal
 
     tolReg      =   1.0e-13
-    
+
     ipsi        =   data.index_psi
     nodel       =   edge.node[2]
     nodek       =   edge.node[1]
     ireg        =   edge.region
-    
+
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
     f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
-    
-    
+
+
     # k = 1 refers to left side, where as l = 2 refers to right side.
     for icc ∈ data.chargeCarrierList
 
@@ -1084,16 +1084,16 @@ function flux!(f, u, edge, data, ::Type{generalized_sg})
     max_iteration =   200          # for Newton solver
     it            =   0            # number of iterations (newton)
     damp          =   0.1          # damping factor
-    
+
     ipsi          =   data.index_psi
     nodel         =   edge.node[2]
     nodek         =   edge.node[1]
     ireg          =   edge.region
-    
+
     dpsi          =   u[ipsi, 2] - u[ipsi, 1]
     f[ipsi]       =  - params.dielectricConstant[ireg] * ε0 * dpsi
-    
-    
+
+
     # k = 1 refers to left side, where as l = 2 refers to right side.
     for icc ∈ data.chargeCarrierList
 
@@ -1125,7 +1125,7 @@ function flux!(f, u, edge, data, ::Type{generalized_sg})
                 @show value(jInitial), value(Fval), value(dFval)
                 error("singular derivative in exact SG scheme")
             end
-           
+
             update   = Fval / dFval
             jInitial = jInitial - damp * update
 

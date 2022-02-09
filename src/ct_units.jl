@@ -20,11 +20,11 @@ const kg                 = 1.0                      # kilogramm
 # scaled SI units
 const cm                 = 1.0e-2 * m
 const mm                 = 1.0e-3 * m
-const μm                 = 1.0e-6 * m 
+const μm                 = 1.0e-6 * m
 const nm                 = 1.0e-9 * m
 
 const ms                 = 1.0e-3 * s
-const μs                 = 1.0e-6 * s 
+const μs                 = 1.0e-6 * s
 const ns                 = 1.0e-9 * s
 const ps                 = 1.0e-12 *s
 

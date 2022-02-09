@@ -4,7 +4,7 @@
 
 Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions.
 The simulations are performed out of equilibrium, stationary and with
-two junctions between perovskite layer and transport layers, to 
+two junctions between perovskite layer and transport layers, to
 which we refer as graded interfaces.
 Hence, a graded flux discretization with space dependent
 band-edge energies and density of states is tested here.
@@ -24,7 +24,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-## function for grading the physical parameters 
+## function for grading the physical parameters
 function gradingParameter(physicalParameter, coord, regionTransportLayers, regionJunctions, h, heightLayers, lengthLayers, values)
     for ireg in regionTransportLayers
 
@@ -33,10 +33,10 @@ function gradingParameter(physicalParameter, coord, regionTransportLayers, regio
 
     end
 
-    for ireg in regionJunctions 
+    for ireg in regionJunctions
 
-        xcoord   = lengthLayers[ireg]:lengthLayers[ireg+1] 
-        left     = lengthLayers[ireg]-3  
+        xcoord   = lengthLayers[ireg]:lengthLayers[ireg+1]
+        left     = lengthLayers[ireg]-3
         junction = h[ireg]
         right    = lengthLayers[ireg+2]-3
 
@@ -77,7 +77,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfBoundaryRegions = length(bregions)
 
     ## grid
-    h_ndoping               = 9.90e-6 * cm 
+    h_ndoping               = 9.90e-6 * cm
     h_junction1             = 1.0e-7  * cm
     h_intrinsic             = 4.00e-5 * cm
     h_junction2             = 1.0e-7  * cm
@@ -119,10 +119,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor)       # n-doped region   = 1
-    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionJunction1)   # first junction   = 2  
-    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionIntrinsic)   # intrinsic region = 3  
+    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionJunction1)   # first junction   = 2
+    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionIntrinsic)   # intrinsic region = 3
     cellmask!(grid, [heightLayers[3]], [heightLayers[4]], regionJunction2)   # sec. junction    = 4
-    cellmask!(grid, [heightLayers[4]], [heightLayers[5]], regionAcceptor)    # p-doped region   = 5  
+    cellmask!(grid, [heightLayers[4]], [heightLayers[5]], regionAcceptor)    # p-doped region   = 5
 
     if plotting
         gridplot(grid, Plotter = Plotter)
@@ -143,28 +143,28 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## set indices of the quasi Fermi potentials
     iphin                   = 2 # electron quasi Fermi potential
     iphip                   = 1 # hole quasi Fermi potential
-    numberOfCarriers        = 2 
+    numberOfCarriers        = 2
 
     ## ##########      physical data      ##########
     ## temperature
     T                       = 300.0                 *  K
 
-    ## band edge energies    
-    Ec_d                    = -4.0                  *  eV 
-    Ev_d                    = -6.0                  *  eV 
-        
-    Ec_i                    = -3.7                  *  eV 
-    Ev_i                    = -5.4                  *  eV 
-        
-    Ec_a                    = -3.1                  *  eV 
-    Ev_a                    = -5.1                  *  eV 
-    
+    ## band edge energies
+    Ec_d                    = -4.0                  *  eV
+    Ev_d                    = -6.0                  *  eV
+
+    Ec_i                    = -3.7                  *  eV
+    Ev_i                    = -5.4                  *  eV
+
+    Ec_a                    = -3.1                  *  eV
+    Ev_a                    = -5.1                  *  eV
+
     ## these parameters at the junctions for E_\alpha and N_\alpha will be overwritten.
     Ec_j1                   = Ec_d;     Ec_j2     = Ec_i
     Ev_j1                   = Ev_d;     Ev_j2     = Ev_i
-          
-    EC                      = [Ec_d, Ec_j1, Ec_i, Ec_j2, Ec_a] 
-    EV                      = [Ev_d, Ev_j1, Ev_i, Ev_j2, Ev_a] 
+
+    EC                      = [Ec_d, Ec_j1, Ec_i, Ec_j2, Ec_a]
+    EV                      = [Ev_d, Ev_j1, Ev_i, Ev_j2, Ev_a]
 
     ## effective densities of state
     Nc_d                    = 5.0e19                / (cm^3)
@@ -181,45 +181,45 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     NC                      = [Nc_d, Nc_j1, Nc_i, Nc_j2, Nc_a]
     NV                      = [Nv_d, Nv_j1, Nv_i, Nv_j2, Nv_a]
- 
-    ## mobilities 
-    μn_d                    = 3.89                  * (cm^2) / (V * s)  
-    μp_d                    = 3.89                  * (cm^2) / (V * s)  
 
-    μn_i                    = 6.62e1                * (cm^2) / (V * s)  
+    ## mobilities
+    μn_d                    = 3.89                  * (cm^2) / (V * s)
+    μp_d                    = 3.89                  * (cm^2) / (V * s)
+
+    μn_i                    = 6.62e1                * (cm^2) / (V * s)
     μp_i                    = 6.62e1                * (cm^2) / (V * s)
 
-    μn_a                    = 3.89e-1               * (cm^2) / (V * s) 
+    μn_a                    = 3.89e-1               * (cm^2) / (V * s)
     μp_a                    = 3.89e-1               * (cm^2) / (V * s)
-    
+
     μn_j1                   = μn_d;     μn_j2      = μn_i
     μp_j1                   = μp_d;     μp_j2      = μp_i
 
-    μn                      = [μn_d, μn_j1, μn_i, μn_j2, μn_a] 
-    μp                      = [μp_d, μp_j1, μp_i, μp_j2, μp_a] 
+    μn                      = [μn_d, μn_j1, μn_i, μn_j2, μn_a]
+    μp                      = [μp_d, μp_j1, μp_i, μp_j2, μp_a]
 
-    ## relative dielectric permittivity  
-    ε_d                     = 10.0                  *  1.0  
-    ε_i                     = 24.1                  *  1.0 
-    ε_a                     = 3.0                   *  1.0 
+    ## relative dielectric permittivity
+    ε_d                     = 10.0                  *  1.0
+    ε_i                     = 24.1                  *  1.0
+    ε_a                     = 3.0                   *  1.0
 
     ε_j1                    = ε_d;       ε_j2      = ε_a
- 
-    ε                       = [ε_d, ε_j1, ε_i, ε_j2, ε_a] 
+
+    ε                       = [ε_d, ε_j1, ε_i, ε_j2, ε_a]
 
     ## radiative recombination
-    r0_d                   = 0.0e+0               * cm^3 / s 
-    r0_i                   = 1.0e-12              * cm^3 / s  
+    r0_d                   = 0.0e+0               * cm^3 / s
+    r0_i                   = 1.0e-12              * cm^3 / s
     r0_a                   = 0.0e+0               * cm^3 / s
 
     r0_j1                  = r0_i;      r0_j2     = r0_i
-        
+
     r0                     = [r0_d, r0_j1, r0_i, r0_j2, r0_a]
-        
-    ## life times and trap densities 
-    τn_d                   = 1.0e100              * s 
+
+    ## life times and trap densities
+    τn_d                   = 1.0e100              * s
     τp_d                   = 1.0e100              * s
-        
+
     τn_i                   = 3.0e-10              * s
     τp_i                   = 3.0e-8               * s
     τn_a                   = τn_d
@@ -227,29 +227,29 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     τn_j1                  = τn_i;     τn_j2      = τn_a
     τp_j1                  = τp_i;     τp_j2      = τp_a
-        
+
     τn                     = [τn_d, τn_j1, τn_i, τn_j2, τn_a]
     τp                     = [τp_d, τp_j1, τp_i, τp_j2, τp_a]
-        
+
     ## SRH trap energies (needed for calculation of trap_density! (SRH))
-    Ei_d                   = -5.0                 * eV   
-    Ei_i                   = -4.55                * eV   
-    Ei_a                   = -4.1                 * eV   
+    Ei_d                   = -5.0                 * eV
+    Ei_i                   = -4.55                * eV
+    Ei_a                   = -4.1                 * eV
 
     Ei_j1                  = Ei_i;      Ei_j2     = Ei_a
 
     EI                     = [Ei_d, Ei_j1, Ei_i, Ei_j2, Ei_a]
-        
+
     ## Auger recombination
     Auger                  = 0.0
 
     ## doping (doping values are from Driftfusion)
-    Nd                     =   1.03e18             / (cm^3) 
-    Na                     =   1.03e18             / (cm^3) 
-    Ni_acceptor            =   8.32e7              / (cm^3) 
+    Nd                     =   1.03e18             / (cm^3)
+    Na                     =   1.03e18             / (cm^3)
+    Ni_acceptor            =   8.32e7              / (cm^3)
 
     ## contact voltages
-    voltageAcceptor        =  1.2                 * V 
+    voltageAcceptor        =  1.2                 * V
 
     if test == false
         println("*** done\n")
@@ -266,24 +266,24 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## possible choices: model_stationary, model_transient
     data.model_type                     = model_stationary
-    
+
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
     ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
     ## interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionDonor]    = ohmic_contact  
-    data.boundary_type[bregionAcceptor] = ohmic_contact      
-     
+    data.boundary_type[bregionDonor]    = ohmic_contact
+    data.boundary_type[bregionAcceptor] = ohmic_contact
+
     ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
     ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
     data.flux_approximation             = scharfetter_gummel_graded
-    
+
     ################################################################################
     if test == false
         println("Define Params and fill in physical parameters")
@@ -332,13 +332,13 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.recombinationAuger[iphin, ireg]          = Auger
         params.recombinationAuger[iphip, ireg]          = Auger
 
-    end           
-    
+    end
+
     ## interior doping
     params.doping[iphin, regionDonor]               = Nd
-    params.doping[iphip, regionIntrinsic]           = Ni_acceptor    
-    params.doping[iphip, regionAcceptor]            = Na     
-                             
+    params.doping[iphip, regionIntrinsic]           = Ni_acceptor
+    params.doping[iphip, regionAcceptor]            = Na
+
     ## boundary doping
     params.bDoping[iphip, bregionAcceptor]          = Na        # data.bDoping  = [Na  0.0;
     params.bDoping[iphin, bregionDonor]             = Nd        #                  0.0  Nd]
@@ -346,7 +346,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.params                                     = params
     data.paramsnodal                                = paramsnodal
     ctsys                                           = System(grid, data, unknown_storage=unknown_storage)
-    
+
     ## print data
     if test == false
         show_params(ctsys)
@@ -401,19 +401,19 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution 
+    initialGuess         .= solution
 
     if plotting
         ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
         label_density  = Array{String, 1}(undef, numberOfCarriers)
         label_solution = Array{String, 1}(undef, numberOfCarriers)
-                
-        ## for electrons 
+
+        ## for electrons
         label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"
         label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
-                
-        ## for holes 
+
+        ## for holes
         label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"
         label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
         ## ##### set legend for plotting routines #####
@@ -470,7 +470,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("*** done\n")
     end
 
-    testval = solution[data.index_psi, 20] 
+    testval = solution[data.index_psi, 20]
     return testval
 
 end #  main

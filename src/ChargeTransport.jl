@@ -43,7 +43,7 @@ export inEquilibrium, outOfEquilibrium
 
 include("ct_physics.jl")
 
-export scharfetter_gummel, excess_chemical_potential, diffusion_enhanced, generalized_sg 
+export scharfetter_gummel, excess_chemical_potential, diffusion_enhanced, generalized_sg
 export scharfetter_gummel_graded, excess_chemical_potential_graded
 export generation_model, generation_none, generation_beer_lambert, generation_uniform
 export breaction!, bstorage!, reaction!, storage!, flux!

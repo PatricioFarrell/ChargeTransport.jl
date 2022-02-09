@@ -25,7 +25,7 @@ function main(;Plotter = PyPlot, plotting = false)
     regionIntrinsic  = 2                           # intrinsic region
     regionAcceptor   = 3                           # p doped region
     regions          = [regionDonor, regionIntrinsic, regionAcceptor]
-    
+
     ## boundary region numbers
     bregionDonor     = 1
     bregionAcceptor  = 2
@@ -33,13 +33,13 @@ function main(;Plotter = PyPlot, plotting = false)
     bregionJunction2 = 4
     bregionNoFlux    = 5
     bregions         = [bregionDonor, bregionAcceptor, bregionJunction1, bregionJunction2, bregionNoFlux]
-    
+
     ## grid
-    h_ndoping        = 9.90e-6 * cm 
+    h_ndoping        = 9.90e-6 * cm
     h_intrinsic      = 4.00e-5 * cm + 2.0e-7 * cm
     h_pdoping        = 1.99e-5 * cm
     height           = 3.00e-5 * cm
-    
+
     function unsuitable(x1,y1,x2,y2,x3,y3,area)
         bary_x=(x1+x2+x3)/3.0
         bary_y=(y1+y2+y3)/3.0
@@ -48,7 +48,7 @@ function main(;Plotter = PyPlot, plotting = false)
         qdist=dx^2+dy^2
         area>0.1*max(8.0e-16,qdist)
     end
-    
+
     b                = SimplexGridBuilder(Generator=Triangulate)
 
     ## specify boundary nodes
@@ -58,20 +58,20 @@ function main(;Plotter = PyPlot, plotting = false)
     length_nip = point!(b, h_ndoping + h_intrinsic + h_pdoping, 0.0)
     height_0   = point!(b, 0.0, height)
     height_n   = point!(b, h_ndoping, height)
-    
+
     ## for L shape
     height_ni12  = point!(b, h_ndoping + h_intrinsic/2, height)
     height_ni2  = point!(b, h_ndoping + h_intrinsic/2, height/2)
     height_ni  = point!(b, h_ndoping + h_intrinsic, height/2)
     height_nip = point!(b, h_ndoping + h_intrinsic + h_pdoping, height/2)
-    
+
     ## specify boundary regions
     ## metal interface
     facetregion!(b, bregionDonor)
     facet!(b, length_0, height_0)
     facetregion!(b, bregionAcceptor)
-    facet!(b, length_nip, height_nip) 
-          
+    facet!(b, length_nip, height_nip)
+
     ## no flux
     facetregion!(b, bregionNoFlux)
     facet!(b, length_0, length_nip)
@@ -83,7 +83,7 @@ function main(;Plotter = PyPlot, plotting = false)
     facet!(b, height_ni12, height_ni2)
     facetregion!(b, bregionNoFlux)
     facet!(b, height_ni2, height_nip)
-  
+
     ## inner interface
     facetregion!(b, bregionJunction1)
     facet!(b, length_n, height_n)
@@ -93,21 +93,21 @@ function main(;Plotter = PyPlot, plotting = false)
     refinement_center = [h_ndoping + h_intrinsic/2, height/2]
     ## Activate unsuitable callback
     options!(b,unsuitable=unsuitable)
-    
+
     ## cell regions
     cellregion!(b, regionDonor)
-    regionpoint!(b, h_ndoping-1.0e-6*cm, height/2-1.0e-6*cm) 
+    regionpoint!(b, h_ndoping-1.0e-6*cm, height/2-1.0e-6*cm)
     cellregion!(b,regionIntrinsic)
-    regionpoint!(b, h_ndoping + h_intrinsic -1.0e-6*cm, height/2-1.0e-6*cm) 
+    regionpoint!(b, h_ndoping + h_intrinsic -1.0e-6*cm, height/2-1.0e-6*cm)
     cellregion!(b,regionAcceptor)
-    regionpoint!(b, h_ndoping + h_intrinsic + h_pdoping -1.0e-6*cm, height/2-1.0e-6*cm) 
+    regionpoint!(b, h_ndoping + h_intrinsic + h_pdoping -1.0e-6*cm, height/2-1.0e-6*cm)
 
     options!(b,maxvolume=7.0e-16)
 
     grid = simplexgrid(b)
 
     numberOfNodes   = size(grid[Coordinates])[2]
-    
+
     if plotting
         ## GridVisualize.gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.6)
         ## Plotter.xlabel("length [m]")
