@@ -627,7 +627,7 @@ and the numberOfCarriers as argument.
 """
 function Params(grid, numberOfCarriers)
 
-    numberOfNodes           = length(grid[Coordinates])
+    numberOfNodes           = size(grid[Coordinates], 2)
     numberOfRegions         = grid[NumCellRegions]
     numberOfBoundaryRegions = grid[NumBFaceRegions]
     ###############################################################
