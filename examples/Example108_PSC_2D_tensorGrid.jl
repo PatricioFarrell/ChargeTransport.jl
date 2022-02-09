@@ -50,7 +50,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     h_pdoping               = 3.00e-6 * cm + 1.0e-7 *cm
     h_intrinsic             = 3.00e-5 * cm
     h_ndoping               = 8.50e-6 * cm + 1.0e-7 *cm
-    height                  = 1.00e-5 * cm
+    height                  = 5.00e-6 * cm
 
     x0                      = 0.0 * cm
     δ                       = 3*n        # the larger, the finer the mesh
@@ -66,19 +66,19 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord_i_g1              = geomspace(h_pdoping,
                                         h_pdoping+h_intrinsic/k,
                                         h_intrinsic/(6.8*δ),
-                                        h_intrinsic/(1.1*δ),
+                                        h_intrinsic/(0.8*δ),
                                         tol=t)
     coord_i_g2              = geomspace(h_pdoping+h_intrinsic/k,
                                         h_pdoping+h_intrinsic,
-                                        h_intrinsic/(1.1*δ),
+                                        h_intrinsic/(0.8*δ),
                                         h_intrinsic/(7.8*δ),
                                         tol=t)
     coord_n_g               = geomspace(h_pdoping+h_intrinsic,
                                         h_pdoping+h_intrinsic+h_ndoping/2,
                                         h_ndoping/(2.8*δ),
-                                        h_ndoping/(0.7*δ),
+                                        h_ndoping/(0.5*δ),
                                         tol=t)
-    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.2*δ)))
+    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.1*δ)))
 
     coord                   = glue(coord_p_u,coord_p_g,  tol=10*t)
     coord                   = glue(coord,    coord_i_g1, tol=10*t)
@@ -86,13 +86,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord                   = glue(coord,    coord_n_g,  tol=10*t)
     coord_length            = glue(coord,    coord_n_u,  tol=10*t)
 
-    height_L                = geomspace(0.0, height/2, height/(1.5*δ), height/(1.5*δ))
-    height_R                = geomspace(height/2, height, height/(1.5*δ), height/(1.5*δ))
+    height_L                = geomspace(0.0, height/2, height/(0.5*δ), height/(0.5*δ))
+    height_R                = geomspace(height/2, height, height/(0.5*δ), height/(0.5*δ))
     coord_height            = glue(height_L, height_R, tol = 10*t)
 
     grid                    = simplexgrid(coord_length, coord_height)
 
-    numberOfNodes           = size(grid[Coordinates])[2]
+    numberOfNodes           = size(grid[Coordinates], 2)
 
     ## specify inner regions
     cellmask!(grid, [0.0, 0.0],                     [h_pdoping, height],                           regionAcceptor, tol = 1.0e-18) # p-doped region   = 1
@@ -228,7 +228,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     C0                  = 1.0e18               / (cm^3)
 
     ## contact voltages
-    voltageAcceptor     = 1.2                  * V
+    voltageAcceptor     = 1.0                  * V
 
     if test == false
         println("*** done\n")
@@ -429,7 +429,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## primary data for I-V scan protocol
     scanrate                      = 0.04 * V/s
-    number_tsteps                 = 41
+    number_tsteps                 = 16
     endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
 
     ## with fixed timestep sizes we can calculate the times
@@ -449,7 +449,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## Apply new voltage; set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        if verbose
+        if test == false
             println("time value: t = $(t)")
         end
 
@@ -465,12 +465,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         initialGuess .= solution
     end # time loop
-
-
-    if test == false
-        println("*** done\n")
-    end
-
 
     if plotting
         Plotter.figure()
@@ -494,13 +488,17 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.xlabel("Applied Voltage [V]")
     end
 
+    if test == false
+        println("*** done\n")
+    end
+
     testval = solution[4, 42]
     return testval
 
 end #  main
 
 function test()
-    testval = -3.870029029995938
+    testval = -4.067800512080874
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
