@@ -68,41 +68,25 @@ abstract type interface_model_ion_charge <: interface_model end
 
 ##########################################################
 ##########################################################
-#
-# Abstract type for SRH bulk recombination model
-#
-#    !!! compat
-#    This one will be removed in future versions.
-#
-#
-abstract type abstract_model_SRH end
-
-"""
-$(TYPEDEF)
-model_SRH as parent of several different subtypes.
-
-"""
-abstract type model_SRH                          <: abstract_model_SRH      end
-
 
 """
 $(TYPEDEF)
 model_SRH_without_traps as parent of different subtypes.
 
 """
-abstract type model_SRH_without_traps            <: model_SRH               end
+abstract type model_SRH_without_traps end
 
-abstract type model_SRH_stationary               <: model_SRH_without_traps end
-abstract type model_SRH_off                      <: model_SRH_without_traps end
+abstract type model_SRH_stationary     <: model_SRH_without_traps end
+abstract type model_SRH_off            <: model_SRH_without_traps end
 
 """
 $(TYPEDEF)
 model_SRH_with_traps as parent of different subtypes.
 
 """
-abstract type model_SRH_with_traps               <: model_SRH               end
+abstract type model_SRH_with_traps  end
 
-abstract type model_SRH_traps_transient          <: model_SRH_with_traps    end
+abstract type model_SRH_traps_transient <: model_SRH_with_traps    end
 
 
 ##########################################################
