@@ -172,7 +172,7 @@ The boundary conditions for the charge carriers are set in the main file. Hence,
 
 for all charge carriers ``\\alpha``.
 """
-function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
+function breaction!(f, u, bnode, data, ::Type{OhmicContact})
 
     params      = data.params
     paramsnodal = data.paramsnodal
@@ -220,7 +220,7 @@ no electrical field and a quasi Fermi level equal to the Schottky barrier ``\\ph
 ``n_{\\alpha, 0}= z_\\alpha/ U_T (E_\\alpha - \\phi_S) / q. ``
 
 """
-function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
+function breaction!(f, u, bnode, data,  ::Type{SchottkyContact})
 
     params        = data.params
     paramsnodal   = data.paramsnodal
@@ -250,15 +250,15 @@ end
 
 
 # This breaction! function is chosen when no interface model is chosen.
-breaction!(f, u, bnode, data, ::Type{interface_model_none}) = emptyFunction()
+breaction!(f, u, bnode, data, ::Type{InterfaceModelNone}) = emptyFunction()
 
 
 # breaction term for surface recombination.
-breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombination_and_tangential_flux}) = breaction!(f, u, bnode, data, interface_model_surface_recombination)
+breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = breaction!(f, u, bnode, data, InterfaceModelSurfaceReco)
 
 
-function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombination})
-    if data.calculation_type == inEquilibrium
+function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
+    if data.calculation_type == InEquilibrium
         return
     end
 
@@ -293,9 +293,9 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
 end
 
 # breaction term for case where qF are discontinuous.
-function breaction!(f, u, bnode, data, ::Type{interface_model_discont_qF})
+function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
 
-    if data.calculation_type == inEquilibrium
+    if data.calculation_type == InEquilibrium
         return emptyFunction()
     end
 
@@ -401,27 +401,25 @@ for each boundary the time-dependent part of the chosen boundary model.
 """
 bstorage!(f, u, bnode, data) = bstorage!(f, u, bnode, data, data.model_type)
 
-bstorage!(f, u, bnode, data, ::Type{model_stationary})  = emptyFunction()
+bstorage!(f, u, bnode, data, ::Type{Stationary})  = emptyFunction()
 
-bstorage!(f, u, bnode, data, ::Type{model_transient}) = bstorage!(f, u, bnode, data, data.boundary_type[bnode.region])
+bstorage!(f, u, bnode, data, ::Type{Transient}) = bstorage!(f, u, bnode, data, data.boundary_type[bnode.region])
 
 
-bstorage!(f, u, bnode, data, ::Type{interface_model_none}) = emptyFunction()
+bstorage!(f, u, bnode, data, ::Type{InterfaceModelNone}) = emptyFunction()
 
 
 # No bstorage! is used, when assuming discontinuous qF.
-bstorage!(f, u, bnode, data, ::Type{interface_model_discont_qF}) = emptyFunction()
+bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF}) = emptyFunction()
 
-bstorage!(f, u, bnode, data, ::Type{interface_model_surface_recombination}) = emptyFunction()
+bstorage!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
 
 # No bstorage! is used, if an ohmic and schottky contact model is chosen.
-bstorage!(f, u, bnode, data, ::Type{ohmic_contact}) = emptyFunction()
+bstorage!(f, u, bnode, data, ::Type{T}) where T<:BoundaryModel =  emptyFunction()
 
-bstorage!(f, u, bnode, data, ::Type{schottky_contact}) = emptyFunction()
+bstorage!(f, u, bnode, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = bstorage!(f, u, bnode, data, InterfaceModelTangentialFlux)
 
-bstorage!(f, u, bnode, data, ::Type{interface_model_surface_recombination_and_tangential_flux}) = bstorage!(f, u, bnode, data, interface_model_tangential_flux)
-
-function bstorage!(f, u, bnode, data, ::Type{interface_model_tangential_flux})
+function bstorage!(f, u, bnode, data, ::Type{InterfaceModelTangentialFlux})
 
     params      = data.params
     paramsnodal = data.paramsnodal
@@ -460,28 +458,28 @@ bflux!(f, u, bedge, data) = bflux!(f, u, bedge, data, data.calculation_type)
 
 
 # In case of equilibrium, the bflux shall not enter.
-bflux!(f, u, bedge, data, ::Type{inEquilibrium})                         = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{InEquilibrium})             = emptyFunction()
 
 
 # Out of equilibrium, we need to additionally check for boundary type.
-bflux!(f, u, bedge, data, ::Type{outOfEquilibrium})                      = bflux!(f, u, bedge, data, data.boundary_type[bedge.region])
+bflux!(f, u, bedge, data, ::Type{OutOfEquilibrium})          = bflux!(f, u, bedge, data, data.boundary_type[bedge.region])
 
-bflux!(f, u, bedge, data, ::Type{interface_model_none})                  = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{InterfaceModelNone})        = emptyFunction()
 
-bflux!(f, u, bedge, data, ::Type{ohmic_contact})                         = emptyFunction()
-bflux!(f, u, bedge, data, ::Type{schottky_contact})                      = emptyFunction()
-bflux!(f, u, bedge, data, ::Type{interface_model_surface_recombination}) = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{OhmicContact})              = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{SchottkyContact})           = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
 
 
 
 # Cases, where we have a tangential flux.
-bflux!(f, u, bedge, data, ::Type{interface_model_surface_recombination_and_tangential_flux}) = bflux!(f, u, bedge, data, data.flux_approximation)
+bflux!(f, u, bedge, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = bflux!(f, u, bedge, data, data.flux_approximation)
 
-bflux!(f, u, bedge, data, ::Type{interface_model_tangential_flux}) = bflux!(f, u, bedge, data, data.flux_approximation)
+bflux!(f, u, bedge, data, ::Type{InterfaceModelTangentialFlux}) = bflux!(f, u, bedge, data, data.flux_approximation)
 
 
 # excess chemical potential flux discretization scheme for inner boundaries.
-function bflux!(f, u, bedge, data, ::Type{excess_chemical_potential})
+function bflux!(f, u, bedge, data, ::Type{ExcessChemicalPotential})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -541,7 +539,7 @@ $(TYPEDSIGNATURES)
 Reaction in case of equilibrium, i.e. no generation and recombination is considered.
 
 """
-function reaction!(f, u, node, data, ::Type{inEquilibrium})
+function reaction!(f, u, node, data, ::Type{InEquilibrium})
 
     # RHS of Poisson
     RHSPoisson!(f, u, node, data, data.index_psi)
@@ -559,7 +557,7 @@ $(TYPEDSIGNATURES)
 SRH kernel for case of non-existing rate.
 
 """
-function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{model_SRH_off})
+function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{SRHOff})
 
     return 0.0
 
@@ -570,13 +568,13 @@ $(TYPEDSIGNATURES)
 SRH kernel for case of using stationary formula, i.e. case where no present traps are assumed.
 
 """
-function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{model_SRH_stationary})
+function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{SRHStationary})
 
     return  1.0 / (  data.params.recombinationSRHLifetime[iphip, ireg] * (n + data.params.recombinationSRHTrapDensity[iphin, ireg]) + data.params.recombinationSRHLifetime[iphin, ireg] * (p + data.params.recombinationSRHTrapDensity[iphip, ireg]) )
 
 end
 
-function addRecombination!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}) where T<:model_SRH_without_traps
+function addRecombination!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}) where T<:SRHWithoutTraps
 
     ireg        = node.region
 
@@ -601,7 +599,7 @@ function addRecombination!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}
 end
 
 
-function addRecombination!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{model_SRH_traps_transient})
+function addRecombination!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{SRHTrapsTransient})
 
     params      = data.params
     ireg        = node.region
@@ -712,7 +710,7 @@ The recombination is only implemented for electron and holes and assumes
 that the electron index is 1 and the hole index is 2.
 
 """
-function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
+function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
 
     # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
     iphin       = data.bulk_recombination.iphin
@@ -762,7 +760,7 @@ end
 
 # The generation rate ``G``, which occurs in the right-hand side of the
 # continuity equations with a uniform generation rate.
-function generation(data, ireg, node, ::Type{generation_uniform})
+function generation(data, ireg, node, ::Type{GenerationUniform})
 
     return data.λ2 * data.params.generationUniform[ireg]
 end
@@ -771,7 +769,7 @@ end
 # The generation rate ``G``, which occurs in the right-hand side of the
 # continuity equations obeying the Beer-Lambert law.
 #only works in 1D till now; adjust node, when multidimensions
-function generation(data, ireg, node, ::Type{generation_beer_lambert})
+function generation(data, ireg, node, ::Type{GenerationBeerLambert})
 
     params = data.params
 
@@ -779,7 +777,7 @@ function generation(data, ireg, node, ::Type{generation_beer_lambert})
 
 end
 
-generation(data, ireg, node, ::Type{generation_none}) = 0.0
+generation(data, ireg, node, ::Type{GenerationNone}) = 0.0
 
 ##########################################################
 ##########################################################
@@ -792,7 +790,7 @@ a storage term, if we consider transient problem.
 """
 storage!(f, u, node, data) = storage!(f, u, node, data, data.model_type)
 
-storage!(f, u, node, data, ::Type{model_stationary})  = emptyFunction()
+storage!(f, u, node, data, ::Type{Stationary})  = emptyFunction()
 
 
 """
@@ -808,7 +806,7 @@ and for the electrostatic potential
 ``f[ψ] = 0``.
 
 """
-function storage!(f, u, node, data, ::Type{model_transient})
+function storage!(f, u, node, data, ::Type{Transient})
 
     params = data.params
     ipsi   = data.index_psi
@@ -832,14 +830,14 @@ end
 """
 $(TYPEDSIGNATURES)
 Master flux functions which enters VoronoiFVM. Flux discretization scheme is chosen in two steps. First, we need
-to see, if we are in or out of equilibrium. If, inEquilibrium, then
+to see, if we are in or out of equilibrium. If, InEquilibrium, then
 no flux is passed. If outOfEquilibrium, we choose the flux approximation
 which the user chose.
 
 """
 flux!(f, u, edge, data) = flux!(f, u, edge, data, data.calculation_type)
 
-function flux!(f, u, edge, data, ::Type{inEquilibrium})
+function flux!(f, u, edge, data, ::Type{InEquilibrium})
 
     params      = data.params
     paramsnodal = data.paramsnodal
@@ -854,12 +852,12 @@ function flux!(f, u, edge, data, ::Type{inEquilibrium})
 
 end
 
-flux!(f, u, edge, data, ::Type{outOfEquilibrium}) = flux!(f, u, edge, data, data.flux_approximation)
+flux!(f, u, edge, data, ::Type{OutOfEquilibrium}) = flux!(f, u, edge, data, data.flux_approximation)
 
 
 # The classical Scharfetter-Gummel flux scheme. This also works for space-dependent
 # band-edge energy, but not for space-dependent effective DOS.
-function flux!(f, u, edge, data, ::Type{scharfetter_gummel})
+function flux!(f, u, edge, data, ::Type{ScharfetterGummel})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -896,7 +894,7 @@ end
 # The classical Scharfetter-Gummel flux scheme for
 # possible space-dependent DOS and band-edge energies. For these parameters the
 # discretization scheme is modified.
-function flux!(f, u, edge, data, ::Type{scharfetter_gummel_graded})
+function flux!(f, u, edge, data, ::Type{ScharfetterGummelGraded})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -939,7 +937,7 @@ end
 
 # The excess chemical potential flux discretization scheme. This also works for space-dependent band-edge energy, but
 # not for space-dependent effective DOS.
-function flux!(f, u, edge, data, ::Type{excess_chemical_potential})
+function flux!(f, u, edge, data, ::Type{ExcessChemicalPotential})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -977,7 +975,7 @@ end
 
 # The excess chemical potential flux scheme for
 # possible space-dependent DOS and band-edge energies. For these parameters the discretization scheme is modified.
-function flux!(f, u, edge, data, ::Type{excess_chemical_potential_graded})
+function flux!(f, u, edge, data, ::Type{ExcessChemicalPotentialGraded})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -1026,7 +1024,7 @@ end
 # The diffusion enhanced scheme by Bessemoulin-Chatard. Currently, the Pietra-Jüngel scheme
 # is used for the regularization of the removable singularity. This also works for
 # space-dependent band-edge energy, but not for space-dependent effective DOS.
-function flux!(f, u, edge, data, ::Type{diffusion_enhanced})
+function flux!(f, u, edge, data, ::Type{DiffusionEnhanced})
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
@@ -1074,7 +1072,7 @@ end
 # statistics. Hence, it should be exclusively worked with, when considering the Blakemore
 # distribution. This also works for space-dependent band-edge energy, but not for
 # space-dependent effective DOS.
-function flux!(f, u, edge, data, ::Type{generalized_sg})
+function flux!(f, u, edge, data, ::Type{GeneralizedSG})
 
     params        =   data.params
     paramsnodal   =   data.paramsnodal

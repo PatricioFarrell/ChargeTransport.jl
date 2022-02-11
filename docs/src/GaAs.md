@@ -18,10 +18,10 @@ Step 2: Initialize physical model
 
 Step 3: Solve the problem in equilibrium
 
-Step 4: Solve the problem for an applied bias 
+Step 4: Solve the problem for an applied bias
 
 ## Example 1: Stationary 1D problem (region doping)
-We consider a three-layer GaAs p-i-n device in one dimension. We will explain [the PIN example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example101_PIN.jl) in 
+We consider a three-layer GaAs p-i-n device in one dimension. We will explain [the PIN example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example101_PIN.jl) in
 greater detail.
 
 
@@ -74,34 +74,34 @@ numberOfCarriers         = 2
 data                     = Data(grid, numberOfCarriers)
 
 # solve the stationary problem instead of the transient one
-data.model_type          = model_stationary
+data.model_type          = Stationary
 
-# choose statistical relation between density and qF potential 
-# options: Boltzmann, FermiDiracOneHalfBednarczyk, 
+# choose statistical relation between density and qF potential
+# options: Boltzmann, FermiDiracOneHalfBednarczyk,
 #          FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
 data.F                  .= Boltzmann
 
 # choose recombination processes, the default is stationary SRH recombination.
-data.bulk_recombination  = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+data.bulk_recombination  = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                    bulk_recomb_Auger = true,
                                                    bulk_recomb_radiative = true,
                                                    bulk_recomb_SRH = true)
 
 # choose boundary models
-#   exterior boundaries: ohmic_contact and schottky_contact 
-#   interior boundaries: interface_model_none, interface_model_surface_recombination.
-data.boundary_type[bregionAcceptor] = ohmic_contact                       
-data.boundary_type[bregionDonor]    = ohmic_contact   
-    
-# choose flux discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
-# excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-data.flux_approximation             = excess_chemical_potential
+# exterior boundaries: OhmicContact and SchottkyContact
+# interior boundaries: InterfaceModelNone, InterfaceModelSurfaceReco.
+data.boundary_type[bregionAcceptor] = OhmicContact
+data.boundary_type[bregionDonor]    = OhmicContact
+
+# choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+# ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+data.flux_approximation             = ExcessChemicalPotential
 ```
 
 Next, we fill in pre-defined or externally read in parameter values.
 
 ```julia
-# params contains all necessary physical parameters 
+# params contains all necessary physical parameters
 params                                              = Params(grid, numberOfCarriers)
 params.temperature                                  = T
 params.UT                                           = (kB * params.temperature) / q
@@ -140,14 +140,14 @@ for ireg in 1:numberOfRegions           # interior region data
 end
 
 # interior doping
-params.doping[iphin, regionDonor]                   = Nd   
-params.doping[iphin, regionIntrinsic]               = ni    
-params.doping[iphip, regionIntrinsic]               = 0.0     
+params.doping[iphin, regionDonor]                   = Nd
+params.doping[iphin, regionIntrinsic]               = ni
+params.doping[iphip, regionIntrinsic]               = 0.0
 params.doping[iphip, regionAcceptor]                = Na
 
 # boundary doping
-params.bDoping[iphin, bregionDonor]                 = Nd     
-params.bDoping[iphip, bregionAcceptor]              = Na 
+params.bDoping[iphin, bregionDonor]                 = Nd
+params.bDoping[iphip, bregionAcceptor]              = Na
 
 # Initialize a ChargeTransport struct
 data.params   = params
@@ -166,13 +166,13 @@ Solve the equilibrium. Note that `control` refers to the Newton control
 parameters given in `VoronoiFVM`.
 ```julia
 solution         = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-initialGuess    .= solution 
+initialGuess    .= solution
 ```
 
-### Step 4: Solve the problem for an applied bias 
-Starting from the equilibrium solution, we increase the applied voltage. Note that it is important to set `outOfEqulibrium`.
+### Step 4: Solve the problem for an applied bias
+Starting from the equilibrium solution, we increase the applied voltage. Note that it is important to set `OutOfEqulibrium`.
 ```julia
-ctsys.data.calculation_type  = outOfEquilibrium
+ctsys.data.calculation_type  = OutOfEquilibrium
 maxBias                      = voltageAcceptor # bias at acceptor boundary
 biasValues                   = range(0, stop = maxBias, length = 32)
 
@@ -180,7 +180,7 @@ for Δu in biasValues
     set_contact!(ctsys, bregionAcceptor, Δu = Δu) # non equilibrium bc
     solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
     initialGuess .= solution
-end 
+end
 ```
 
 ### Step 5: Postprocessing
@@ -203,7 +203,7 @@ paramsnodal  = ParamsNodal(grid, numberOfCarriers)
 # initialize the space dependent doping
 NDoping = 1.0e17  / cm^3; κ = 500.0
 for icoord = 1:numberOfNodes
-    t1 = tanh( (0.1 - coord[icoord]/μm) *κ )    
+    t1 = tanh( (0.1 - coord[icoord]/μm) *κ )
     t2 = 1.0 + tanh( (coord[icoord]/μm - 0.2) * κ )
     paramsnodal.doping[icoord] = NDoping * 0.5 * ( 1.0  +  t1  - t2 )
 end

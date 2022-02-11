@@ -21,7 +21,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -58,17 +58,17 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord_n_u               = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
     coord_n_g               = geomspace(h_ndoping/2,
                                         h_ndoping,
-                                        h_ndoping/(1.1*δ),
+                                        h_ndoping/(0.7*δ),
                                         h_ndoping/(1.1*δ),
                                         tol=t)
     coord_i_g1              = geomspace(h_ndoping,
                                         h_ndoping+h_intrinsic/k,
                                         h_intrinsic/(2.8*δ),
-                                        h_intrinsic/(2.8*δ),
+                                        h_intrinsic/(2.1*δ),
                                         tol=t)
     coord_i_g2              = geomspace(h_ndoping+h_intrinsic/k,
                                         h_ndoping+h_intrinsic,
-                                        h_intrinsic/(2.8*δ),
+                                        h_intrinsic/(2.1*δ),
                                         h_intrinsic/(2.8*δ),
                                         tol=t)
     coord_p_g               = geomspace(h_ndoping+h_intrinsic,
@@ -227,8 +227,8 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     # initialize Data instance and fill in predefined data
     data                                = Data(grid, numberOfCarriers)
 
-    # possible choices: model_stationary, model_transient
-    data.model_type                     = model_transient
+    # possible choices: Stationary, Transient
+    data.model_type                     = Transient
 
     # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
@@ -238,18 +238,18 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
-    # possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    # interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    # possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
+    # InterfaceModelSurfaceReco (inner boundary).
+    data.boundary_type[bregionAcceptor] = OhmicContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
     # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
     # In this application ion vacancies only live in active perovskite layer
     data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
-    # possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    # excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    # choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -418,8 +418,8 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type   = outOfEquilibrium
+    # set calculation type to OutOfEquilibrium for starting with respective simulation.
+    ctsys.data.calculation_type   = OutOfEquilibrium
 
     control.damp_initial          = 0.5
     control.damp_growth           = 1.61 # >= 1
@@ -432,7 +432,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # with fixed timestep sizes we can calculate the times
     # a priori
-    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
+    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = LinearScanProtocol)
 
     # for saving I-V data
     IV                            = zeros(0) # for IV values
@@ -481,7 +481,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
         plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
-    testval = solution[data.index_psi, 15]
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
     println("*** done\n")
@@ -489,7 +489,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -4.100369951594844
+    testval = 40.543299668622225
     main(test = true, unknown_storage=:dense) ≈ testval  #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

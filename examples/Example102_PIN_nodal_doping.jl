@@ -103,8 +103,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     # We initialize the Data instance and fill in predefined data.
     data                                = Data(grid, numberOfCarriers)
 
-    ## possible choices: model_stationary, model_transient
-    data.model_type                     = model_stationary
+    ## possible choices: Stationary, Transient
+    data.model_type                     = Stationary
 
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
@@ -114,14 +114,14 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
                                                                   bulk_recomb_radiative = false,
                                                                   bulk_recomb_SRH = true)
 
-    ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    ## interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    ## possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
+    ## InterfaceModelSurfaceReco (inner boundary).
+    data.boundary_type[bregionAcceptor] = OhmicContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
-    ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = scharfetter_gummel
+    ## choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ScharfetterGummel
 
     if test == false
         println("*** done\n")
@@ -280,8 +280,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    # Set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type      = outOfEquilibrium
+    # Set calculation type to OutOfEquilibrium for starting with respective simulation.
+    ctsys.data.calculation_type      = OutOfEquilibrium
 
     maxBias                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
     biasValues                       = range(0, stop = maxBias, length = 41)

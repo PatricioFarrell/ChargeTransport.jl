@@ -30,26 +30,26 @@ export FermiDiracOneHalfTeSCA, FermiDiracZero
 
 include("ct_datatypes.jl")
 
-export boundary_model, ohmic_contact, schottky_contact
-export interface_model, interface_model_none, interface_model_surface_recombination
-export interface_model_ion_charge, interface_model_tangential_flux
-export interface_model_surface_recombination_and_tangential_flux
+export BoundaryModel, OhmicContact, SchottkyContact
+export InterfaceModel, InterfaceModelNone, InterfaceModelSurfaceReco
+export InterfaceModelIonCharge, InterfaceModelTangentialFlux
+export InterfaceModelSurfaceRecoAndTangentialFlux
 
-export interface_model_discont_qF
+export InterfaceModelDiscontqF
 
-export model_type, model_transient, model_stationary
+export ModelType, Transient, Stationary
 
-export model_SRH_off, model_SRH_without_traps
-export model_SRH_without_traps_stationary, model_SRH_with_traps,  model_SRH_traps_transient
+export SRHOff, SRHWithoutTraps
+export SRHWithoutTrapsStationary, SRHWithTraps, SRHTrapsTransient
 
-export inEquilibrium, outOfEquilibrium
+export InEquilibrium, OutOfEquilibrium
 ##################################################################
 
 include("ct_physics.jl")
 
-export scharfetter_gummel, excess_chemical_potential, diffusion_enhanced, generalized_sg
-export scharfetter_gummel_graded, excess_chemical_potential_graded
-export generation_model, generation_none, generation_beer_lambert, generation_uniform
+export ScharfetterGummel, ExcessChemicalPotential, DiffusionEnhanced, GeneralizedSG
+export ScharfetterGummelGraded, ExcessChemicalPotentialGraded
+export GenerationModel, GenerationNone, GenerationBeerLambert, GenerationUniform
 export breaction!, bstorage!, reaction!, storage!, flux!
 
 ##################################################################
@@ -62,8 +62,8 @@ export equilibrium_solve!
 export set_contact!
 export compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
 export show_params, trap_density!
-export linearScanProtocol, scan_protocol_type, set_time_mesh, get_current_val
-export chargeDensity
+export LinearScanProtocol, ScanProtocolType, set_time_mesh, get_current_val
+export charge_density
 export enable_traps!
 
 ##################################################################

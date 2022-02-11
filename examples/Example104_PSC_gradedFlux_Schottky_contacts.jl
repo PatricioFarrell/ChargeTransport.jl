@@ -26,7 +26,7 @@ using GridVisualize
 using PyPlot
 
 ## function for grading the physical parameters
-function gradingParameter(physicalParameter, coord, regionTransportLayers, regionJunctions, h, heightLayers, lengthLayers, values)
+function grading_parameter!(physicalParameter, coord, regionTransportLayers, regionJunctions, h, heightLayers, lengthLayers, values)
     for ireg in regionTransportLayers
 
         xcoord                     = lengthLayers[ireg]:lengthLayers[ireg+1]
@@ -267,8 +267,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## #### declare here all necessary information concerning the model ###
 
-    ## possible choices: model_stationary, model_transient
-    data.model_type                     = model_stationary
+    ## possible choices: Stationary, Transient
+    data.model_type                     = Stationary
 
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
@@ -278,14 +278,14 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
-    ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    ## interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionDonor]    = schottky_contact
-    data.boundary_type[bregionAcceptor] = schottky_contact
+    ## possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
+    ## InterfaceModelSurfaceReco (inner boundary).
+    data.boundary_type[bregionDonor]    = SchottkyContact
+    data.boundary_type[bregionAcceptor] = SchottkyContact
 
-    ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = scharfetter_gummel_graded
+    ## choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ScharfetterGummelGraded
 
     ################################################################################
     if test == false
@@ -305,19 +305,19 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.chargeNumbers[iphip]                         =  1
 
     ## nodal band-edge energies
-    paramsnodal.bandEdgeEnergy[iphin, :]  = gradingParameter(paramsnodal.bandEdgeEnergy[iphin, :],
-                                                             coord, regionTransportLayers, regionJunctions, h,
-                                                             heightLayers, lengthLayers, EC)
-    paramsnodal.bandEdgeEnergy[iphip, :]  = gradingParameter(paramsnodal.bandEdgeEnergy[iphip, :],
-                                                             coord, regionTransportLayers, regionJunctions, h,
-                                                             heightLayers, lengthLayers, EV)
+    paramsnodal.bandEdgeEnergy[iphin, :]  = grading_parameter!(paramsnodal.bandEdgeEnergy[iphin, :],
+                                                              coord, regionTransportLayers, regionJunctions, h,
+                                                              heightLayers, lengthLayers, EC)
+    paramsnodal.bandEdgeEnergy[iphip, :]  = grading_parameter!(paramsnodal.bandEdgeEnergy[iphip, :],
+                                                              coord, regionTransportLayers, regionJunctions, h,
+                                                              heightLayers, lengthLayers, EV)
     ## nodal effective density of states
-    paramsnodal.densityOfStates[iphin, :] = gradingParameter(paramsnodal.densityOfStates[iphin, :],
-                                                             coord, regionTransportLayers, regionJunctions, h,
-                                                             heightLayers, lengthLayers, NC)
-    paramsnodal.densityOfStates[iphip, :] = gradingParameter(paramsnodal.densityOfStates[iphip, :],
-                                                             coord, regionTransportLayers, regionJunctions, h,
-                                                             heightLayers, lengthLayers, NV)
+    paramsnodal.densityOfStates[iphin, :] = grading_parameter!(paramsnodal.densityOfStates[iphin, :],
+                                                              coord, regionTransportLayers, regionJunctions, h,
+                                                              heightLayers, lengthLayers, NC)
+    paramsnodal.densityOfStates[iphip, :] = grading_parameter!(paramsnodal.densityOfStates[iphip, :],
+                                                              coord, regionTransportLayers, regionJunctions, h,
+                                                              heightLayers, lengthLayers, NV)
     ## region dependent data
     for ireg in 1:numberOfRegions
 
@@ -444,7 +444,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ctsys.data.calculation_type                      = outOfEquilibrium
+    ctsys.data.calculation_type                      = OutOfEquilibrium
 
     control.damp_initial                             = 0.9
     control.damp_growth                              = 1.61 # >= 1

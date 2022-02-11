@@ -130,8 +130,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
 
-    # possible choices: model_stationary, model_transient
-    data.model_type                     = model_transient
+    # possible choices: Stationary, Transient
+    data.model_type                     = Transient
 
     # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
@@ -144,17 +144,17 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # Here we enable the traps and parse the respective index and the regions where the trap is defined.
     enable_traps!(data = data, traps = iphit, regions = regions)
 
-    # possible choices: generation_none, generation_uniform
-    data.generation_model               = generation_uniform
+    # possible choices: GenerationNone, GenerationUniform
+    data.generation_model               = GenerationUniform
 
-    # possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    # interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    # possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
+    # InterfaceModelSurfaceReco (inner boundary).
+    data.boundary_type[bregionAcceptor] = OhmicContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
-    # possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    # excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    # choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -269,7 +269,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculation_type = inEquilibrium
+    data.calculation_type = InEquilibrium
 
     # initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
@@ -332,8 +332,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type   = outOfEquilibrium
+    # set calculation type to OutOfEquilibrium for starting with respective simulation.
+    ctsys.data.calculation_type   = OutOfEquilibrium
 
     # Scan rate and time steps
     scanrate                      = 1.0 * V/s

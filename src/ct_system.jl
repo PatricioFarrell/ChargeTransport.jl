@@ -61,9 +61,9 @@ function set_bulk_recombination(;iphin = 1, iphip = 2,
     bulk_recombination.bulk_recomb_radiative = bulk_recomb_radiative
 
     if bulk_recomb_SRH == true
-        bulk_recombination.bulk_recomb_SRH   = model_SRH_stationary
+        bulk_recombination.bulk_recomb_SRH   = SRHStationary
     else
-        bulk_recombination.bulk_recomb_SRH   = model_SRH_off
+        bulk_recombination.bulk_recomb_SRH   = SRHOff
     end
 
     return bulk_recombination
@@ -110,10 +110,10 @@ function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
     enable_traps.traps                      = traps
     enable_traps.regions                    = regions
 
-    if data.model_type == model_transient
-        data.bulk_recombination.bulk_recomb_SRH = model_SRH_traps_transient
+    if data.model_type == Transient
+        data.bulk_recombination.bulk_recomb_SRH = SRHTrapsTransient
     else
-        data.bulk_recombination.bulk_recomb_SRH = model_SRH_stationary
+        data.bulk_recombination.bulk_recomb_SRH = SRHStationary
     end
 
     data.enable_traps = enable_traps
@@ -769,7 +769,7 @@ function Data(grid, numberOfCarriers)
                                                          bulk_recomb_SRH = false)
 
     for ii in 1:numberOfBoundaryRegions # as default all boundaries are set to an ohmic contact model.
-        data.boundary_type[ii]  = interface_model_none
+        data.boundary_type[ii]  = InterfaceModelNone
     end
 
     # enable_ionic_carriers is a struct holding the input information
@@ -777,15 +777,15 @@ function Data(grid, numberOfCarriers)
 
     data.enable_traps           = Traps()
 
-    data.inner_interface_model  = interface_model_none
+    data.inner_interface_model  = InterfaceModelNone
 
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
-    data.flux_approximation     = scharfetter_gummel
-    data.calculation_type       = inEquilibrium       # do performances inEquilibrium or outOfEquilibrium
-    data.model_type             = model_stationary    # indicates if we need additional time dependent part
-    data.generation_model       = generation_none     # generation model
+    data.flux_approximation     = ScharfetterGummel
+    data.calculation_type       = InEquilibrium       # do performances InEquilibrium or OutOfEquilibrium
+    data.model_type             = Stationary          # indicates if we need additional time dependent part
+    data.generation_model       = GenerationNone      # generation model
     data.λ1                     = 1.0                 # λ1: embedding parameter for NLP
     data.λ2                     = 1.0                 # λ2: embedding parameter for G
     data.λ3                     = 1.0                 # λ3: embedding parameter for electro chemical reaction
@@ -849,14 +849,14 @@ end
 
 
 # The core of the system constructor. Here, the system for no additional interface model is build.
-function build_system(grid, data, unknown_storage, ::Type{interface_model_none})
+function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
 
     num_species_sys        = data.params.numberOfCarriers + 1
 
     ctsys                  = System()
 
     # save this information such that there is no need to calculate it again for boundary conditions
-    data.inner_interface_model = interface_model_none
+    data.inner_interface_model = InterfaceModelNone
 
     # Here, in this case for the loops within physics methods we set the chargeCarrierList to normal indexing.
     data.chargeCarrierList = collect(1:data.params.numberOfCarriers)
@@ -914,13 +914,13 @@ end
 
 # The core of the new system constructor. Here, the system for discontinuous quantities
 # is build.
-function build_system(grid, data, unknown_storage, ::Type{interface_model_discont_qF})
+function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontqF})
 
     ctsys        = System()
     fvmsys       = VoronoiFVM.System(grid, unknown_storage=unknown_storage)
 
     # save this information such that there is no need to calculate it again for boundary conditions
-    data.inner_interface_model = interface_model_discont_qF
+    data.inner_interface_model = InterfaceModelDiscontqF
 
     data.chargeCarrierList = Array{VoronoiFVM.AbstractQuantity, 1}(undef, data.params.numberOfCarriers)
 
@@ -1021,11 +1021,11 @@ function inner_interface_model(data::Data)
     # detect which interface model the user chooses by counting
     for ireg in 1:data.params.numberOfBoundaryRegions
 
-        if     data.boundary_type[ireg] ==  interface_model_discont_qF
+        if     data.boundary_type[ireg] == InterfaceModelDiscontqF
 
             countDiscontqF = countDiscontqF + 1
 
-        elseif data.boundary_type[ireg] == interface_model_ion_charge
+        elseif data.boundary_type[ireg] == InterfaceModelIonCharge
 
             countInterfaceCharge = countInterfaceCharge + 1
 
@@ -1036,18 +1036,18 @@ function inner_interface_model(data::Data)
      # build the system based on the input interface model
      if     countDiscontqF > 0 # build discont_qF based system
 
-        return interface_model_discont_qF
+        return InterfaceModelDiscontqF
 
     elseif countInterfaceCharge > 0 # build ion interface charge system
 
         # DA: currently for this case, since InterfaceQuantites is not well tested we stick with the no inferface case, i.e.
         #     the known case how we build the system. Since we did not change anything, the code in
         #     Example107 works perfectly fine since the choice of species number is already set.
-        return interface_model_none
+        return InterfaceModelNone
 
     elseif countDiscontqF + countInterfaceCharge == 0 # build system without further interface conditions
 
-        return interface_model_none
+        return InterfaceModelNone
 
     end
 
@@ -1063,11 +1063,11 @@ function inner_interface_model(ctsys::System)
     # detect which interface model the user chooses by counting
     for ireg in 1:ctsys.data.params.numberOfBoundaryRegions
 
-        if     ctsys.data.boundary_type[ireg] ==  interface_model_discont_qF
+        if     ctsys.data.boundary_type[ireg] ==  InterfaceModelDiscontqF
 
             countDiscontqF = countDiscontqF + 1
 
-        elseif ctsys.data.boundary_type[ireg] == interface_model_ion_charge
+        elseif ctsys.data.boundary_type[ireg] == InterfaceModelIonCharge
 
             countInterfaceCharge = countInterfaceCharge + 1
 
@@ -1078,18 +1078,18 @@ function inner_interface_model(ctsys::System)
      # build the system based on the input interface model
      if     countDiscontqF > 0 # build discont_qF based system
 
-        return interface_model_discont_qF
+        return InterfaceModelDiscontqF
 
     elseif countInterfaceCharge > 0 # build ion interface charge system
 
         # DA: currently for this case, since InterfaceQuantites is not well tested we stick with the no inferface case, i.e.
         #     the known case how we build the system. Since we did not change anything, the code in
         #     Example107 works perfectly fine since the choice of species number is already set.
-        return interface_model_none
+        return InterfaceModelNone
 
     elseif countDiscontqF + countInterfaceCharge == 0 # build system without further interface conditions
 
-        return interface_model_none
+        return InterfaceModelNone
 
     end
 
@@ -1109,7 +1109,7 @@ boundary ibreg for the chosen contact model.
 set_contact!(ctsys, ibreg, ;Δu) = __set_contact!(ctsys, ibreg, Δu, ctsys.data.boundary_type[ibreg])
 
 # For schottky contacts
-function __set_contact!(ctsys, ibreg, Δu, ::Type{schottky_contact})
+function __set_contact!(ctsys, ibreg, Δu, ::Type{SchottkyContact})
 
     ipsi = ctsys.data.index_psi
 
@@ -1120,7 +1120,7 @@ function __set_contact!(ctsys, ibreg, Δu, ::Type{schottky_contact})
 end
 
 
-function __set_contact!(ctsys, ibreg, Δu, ::Type{ohmic_contact})
+function __set_contact!(ctsys, ibreg, Δu, ::Type{OhmicContact})
 
     interface_model       = ctsys.data.inner_interface_model
 
@@ -1130,7 +1130,7 @@ end
 
 # DA: need to check, if the distinction here is necessary in future version
 # (correlates with question of DiscontinuousQuantities)
-function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{interface_model_none})
+function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{InterfaceModelNone})
 
     iphin = ctsys.data.bulk_recombination.iphin
     iphip = ctsys.data.bulk_recombination.iphip
@@ -1145,7 +1145,7 @@ function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{interface_model_none})
 
 end
 
-function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_surface_recombination})
+function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{InterfaceModelSurfaceReco})
 
     iphin = ctsys.data.bulk_recombination.iphin
     iphip = ctsys.data.bulk_recombination.iphip
@@ -1161,7 +1161,7 @@ function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_su
 end
 
 
-function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_discont_qF})
+function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{InterfaceModelDiscontqF})
 
     iphin = ctsys.data.bulk_recombination.iphin
     iphip = ctsys.data.bulk_recombination.iphip
@@ -1211,7 +1211,7 @@ a given value.
 
 function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0)
 
-    ctsys.data.calculation_type    = inEquilibrium
+    ctsys.data.calculation_type    = InEquilibrium
 
     # initialize solution and starting vectors
     initialGuess                   = unknowns(ctsys)
@@ -1252,7 +1252,7 @@ end
 Gives the user a linear time mesh, this mesh is used for a linear I-V scan protocol.
 
 """
-function set_time_mesh(scanrate, endVoltage, number_tsteps; type_protocol = linearScanProtocol)
+function set_time_mesh(scanrate, endVoltage, number_tsteps; type_protocol = LinearScanProtocol)
 
     tend  = endVoltage/scanrate
 
@@ -1455,7 +1455,7 @@ function electroNeutralSolution!(grid, data; Newton=false)
             push!(NVector, sum(params.densityOfStates[icc, regionsOfCell]) / length(regionsOfCell) + paramsnodal.densityOfStates[icc, index])
         end
         # rhs of Poisson's equation as anonymous function depending on psi0
-        f = psi0 -> chargeDensity(psi0, phi, params.UT, EVector, zVector, CVector, NVector, FVector)
+        f = psi0 -> charge_density(psi0, phi, params.UT, EVector, zVector, CVector, NVector, FVector)
 
         if !Newton
             try
@@ -1486,7 +1486,7 @@ $(TYPEDSIGNATURES)
 Compute the charge density, i.e. the right-hand side of Poisson's equation.
 
 """
-function chargeDensity(psi0, phi, UT, EVector, chargeNumbers, dopingVector, dosVector, FVector)
+function charge_density(psi0, phi, UT, EVector, chargeNumbers, dopingVector, dosVector, FVector)
     # https://stackoverflow.com/questions/45667291/how-to-apply-one-argument-to-arrayfunction-1-element-wise-smartly-in-julia
     sum(-chargeNumbers .* dopingVector) + sum(chargeNumbers .* dosVector .* (etaFunction(psi0, phi, UT, EVector, chargeNumbers) .|> FVector))
 end
@@ -1517,6 +1517,6 @@ $(TYPEDSIGNATURES)
 
 Compute the charge density for each region separately.
 """
-function chargeDensity(ctsys, sol)
+function charge_density(ctsys, sol)
     integrate(ctsys.fvmsys,reaction!,sol)[ctsys.data.index_psi,:]
 end

@@ -21,7 +21,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -43,37 +43,37 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     numberOfBoundaryRegions = length(bregions)
 
     # grid: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
-    h_pdoping               = 3.00e-6 * cm + 1.0e-7 *cm# add 1.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_pdoping               = 3.00e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
     h_intrinsic             = 3.00e-5 * cm
-    h_ndoping               = 8.50e-6 * cm + 1.0e-7 *cm# add 1.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_ndoping               = 8.50e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
 
     x0                      = 0.0 * cm
     δ                       = 4*n        # the larger, the finer the mesh
     t                       = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
     k                       = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    coord_p_u               = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.9*δ)))
+    coord_p_u               = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.6*δ)))
     coord_p_g               = geomspace(h_pdoping/2,
                                         h_pdoping,
-                                        h_pdoping/(1.2*δ),
-                                        h_pdoping/(1.2*δ),
+                                        h_pdoping/(0.8*δ),
+                                        h_pdoping/(0.6*δ),
                                         tol=t)
     coord_i_g1              = geomspace(h_pdoping,
                                         h_pdoping+h_intrinsic/k,
-                                        h_intrinsic/(7.1*δ),
-                                        h_intrinsic/(7.1*δ),
+                                        h_intrinsic/(6.1*δ),
+                                        h_intrinsic/(2.1*δ),
                                         tol=t)
     coord_i_g2              = geomspace(h_pdoping+h_intrinsic/k,
                                         h_pdoping+h_intrinsic,
-                                        h_intrinsic/(7.1*δ),
-                                        h_intrinsic/(7.1*δ),
+                                        h_intrinsic/(2.1*δ),
+                                        h_intrinsic/(6.1*δ),
                                         tol=t)
     coord_n_g               = geomspace(h_pdoping+h_intrinsic,
                                         h_pdoping+h_intrinsic+h_ndoping/2,
-                                        h_ndoping/(2.0*δ),
-                                        h_ndoping/(2.0*δ),
+                                        h_ndoping/(1.5*δ),
+                                        h_ndoping/(0.9*δ),
                                         tol=t)
-    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(1.0*δ)))
+    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.5*δ)))
 
     coord                   = glue(coord_p_u, coord_p_g,  tol=10*t)
     coord                   = glue(coord,     coord_i_g1, tol=10*t)
@@ -201,12 +201,11 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     Auger               = 0.0
 
     # generation
-    generation_model    = generation_uniform
     generation_a        = 0.0
     generation_i        = 2.64e21 / (cm^3 * s)
     generation_d        = 0.0
 
-    generationUniform   = [generation_a, generation_i, generation_d]
+    generation_uniform   = [generation_a, generation_i, generation_d]
 
     # doping
     Nd                  =   2.089649130192123e17 / (cm^3)
@@ -214,7 +213,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     C0                  =   1.0e18               / (cm^3)
 
     # contact voltages
-    voltageAcceptor     =  1.2                  * V
+    voltageAcceptor     =  1.1                  * V
 
     if test == false
         println("*** done\n")
@@ -229,8 +228,8 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     # initialize Data instance and fill in predefined data
     data                                = Data(grid, numberOfCarriers)
 
-    # possible choices: model_stationary, model_transient
-    data.model_type                     = model_transient
+    # possible choices: Stationary, Transient
+    data.model_type                     = Transient
 
     # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
@@ -240,21 +239,21 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
-    # possible choices: generation_none, generation_uniform
-    data.generation_model               = generation_model
+    # possible choices: GenerationNone, GenerationUniform
+    data.generation_model               = GenerationUniform
 
-    # possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    # interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    # possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
+    # InterfaceModelSurfaceReco (inner boundary).
+    data.boundary_type[bregionAcceptor] = OhmicContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
     # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
     # In this application ion vacancies only live in active perovskite layer
     data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
-    # possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    # excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    # choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -314,7 +313,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
         params.recombinationAuger[iphin, ireg]          = Auger
         params.recombinationAuger[iphip, ireg]          = Auger
 
-        params.generationUniform[ireg]                  = generationUniform[ireg]
+        params.generationUniform[ireg]                  = generation_uniform[ireg]
     end
 
     # interior doping
@@ -418,17 +417,17 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    # set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type   = outOfEquilibrium
+    # set calculation type to OutOfEquilibrium for starting with respective simulation.
+    ctsys.data.calculation_type   = OutOfEquilibrium
 
     # primary data for I-V scan protocol
     scanrate                      = 0.04 * V/s
-    number_tsteps                 = 21
+    number_tsteps                 = 31
     endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
 
     # with fixed timestep sizes we can calculate the times
     # a priori
-    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
+    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = LinearScanProtocol)
 
     # these values are needed for putting the generation slightly on
     I      = collect(length(tvalues):-1:0.0)
@@ -469,6 +468,10 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     end
     ################################################################################
 
+    # for saving I-V data
+    IVReverse          = zeros(0) # for IV values
+    biasValuesReverse  = zeros(0) # for bias values
+
     for istep = number_tsteps:-1:2
 
         t                     = tvalues[istep]       # Actual time
@@ -485,6 +488,12 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
         initialGuess .= solution
+
+        # get I-V data
+        current = get_current_val(ctsys, solution, initialGuess, Δt)
+
+        push!(IVReverse, current)
+        push!(biasValuesReverse, Δu)
 
     end # time loop
 
@@ -544,20 +553,22 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
         # ###############
         Plotter.figure()
 
-        Plotter.plot(biasValuesForward, IVForward.*(cm^2), label = "\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (without internal BC)",  linewidth= 3, linestyle="--", color="red")
+        Plotter.plot(biasValuesForward, IVForward.*(cm^2), label = "forward",  linewidth= 3, linestyle="--", color="red")
+        Plotter.plot(biasValuesReverse, IVReverse.*(cm^2), label = "reverse",  linewidth= 3, linestyle="--", color="blue")
         Plotter.legend()
         Plotter.xlabel("Applied Voltage [V]")
         Plotter.ylabel("current density [A \$ cm^{-2}\$ ]")
+        Plotter.title("\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (without internal BC)")
         Plotter.tight_layout()
     end
 
-    testval = solution[data.index_psi, 102]
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
 end #  main
 
 function test()
-    testval = -3.92993784639653
+    testval = 39.06872444917981
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

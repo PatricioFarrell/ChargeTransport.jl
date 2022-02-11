@@ -243,8 +243,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
 
-    ## possible choices: model_stationary, model_transient
-    data.model_type                     = model_transient
+    ## possible choices: Stationary, Transient
+    data.model_type                     = Transient
 
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
@@ -254,18 +254,18 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
-    ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    ## interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    ## possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
+    ## InterfaceModelSurfaceReco (inner boundary).
+    data.boundary_type[bregionAcceptor] = OhmicContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
     ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
     ## In this application ion vacancies only live in active perovskite layer
     data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
-    ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    ## choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -424,8 +424,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## set zero voltage ohmic contacts for each charge carrier at all outerior boundaries.
-    ctsys.data.calculation_type  = outOfEquilibrium
+    ctsys.data.calculation_type  = OutOfEquilibrium
 
     ## primary data for I-V scan protocol
     scanrate                      = 0.04 * V/s
@@ -434,7 +433,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## with fixed timestep sizes we can calculate the times
     ## a priori
-    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
+    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = LinearScanProtocol)
 
     ## for saving I-V data
     IV                           = zeros(0) # for IV values

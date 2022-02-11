@@ -130,7 +130,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     data                                = Data(grid, numberOfCarriers)
 
     ## Following variable declares, if we want to solve stationary or transient problem
-    data.model_type                     = model_stationary
+    data.model_type                     = Stationary
 
     ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
     ## FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
@@ -147,15 +147,15 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                   bulk_recomb_SRH = true)
 
     ## Following choices are possible for boundary model: For contacts currently only
-    ## ohmic_contact and schottky_contact are possible. For inner boundaries we have
-    ## interface_model_none, interface_model_surface_recombination.
-    data.boundary_type[bregionAcceptor] = ohmic_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    ## OhmicContact and SchottkyContact are possible. For inner boundaries we have
+    ## InterfaceModelNone, InterfaceModelSurfaceReco.
+    data.boundary_type[bregionAcceptor] = OhmicContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
-    ## Following choices are possible for the flux_discretization scheme: scharfetter_gummel,
-    ## scharfetter_gummel_graded, excess_chemical_potential, excess_chemical_potential_graded,
-    ## diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    ## Following choices are possible for the flux discretization scheme: ScharfetterGummel,
+    ## ScharfetterGummelGraded, ExcessChemicalPotential, ExcessChemicalPotentialGraded,
+    ## DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -328,8 +328,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # Set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type      = outOfEquilibrium
+    # Set calculation type to OutOfEquilibrium for starting with respective simulation.
+    ctsys.data.calculation_type      = OutOfEquilibrium
 
     if !(data.F == Boltzmann) # adjust control, when not using Boltzmann
         control.damp_initial      = 0.5

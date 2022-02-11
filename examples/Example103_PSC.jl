@@ -210,27 +210,25 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     # We initialize the Data instance and fill in predefined data.
     data                                = Data(grid, numberOfCarriers)
 
-    ## possible choices: model_stationary, model_transient
-    data.model_type                     = model_stationary
+    ## possible choices: Stationary, Transient
+    data.model_type                     = Stationary
 
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= FermiDiracOneHalfTeSCA
 
-    ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    ## interface_model_surface_recombination (inner boundary).
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
-    ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    ## interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    ## possible choices: OhmicContact, SchottkyContact(outer boundary) and InterfaceModelNone,
+    ## InterfaceModelSurfaceReco (inner boundary).
+    data.boundary_type[bregionAcceptor] = OhmicContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
-    ## Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
-    ## excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    ## choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -391,7 +389,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ctsys.data.calculation_type                      = outOfEquilibrium
+    ctsys.data.calculation_type                      = OutOfEquilibrium
 
     control.damp_initial                             = 0.6
     control.damp_growth                              = 1.21 # >= 1

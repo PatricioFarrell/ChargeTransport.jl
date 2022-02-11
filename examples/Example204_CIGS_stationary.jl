@@ -151,8 +151,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
 
-    ## possible choices: model_stationary, model_transient
-    data.model_type                     = model_stationary
+    ## possible choices: Stationary, Transient
+    data.model_type                     = Stationary
 
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
@@ -162,16 +162,14 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
-    data.generation_model               = generation_beer_lambert #generation_uniform #generation_beer_lambert
+    data.generation_model               = GenerationBeerLambert #GenerationUniform, GenerationBeerLambert
 
-    ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
-    ## In this application ion vacancies only live in active perovskite layer
-    data.boundary_type[bregionAcceptor] = schottky_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    data.boundary_type[bregionAcceptor] = SchottkyContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
-    ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    ## choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ExcessChemicalPotential
 
     println("*** done\n")
 
@@ -230,8 +228,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
 
     ## overwrite parameters in ZnO donor region
-    params.generationUniform[regionDonor]                  = 0.0      # only used if for "generation_uniform"
-    params.generationAbsorption[regionDonor]               = A_ZnO    # only used if for "generation_beer_lambert"
+    params.generationUniform[regionDonor]                  = 0.0      # only used if for "GenerationUniform"
+    params.generationAbsorption[regionDonor]               = A_ZnO    # only used if for "GenerationBeerLambert"
     params.generationIncidentPhotonFlux[regionDonor]       = N0
     params.recombinationSRHTrapDensity[iphin, regionDonor] = n0_ZnO
     params.recombinationSRHTrapDensity[iphip, regionDonor] = p0_ZnO
@@ -303,7 +301,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     initialGuess          = unknowns(ctsys)
     solution              = unknowns(ctsys)
 
-    data.calculation_type = inEquilibrium
+    data.calculation_type = InEquilibrium
 
     ## solve thermodynamic equilibrium and update initial guess
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
@@ -340,8 +338,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("Stationary bias loop")
     ################################################################################
 
-    ## set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type   = outOfEquilibrium      # Rn = Rp = R, since the model type is stationary
+    ## set calculation type to OutOfEquilibrium for starting with respective simulation.
+    ctsys.data.calculation_type   = OutOfEquilibrium      # Rn = Rp = R, since the model type is stationary
     endVoltage                    = voltageAcceptor       # final bias value
 
     IV         = zeros(0)
@@ -384,7 +382,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         push!(IV, w_device * z_device * current)
 
         ## store charge density in donor region (ZnO)
-        push!(chargeDensities,chargeDensity(ctsys,solution)[regionDonor])
+        push!(chargeDensities,charge_density(ctsys,solution)[regionDonor])
 
         initialGuess .= solution
 
@@ -652,8 +650,8 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     ## initialize Data instance and fill in data
 #     data                                = Data(grid, numberOfCarriers)
 
-#     ## possible choices: model_stationary, model_transient
-#     data.model_type                     = model_stationary
+#     ## possible choices: Stationary, Transient
+#     data.model_type                     = Stationary
 
 #     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
 #     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
@@ -663,18 +661,18 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #                                                                   bulk_recomb_radiative = true,
 #                                                                   bulk_recomb_SRH = true)
 
-#     ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-#     ## interface_model_surface_recombination (inner boundary).
-#     data.generation_model               = generation_beer_lambert # generation_uniform
+#     ## possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
+    # InterfaceModelSurfaceReco (inner boundary).
+#     data.generation_model               = GenerationBeerLambert # GenerationUniform
 
 #     ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
 #     ## In this application ion vacancies only live in active perovskite layer
-#     data.boundary_type[bregionAcceptor] = schottky_contact
-#     data.boundary_type[bregionDonor]    = ohmic_contact
+#     data.boundary_type[bregionAcceptor] = SchottkyContact
+#     data.boundary_type[bregionDonor]    = OhmicContact
 
-#     ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-#     ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-#     data.flux_approximation             = excess_chemical_potential
+    # choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+#     data.flux_approximation             = ExcessChemicalPotential
 
 #     println("*** done\n")
 
@@ -814,7 +812,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     initialGuess          = unknowns(ctsys)
 #     solution              = unknowns(ctsys)
 
-#     data.calculation_type = inEquilibrium
+#     data.calculation_type = InEquilibrium
 
 #     ## solve thermodynamic equilibrium and update initial guess
 #     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
@@ -851,8 +849,8 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     println("Stationary bias loop")
 #     ################################################################################
 
-#     ## set calculation type to outOfEquilibrium for starting with respective simulation.
-#     ctsys.data.calculation_type   = outOfEquilibrium      # Rn = Rp = R, since the model type is stationary
+#     ## set calculation type to OutOfEquilibrium for starting with respective simulation.
+#     ctsys.data.calculation_type   = OutOfEquilibrium      # Rn = Rp = R, since the model type is stationary
 #     endVoltage                    = voltageAcceptor       # final bias value
 
 #     IV         = zeros(0)
@@ -891,7 +889,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #         push!(IV, w_device * z_device * current)
 
 #         ## story charge density in donor region (ZnO)
-#         push!(chargeDensities,chargeDensity(ctsys,solution)[regionDonor])
+#         push!(chargeDensities,charge_density(ctsys,solution)[regionDonor])
 
 #         initialGuess .= solution
 
