@@ -16,12 +16,12 @@ mutable struct BulkRecombination
     """
     Index for data construction of quasi Fermi potential of electrons
     """
-	iphin                 ::  Int64 # here the id's of the AbstractQuantities or the integer indices are parsed.
+	iphin                 ::  Int64
 
     """
     Index for data construction of quasi Fermi potential of holes
     """
-    iphip                 ::  Int64 # here the id's of the AbstractQuantities or the integer indices are parsed.
+    iphip                 ::  Int64
 
     """
     Boolean for present Auger recombination in bulk
@@ -57,12 +57,9 @@ function set_bulk_recombination(;iphin = 1, iphip = 2,
     bulk_recombination.iphin                 = iphin
     bulk_recombination.iphip                 = iphip
 
-    # these quantities may be unnecessary and will be deleted in future versions.
     bulk_recombination.bulk_recomb_Auger     = bulk_recomb_Auger
     bulk_recombination.bulk_recomb_radiative = bulk_recomb_radiative
 
-    # we need to have here a distinction, sincen Auger and radiative are zero if not defined due to predefinition.
-    # but we need to here, before get information on which exact SRH, this Data Type will be adjusted, if user puts on: enable_traps ...
     if bulk_recomb_SRH == true
         bulk_recombination.bulk_recomb_SRH   = model_SRH_stationary
     else
@@ -335,7 +332,8 @@ mutable struct Params
     recombinationSRHLifetime     ::  Array{Float64,2}
 
     """
-    A 2D array with the corresponding time-independent SRH trap densities ``n_{\\tau}, p_{\\tau}`` for electrons and holes.
+    A 2D array with the corresponding time-independent SRH trap densities
+    ``n_{\\tau}, p_{\\tau}`` for electrons and holes.
     """
     recombinationSRHTrapDensity  ::  Array{Float64,2}
 
@@ -406,17 +404,20 @@ mutable struct ParamsNodal
     ####          number of nodes x number of carriers         ####
     ###############################################################
     """
-    A 2D array with the corresponding mobility values ``\\mu_\\alpha`` for each carrier ``\\alpha`` on each node.
+    A 2D array with the corresponding mobility values ``\\mu_\\alpha`` for each carrier
+    ``\\alpha`` on each node.
     """
     mobility                     ::  Array{Float64,2}
 
     """
-    A 2D array with the corresponding effective density of states values ``N_\\alpha`` for each carrier ``\\alpha`` on each node.
+    A 2D array with the corresponding effective density of states values ``N_\\alpha`` for
+    each carrier ``\\alpha`` on each node.
     """
     densityOfStates              ::  Array{Float64,2}
 
     """
-    A 2D array with the corresponding band-edge energy values ``E_\\alpha`` for each carrier ``\\alpha`` on each node.
+    A 2D array with the corresponding band-edge energy values ``E_\\alpha`` for each carrier
+    ``\\alpha`` on each node.
     """
     bandEdgeEnergy               ::  Array{Float64,2}
 
@@ -440,7 +441,8 @@ mutable struct Data
     ####                   model information                   ####
     ###############################################################
     """
-    An array with the corresponding distribution function ``\\mathcal{F}_\\alpha`` for all carriers ``\\alpha``.
+    An array with the corresponding distribution function ``\\mathcal{F}_\\alpha`` for all
+    carriers ``\\alpha``.
     """
     F                            ::  Array{Function,1}
 
@@ -646,9 +648,9 @@ function Params(grid, numberOfCarriers)
     ####                     real numbers                      ####
     ###############################################################
     params.temperature                  = 300 * K
-    params.UT                           = (kB * 300 * K ) / q     # thermal voltage
-    params.γ                            = 0.27                    # parameter for Blakemore statistics
-    params.r0                           = 0.0                     # r0 prefactor electro-chemical reaction
+    params.UT                           = (kB * 300 * K ) / q # thermal voltage
+    params.γ                            = 0.27                # parameter for Blakemore statistics
+    params.r0                           = 0.0                 # r0 prefactor electro-chemical reaction
 
     ###############################################################
     ####              number of boundary regions               ####
@@ -667,13 +669,13 @@ function Params(grid, numberOfCarriers)
     params.bDensityOfStates             = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bMobility                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDoping                      = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
-    params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)  # velocity at boundary; SchottkyContacts
+    params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
 
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
     ###############################################################
-    params.bRecombinationSRHTrapDensity = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)                 # for surface reco
-    params.recombinationSRHvelocity     = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)                 # for surface reco
+    params.bRecombinationSRHTrapDensity = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    params.recombinationSRHvelocity     = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
 
     ###############################################################
     ####        number of regions x number of carriers         ####
@@ -759,59 +761,59 @@ function Data(grid, numberOfCarriers)
     ####                   model information                   ####
     ###############################################################
 
-    data.F                        = fill!(similar(Array{Function,1}(undef, numberOfCarriers),Function), Boltzmann)
-    data.boundary_type            = Array{DataType,1}(undef, numberOfBoundaryRegions)
+    data.F                      = fill!(similar(Array{Function,1}(undef, numberOfCarriers),Function), Boltzmann)
+    data.boundary_type          = Array{DataType,1}(undef, numberOfBoundaryRegions)
 
     # bulk_recombination is a struct holding the input information
-    data.bulk_recombination       = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = false, bulk_recomb_radiative = false,
-                                                             bulk_recomb_SRH = false)
+    data.bulk_recombination     = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = false, bulk_recomb_radiative = false,
+                                                         bulk_recomb_SRH = false)
 
     for ii in 1:numberOfBoundaryRegions # as default all boundaries are set to an ohmic contact model.
-        data.boundary_type[ii]    = interface_model_none
+        data.boundary_type[ii]  = interface_model_none
     end
 
     # enable_ionic_carriers is a struct holding the input information
-    data.enable_ionic_carriers    = enable_ionic_carriers(ionic_carriers = [3], regions = [2])
+    data.enable_ionic_carriers  = enable_ionic_carriers(ionic_carriers = [3], regions = [2])
 
-    data.enable_traps             = Traps()
+    data.enable_traps           = Traps()
 
-    data.inner_interface_model    = interface_model_none
+    data.inner_interface_model  = interface_model_none
 
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
-    data.flux_approximation       = scharfetter_gummel
-    data.calculation_type         = inEquilibrium           # do performances inEquilibrium or outOfEquilibrium
-    data.model_type               = model_stationary        # indicates if we need additional time dependent part
-    data.generation_model         = generation_none         # generation model
-    data.λ1                       = 1.0                     # λ1: embedding parameter for NLP
-    data.λ2                       = 1.0                     # λ2: embedding parameter for G
-    data.λ3                       = 1.0                     # λ3: embedding parameter for electro chemical reaction
+    data.flux_approximation     = scharfetter_gummel
+    data.calculation_type       = inEquilibrium       # do performances inEquilibrium or outOfEquilibrium
+    data.model_type             = model_stationary    # indicates if we need additional time dependent part
+    data.generation_model       = generation_none     # generation model
+    data.λ1                     = 1.0                 # λ1: embedding parameter for NLP
+    data.λ2                     = 1.0                 # λ2: embedding parameter for G
+    data.λ3                     = 1.0                 # λ3: embedding parameter for electro chemical reaction
 
     ###############################################################
     ####             Templates for DOS and BEE                 ####
     ###############################################################
 
-    data.tempBEE1                 = spzeros(Float64, numberOfCarriers)
-    data.tempBEE2                 = spzeros(Float64, numberOfCarriers)
-    data.tempDOS1                 = spzeros(Float64, numberOfCarriers)
-    data.tempDOS2                 = spzeros(Float64, numberOfCarriers)
+    data.tempBEE1               = spzeros(Float64, numberOfCarriers)
+    data.tempBEE2               = spzeros(Float64, numberOfCarriers)
+    data.tempDOS1               = spzeros(Float64, numberOfCarriers)
+    data.tempDOS2               = spzeros(Float64, numberOfCarriers)
 
     ###############################################################
     ####        Quantities (for discontinuous solving)         ####
     ###############################################################
-    data.isContinuous             = Array{Bool, 1}(undef, numberOfCarriers)
-    data.isContinuous            .= true
+    data.isContinuous           = Array{Bool, 1}(undef, numberOfCarriers)
+    data.isContinuous          .= true
     # default values for most simple case
-    data.chargeCarrierList        = collect(1:numberOfCarriers)
+    data.chargeCarrierList      = collect(1:numberOfCarriers)
 
-    data.index_psi                = numberOfCarriers + 1
+    data.index_psi              = numberOfCarriers + 1
 
     ###############################################################
     ####          Physical parameters as own structs           ####
     ###############################################################
-    data.params                   = Params(grid, numberOfCarriers)
-    data.paramsnodal              = ParamsNodal(grid, numberOfCarriers)
+    data.params                 = Params(grid, numberOfCarriers)
+    data.paramsnodal            = ParamsNodal(grid, numberOfCarriers)
 
     ###############################################################
 
@@ -1001,7 +1003,6 @@ function show_params(ctsys::System)
 
 end
 
-
 function Base.show(io::IO, this::ParamsNodal)
     for name in fieldnames(typeof(this))[1:end]
         @printf("%30s = ",name)
@@ -1127,7 +1128,8 @@ function __set_contact!(ctsys, ibreg, Δu, ::Type{ohmic_contact})
 
 end
 
-# DA: need to check, if the distinction here is necessary in future version (correlates with question of DiscontinuousQuantities)
+# DA: need to check, if the distinction here is necessary in future version
+# (correlates with question of DiscontinuousQuantities)
 function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{interface_model_none})
 
     iphin = ctsys.data.bulk_recombination.iphin
@@ -1155,11 +1157,6 @@ function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{interface_model_su
     ctsys.fvmsys.boundary_values[iphin, ibreg]  = contact_val
     ctsys.fvmsys.boundary_factors[iphip, ibreg] = VoronoiFVM.Dirichlet
     ctsys.fvmsys.boundary_values[iphip, ibreg]  = contact_val
-
-    # for icc = 1:ctsys.data.params.numberOfCarriers
-    #     ctsys.fvmsys.boundary_factors[icc, ibreg] = VoronoiFVM.Dirichlet
-    #     ctsys.fvmsys.boundary_values[icc, ibreg]  = contact_val
-    # end
 
 end
 
@@ -1194,13 +1191,13 @@ end
 ###########################################################
 # Wrappers for methods of VoronoiFVM
 
-VoronoiFVM.enable_species!(ctsys::System, ispecies, regions)            = VoronoiFVM.enable_species!(ctsys.fvmsys, ispecies, regions)
+VoronoiFVM.enable_species!(ctsys::System, ispecies, regions) = VoronoiFVM.enable_species!(ctsys.fvmsys, ispecies, regions)
 
-VoronoiFVM.enable_boundary_species!(ctsys::System, ispecies, regions)   = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
+VoronoiFVM.enable_boundary_species!(ctsys::System, ispecies, regions) = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
 
-VoronoiFVM.unknowns(ctsys::System)                                      = VoronoiFVM.unknowns(ctsys.fvmsys)
+VoronoiFVM.unknowns(ctsys::System) = VoronoiFVM.unknowns(ctsys.fvmsys)
 
-VoronoiFVM.solve!(solution, initialGuess, ctsys, ;control=control, tstep=tstep)          = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
+VoronoiFVM.solve!(solution, initialGuess, ctsys, ;control=control, tstep=tstep) = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
 
 ###########################################################
 ###########################################################
@@ -1257,7 +1254,7 @@ Gives the user a linear time mesh, this mesh is used for a linear I-V scan proto
 """
 function set_time_mesh(scanrate, endVoltage, number_tsteps; type_protocol = linearScanProtocol)
 
-    tend                          = endVoltage/scanrate
+    tend  = endVoltage/scanrate
 
     return range(0, stop = tend, length = number_tsteps)
 end
@@ -1270,7 +1267,8 @@ function get_current_val(ctsys, U, Uold, Δt) # DA: But caution, still need some
 
     factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
 
-    tf     = testfunction(factory, [1], [2]) # left outer boundary = 1; right outer boundary = 2 (caution with order)
+    # left outer boundary = 1; right outer boundary = 2 (caution with order)
+    tf     = testfunction(factory, [1], [2])
     I      = integrate(ctsys.fvmsys, tf, U, Uold, Δt)
 
     current = 0.0
@@ -1278,8 +1276,8 @@ function get_current_val(ctsys, U, Uold, Δt) # DA: But caution, still need some
         current = current + I[icc]
     end
 
-    # caution I[ipsi] not completly correct. In our examples, this does not effect something, but we need
-    # derivative here.
+    # DA: caution I[ipsi] not completly correct. In our examples, this does not effect something,
+    # but we need derivative here.
     return current
 end
 ###########################################################
@@ -1292,7 +1290,8 @@ function get_current_val(ctsys, U) # DA: But caution, still need some small modi
 
     factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
 
-    tf     = testfunction(factory, [1], [2]) # left outer boundary = 1; right outer boundary = 2 (caution with order)
+    # left outer boundary = 1; right outer boundary = 2 (caution with order)
+    tf     = testfunction(factory, [1], [2])
     I      = integrate(ctsys.fvmsys, tf, U)
 
     current = 0.0
@@ -1381,8 +1380,8 @@ end
 
 $(SIGNATURES)
 
-For given solution in vector form, compute corresponding vectorized band-edge energies and Fermi level.
-[Caution: this was not tested for multidimensions.]
+For given solution in vector form, compute corresponding vectorized band-edge energies and
+Fermi level. [Caution: this was not tested for multidimensions.]
 """
 function compute_energies!(grid, data, sol)
 
@@ -1435,7 +1434,7 @@ function electroNeutralSolution!(grid, data; Newton=false)
     zVector         = params.chargeNumbers[iccVector]
     FVector         = data.F[iccVector]
     regionsAllCells = copy(grid[CellRegions])
-    regionsAllCells = push!(regionsAllCells, grid[CellRegions][end]) #  enlarge region by final cell
+    regionsAllCells = push!(regionsAllCells, grid[CellRegions][end]) # enlarge region by final cell
     phi             = 0.0                                            # in equilibrium set to 0
     psi0_initial    = 0.5
 
@@ -1444,7 +1443,8 @@ function electroNeutralSolution!(grid, data; Newton=false)
         ireg          = regionsAllCells[index]
         zVector       = params.chargeNumbers[iccVector]
         FVector       = data.F[iccVector]
-        regionsOfCell = regionsAllCells[grid[CellNodes][:,index]]   # all regions of nodes belonging to cell for given index
+        # all regions of nodes belonging to cell for given index
+        regionsOfCell = regionsAllCells[grid[CellNodes][:,index]]
 
         # average following quantities if needed among all regions
         EVector = Float64[]; CVector = Float64[]; NVector = Float64[]
@@ -1518,6 +1518,5 @@ $(TYPEDSIGNATURES)
 Compute the charge density for each region separately.
 """
 function chargeDensity(ctsys, sol)
-    # integrate(ctsys.fvmsys,ctsys.fvmsys.physics.reaction,sol)#[ctsys.data.index_psi,:]
     integrate(ctsys.fvmsys,reaction!,sol)[ctsys.data.index_psi,:]
 end

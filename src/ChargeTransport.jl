@@ -23,20 +23,24 @@ export tiny_penalty_value
 
 include("ct_distributions.jl")
 
-export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA, FermiDiracZero
+export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk
+export FermiDiracOneHalfTeSCA, FermiDiracZero
 
 ##################################################################
 
 include("ct_datatypes.jl")
 
 export boundary_model, ohmic_contact, schottky_contact
-export interface_model, interface_model_none, interface_model_surface_recombination, interface_model_ion_charge, interface_model_tangential_flux, interface_model_surface_recombination_and_tangential_flux
+export interface_model, interface_model_none, interface_model_surface_recombination
+export interface_model_ion_charge, interface_model_tangential_flux
+export interface_model_surface_recombination_and_tangential_flux
 
 export interface_model_discont_qF
 
 export model_type, model_transient, model_stationary
 
-export abstract_model_SRH, model_SRH, model_SRH_off, model_SRH_without_traps, model_SRH_without_traps_stationary, model_SRH_with_traps,  model_SRH_traps_transient
+export abstract_model_SRH, model_SRH, model_SRH_off, model_SRH_without_traps
+export model_SRH_without_traps_stationary, model_SRH_with_traps,  model_SRH_traps_transient
 
 export inEquilibrium, outOfEquilibrium
 ##################################################################
@@ -66,7 +70,8 @@ export enable_traps!
 
 include("ct_plotting.jl")
 
-export plot_densities, plot_energies, plot_doping, plot_electroNeutralSolutionBoltzmann, plot_solution, plot_IV
+export plot_densities, plot_energies, plot_doping, plot_electroNeutralSolutionBoltzmann
+export plot_solution, plot_IV
 
 
 end # module

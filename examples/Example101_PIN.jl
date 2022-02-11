@@ -3,7 +3,8 @@
 ([source code](SOURCE_URL))
 
 We simulate charge transport in a GaAs pin diode, where use the van Roosbroeck
-system of equations as charge transport model. The unknowns are given by the quasi Fermi potentials of electrons and holes $\varphi_n$, $\varphi_p$ and the electric potential $\psi$.
+system of equations as charge transport model. The unknowns are given by the quasi Fermi
+potentials of electrons and holes $\varphi_n$, $\varphi_p$ and the electric potential $\psi$.
 The simulations are performed out of equilibrium and for the
 stationary problem.
 =#
@@ -131,24 +132,29 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## Following variable declares, if we want to solve stationary or transient problem
     data.model_type                     = model_stationary
 
-    ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    ## FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    ## Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination
-    ## processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by
-    ## the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
+    ## Here, we need to specify which numbers are associated with electron and hole quasi
+    ## Fermi potential. Further, the desired recombination processes can be chosen here.
+    ## Note that, if you choose a SRH recombination you can further specify a transient SRH
+    ## recombination by the method enable_traps! and adjusting the model_type. Otherwise, by
+    ## default we use the stationary model for this type of recombination.
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
-    ## Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
-    ## For inner boundaries we have interface_model_none, interface_model_surface_recombination.
+    ## Following choices are possible for boundary model: For contacts currently only
+    ## ohmic_contact and schottky_contact are possible. For inner boundaries we have
+    ## interface_model_none, interface_model_surface_recombination.
     data.boundary_type[bregionAcceptor] = ohmic_contact
     data.boundary_type[bregionDonor]    = ohmic_contact
 
-    ## Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
-    ## excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
+    ## Following choices are possible for the flux_discretization scheme: scharfetter_gummel,
+    ## scharfetter_gummel_graded, excess_chemical_potential, excess_chemical_potential_graded,
+    ## diffusion_enhanced, generalized_sg
     data.flux_approximation             = excess_chemical_potential
 
     if test == false
@@ -161,8 +167,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # Define the Params struct. Params contains all necessary physical parameters. If one wants to simulate
-    # space-dependent variable, one additionally needs to generate a ParamsNodal struct, see Example102.
+    # Define the Params struct. Params contains all necessary physical parameters. If one
+    # wants to simulate space-dependent variable, one additionally needs to generate a
+    # ParamsNodal struct, see Example102.
     params                                              = Params(grid, numberOfCarriers)
 
     params.temperature                                  = T
@@ -201,28 +208,30 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
 
     ## interior doping
-    params.doping[iphin, regionDonor]                   = Nd        # data.doping   = [0.0  Na;
-    params.doping[iphin, regionIntrinsic]               = ni        #                  ni   0.0;
-    params.doping[iphip, regionIntrinsic]               = 0.0       #                  Nd  0.0]
+    params.doping[iphin, regionDonor]                   = Nd     # data.doping   = [0.0  Na;
+    params.doping[iphin, regionIntrinsic]               = ni     #                  ni   0.0;
+    params.doping[iphip, regionIntrinsic]               = 0.0    #                  Nd  0.0]
     params.doping[iphip, regionAcceptor]                = Na
 
     ## boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd        # data.bDoping  = [0.0  Na;
-    params.bDoping[iphip, bregionAcceptor]              = Na        #                  Nd  0.0]
+    params.bDoping[iphin, bregionDonor]                 = Nd     # data.bDoping  = [0.0  Na;
+    params.bDoping[iphip, bregionAcceptor]              = Na     #                  Nd  0.0]
 
-    # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed
-    # in next step.
+    # Region dependent params is now a substruct of data which is again a substruct of the
+    # system and will be parsed in next step.
     data.params                                         = params
 
-    # In the last step, we initialize our system with previous data which is likewise dependent on the parameters.
-    # It is important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
-    # but rather on default data.
+    # In the last step, we initialize our system with previous data which is likewise
+    # dependent on the parameters. It is important that this is in the end, otherwise our
+    # VoronoiFVMSys is not dependent on the data we initialized but rather on default data.
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
     if test == false
-        ## Here we cn show region dependent physical parameters. show_params() only supports region dependent parameters, but, if one wishes to
-        ## print nodal dependent parameters, currently this is possible with println(ctsys.data.paramsnodal). We neglected here, since
-        ## in most applications where the numberOfNodes is >> 10 this would results in a large output in the terminal.
+        ## Here we cn show region dependent physical parameters. show_params() only supports
+        ## region dependent parameters, but, if one wishes to print nodal dependent parameters,
+        ## currently this is possible with println(ctsys.data.paramsnodal). We neglected here,
+        ## since in most applications where the numberOfNodes is >> 10 this would results in a
+        ## large output in the terminal.
         show_params(ctsys)
         println("*** done\n")
     end

@@ -186,8 +186,10 @@ function breaction!(f, u, bnode, data, ::Type{ohmic_contact})
         Ni      = data.tempDOS1[icc]
         eta     = etaFunction(u, bnode, data, icc, ipsi) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc,ipsi)
 
-        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )   # subtract doping
-        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)                   # add charge carrier
+        # subtract doping
+        f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )
+        # add charge carrier
+        f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)
 
         # boundary conditions for charge carriers are set in main program
         f[icc]  = 0.0
@@ -223,7 +225,7 @@ function breaction!(f, u, bnode, data,  ::Type{schottky_contact})
     params        = data.params
     paramsnodal   = data.paramsnodal
 
-    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
     iphin       = data.bulk_recombination.iphin
     iphip       = data.bulk_recombination.iphip
 
@@ -260,7 +262,7 @@ function breaction!(f, u, bnode, data, ::Type{interface_model_surface_recombinat
         return
     end
 
-    # indices (∈ IN ) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
+    # indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (passed through recombination)
     iphin       = data.bulk_recombination.iphin # integer index of φ_n
     iphip       = data.bulk_recombination.iphip # integer index of φ_p
 
@@ -294,14 +296,12 @@ end
 function breaction!(f, u, bnode, data, ::Type{interface_model_discont_qF})
 
     if data.calculation_type == inEquilibrium
-
         return emptyFunction()
-
     end
 
     ipsi = data.index_psi
 
-    #indices (∈ IN ) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
+    #indices (∈ N) of electron and hole quasi Fermi potentials specified by user (passed through recombination)
     iphin       = data.bulk_recombination.iphin # integer index of φ_n
     iphip       = data.bulk_recombination.iphip # integer index of φ_p
 
@@ -379,7 +379,6 @@ function electrochemicalReaction(data, u, iphia, ipsi, iphiaJunction, ipsiJuncti
 
     params             = data.params
 
-
     etaExp             = params.chargeNumbers[iphia] / params.UT * ( (u[iphia] - u[iphiaJunction]) + E / q )
     expTerm            =  exp( β * etaExp ) - exp( (β - 1) * etaExp)
 
@@ -402,10 +401,7 @@ for each boundary the time-dependent part of the chosen boundary model.
 """
 bstorage!(f, u, bnode, data) = bstorage!(f, u, bnode, data, data.model_type)
 
-
-
 bstorage!(f, u, bnode, data, ::Type{model_stationary})  = emptyFunction()
-
 
 bstorage!(f, u, bnode, data, ::Type{model_transient}) = bstorage!(f, u, bnode, data, data.boundary_type[bnode.region])
 
@@ -430,7 +426,7 @@ function bstorage!(f, u, bnode, data, ::Type{interface_model_tangential_flux})
     params      = data.params
     paramsnodal = data.paramsnodal
 
-    #indices (∈ IN ) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
+    #indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
     iphin       = data.bulk_recombination.iphin # integer index of φ_n
     iphip       = data.bulk_recombination.iphip # integer index of φ_p
 
@@ -495,7 +491,7 @@ function bflux!(f, u, bedge, data, ::Type{excess_chemical_potential})
     nodek       =   bedge.node[1]
     ireg        =   bedge.region
 
-    # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
     iphin       = data.bulk_recombination.iphin
     iphip       = data.bulk_recombination.iphip
 
@@ -718,7 +714,7 @@ that the electron index is 1 and the hole index is 2.
 """
 function reaction!(f, u, node, data, ::Type{outOfEquilibrium})
 
-    # indices (∈ IN ) of electron and hole quasi Fermi potentials used by user (they pass it through recombination)
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
     iphin       = data.bulk_recombination.iphin
     iphip       = data.bulk_recombination.iphip
 
@@ -774,7 +770,8 @@ end
 
 # The generation rate ``G``, which occurs in the right-hand side of the
 # continuity equations obeying the Beer-Lambert law.
-function generation(data, ireg, node, ::Type{generation_beer_lambert}) # only works in 1D till now; adjust node, when multidimensions
+#only works in 1D till now; adjust node, when multidimensions
+function generation(data, ireg, node, ::Type{generation_beer_lambert})
 
     params = data.params
 
@@ -860,7 +857,8 @@ end
 flux!(f, u, edge, data, ::Type{outOfEquilibrium}) = flux!(f, u, edge, data, data.flux_approximation)
 
 
-# The classical Scharfetter-Gummel flux scheme. This also works for space-dependent band-edge energy, but not for space-dependent effective DOS.
+# The classical Scharfetter-Gummel flux scheme. This also works for space-dependent
+# band-edge energy, but not for space-dependent effective DOS.
 function flux!(f, u, edge, data, ::Type{scharfetter_gummel})
 
     params      =   data.params
@@ -896,7 +894,8 @@ function flux!(f, u, edge, data, ::Type{scharfetter_gummel})
 end
 
 # The classical Scharfetter-Gummel flux scheme for
-# possible space-dependent DOS and band-edge energies. For these parameters the discretization scheme is modified.
+# possible space-dependent DOS and band-edge energies. For these parameters the
+# discretization scheme is modified.
 function flux!(f, u, edge, data, ::Type{scharfetter_gummel_graded})
 
     params      =   data.params
@@ -927,9 +926,9 @@ function flux!(f, u, edge, data, ::Type{scharfetter_gummel_graded})
         mobility     = params.mobility[icc, ireg] + (paramsnodal.mobility[icc, nodel] + paramsnodal.mobility[icc, nodek])/2
 
         if paramsnodal.densityOfStates[icc, nodel] ≈ 0.0 || paramsnodal.densityOfStates[icc, nodek] ≈ 0.0
-            bp, bm         = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT )
+            bp, bm   = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT )
         else
-            bp, bm         = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT - (log(paramsnodal.densityOfStates[icc, nodel]) -log(paramsnodal.densityOfStates[icc, nodek])) )
+            bp, bm   = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT - (log(paramsnodal.densityOfStates[icc, nodel]) -log(paramsnodal.densityOfStates[icc, nodek])) )
         end
 
         f[icc]       = - j0  * mobility * ( bm  * Nil * data.F[icc](etal) - bp *  Nik * data.F[icc](etak) )
@@ -996,7 +995,7 @@ function flux!(f, u, edge, data, ::Type{excess_chemical_potential_graded})
     # k = 1 refers to left side, where as l = 2 refers to right side.
     for icc ∈ data.chargeCarrierList
 
-        j0                 = params.chargeNumbers[icc] * q * params.UT
+        j0           = params.chargeNumbers[icc] * q * params.UT
 
         get_DOS!(icc, edge, data)
 
@@ -1024,9 +1023,9 @@ function flux!(f, u, edge, data, ::Type{excess_chemical_potential_graded})
 
 end
 
-# The diffusion enhanced scheme by Bessemoulin-Chatard. Currently, the Pietra-Jüngel scheme is
-# used for the regularization of the removable singularity. This also works for space-dependent band-edge energy, but
-# not for space-dependent effective DOS.
+# The diffusion enhanced scheme by Bessemoulin-Chatard. Currently, the Pietra-Jüngel scheme
+# is used for the regularization of the removable singularity. This also works for
+# space-dependent band-edge energy, but not for space-dependent effective DOS.
 function flux!(f, u, edge, data, ::Type{diffusion_enhanced})
 
     params      =   data.params
@@ -1041,7 +1040,6 @@ function flux!(f, u, edge, data, ::Type{diffusion_enhanced})
 
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
     f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
-
 
     # k = 1 refers to left side, where as l = 2 refers to right side.
     for icc ∈ data.chargeCarrierList
@@ -1071,11 +1069,11 @@ function flux!(f, u, edge, data, ::Type{diffusion_enhanced})
 
 end
 
-# The Koprucki-Gärtner scheme. This scheme is calculated by solving a fixed point equation which arise
-# when considering the generalized Scharfetter-Gummel scheme in case of Blakemore statistics.
-# Hence, it should be exclusively worked with, when considering the Blakemore distribution.
-# This also works for space-dependent band-edge energy, but
-# not for space-dependent effective DOS.
+# The Koprucki-Gärtner scheme. This scheme is calculated by solving a fixed point equation
+# which arise when considering the generalized Scharfetter-Gummel scheme in case of Blakemore
+# statistics. Hence, it should be exclusively worked with, when considering the Blakemore
+# distribution. This also works for space-dependent band-edge energy, but not for
+# space-dependent effective DOS.
 function flux!(f, u, edge, data, ::Type{generalized_sg})
 
     params        =   data.params

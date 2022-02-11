@@ -33,42 +33,46 @@ function plot_densities(Plotter, grid, data::Data, sol, title, label_density, ;p
     for icc in 1:params.numberOfCarriers
 
         # first cell
-        u1                      = sol[:, 1]
-        u2                      = sol[:, 2]
-        ireg                    = cellregions[1]
+        u1         = sol[:, 1]
+        u2         = sol[:, 2]
+        ireg       = cellregions[1]
 
-        icc1                    = compute_densities!(u1, data, 1, 1,    icc, ipsi, false) # breg = 1 since we are on the left boundary
-        icc2                    = compute_densities!(u2, data, 2, ireg, icc, ipsi, true)
+        icc1       = compute_densities!(u1, data, 1, 1,    icc, ipsi, false) # breg = 1 since we are on the left boundary
+        icc2       = compute_densities!(u2, data, 2, ireg, icc, ipsi, true)
 
-        label_icc               = label_density[icc]
+        label_icc  = label_density[icc]
 
-        Plotter.semilogy([coordinates[1]./1, coordinates[2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, label = label_icc, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)
+        # multiplying by 1.0e-6 gives us the densities in cm^(-3)
+        Plotter.semilogy([coordinates[1]./1, coordinates[2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, label = label_icc, color = colors[icc], linewidth = 2)
 
         for icell in 2:size(cellnodes,2) - 1
             in_region = true
-            i1        = cellnodes[1,icell]
-            i2        = cellnodes[2,icell]
-            ireg      = cellregions[icell]
+            i1    = cellnodes[1,icell]
+            i2    = cellnodes[2,icell]
+            ireg  = cellregions[icell]
 
-            u1        = sol[:, i1]
-            u2        = sol[:, i2]
+            u1    = sol[:, i1]
+            u2    = sol[:, i2]
 
-            icc1      = compute_densities!(u1, data, i1, ireg, icc, ipsi, in_region)
-            icc2      = compute_densities!(u2, data, i2, ireg, icc, ipsi, in_region)
+            icc1  = compute_densities!(u1, data, i1, ireg, icc, ipsi, in_region)
+            icc2  = compute_densities!(u2, data, i2, ireg, icc, ipsi, in_region)
 
-            Plotter.semilogy([coordinates[i1]./1, coordinates[i2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)
+            # multiplying by 1.0e-6 gives us the densities in cm^(-3)
+            Plotter.semilogy([coordinates[i1]./1, coordinates[i2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2)
         end
 
         # last cell
-        u1            = sol[:, end-1]
-        u2            = sol[:, end]
-        ireg          = cellregions[end]
-        node          = cellnodes[2, end]
+        u1        = sol[:, end-1]
+        u2        = sol[:, end]
+        ireg      = cellregions[end]
+        node      = cellnodes[2, end]
 
-        icc1          = compute_densities!(u1, data, node-1, ireg, icc, ipsi, true)
-        icc2          = compute_densities!(u2, data, node, 2, icc, ipsi, false) # breg = 2 since we are on the right boundary
+        icc1      = compute_densities!(u1, data, node-1, ireg, icc, ipsi, true)
+        # breg = 2 since we are on the right boundary
+        icc2      = compute_densities!(u2, data, node, 2, icc, ipsi, false)
 
-        Plotter.semilogy([coordinates[node-1]./1, coordinates[node]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2) #multiplying by 1.0e-6 gives us the densities in cm^(-3)
+        # multiplying by 1.0e-6 gives us the densities in cm^(-3)
+        Plotter.semilogy([coordinates[node-1]./1, coordinates[node]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2)
 
     end
 
@@ -268,14 +272,15 @@ function plot_doping(Plotter, g::ExtendableGrid, data::Data, label_density)
             cellValue            = params.doping[icc, cellregions[i]]
             numberLocalCellNodes = length(cellnodes[:,i])
 
-            # patch together cells
+            # patch together cells (multiplying by 1.0e-6 gives us the densities in cm^(-3))
             Plotter.plot(coord[cellnodes[:,i]],
             1.0e-6 .*repeat(cellValue:cellValue,numberLocalCellNodes),
                             color=colors[icc],
                             linewidth=3,
-                            linestyle=linestyles[icc]); #multiplying by 1.0e-6 gives us the densities in cm^(-3)
+                            linestyle=linestyles[icc]);
         end
-        Plotter.plot(NaN, NaN, color = colors[icc], linewidth = 3, label = label_density[icc]) # legend
+        # legend
+        Plotter.plot(NaN, NaN, color = colors[icc], linewidth = 3, label = label_density[icc])
 
     end
 
@@ -311,7 +316,7 @@ function plot_doping(Plotter, g::ExtendableGrid, data::Data, label_density)
 end
 
 """
-Plot doping for nodal dependent doping
+Plot doping for nodal dependent doping.
 """
 function plot_doping(Plotter, g::ExtendableGrid, paramsnodal::ParamsNodal)
 
@@ -380,8 +385,6 @@ function plot_solution(Plotter, grid, data::Data, solution, title, label_solutio
 
     colors       = ["green", "red", "gold", "purple", "orange"]
     linestyles   = ["-", ":", "--", "-.", "-"]
-
-    # colors[ionic_vac] = ["gold", "purple"]; linestyles[ionic_vac] = ["-", ":"]; densityNames[ionic_vac] = ["\$\\varphi_a\$", "\$\\varphi_c\$"]
 
     Plotter.clf()
     Plotter.plot(coord, solution[ipsi,:], marker = marker, label = "\$\\psi\$", color="b", linewidth= 3)

@@ -19,7 +19,8 @@ $(TYPEDSIGNATURES)
 
 
 The Blakemore approximation ``1/(\\exp(-x) + γ)`` with variable real scalar ``γ``, see
-J. S. Blakemore. “The Parameters of Partially Degenerate Semiconductors”. In: Proceedings of the Physical Society. Section A 65 (1952), pp. 460–461.
+J. S. Blakemore. “The Parameters of Partially Degenerate Semiconductors”. In: Proceedings of
+the Physical Society. Section A 65 (1952), pp. 460–461.
 
 """
 function Blakemore(x::Real, γ::Real )
@@ -39,8 +40,9 @@ $(TYPEDSIGNATURES)
 
 
 The Fermi-Dirac integral of order ``-1`` which reads
-``1/(\\exp(-x) + 1)``, see J.S. Blakemore, Approximations for Fermi-Dirac integrals, especially the function ``F_{1/2} (\\eta)`` used to
-describe electron density in a semiconductor, Solid-State Electronics 25 (11) (1982) 1067 – 1076.
+``1/(\\exp(-x) + 1)``, see J.S. Blakemore, Approximations for Fermi-Dirac integrals,
+especially the function ``F_{1/2} (\\eta)`` used to describe electron density in a
+semiconductor, Solid-State Electronics 25 (11) (1982) 1067 – 1076.
 """
 function FermiDiracMinusOne(x::Real)
     Blakemore(x, 1.0)
@@ -67,7 +69,8 @@ $(TYPEDSIGNATURES)
 
 
 The incomplete Fermi-Dirac integral of order 1/2,
-implemented according to the software package TeSCA, see https://wias-berlin.de/software/index.jsp?lang=1&id=TeSCA.
+implemented according to the software package TeSCA,
+see https://wias-berlin.de/software/index.jsp?lang=1&id=TeSCA.
 """
 function FermiDiracOneHalfTeSCA(x::Real)
     if x < 1.6107
