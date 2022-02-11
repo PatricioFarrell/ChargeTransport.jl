@@ -22,7 +22,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -59,17 +59,17 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord_n_u               = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
     coord_n_g               = geomspace(h_ndoping/2,
                                         h_ndoping,
-                                        h_ndoping/(1.1*δ),
+                                        h_ndoping/(0.7*δ),
                                         h_ndoping/(1.1*δ),
                                         tol=t)
     coord_i_g1              = geomspace(h_ndoping,
                                         h_ndoping+h_intrinsic/k,
                                         h_intrinsic/(2.8*δ),
-                                        h_intrinsic/(2.8*δ),
+                                        h_intrinsic/(2.1*δ),
                                         tol=t)
     coord_i_g2              = geomspace(h_ndoping+h_intrinsic/k,
                                         h_ndoping+h_intrinsic,
-                                        h_intrinsic/(2.8*δ),
+                                        h_intrinsic/(2.1*δ),
                                         h_intrinsic/(2.8*δ),
                                         tol=t)
     coord_p_g               = geomspace(h_ndoping+h_intrinsic,
@@ -482,7 +482,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
         plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
-    testval = solution[data.index_psi, 15]
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
     println("*** done\n")
@@ -490,7 +490,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -4.100369951594844
+    testval = 40.543299668622225
     main(test = true, unknown_storage=:dense) ≈ testval  #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

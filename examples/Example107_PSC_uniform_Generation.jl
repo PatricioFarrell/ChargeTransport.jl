@@ -22,7 +22,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -44,37 +44,37 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     numberOfBoundaryRegions = length(bregions)
 
     ## grid: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
-    h_pdoping               = 3.00e-6 * cm + 1.0e-7 *cm# add 1.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_pdoping               = 3.00e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
     h_intrinsic             = 3.00e-5 * cm
-    h_ndoping               = 8.50e-6 * cm + 1.0e-7 *cm# add 1.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_ndoping               = 8.50e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
 
     x0                      = 0.0 * cm
     δ                       = 4*n        # the larger, the finer the mesh
     t                       = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
     k                       = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    coord_p_u               = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.9*δ)))
+    coord_p_u               = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.6*δ)))
     coord_p_g               = geomspace(h_pdoping/2,
                                         h_pdoping,
-                                        h_pdoping/(1.2*δ),
-                                        h_pdoping/(1.2*δ),
+                                        h_pdoping/(0.8*δ),
+                                        h_pdoping/(0.6*δ),
                                         tol=t)
     coord_i_g1              = geomspace(h_pdoping,
                                         h_pdoping+h_intrinsic/k,
-                                        h_intrinsic/(7.1*δ),
-                                        h_intrinsic/(7.1*δ),
+                                        h_intrinsic/(6.1*δ),
+                                        h_intrinsic/(2.1*δ),
                                         tol=t)
     coord_i_g2              = geomspace(h_pdoping+h_intrinsic/k,
                                         h_pdoping+h_intrinsic,
-                                        h_intrinsic/(7.1*δ),
-                                        h_intrinsic/(7.1*δ),
+                                        h_intrinsic/(2.1*δ),
+                                        h_intrinsic/(6.1*δ),
                                         tol=t)
     coord_n_g               = geomspace(h_pdoping+h_intrinsic,
                                         h_pdoping+h_intrinsic+h_ndoping/2,
-                                        h_ndoping/(2.0*δ),
-                                        h_ndoping/(2.0*δ),
+                                        h_ndoping/(1.5*δ),
+                                        h_ndoping/(0.9*δ),
                                         tol=t)
-    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(1.0*δ)))
+    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.5*δ)))
 
     coord                   = glue(coord_p_u, coord_p_g,  tol=10*t)
     coord                   = glue(coord,     coord_i_g1, tol=10*t)
@@ -215,7 +215,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     C0                  =   1.0e18               / (cm^3)
 
     ## contact voltages
-    voltageAcceptor     =  1.2                  * V
+    voltageAcceptor     =  1.1                  * V
 
     if test == false
         println("*** done\n")
@@ -424,7 +424,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ## primary data for I-V scan protocol
     scanrate                      = 0.04 * V/s
-    number_tsteps                 = 21
+    number_tsteps                 = 31
     endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
 
     ## with fixed timestep sizes we can calculate the times
@@ -470,6 +470,10 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     end
     ################################################################################
 
+    ## for saving I-V data
+    IVReverse          = zeros(0) # for IV values
+    biasValuesReverse  = zeros(0) # for bias values
+
     for istep = number_tsteps:-1:2
 
         t                     = tvalues[istep]       # Actual time
@@ -486,6 +490,12 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
         initialGuess .= solution
+
+        ## get I-V data
+        current = get_current_val(ctsys, solution, initialGuess, Δt)
+
+        push!(IVReverse, current)
+        push!(biasValuesReverse, Δu)
 
     end # time loop
 
@@ -545,20 +555,22 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
         ## ###############
         Plotter.figure()
 
-        Plotter.plot(biasValuesForward, IVForward.*(cm^2), label = "\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (without internal BC)",  linewidth= 3, linestyle="--", color="red")
+        Plotter.plot(biasValuesForward, IVForward.*(cm^2), label = "forward",  linewidth= 3, linestyle="--", color="red")
+        Plotter.plot(biasValuesReverse, IVReverse.*(cm^2), label = "reverse",  linewidth= 3, linestyle="--", color="blue")
         Plotter.legend()
         Plotter.xlabel("Applied Voltage [V]")
         Plotter.ylabel("current density [A \$ cm^{-2}\$ ]")
+        Plotter.title("\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (without internal BC)")
         Plotter.tight_layout()
     end
 
-    testval = solution[data.index_psi, 102]
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
 end #  main
 
 function test()
-    testval = -3.92993784639653
+    testval = 39.06872444917981
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
