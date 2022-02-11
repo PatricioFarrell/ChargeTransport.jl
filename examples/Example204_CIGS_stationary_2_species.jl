@@ -17,12 +17,12 @@ using PyPlot
 function initialize_pin_grid(refinementfactor, h_ndoping, h_pdoping_left, h_pdoping_trap, h_pdoing_right)
     coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 2 * refinementfactor))
     coord_pdoping_left  = collect(range(h_ndoping, stop = (h_ndoping + h_pdoping_left), length = 3 * refinementfactor))
-    coord_pdoping_plus  = collect(range((h_ndoping + h_pdoping_left), 
-                                        stop = (h_ndoping + h_pdoping_left + h_pdoping_trap), 
+    coord_pdoping_plus  = collect(range((h_ndoping + h_pdoping_left),
+                                        stop = (h_ndoping + h_pdoping_left + h_pdoping_trap),
                                         length =  refinementfactor))
-    coord_pdoping_right = collect(range((h_ndoping + h_pdoping_left + h_pdoping_trap), 
-                                        stop = (h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right), 
-                                        length = 3 * refinementfactor))                                    
+    coord_pdoping_right = collect(range((h_ndoping + h_pdoping_left + h_pdoping_trap),
+                                        stop = (h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right),
+                                        length = 3 * refinementfactor))
     coord            = glue(coord_ndoping, coord_pdoping_left)
     coord            = glue(coord, coord_pdoping_plus)
     coord            = glue(coord, coord_pdoping_right)
@@ -65,14 +65,14 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     grid                    = simplexgrid(coord)
 
     ## set different regions in grid, doping profiles do not intersect
-    ## n doped 
-    cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)          
-    ## p doped                    
-    cellmask!(grid, [h_ndoping], [h_ndoping + h_pdoping_left], regionAcceptorLeft)    
-    ## p doped with traps
-    cellmask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left + h_pdoping_trap], regionAcceptorTrap)  
+    ## n doped
+    cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)
     ## p doped
-    cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right], regionAcceptorRight)   
+    cellmask!(grid, [h_ndoping], [h_ndoping + h_pdoping_left], regionAcceptorLeft)
+    ## p doped with traps
+    cellmask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left + h_pdoping_trap], regionAcceptorTrap)
+    ## p doped
+    cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right], regionAcceptorRight)
 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
@@ -94,32 +94,32 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## physical data
     # Ec                = 1.424                *  eV
     # Ev                = 0.0                  *  eV
-    # Et                = 0.6                  *  eV      
-    
+    # Et                = 0.6                  *  eV
+
     Ec_CIGS           = 3.4                  *  eV
     Ev_CIGS           = 2.3                  *  eV
     Ec_ZnO            = 3.4                  *  eV
     Ev_ZnO            = 0.0                  *  eV
-    Et                = 2.8                  *  eV   
+    Et                = 2.8                  *  eV
 
     Nc                = 4.351959895879690e17 / (cm^3)
     Nv                = 9.139615903601645e18 / (cm^3)
-    Nt                = 5e14                / (cm^3)   
-    Nt_low            = Nt#/1e3                        
+    Nt                = 5e14                / (cm^3)
+    Nt_low            = Nt#/1e3
     mun_CIGS          = 100.0                * (cm^2) / (V * s)
     mup_CIGS          = 25                   * (cm^2) / (V * s)
     mun_ZnO           = 100                  * (cm^2) / (V * s)
     mup_ZnO           = 25                   * (cm^2) / (V * s)
     mut               = 0                    * (cm^2) / (V * s)  # no flux for traps
-    εr_CIGS           = 13.6                 *  1.0              
-    εr_ZnO            = 9                    *  1.0                
+    εr_CIGS           = 13.6                 *  1.0
+    εr_ZnO            = 9                    *  1.0
     T                 = 300.0                *  K
 
     An                = 4 * pi * q * mₑ * kB^2 / Planck_constant^3
     Ap                = 4 * pi * q * mₑ * kB^2 / Planck_constant^3
     vn                = An * T^2 / (q*Nc)
     vp                = Ap * T^2 / (q*Nv)
-    barrier           = Ec_CIGS - 0.1 * eV
+    barrier           = Ev_CIGS + 0.1 * eV
 
     ## recombination parameters
     ni_CIGS           = sqrt(Nc * Nv) * exp(-(Ec_CIGS - Ev_CIGS) / (2 * kB * T)) # intrinsic concentration
@@ -129,7 +129,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     n0_ZnO            = Nc * Boltzmann( (Et-Ec_ZnO) / (kB*T) )             # Boltzmann equilibrium concentration
     p0_ZnO            = ni_ZnO^2 / n0_ZnO                                      # Boltzmann equilibrium concentration
     Auger             = 1.0e-29  * cm^6 / s          # 1.0e-41 m^6 / s
-    SRH_LifeTime      = 1.0e-3   * ns               
+    SRH_LifeTime      = 1.0e-3   * ns
     Radiative         = 1.0e-10  * cm^3 / s          # 1.0e-16 m^3 / s
     G                 = 1.0e20   / (cm^3 * s)
     A_CIGS            = 1.0e5    / cm
@@ -137,8 +137,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     N0                = 1e17     / cm^2/s
 
     ## doping -- trap doping will not be set and thus automatically zero
-    Nd                = 1.0e18 / (cm^3) 
-    Na                = 5.5e15 / (cm^3)   
+    Nd                = 1.0e18 / (cm^3)
+    Na                = 5.5e15 / (cm^3)
 
     ## we will impose this applied voltage on one boundary
     voltageAcceptor   = 2.0 * V
@@ -157,24 +157,24 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA]
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
     enable_traps!(data)
-    
+
     data.generation_model               = generation_beer_lambert #generation_uniform #generation_beer_lambert
 
     ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
     ## In this application ion vacancies only live in active perovskite layer
-    data.boundary_type[bregionAcceptor] = schottky_contact                       
-    data.boundary_type[bregionDonor]    = ohmic_contact    
-    
+    data.boundary_type[bregionAcceptor] = schottky_contact
+    data.boundary_type[bregionDonor]    = ohmic_contact
+
     ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
     ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
     data.flux_approximation             = excess_chemical_potential
-   
+
     println("*** done\n")
 
     ################################################################################
@@ -203,7 +203,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for ireg in 1:numberOfRegions           # interior region data
 
-        params.dielectricConstant[ireg]                 = εr_CIGS       
+        params.dielectricConstant[ireg]                 = εr_CIGS
 
         ## effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
@@ -228,7 +228,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.generationAbsorption[ireg]               = A_CIGS
         params.generationIncidentPhotonFlux[ireg]       = N0
         params.generationUniform[ireg]                  = G
-        
+
     end
 
     ## overwrite parameters in ZnO donor region
@@ -239,7 +239,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.recombinationSRHTrapDensity[iphip, regionDonor] = p0_ZnO
     params.bandEdgeEnergy[iphin, regionDonor]              = Ec_ZnO
     params.bandEdgeEnergy[iphip, regionDonor]              = Ev_ZnO
-    params.dielectricConstant[regionDonor]                 = εr_ZnO 
+    params.dielectricConstant[regionDonor]                 = εr_ZnO
     params.mobility[iphin, regionDonor]                    = mun_ZnO
     params.mobility[iphip, regionDonor]                    = mup_ZnO
 
@@ -250,19 +250,19 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # params.densityOfStates[iphit, regionAcceptorRight]  = Nt_low
 
     ## doping -- since we do not set any doping for the traps it is automatically zero
-    params.doping[iphin, regionDonor]                   = Nd        
-    params.doping[iphip, regionAcceptorLeft]            = Na        
-    params.doping[iphip, regionAcceptorTrap]            = Na        
+    params.doping[iphin, regionDonor]                   = Nd
+    params.doping[iphip, regionAcceptorLeft]            = Na
+    params.doping[iphip, regionAcceptorTrap]            = Na
     params.doping[iphip, regionAcceptorRight]           = Na
 
     ## boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd        
-    params.bDoping[iphip, bregionAcceptor]              = Na   
-    
+    params.bDoping[iphin, bregionDonor]                 = Nd
+    params.bDoping[iphip, bregionAcceptor]              = Na
+
     ## values for the schottky contacts
     params.SchottkyBarrier[bregionAcceptor]             = barrier
-    params.bVelocity[iphin,bregionAcceptor]             = vn 
-    params.bVelocity[iphip,bregionAcceptor]             = vp 
+    params.bVelocity[iphin,bregionAcceptor]             = vn
+    params.bVelocity[iphip,bregionAcceptor]             = vp
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
@@ -305,29 +305,29 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     initialGuess          = unknowns(ctsys)
     solution              = unknowns(ctsys)
 
-    data.calculation_type = inEquilibrium 
+    data.calculation_type = inEquilibrium
 
     ## solve thermodynamic equilibrium and update initial guess
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-    initialGuess         .= solution 
+    initialGuess         .= solution
 
     println("*** done\n")
 
-    if plotting 
+    if plotting
         ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
         label_density  = Array{String, 1}(undef, numberOfCarriers)
         label_solution = Array{String, 1}(undef, numberOfCarriers)
 
-        ## for electrons 
+        ## for electrons
         label_energy[1, iphin] = "\$E_c-q\\psi\$";       label_energy[2, iphin] = "\$ - q \\varphi_n\$"
         label_density[iphin]   = "n";                    label_solution[iphin]  = "\$ \\varphi_n\$"
 
-        ## for holes 
+        ## for holes
         label_energy[1, iphip] = "\$E_v-q\\psi\$";       label_energy[2, iphip] = "\$ - q \\varphi_p\$"
         label_density[iphip]   = "p";                    label_solution[iphip]  = "\$ \\varphi_p\$"
 
-        ## for traps 
+        ## for traps
         # label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
         # label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
         ## ##### set legend for plotting routines #####
@@ -347,8 +347,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ctsys.data.calculation_type   = outOfEquilibrium      # Rn = Rp = R, since the model type is stationary
     endVoltage                    = voltageAcceptor       # final bias value
 
-    IV         = zeros(0)   
-    maxBias    = voltageAcceptor    
+    IV         = zeros(0)
+    maxBias    = voltageAcceptor
     biasSteps  = 52
     biasValues = collect(range(0, stop = maxBias, length = biasSteps))
     chargeDensities = zeros(0)
@@ -397,7 +397,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     staticCapacitance = diff(chargeDensities) ./ diff(biasValues)
 
     ## plot solution and IV curve
-    if plotting 
+    if plotting
         plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_density)
@@ -413,7 +413,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         plot_IV(Plotter, biasValues,staticCapacitance, biasValues[end-1], plotGridpoints = true)
         Plotter.title("Static capacitance in donor region")
         Plotter.ylabel("Static capacitance [C/V]")
-        
+
         ## Plotter.figure()
         ## Plotter.yscale("symlog")
         ## dens = compute_densities!(grid, data, solution)
@@ -428,7 +428,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## Plotter.yscale("symlog")
         ## plot(coord, 1e-6*t .- 1e-6*(Nt .- (p0*Nt .+ n.*Nt) ./ ((p0 .+p) .+ (n0 .+n))) )
         ## Plotter.title("Error" )
-        
+
     end
 
 
@@ -462,10 +462,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## if test == false
     ##     println("*** done\n")
-    ## end    
+    ## end
 
     ## plot solution and IV curve
-    ## if plotting 
+    ## if plotting
     ##     plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_energy)
     ##     Plotter.figure()
     ##     plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_density)
@@ -524,12 +524,12 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 # function initialize_pin_grid(refinementfactor, h_ndoping, h_pdoping_left, h_pdoping_trap, h_pdoing_right)
 #     coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 2 * refinementfactor))
 #     coord_pdoping_left  = collect(range(h_ndoping, stop = (h_ndoping + h_pdoping_left), length = 3 * refinementfactor))
-#     coord_pdoping_plus  = collect(range((h_ndoping + h_pdoping_left), 
-#                                         stop = (h_ndoping + h_pdoping_left + h_pdoping_trap), 
+#     coord_pdoping_plus  = collect(range((h_ndoping + h_pdoping_left),
+#                                         stop = (h_ndoping + h_pdoping_left + h_pdoping_trap),
 #                                         length =  refinementfactor))
-#     coord_pdoping_right = collect(range((h_ndoping + h_pdoping_left + h_pdoping_trap), 
-#                                         stop = (h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right), 
-#                                         length = 3 * refinementfactor))                                    
+#     coord_pdoping_right = collect(range((h_ndoping + h_pdoping_left + h_pdoping_trap),
+#                                         stop = (h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right),
+#                                         length = 3 * refinementfactor))
 #     coord            = glue(coord_ndoping, coord_pdoping_left)
 #     coord            = glue(coord, coord_pdoping_plus)
 #     coord            = glue(coord, coord_pdoping_right)
@@ -572,14 +572,14 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     grid                    = simplexgrid(coord)
 
 #     ## set different regions in grid, doping profiles do not intersect
-#     ## n doped 
-#     cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)          
-#     ## p doped                    
-#     cellmask!(grid, [h_ndoping], [h_ndoping + h_pdoping_left], regionAcceptorLeft)    
-#     ## p doped with traps
-#     cellmask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left + h_pdoping_trap], regionAcceptorTrap)  
+#     ## n doped
+#     cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor)
 #     ## p doped
-#     cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right], regionAcceptorRight)   
+#     cellmask!(grid, [h_ndoping], [h_ndoping + h_pdoping_left], regionAcceptorLeft)
+#     ## p doped with traps
+#     cellmask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left + h_pdoping_trap], regionAcceptorTrap)
+#     ## p doped
+#     cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right], regionAcceptorRight)
 
 #     if plotting
 #         gridplot(grid, Plotter = Plotter, legend=:lt)
@@ -603,18 +603,18 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     Ev_CIGS           = 2.3                  *  eV
 #     Ec_ZnO            = 3.4                  *  eV
 #     Ev_ZnO            = 0.0                  *  eV
-#     Et                = 0.6                  *  eV               
+#     Et                = 0.6                  *  eV
 #     Nc                = 4.351959895879690e17 / (cm^3)
 #     Nv                = 9.139615903601645e18 / (cm^3)
-#     Nt                = 5e14                / (cm^3)   
-#     Nt_low            = Nt#/1e3                        
+#     Nt                = 5e14                / (cm^3)
+#     Nt_low            = Nt#/1e3
 #     mun_CIGS          = 100.0                * (cm^2) / (V * s)
 #     mup_CIGS          = 25                   * (cm^2) / (V * s)
 #     mun_ZnO           = 100                  * (cm^2) / (V * s)
 #     mup_ZnO           = 25                   * (cm^2) / (V * s)
 #     mut               = 0                    * (cm^2) / (V * s)  # no flux for traps
-#     εr_CIGS           = 13.6                 *  1.0              
-#     εr_ZnO            = 9                    *  1.0              
+#     εr_CIGS           = 13.6                 *  1.0
+#     εr_ZnO            = 9                    *  1.0
 #     T                 = 300.0                *  K
 #     A_CIGS            = 1.0e5                / cm
 #     A_ZnO             = 0.0                  / cm
@@ -634,13 +634,13 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     n0_ZnO            = Nc * Boltzmann( (Et-Ec_ZnO) / (kB*T) )             # Boltzmann equilibrium concentration
 #     p0_ZnO            = ni_ZnO^2 / n0_ZnO                                      # Boltzmann equilibrium concentration
 #     Auger             = 1.0e-29  * cm^6 / s          # 1.0e-41 m^6 / s
-#     SRH_LifeTime      = 1.0e-3   * ns               
+#     SRH_LifeTime      = 1.0e-3   * ns
 #     Radiative         = 1.0e-10  * cm^3 / s          # 1.0e-16 m^3 / s
 #     G                 = 1.0e20  / (cm^3 * s)
 
 #     ## doping -- trap doping will not be set and thus automatically zero
-#     Nd                = 1.0e18 / (cm^3) 
-#     Na                = 5.5e15 / (cm^3)   
+#     Nd                = 1.0e18 / (cm^3)
+#     Na                = 5.5e15 / (cm^3)
 
 #     ## we will impose this applied voltage on one boundary
 #     voltageAcceptor   = 2.0 * V
@@ -659,24 +659,24 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
 #     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
-#     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+#     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
 #                                                                   bulk_recomb_Auger = true,
 #                                                                   bulk_recomb_radiative = true,
 #                                                                   bulk_recomb_SRH = true)
-    
+
 #     ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
 #     ## interface_model_surface_recombination (inner boundary).
 #     data.generation_model               = generation_beer_lambert # generation_uniform
 
 #     ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
 #     ## In this application ion vacancies only live in active perovskite layer
-#     data.boundary_type[bregionAcceptor] = schottky_contact                       
-#     data.boundary_type[bregionDonor]    = ohmic_contact    
-    
+#     data.boundary_type[bregionAcceptor] = schottky_contact
+#     data.boundary_type[bregionDonor]    = ohmic_contact
+
 #     ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
 #     ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
 #     data.flux_approximation             = excess_chemical_potential
-   
+
 #     println("*** done\n")
 
 #     ################################################################################
@@ -706,10 +706,10 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_CIGS
 
 #     # only CIGS regions
-#     for ireg in [regionAcceptorLeft, regionAcceptorTrap, regionAcceptorRight]          
-    
+#     for ireg in [regionAcceptorLeft, regionAcceptorTrap, regionAcceptorRight]
+
 #         params.dielectricConstant[ireg] = εr_CIGS
-    
+
 #         ## effective DOS, band-edge energy and mobilities
 #         params.densityOfStates[iphin, ireg] = Nc
 #         params.densityOfStates[iphip, ireg] = Nv
@@ -719,7 +719,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #         params.mobility[iphin, ireg] = mun_CIGS
 #         params.mobility[iphip, ireg] = mup_CIGS
 #         params.mobility[iphit, ireg] = mut
-    
+
 #         ## recombination parameters
 #         params.recombinationRadiative[ireg] = Radiative
 #         params.recombinationSRHLifetime[iphin, ireg] = SRH_LifeTime
@@ -732,7 +732,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #         ## generation parameters
 #         params.generationAbsorption[ireg]   = A_CIGS
 #         params.generationIncidentPhotonFlux[ireg]  = N0
-    
+
 #     end
 
 #     # ZnO region (donor region)
@@ -760,19 +760,19 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     params.densityOfStates[iphit, regionAcceptorRight]  = Nt_low
 
 #     ## doping -- since we do not set any doping for the traps it is automatically zero
-#     params.doping[iphin, regionDonor]                   = Nd        
-#     params.doping[iphip, regionAcceptorLeft]            = Na        
-#     params.doping[iphip, regionAcceptorTrap]            = Na        
+#     params.doping[iphin, regionDonor]                   = Nd
+#     params.doping[iphip, regionAcceptorLeft]            = Na
+#     params.doping[iphip, regionAcceptorTrap]            = Na
 #     params.doping[iphip, regionAcceptorRight]           = Na
 
 #     ## boundary doping
-#     params.bDoping[iphin, bregionDonor]                 = Nd        
-#     params.bDoping[iphip, bregionAcceptor]              = Na   
-    
+#     params.bDoping[iphin, bregionDonor]                 = Nd
+#     params.bDoping[iphip, bregionAcceptor]              = Na
+
 #     ## values for the schottky contacts
 #     params.SchottkyBarrier[bregionAcceptor]             = barrier
-#     params.bVelocity[iphin,bregionAcceptor]             = vn 
-#     params.bVelocity[iphip,bregionAcceptor]             = vp 
+#     params.bVelocity[iphin,bregionAcceptor]             = vn
+#     params.bVelocity[iphip,bregionAcceptor]             = vp
 
 #     data.params                                         = params
 #     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
@@ -815,29 +815,29 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     initialGuess          = unknowns(ctsys)
 #     solution              = unknowns(ctsys)
 
-#     data.calculation_type = inEquilibrium 
+#     data.calculation_type = inEquilibrium
 
 #     ## solve thermodynamic equilibrium and update initial guess
 #     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-#     initialGuess         .= solution 
+#     initialGuess         .= solution
 
 #     println("*** done\n")
 
-#     if plotting 
+#     if plotting
 #         ## ##### set legend for plotting routines #####
-#         label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+#         label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
 #         label_density  = Array{String, 1}(undef, numberOfCarriers)
 #         label_solution = Array{String, 1}(undef, numberOfCarriers)
 
-#         ## for electrons 
+#         ## for electrons
 #         label_energy[1, iphin] = "\$E_c-q\\psi\$";       label_energy[2, iphin] = "\$ - q \\varphi_n\$"
 #         label_density[iphin]   = "n";                    label_solution[iphin]  = "\$ \\varphi_n\$"
 
-#         ## for holes 
+#         ## for holes
 #         label_energy[1, iphip] = "\$E_v-q\\psi\$";       label_energy[2, iphip] = "\$ - q \\varphi_p\$"
 #         label_density[iphip]   = "p";                    label_solution[iphip]  = "\$ \\varphi_p\$"
 
-#         ## for traps 
+#         ## for traps
 #         label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
 #         label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
 #         ## ##### set legend for plotting routines #####
@@ -856,8 +856,8 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     ctsys.data.calculation_type   = outOfEquilibrium      # Rn = Rp = R, since the model type is stationary
 #     endVoltage                    = voltageAcceptor       # final bias value
 
-#     IV         = zeros(0)   
-#     maxBias    = voltageAcceptor    
+#     IV         = zeros(0)
+#     maxBias    = voltageAcceptor
 #     biasValues = collect(range(0, stop = maxBias, length = 52))
 #     chargeDensities = zeros(0)
 
@@ -904,7 +904,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     staticCapacitance = diff(chargeDensities) ./ diff(biasValues)
 
 #     ## plot solution and IV curve
-#     if plotting 
+#     if plotting
 #         plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_energy)
 #         Plotter.figure()
 #         plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_density)
@@ -920,7 +920,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #         plot_IV(Plotter, biasValues,staticCapacitance, biasValues[end-1], plotGridpoints = true)
 #         Plotter.title("Static capacitance in donor region")
 #         Plotter.ylabel("Static capacitance [C/V]")
-        
+
 #         ## Plotter.figure()
 #         ## Plotter.yscale("symlog")
 #         ## dens = compute_densities!(grid, data, solution)
@@ -935,7 +935,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #         ## Plotter.yscale("symlog")
 #         ## plot(coord, 1e-6*t .- 1e-6*(Nt .- (p0*Nt .+ n.*Nt) ./ ((p0 .+p) .+ (n0 .+n))) )
 #         ## Plotter.title("Error" )
-        
+
 #     end
 
 
@@ -969,10 +969,10 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 
 #     ## if test == false
 #     ##     println("*** done\n")
-#     ## end    
+#     ## end
 
 #     ## plot solution and IV curve
-#     ## if plotting 
+#     ## if plotting
 #     ##     plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_energy)
 #     ##     Plotter.figure()
 #     ##     plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_density)
