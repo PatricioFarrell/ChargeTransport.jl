@@ -435,7 +435,7 @@ but also all physical parameters for a drift-diffusion simulation of a semicondu
 $(TYPEDFIELDS)
 
 """
-mutable struct Data
+mutable struct Data{TFuncs<:Function}
 
     ###############################################################
     ####                   model information                   ####
@@ -444,7 +444,7 @@ mutable struct Data
     An array with the corresponding distribution function ``\\mathcal{F}_\\alpha`` for all
     carriers ``\\alpha``.
     """
-    F                            ::  Array{Function,1}
+    F                            ::  Array{TFuncs,1}
 
     """
     An array of DataTypes with the type of boundary model for each boundary (interior and exterior).
@@ -586,9 +586,10 @@ mutable struct Data
     paramsnodal                  :: ParamsNodal
 
     ###############################################################
-    Data() = new()
+    Data{TFuncs}() where {TFuncs} = new()
 
 end
+
 
 
 """
@@ -750,18 +751,18 @@ including the physical parameters, but also some numerical information
 are located.
 
 """
-function Data(grid, numberOfCarriers)
+function Data{TFuncs}(grid, numberOfCarriers) where TFuncs
 
     numberOfBoundaryRegions = grid[NumBFaceRegions]
 
     ###############################################################
-    data = Data()
+    data = Data{TFuncs}()
 
     ###############################################################
     ####                   model information                   ####
     ###############################################################
 
-    data.F                      = fill!(similar(Array{Function,1}(undef, numberOfCarriers),Function), Boltzmann)
+    data.F                      = fill!(similar(Array{TFuncs, 1}(undef, numberOfCarriers), TFuncs), Boltzmann)
     data.boundary_type          = Array{DataType,1}(undef, numberOfBoundaryRegions)
 
     # bulk_recombination is a struct holding the input information
@@ -821,6 +822,9 @@ function Data(grid, numberOfCarriers)
 
 end
 
+
+# build Data for the statistics functions used in this package
+Data(grid, numberOfCarriers) = Data{StandardFuncSet}(grid, numberOfCarriers)
 ###########################################################
 ###########################################################
 

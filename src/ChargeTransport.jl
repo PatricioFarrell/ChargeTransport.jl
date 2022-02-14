@@ -26,6 +26,8 @@ include("ct_distributions.jl")
 export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk
 export FermiDiracOneHalfTeSCA, FermiDiracZero
 
+export StandardFuncSet
+
 ##################################################################
 
 include("ct_datatypes.jl")
