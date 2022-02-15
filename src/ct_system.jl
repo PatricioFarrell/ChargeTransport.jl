@@ -36,7 +36,7 @@ mutable struct BulkRecombination
     """
     DataType for present SRH recombination in bulk
     """
-    bulk_recomb_SRH       ::  DataType
+    bulk_recomb_SRH       ::  Union{SRHWithoutTraps, SRHWithTraps}
 
     BulkRecombination() = new()
 
@@ -449,7 +449,7 @@ mutable struct Data{TFuncs<:Function}
     """
     An array of DataTypes with the type of boundary model for each boundary (interior and exterior).
     """
-    boundary_type                ::  Array{DataType, 1}
+    boundary_type                ::  Array{BoundaryModel, 1}
 
     """
     A struct containing information concerning the bulk recombination model.
@@ -471,7 +471,7 @@ mutable struct Data{TFuncs<:Function}
     DataType which stores information about which inner interface model is chosen by user.
     This quantity cannot be seen by the user and is needed for the core of package.
     """
-    inner_interface_model        ::  DataType
+    inner_interface_model        ::  InterfaceModel
 
     ###############################################################
     ####                 Numerics information                  ####
@@ -479,22 +479,22 @@ mutable struct Data{TFuncs<:Function}
     """
     A DataType for the flux discretization method.
     """
-    flux_approximation           ::  DataType
+    flux_approximation           ::  FluxApproximations
 
     """
     A DataType for equilibrium or out of equilibrium calculations.
     """
-    calculation_type             ::  DataType
+    calculation_type             ::  CalculationType
 
     """
     A DataType for transient or stationary calculations.
     """
-    model_type                   ::  DataType
+    model_type                   ::  ModelType
 
     """
     A DataType for for generation model.
     """
-    generation_model             ::  DataType
+    generation_model             ::  GenerationModel
 
     """
     An embedding parameter used to solve the nonlinear Poisson problem, where for
@@ -555,20 +555,19 @@ mutable struct Data{TFuncs<:Function}
 
 
     """
-    This list stores all charge carriers.
-    Here, we can have a vector holding all AbstractQuantities
-    or a vector holding an integer array depending on the interface model
-    and the the regularity of unknowns.
+    This list stores all charge carriers. Based on
+    the user choice we have with this new type the opportunity to
+    simulate discontinuous unknowns.
     """
-    chargeCarrierList            :: Union{Array{VoronoiFVM.AbstractQuantity,1}, Array{Int64, 1}}
+    chargeCarrierList            :: Array{QType, 1}
 
 
     """
     This variable stores the index of the electric potential. Based on
     the user choice we have with this new type the opportunity to
-    simulate with AbstractQuantities or integer indices.
+    simulate discontinuous unknowns.
     """
-    index_psi                    :: Union{VoronoiFVM.AbstractQuantity, Int64}
+    index_psi                    :: QType
 
     ###############################################################
     ####          Physical parameters as own structs           ####
@@ -751,7 +750,7 @@ including the physical parameters, but also some numerical information
 are located.
 
 """
-function Data{TFuncs}(grid, numberOfCarriers) where TFuncs
+function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSet) where TFuncs
 
     numberOfBoundaryRegions = grid[NumBFaceRegions]
 
@@ -762,16 +761,12 @@ function Data{TFuncs}(grid, numberOfCarriers) where TFuncs
     ####                   model information                   ####
     ###############################################################
 
-    data.F                      = fill!(similar(Array{TFuncs, 1}(undef, numberOfCarriers), TFuncs), Boltzmann)
-    data.boundary_type          = Array{DataType,1}(undef, numberOfBoundaryRegions)
+    data.F                      = TFuncs[ Boltzmann for i=1:numberOfCarriers]
+    data.boundary_type          = BoundaryModel[ InterfaceModelNone for i = 1:numberOfBoundaryRegions]
 
     # bulk_recombination is a struct holding the input information
     data.bulk_recombination     = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = false, bulk_recomb_radiative = false,
                                                          bulk_recomb_SRH = false)
-
-    for ii in 1:numberOfBoundaryRegions # as default all boundaries are set to an ohmic contact model.
-        data.boundary_type[ii]  = InterfaceModelNone
-    end
 
     # enable_ionic_carriers is a struct holding the input information
     data.enable_ionic_carriers  = enable_ionic_carriers(ionic_carriers = [3], regions = [2])
@@ -803,8 +798,7 @@ function Data{TFuncs}(grid, numberOfCarriers) where TFuncs
     ###############################################################
     ####        Quantities (for discontinuous solving)         ####
     ###############################################################
-    data.isContinuous           = Array{Bool, 1}(undef, numberOfCarriers)
-    data.isContinuous          .= true
+    data.isContinuous           = Bool[ true for i = 1:numberOfCarriers]
     # default values for most simple case
     data.chargeCarrierList      = collect(1:numberOfCarriers)
 
@@ -822,9 +816,6 @@ function Data{TFuncs}(grid, numberOfCarriers) where TFuncs
 
 end
 
-
-# build Data for the statistics functions used in this package
-Data(grid, numberOfCarriers) = Data{StandardFuncSet}(grid, numberOfCarriers)
 ###########################################################
 ###########################################################
 

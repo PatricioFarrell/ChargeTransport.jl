@@ -26,32 +26,35 @@ include("ct_distributions.jl")
 export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk
 export FermiDiracOneHalfTeSCA, FermiDiracZero
 
-export StandardFuncSet
-
 ##################################################################
 
 include("ct_datatypes.jl")
 
-export BoundaryModel, OhmicContact, SchottkyContact
-export InterfaceModel, InterfaceModelNone, InterfaceModelSurfaceReco
-export InterfaceModelIonCharge, InterfaceModelTangentialFlux
-export InterfaceModelSurfaceRecoAndTangentialFlux
+export StandardFuncSet, QType
 
-export InterfaceModelDiscontqF
+export OuterBoundaryModel, OuterBoundaryModel, InterfaceModel
+export OhmicContact, SchottkyContact
+export InterfaceModelNone, InterfaceModelSurfaceReco, InterfaceModelTangentialFlux, InterfaceModelDiscontqF
+export InterfaceModelIonCharge, InterfaceModelSurfaceRecoAndTangentialFlux
 
 export ModelType, Transient, Stationary
 
-export SRHOff, SRHWithoutTraps
-export SRHWithoutTrapsStationary, SRHWithTraps, SRHTrapsTransient
+export FluxApproximations
+export ScharfetterGummel, ExcessChemicalPotential, DiffusionEnhanced, GeneralizedSG
+export ScharfetterGummelGraded, ExcessChemicalPotentialGraded
 
 export InEquilibrium, OutOfEquilibrium
+
+export SRHWithoutTraps, SRHWithTraps
+export SRHOff, SRHWithoutTrapsStationary, SRHTrapsTransient
+
+export GenerationModel, GenerationNone, GenerationBeerLambert, GenerationUniform
+
+export ScanProtocolType, LinearScanProtocol
 ##################################################################
 
 include("ct_physics.jl")
 
-export ScharfetterGummel, ExcessChemicalPotential, DiffusionEnhanced, GeneralizedSG
-export ScharfetterGummelGraded, ExcessChemicalPotentialGraded
-export GenerationModel, GenerationNone, GenerationBeerLambert, GenerationUniform
 export breaction!, bstorage!, reaction!, storage!, flux!
 
 ##################################################################
@@ -64,8 +67,7 @@ export equilibrium_solve!
 export set_contact!
 export compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
 export show_params, trap_density!
-export LinearScanProtocol, ScanProtocolType, set_time_mesh, get_current_val
-export charge_density
+export set_time_mesh, get_current_val, charge_density
 export enable_traps!
 
 ##################################################################

@@ -90,11 +90,6 @@ function FermiDiracOneHalfTeSCA(x::Real)
 
 end
 
-
-# save types of defined statistics functions
-const StandardFuncSet = Union{typeof(Boltzmann), typeof(Blakemore), typeof(FermiDiracMinusOne),
-                              typeof(FermiDiracOneHalfBednarczyk), typeof(FermiDiracOneHalfTeSCA)}
-
 """
 $(TYPEDSIGNATURES)
 

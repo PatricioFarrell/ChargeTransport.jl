@@ -52,6 +52,8 @@ function get_BEE!(icc, edge::VoronoiFVM.Edge, data)
     data.tempBEE1[icc] = data.params.bandEdgeEnergy[icc, edge.region] + data.paramsnodal.bandEdgeEnergy[icc, edge.node[1]]
     data.tempBEE2[icc] = data.params.bandEdgeEnergy[icc, edge.region] + data.paramsnodal.bandEdgeEnergy[icc, edge.node[2]]
 
+    return data.tempBEE1, data.tempBEE2
+
 end
 
 ##########################################################
@@ -97,10 +99,9 @@ The argument of the distribution function for boundary nodes.
 function etaFunction(u, bnode::VoronoiFVM.BNode, data, icc, ipsi) # bnode.index refers to index in overall mesh
 
     get_BEE!(icc, bnode::VoronoiFVM.BNode, data)
-
     E  = data.tempBEE1[icc]
 
-    return etaFunction(u[ipsi], u[icc], data.params.UT, E, data.params.chargeNumbers[icc])
+    return data.params.chargeNumbers[icc] / data.params.UT * ( (u[icc] - u[ipsi]) + E / q )
 end
 
 
@@ -256,6 +257,9 @@ breaction!(f, u, bnode, data, ::Type{InterfaceModelNone}) = emptyFunction()
 # breaction term for surface recombination.
 breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = breaction!(f, u, bnode, data, InterfaceModelSurfaceReco)
 
+# breaction term for tangential flux.
+breaction!(f, u, bnode, data, ::Type{InterfaceModelTangentialFlux}) = emptyFunction()
+
 
 function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
     if data.calculation_type == InEquilibrium
@@ -349,21 +353,6 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
 
     end
 
-    # for icc ∈ [iphin, iphip] # equations for qF potentials
-
-    #     #to see continuity
-    #     d         = [1.0e7 1.0e7;
-    #                1.0e7 1.0e7]
-
-    #     # to see discontinuity
-    #     # d         = [1.0e1 1.0e3;
-    #     #                 1.0e7 1.0e1]
-    #     react     =d[icc, bnode.region-2] *   (u[icc, 1] - u[icc, 2])
-
-    #     f[icc, 1] =   react
-    #     f[icc, 2] = - react
-    # end
-
 end
 
 
@@ -415,7 +404,7 @@ bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF}) = emptyFunction()
 bstorage!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
 
 # No bstorage! is used, if an ohmic and schottky contact model is chosen.
-bstorage!(f, u, bnode, data, ::Type{T}) where T<:BoundaryModel =  emptyFunction()
+bstorage!(f, u, bnode, data, OuterBoundaryModel) =  emptyFunction()
 
 bstorage!(f, u, bnode, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = bstorage!(f, u, bnode, data, InterfaceModelTangentialFlux)
 
@@ -574,7 +563,7 @@ function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{SRHStationary})
 
 end
 
-function addRecombination!(f, u, node, data, ipsi, iphin, iphip, n, p, ::Type{T}) where T<:SRHWithoutTraps
+function addRecombination!(f, u, node, data, ipsi, iphin, iphip, n, p, SRHWithoutTraps)
 
     ireg        = node.region
 

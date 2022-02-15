@@ -133,8 +133,12 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
         i = i + 1
         println(" ")
         println(text[i], ": ")
-        # We initialize the Data instance and fill in predefined data.
-        data                                = Data{functionset}(grid, numberOfCarriers)
+
+        if functionset==Function
+            data                            = Data(grid, numberOfCarriers, statfunctions=Function)
+        else
+            data                            = Data(grid, numberOfCarriers)
+        end
 
 
         data.model_type                     = Stationary
