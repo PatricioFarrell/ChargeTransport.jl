@@ -484,6 +484,8 @@ $(TYPEDFIELDS)
 """
 mutable struct Data{TFuncs<:Function}
 
+    # DA: this one stands for interface thickness and is introduced for test set-up
+    d                            :: Float64
     ###############################################################
     ####                   model information                   ####
     ###############################################################

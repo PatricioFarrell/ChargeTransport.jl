@@ -317,6 +317,7 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     paramsnodal = data.paramsnodal
 
     # without interface species
+    # (DA: you can ignore this case, Petr. It was just for first running results!)
     if params.numberOfCarriers == 2
         for icc in [iphin, iphip]
 
@@ -330,17 +331,17 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
 
             react     = q * params.chargeNumbers[icc] * d[icc, bnode.region-2] *   (n1 - n2)
 
-            println("species: ", icc.id)
-            @show react.value
-            @show -react.value
-            println( "----")
+            # println("species: ", icc.id)
+            # @show react.value
+            # @show -react.value
+            # println( "----")
 
             f[icc, 1] =   react
             f[icc, 2] = - react
         end
     end
 
-    # with interface species
+    # with interface species (DA: this is the code, we use!)
     if params.numberOfCarriers > 2
 
         if bnode.region == 3
@@ -361,12 +362,11 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
             Nc_b = params.bDensityOfStates[iphin_b1, 3]
             Nv_b = params.bDensityOfStates[iphip_b1, 3]
 
-            d      = 6.28 * 10e-8 * cm
             scalen = 1.0#1.0e6
             scalep = 1.0#1.0e6
 
-            k0n = - q * zn * UT * mun *  params.bDensityOfStates[iphin_b1, 3]/d
-            k0p = - q * zp * UT * mup * params.bDensityOfStates[iphip_b1, 3]/d
+            k0n = - q * zn * UT * mun *  params.bDensityOfStates[iphin_b1, 3]/data.d
+            k0p = - q * zp * UT * mup * params.bDensityOfStates[iphip_b1, 3]/data.d
 
             #left values
             etan1 = zn / UT * ( (u[iphin, 1] - u[ipsi]) + Ec / q ) # left
@@ -410,8 +410,8 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
             f[iphip, 2] =    reactp2
 
             #interface species reaction
-            f[iphin_b1] =  (f[iphin, 1] + f[iphin, 2])
-            f[iphip_b1] =  (f[iphip, 1] + f[iphip, 2])
+            f[iphin_b1] =  - (f[iphin, 1] + f[iphin, 2])
+            f[iphip_b1] =  - (f[iphip, 1] + f[iphip, 2])
 
         elseif bnode.region == 4
             for icc in [iphin, iphip]
