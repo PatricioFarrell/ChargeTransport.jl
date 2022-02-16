@@ -23,14 +23,12 @@ VoronoiFVM.InterfaceQuantity{Int32}, Int64}
 ############    outer boundary conditions     ############
 """
 Abstract type for ohmic contacts as outer boundary model.
-
 """
 abstract type OhmicContact  end
 
 
 """
 Abstract type for schottky contacts as boundary model.
-
 """
 abstract type SchottkyContact end
 
@@ -38,7 +36,6 @@ abstract type SchottkyContact end
 """
 $(TYPEDEF)
 Abstract type for no interface model.
-
 """
 abstract type InterfaceModelNone end
 
@@ -52,7 +49,6 @@ abstract type InterfaceModelDiscontqF end
 """
 $(TYPEDEF)
 Abstract type for surface recombination mechanisms.
-
 """
 abstract type InterfaceModelSurfaceReco end
 
@@ -69,10 +65,8 @@ abstract type InterfaceModelIonCharge end
 
 ##########################################################
 """
-
 $(TYPEDEF)
 Possible types of outer boundary model.
-
 """
 const OuterBoundaryModel = Union{Type{OhmicContact}, Type{SchottkyContact}}
 
@@ -80,17 +74,14 @@ const OuterBoundaryModel = Union{Type{OhmicContact}, Type{SchottkyContact}}
 """
 $(TYPEDEF)
 Possible Types for interface model (interior boundary conditions).
-
 """
 const InterfaceModel = Union{Type{InterfaceModelNone}, Type{InterfaceModelSurfaceReco},
                              Type{InterfaceModelDiscontqF}, Type{InterfaceModelTangentialFlux},
                              Type{InterfaceModelSurfaceRecoAndTangentialFlux}, Type{InterfaceModelIonCharge}}
 
 """
-
 $(TYPEDEF)
 Possible types of boundary models.
-
 """
 const BoundaryModel      = Union{OuterBoundaryModel, InterfaceModel}
 
@@ -99,7 +90,6 @@ const BoundaryModel      = Union{OuterBoundaryModel, InterfaceModel}
 """
 $(TYPEDEF)
 Abstract type for transient simulations.
-
 """
 abstract type Transient end
 
@@ -107,7 +97,6 @@ abstract type Transient end
 """
 $(TYPEDEF)
 Abstract type for stationary simulations.
-
 """
 abstract type Stationary end
 
@@ -116,7 +105,6 @@ abstract type Stationary end
 $(TYPEDEF)
 Possible types which indicate, if we consider stationary
 or transient problem.
-
 """
 const ModelType = Union{ Type{Transient}, Type{Stationary}}
 
@@ -128,7 +116,6 @@ Abstract type for Scharfetter-Gummel flux discretization.
 Choose this one, when the Boltzmann statistics function is
 chosen as statistics, check D. Scharfetter and H. Gummel, “Large-signal analysis of a silicon
 Read diode oscillator”, IEEE Trans. Electr. Dev., vol. 16, pp. 64–77, 1969.
-
 """
 abstract type ScharfetterGummel end
 
@@ -139,7 +126,6 @@ Abstract type for Scharfetter-Gummel flux discretization for graded
 effective density of states and/or graded band-edge energies. This means,
 use this flux when at least one of these quantities
 is assumed to be space-dependent.
-
 """
 abstract type ScharfetterGummelGraded end
 
@@ -148,7 +134,6 @@ $(TYPEDEF)
 Abstract type for excess chemical potential flux discretization, check  Z. Yu, and R. Dutton,
 “SEDAN III – A one-dimensional device simulator”,
 http://www-tcad.stanford.edu/tcad/programs/sedan3.html, 1988.
-
 """
 abstract type ExcessChemicalPotential end
 
@@ -158,7 +143,6 @@ Abstract type for excess chemical potential flux discretization
 for graded effective density of states and/or graded band-edge
 energies. This means, use this flux when at least one of these quantities
 is assumed to be space-dependent.
-
 """
 abstract type ExcessChemicalPotentialGraded end
 
@@ -168,7 +152,6 @@ Abstract type for diffusion enhanced flux discretization, check
 M. Bessemoulin-Chatard, “A finite volume scheme for convection–diffusion equations with
 nonlinear diffusion derived from the Scharfetter–Gummel scheme”, Numerische Mathematik,
 vol. 121, pp. 637–670, 2012.
-
 """
 abstract type DiffusionEnhanced end
 
@@ -180,7 +163,6 @@ solved and is exact for all Blakemore type statistics functions with
 abritary γ, check T. Koprucki and K. Gärtner. “Discretization scheme for drift-diffusion
 equations with strong diffusion enhancement”. In: 12th International Conference on Numerical
 Simulation of Optoelectronic Devices (NUSOD). 2012, pp. 103–104.
-
 """
 abstract type GeneralizedSG end
 
@@ -188,7 +170,6 @@ abstract type GeneralizedSG end
 """
 $(TYPEDEF)
 Possible types of flux discretization schemes.
-
 """
 const FluxApproximations = Union{Type{ScharfetterGummel}, Type{ExcessChemicalPotential},
                                  Type{DiffusionEnhanced}, Type{GeneralizedSG},
@@ -198,18 +179,14 @@ const FluxApproximations = Union{Type{ScharfetterGummel}, Type{ExcessChemicalPot
 ##########################################################
 """
 $(TYPEDEF)
-
 Abstract type for equilibrium calculations.
-
 """
 abstract type InEquilibrium end
 
 
 """
 $(TYPEDEF)
-
 Abstract type for out of equilibrium calculations.
-
 """
 abstract type OutOfEquilibrium end
 
@@ -217,7 +194,6 @@ abstract type OutOfEquilibrium end
 """
 $(TYPEDEF)
 Possible types for calculation type.
-
 """
 const CalculationType = Union{Type{InEquilibrium}, Type{OutOfEquilibrium}}
 
@@ -232,14 +208,12 @@ abstract type SRHTrapsTransient end
 """
 $(TYPEDEF)
 Possible type for SRH recombination without traps.
-
 """
 const SRHWithoutTraps = Union{Type{SRHStationary}, Type{SRHOff}}
 
 """
 $(TYPEDEF)
 Possible types for SRH recombination without traps.
-
 """
 const SRHWithTraps = Union{Type{SRHTrapsTransient}}
 
@@ -248,37 +222,29 @@ const SRHWithTraps = Union{Type{SRHTrapsTransient}}
 
 """
 $(TYPEDEF)
-
 Abstract type for uniform generation.
-
 """
 abstract type GenerationUniform end
 
 
 """
 $(TYPEDEF)
-
 Abstract type for Beer-Lambert generation. Note that this type is implemented, but
 not well tested yet.
-
 """
 abstract type GenerationBeerLambert end
 
 
 """
 $(TYPEDEF)
-
 Abstract type for no generation model.
-
 """
 abstract type GenerationNone end
 
 ##########################################################
 """
 $(TYPEDEF)
-
 Possible types for generation model.
-
 """
 const GenerationModel = Union{Type{GenerationUniform}, Type{GenerationBeerLambert}, Type{GenerationNone}}
 
@@ -289,7 +255,6 @@ const GenerationModel = Union{Type{GenerationUniform}, Type{GenerationBeerLamber
 """
 $(TYPEDEF)
 Abstract type for linear scan protocol.
-
 """
 abstract type LinearScanProtocol end
 
@@ -297,7 +262,6 @@ abstract type LinearScanProtocol end
 """
 $(TYPEDEF)
 Possible types of scan protocol type.
-
 """
 const ScanProtocolType = Union{Type{LinearScanProtocol}}
 

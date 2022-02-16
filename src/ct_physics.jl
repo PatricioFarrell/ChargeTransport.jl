@@ -429,10 +429,10 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
                 f[icc, 1] =   react
                 f[icc, 2] = - react
             end
-
         end
 
     end
+
 
 end
 
@@ -607,7 +607,6 @@ reaction!(f, u, node, data) = reaction!(f, u, node, data, data.calculation_type)
 """
 $(TYPEDSIGNATURES)
 Reaction in case of equilibrium, i.e. no generation and recombination is considered.
-
 """
 function reaction!(f, u, node, data, ::Type{InEquilibrium})
 
@@ -804,13 +803,10 @@ function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
 end
 
 
-
 """
 $(SIGNATURES)
-
 Compute trap densities for a given trap energy.
 [Currently, only done for the Boltzmann statistics and for region dependent parameters.]
-
 """
 function trap_density!(icc, ireg, data, Et)
     params      = data.params
@@ -846,7 +842,6 @@ generation(data, ireg, node, ::Type{GenerationNone}) = 0.0
 $(TYPEDSIGNATURES)
 Master storage! function. This is the function which enters VoronoiFVM and hands over
 a storage term, if we consider transient problem.
-
 """
 storage!(f, u, node, data) = storage!(f, u, node, data, data.model_type)
 
@@ -855,16 +850,12 @@ storage!(f, u, node, data, ::Type{Stationary})  = emptyFunction()
 
 """
 $(TYPEDSIGNATURES)
-
 The storage term for time-dependent problems.
 Currently, for the time-dependent current densities the implicit Euler scheme is used.
 Hence, we have
-
 ``f[n_\\alpha] =  z_\\alpha  q ∂_t n_\\alpha``
-
 and for the electrostatic potential
 ``f[ψ] = 0``.
-
 """
 function storage!(f, u, node, data, ::Type{Transient})
 
@@ -893,7 +884,6 @@ Master flux functions which enters VoronoiFVM. Flux discretization scheme is cho
 to see, if we are in or out of equilibrium. If, InEquilibrium, then
 no flux is passed. If outOfEquilibrium, we choose the flux approximation
 which the user chose.
-
 """
 flux!(f, u, edge, data) = flux!(f, u, edge, data, data.calculation_type)
 

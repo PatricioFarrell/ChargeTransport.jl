@@ -302,7 +302,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         phin_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
         phip_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
         psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
-
         for i = 1:length(phin_sol)
             scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
             scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
@@ -383,7 +382,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         phin_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
         phip_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
         psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
-
         for i = 1:length(phin_sol)
             scalarplot!(vis[2, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
             scalarplot!(vis[2, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
@@ -418,7 +416,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.5068426773059806
+    testval = 12.30006602293744
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

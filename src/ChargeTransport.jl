@@ -69,7 +69,6 @@ export compute_densities!, compute_energies!, electroNeutralSolution!, print_jac
 export show_params, trap_density!
 export set_time_mesh, get_current_val, charge_density
 export enable_traps!
-export enable_interface_carrier!
 
 ##################################################################
 

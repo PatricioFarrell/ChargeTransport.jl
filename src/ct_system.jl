@@ -176,6 +176,7 @@ function enable_ionic_carriers(;ionic_carriers = [3], regions = [2])
 
 end
 
+
 ###########################################################
 ###########################################################
 
@@ -619,7 +620,6 @@ mutable struct Data{TFuncs<:Function}
     """
     interfaceCarrierList         :: Union{Array{VoronoiFVM.AbstractQuantity,1}, Array{Int64, 1}}
 
-
     """
     This variable stores the index of the electric potential. Based on
     the user choice we have with this new type the opportunity to
@@ -1024,6 +1024,7 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontq
     if data.bulk_recombination.bulk_recomb_radiative == false
         data.params.recombinationRadiative .= 0.0
     end
+
     # data.interfaceCarrierList = Array{VoronoiFVM.AbstractQuantity, 1}(undef, length(data.interfaceCarriers.index))
     # for ii = 1:length(data.interfaceCarriers.index)
     #     data.interfaceCarrierList[ii] = InterfaceQuantity(fvmsys, data.interfaceCarriers.boundary_region, id = data.interfaceCarriers.index[ii])

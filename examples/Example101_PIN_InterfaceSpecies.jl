@@ -145,21 +145,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    ## Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination
-    ## processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by
-    ## the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
-<<<<<<< HEAD
-<<<<<<< HEAD
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                  bulk_recomb_Auger = true,
-                                                                  bulk_recomb_radiative = true,
-=======
-=======
->>>>>>> small adjustments
+
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = false,
                                                                   bulk_recomb_radiative = false,
->>>>>>> fixed bug in interface reaction
                                                                   bulk_recomb_SRH = false)
 
     data.isContinuous[iphin]             = false
@@ -167,9 +156,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     #enable_interface_carrier!(data, species = [iphin_b1, iphip_b1], boundary_region = bregionJunction1)
 
-    ## Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
-    ## For inner boundaries we have interface_model_none, interface_model_surface_recombination.
-<<<<<<< HEAD
     data.boundary_type[bregionAcceptor]  = OhmicContact
     data.boundary_type[bregionJunction1] = InterfaceModelDiscontqF
     data.boundary_type[bregionJunction2] = InterfaceModelDiscontqF
@@ -177,24 +163,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
     ## excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-<<<<<<< HEAD
     data.flux_approximation             = ScharfetterGummel
 
-=======
-    data.flux_approximation             = excess_chemical_potential
-
->>>>>>> fixed bug in interface reaction
-=======
-    data.boundary_type[bregionAcceptor]  = ohmic_contact
-    data.boundary_type[bregionJunction1] = interface_model_discont_qF
-    data.boundary_type[bregionJunction2] = interface_model_discont_qF
-    data.boundary_type[bregionDonor]     = ohmic_contact
-
-    ## Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
-    ## excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = scharfetter_gummel
-
->>>>>>> small adjustments
     if test == false
         println("*** done\n")
     end
@@ -249,13 +219,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     delta2 = 0.0 * eV
 
     ## inner boundary region data
-<<<<<<< HEAD
-    params.bDensityOfStates[iphin_b1, bregionJunction1]          = d * params.densityOfStates[iphin, regionIntrinsic]
-    params.bDensityOfStates[iphip_b1, bregionJunction1]          = d * params.densityOfStates[iphip, regionIntrinsic]
-=======
     params.bDensityOfStates[iphin_b1, bregionJunction1] = d * params.densityOfStates[iphin, regionIntrinsic]
     params.bDensityOfStates[iphip_b1, bregionJunction1] = d * params.densityOfStates[iphip, regionIntrinsic]
->>>>>>> small adjustments
 
     #params.bBandEdgeEnergy[iphin_b1, bregionJunction1]  = params.bandEdgeEnergy[iphin, regionIntrinsic] + delta1
     #params.bBandEdgeEnergy[iphip_b1, bregionJunction1]  = params.bandEdgeEnergy[iphip, regionIntrinsic] + delta2
@@ -477,7 +442,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.5068426773059806
+    testval = 9.439041265344695
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
