@@ -14,7 +14,8 @@ $(TYPEDEF)
 Type of charge carriers and the electric potential. (This will help us to save allocations.)
 
 """
-const QType = Union{VoronoiFVM.ContinuousQuantity{Int64}, VoronoiFVM.DiscontinuousQuantity{Int64}, Int64}
+const QType = Union{VoronoiFVM.ContinuousQuantity{Int32}, VoronoiFVM.DiscontinuousQuantity{Int32},
+VoronoiFVM.InterfaceQuantity{Int32}, Int64}
 
 ##########################################################
 ##########################################################

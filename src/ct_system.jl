@@ -43,6 +43,17 @@ mutable struct BulkRecombination
 end
 
 """
+$(TYPEDEF)
+
+A struct holding all information necessary for Interface species.
+With help of this constructor we can read out the indices and boundaries
+the user chooses for interface species.
+
+$(TYPEDFIELDS)
+
+"""
+
+"""
 $(SIGNATURES)
 
 Corresponding constructor for the bulk recombination model.
@@ -162,6 +173,41 @@ function enable_ionic_carriers(;ionic_carriers = [3], regions = [2])
     enable_ions.regions          = regions
 
     return enable_ions
+
+end
+
+###########################################################
+###########################################################
+
+mutable struct InterfaceCarriers
+
+    """
+    index for data construction of Interface species
+    """
+	index                 ::  Array{Int64,1} # here the id's of the AbstractQuantities or the integer indices are parsed.
+
+    """
+    boundary region number
+    """
+    boundary_region       ::  Int64
+
+    InterfaceCarriers() = new()
+
+end
+
+"""
+$(SIGNATURES)
+
+Corresponding constructor for the interface species.
+"""
+function enable_interface_carrier!(data,; species::Array{Int64, 1}, boundary_region::Int64)
+
+    interfaceCarriers = InterfaceCarriers()
+
+    interfaceCarriers.index           = species
+    interfaceCarriers.boundary_region = boundary_region
+
+    data.interfaceCarriers            = interfaceCarriers
 
 end
 
@@ -468,6 +514,11 @@ mutable struct Data{TFuncs<:Function}
     enable_traps                 ::  Traps
 
     """
+    A struct which contains information on present interface species.
+    """
+    interfaceCarriers            :: InterfaceCarriers
+
+    """
     DataType which stores information about which inner interface model is chosen by user.
     This quantity cannot be seen by the user and is needed for the core of package.
     """
@@ -560,6 +611,13 @@ mutable struct Data{TFuncs<:Function}
     simulate discontinuous unknowns.
     """
     chargeCarrierList            :: Array{QType, 1}
+
+    """
+    This list stores all interface charge carriers.
+    Here, we can have a vector holding all AbstractQuantities
+    or a vector holding an integer array depending on the input.
+    """
+    interfaceCarrierList         :: Union{Array{VoronoiFVM.AbstractQuantity,1}, Array{Int64, 1}}
 
 
     """
@@ -917,45 +975,46 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontq
     # save this information such that there is no need to calculate it again for boundary conditions
     data.inner_interface_model = InterfaceModelDiscontqF
 
-    data.chargeCarrierList = Array{VoronoiFVM.AbstractQuantity, 1}(undef, data.params.numberOfCarriers)
+    # DA: Not working like that anymore ......
+    # if data.params.numberOfCarriers < 3 # ions are not present
 
-    if data.params.numberOfCarriers < 3 # ions are not present
+    #     for icc in 1:data.params.numberOfCarriers # Integers
+    #         if data.isContinuous[icc] == false
+    #             data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+    #         elseif data.isContinuous[icc] == true
+    #             data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+    #         end
+    #     end
 
-        for icc in 1:data.params.numberOfCarriers # Integers
-            if data.isContinuous[icc] == false
-                data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
-            elseif data.isContinuous[icc] == true
-                data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
-            end
+    # else # ions are present
+    #     ionic_carriers = data.enable_ionic_carriers.ionic_carriers
+
+    #     for icc in 1:data.params.numberOfCarriers # Integers
+
+    #         if data.isContinuous[icc] == false # discontinuous quantity
+    #             if icc ∈ ionic_carriers # ionic quantity
+    #                 data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, data.enable_ionic_carriers.regions, id = icc)
+    #             else
+    #                 data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+    #             end
+    #         end
+
+    #     end
+
+    # end
+
+    for icc in 1:2# Integers
+        if data.isContinuous[icc] == false
+            data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+        elseif data.isContinuous[icc] == true
+            data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
         end
-
-    else # ions are present
-        ionic_carriers = data.enable_ionic_carriers.ionic_carriers
-
-        for icc in 1:data.params.numberOfCarriers # Integers
-
-            if data.isContinuous[icc] == false # discontinuous quantity
-                if icc ∈ ionic_carriers # ionic quantity
-                    data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, data.enable_ionic_carriers.regions, id = icc)
-                else
-                    data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
-                end
-
-            elseif data.isContinuous[icc] == true # continuous quantity
-
-                if icc ∈ ionic_carriers  # ionic quantity
-                    data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, data.enable_ionic_carriers.regions, id = icc)
-                else
-                    data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
-                end
-            end
-
-        end
-
     end
 
-    data.index_psi        = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)
-
+    if data.params.numberOfCarriers > 2
+        data.chargeCarrierList[3] = InterfaceQuantity(fvmsys, 3, id = 3)
+        data.chargeCarrierList[4] = InterfaceQuantity(fvmsys, 3, id = 4)
+    end
 
     # put Auger and radiative on or off
     if data.bulk_recombination.bulk_recomb_Auger == false
@@ -965,6 +1024,12 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontq
     if data.bulk_recombination.bulk_recomb_radiative == false
         data.params.recombinationRadiative .= 0.0
     end
+    # data.interfaceCarrierList = Array{VoronoiFVM.AbstractQuantity, 1}(undef, length(data.interfaceCarriers.index))
+    # for ii = 1:length(data.interfaceCarriers.index)
+    #     data.interfaceCarrierList[ii] = InterfaceQuantity(fvmsys, data.interfaceCarriers.boundary_region, id = data.interfaceCarriers.index[ii])
+    # end
+
+    data.index_psi        = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)
 
     physics    = VoronoiFVM.Physics(data        = data,
                                     flux        = flux!,
