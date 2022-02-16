@@ -1315,9 +1315,9 @@ function compute_densities!(u, data, inode, region, icc, ipsi, in_region::Bool)
     paramsnodal = data.paramsnodal
 
     if in_region == false
-        (params.bDensityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode] ) * data.F[icc](etaFunction(u, data, inode, region, icc, ipsi, in_region::Bool))
+        (params.bDensityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode] ) * data.F[icc](etaFunction(u, data, inode, region, icc, in_region::Bool))
     elseif in_region == true
-        (params.densityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode])* data.F[icc](etaFunction(u, data, inode, region, icc, ipsi, in_region::Bool))
+        (params.densityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode])* data.F[icc](etaFunction(u, data, inode, region, icc, in_region::Bool))
     end
 
 end
