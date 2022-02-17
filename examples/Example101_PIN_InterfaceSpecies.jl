@@ -80,7 +80,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     bfacemask!(grid, [h_pdoping],               [h_pdoping],                           bregionJunction1)  # first  inner interface
     bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)  # second inner interface
 
-    if plotting
+    if false #plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
@@ -144,7 +144,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     # We initialize the Data instance and fill in predefined data.
     data                                = Data(grid, numberOfCarriers)
 
-    data.model_type                     = Stationary
+    data.model_type                     = Transient #Stationary
 
     data.F                             .= Boltzmann
 
@@ -311,10 +311,10 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
             end
         end
 
-        sol_ref_EQ = readdlm("data/reference-sol-PIN-EQ.dat")
-        PyPlot.plot(sol_ref_EQ[:, 1], sol_ref_EQ[:, 2], linestyle="--", color = "black")
-        PyPlot.plot(sol_ref_EQ[:, 1], sol_ref_EQ[:, 3], linestyle="--", color = "black")
-        PyPlot.plot(sol_ref_EQ[:, 1], sol_ref_EQ[:, 4], linestyle="--", color = "black")
+        #sol_ref_EQ = readdlm("data/reference-sol-PIN-EQ.dat")
+        #PyPlot.plot(sol_ref_EQ[:, 1], sol_ref_EQ[:, 2], linestyle="--", color = "black")
+        #PyPlot.plot(sol_ref_EQ[:, 1], sol_ref_EQ[:, 3], linestyle="--", color = "black")
+        #PyPlot.plot(sol_ref_EQ[:, 1], sol_ref_EQ[:, 4], linestyle="--", color = "black")
         Plotter.legend(fancybox = true, loc = "best", fontsize=11)
         Plotter.title("Solution in EQ")
 
@@ -342,7 +342,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     # biasValues = range(0, stop = maxBias, length = 3)
 
     maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 21)
+    biasValues = range(0, stop = 0.3, length = 21)
 
     IV         = zeros(0)
 
@@ -355,15 +355,16 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         ## set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
+        # solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
+        solution = VoronoiFVM.solve(initialGuess, ctsys.fvmsys, [0.0, 1e1],control = control)
 
-        initialGuess .= solution
+        initialGuess .= solution[end]
 
         ## get I-V data
 
         factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
         tf      = testfunction(factory, [1], [2])
-        I       = integrate(ctsys.fvmsys, tf, solution)
+        I       = integrate(ctsys.fvmsys, tf, initialGuess)
 
         val = 0.0
         for ii = 1:length(I)-1
@@ -381,16 +382,15 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
         return data.params.densityOfStates[icc, ireg] .* data.F[icc].(eta)
     end
-
     # writedlm("reference-sol-PIN.dat", [coord solution'])
     # res = [biasValues IV]
     # writedlm("reference-IV-PIN.dat", res)
     if plotting == true
 
         subgrids = VoronoiFVM.subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
-        phin_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
-        phip_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
-        psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
+        phin_sol = VoronoiFVM.views(initialGuess, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
+        phip_sol = VoronoiFVM.views(initialGuess, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
+        psi_sol  = VoronoiFVM.views(initialGuess, data.index_psi, subgrids, ctsys.fvmsys)
 
         for i = 1:length(phin_sol)
             scalarplot!(vis[2, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
@@ -421,13 +421,13 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     end
 
-    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution[end], 2)
+    return grid
     return testval
 
     if test == false
         println("*** done\n")
     end
-
 end #  main
 
 function test()

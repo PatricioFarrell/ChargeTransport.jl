@@ -362,8 +362,8 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
             Nc_b = params.bDensityOfStates[iphin_b1, 3]
             Nv_b = params.bDensityOfStates[iphip_b1, 3]
 
-            scalen = 1.0#1.0e6
-            scalep = 1.0#1.0e6
+            scalen = 1.0e0
+            scalep = 1.0e0
 
             k0n = - q * zn * UT * mun *  params.bDensityOfStates[iphin_b1, 3]/data.d
             k0p = - q * zp * UT * mup * params.bDensityOfStates[iphip_b1, 3]/data.d
@@ -400,18 +400,22 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
             reactn1     = scalen * k0n * (n1/Nc - n_b1/params.bDensityOfStates[iphin_b1, 3])
             reactn2     = scalen * k0n * (n2/Nc - n_b1/params.bDensityOfStates[iphin_b1, 3])
 
-            f[iphin, 1] = - reactn1
+            # reactn1 > 0   =>  d/dt n1   < 0  =>   f[iphin, 1] = (-1)*(-reactn1)
+            #               =>  d/dt n_b1 > 0  =>   f[iphin_b1] = (-1)*(reactn1)
+            # reactn2 > 0   =>  d/dt n2   < 0  =>   f[iphin, 1] = (-1)*(-reactn2)
+            #               =>  d/dt n_b1 > 0  =>   f[iphin_b1] = (-1)*(reactn2)
+            # since k0 is scaled with q*z_i it's consistent with the storage and the bstorage dimensions
+            f[iphin, 1] =   reactn1
             f[iphin, 2] =   reactn2
+            f[iphin_b1] = - reactn1 - reactn2 #- (f[iphin, 1] + f[iphin, 2])
 
             reactp1     = scalep * k0p * (p1/Nv - p_b1/params.bDensityOfStates[iphip_b1, 3])
             reactp2     = scalep * k0p * (p2/Nv - p_b1/params.bDensityOfStates[iphip_b1, 3])
 
-            f[iphip, 1] =  - reactp1
-            f[iphip, 2] =    reactp2
-
+            f[iphip, 1] =   reactp1
+            f[iphip, 2] =   reactp2
+            f[iphip_b1] = - reactp1 - reactp2 #- (f[iphip, 1] + f[iphip, 2])
             #interface species reaction
-            f[iphin_b1] =  - (f[iphin, 1] + f[iphin, 2])
-            f[iphip_b1] =  - (f[iphip, 1] + f[iphip, 2])
 
         elseif bnode.region == 4
             for icc in [iphin, iphip]
