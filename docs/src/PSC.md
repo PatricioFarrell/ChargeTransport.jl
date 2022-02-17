@@ -82,13 +82,16 @@ data.enable_ionic_carriers  = enable_ionic_carriers(ionic_carriers = [iphia],
                                                     regions = [regionIntrinsic])
 ```
 
-Specify the scan rate and scan protocol. Currently, only linear scan protocols are defined.
+Following specification is needed for a linear I-V scan protocol.
 
 ```julia
-scanrate    = 1.0 * V/s
-n           = 31
-endVoltage  = voltageAcceptor
-tvalues     = set_time_mesh(scanrate, endVoltage, n, type_protocol = LinearScanProtocol)
+scanrate                      = 1.0 * V/s
+number_tsteps                 = 31
+endVoltage                    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+tend                          = endVoltage/scanrate
+
+## with fixed timestep sizes we can calculate the times a priori
+tvalues                       = range(0, stop = tend, length = number_tsteps)
 ```
 Solve the transient problem:
 ```julia
