@@ -13,6 +13,7 @@ const m  = 1.0      # meter
 const s  = 1.0      # seconds
 const C  = A * s    # Coulomb
 const kg = 1.0      # kilogramm
+const Hz = 1 / s    # Hertz
 
 
 # scaled SI units

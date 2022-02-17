@@ -282,23 +282,4 @@ Possible types for generation model.
 const GenerationModel = Union{Type{GenerationUniform}, Type{GenerationBeerLambert}, Type{GenerationNone}}
 
 
-
-##########################################################
-##########################################################
-"""
-$(TYPEDEF)
-Abstract type for linear scan protocol.
-
-"""
-abstract type LinearScanProtocol end
-
-##########################################################
-"""
-$(TYPEDEF)
-Possible types of scan protocol type.
-
-"""
-const ScanProtocolType = Union{Type{LinearScanProtocol}}
-
-##########################################################
 ##########################################################

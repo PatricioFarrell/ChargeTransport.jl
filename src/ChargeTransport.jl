@@ -15,7 +15,7 @@ export kB, Planck_constant, mₑ, q, ε0
 
 include("ct_units.jl")
 
-export K, J, A, V, m, s, C, kg
+export K, J, A, V, m, s, C, kg, Hz
 export cm, mm, μm, nm, ms, μs, ns, ps, eV
 export tiny_penalty_value
 
@@ -50,7 +50,6 @@ export SRHOff, SRHWithoutTrapsStationary, SRHTrapsTransient
 
 export GenerationModel, GenerationNone, GenerationBeerLambert, GenerationUniform
 
-export ScanProtocolType, LinearScanProtocol
 ##################################################################
 
 include("ct_physics.jl")
@@ -67,7 +66,7 @@ export equilibrium_solve!
 export set_contact!
 export compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
 export show_params, trap_density!
-export set_time_mesh, get_current_val, charge_density
+export get_current_val, charge_density
 export enable_traps!
 
 ##################################################################

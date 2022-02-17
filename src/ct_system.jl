@@ -1244,18 +1244,6 @@ end
 ###########################################################
 
 """
-Gives the user a linear time mesh, this mesh is used for a linear I-V scan protocol.
-
-"""
-function set_time_mesh(scanrate, endVoltage, number_tsteps; type_protocol = LinearScanProtocol)
-
-    tend  = endVoltage/scanrate
-
-    return range(0, stop = tend, length = number_tsteps)
-end
-
-
-"""
 Calculates current for time dependent problem.
 """
 function get_current_val(ctsys, U, Uold, Δt) # DA: But caution, still need some small modification!
