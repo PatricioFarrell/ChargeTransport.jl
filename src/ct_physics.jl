@@ -6,21 +6,21 @@ $(TYPEDSIGNATURES)
 
 Defining locally the effective DOS for interior nodes (analogously for boundary nodes and edges).
 """
-function get_DOS!(icc, node::VoronoiFVM.Node, data)
+function get_DOS!(icc::QType, node::VoronoiFVM.Node, data)
 
     data.tempDOS1[icc] = data.params.densityOfStates[icc, node.region] + data.paramsnodal.densityOfStates[icc, node.index]
 
 end
 
 # Defining locally the effective DOS for boundary nodes.
-function get_DOS!(icc, bnode::VoronoiFVM.BNode, data)
+function get_DOS!(icc::QType, bnode::VoronoiFVM.BNode, data)
 
     data.tempDOS1[icc] = data.params.bDensityOfStates[icc, bnode.region] + data.paramsnodal.densityOfStates[icc, bnode.index]
 
 end
 
 # Defining locally the effective DOS for edges.
-function get_DOS!(icc, edge::VoronoiFVM.Edge, data)
+function get_DOS!(icc::QType, edge::VoronoiFVM.Edge, data)
 
     data.tempDOS1[icc] = data.params.densityOfStates[icc, edge.region] + data.paramsnodal.densityOfStates[icc, edge.node[1]]
     data.tempDOS2[icc] = data.params.densityOfStates[icc, edge.region] + data.paramsnodal.densityOfStates[icc, edge.node[2]]
@@ -33,21 +33,21 @@ $(TYPEDSIGNATURES)
 
 Defining locally the band-edge energy for interior nodes (analougesly for boundary nodes and edges).
 """
-function get_BEE!(icc, node::VoronoiFVM.Node, data)
+function get_BEE!(icc::QType, node::VoronoiFVM.Node, data)
 
     data.tempBEE1[icc] = data.params.bandEdgeEnergy[icc, node.region] + data.paramsnodal.bandEdgeEnergy[icc, node.index]
 
 end
 
 # Defining locally the band-edge energy for boundary nodes.
-function get_BEE!(icc, bnode::VoronoiFVM.BNode, data)
+function get_BEE!(icc::QType, bnode::VoronoiFVM.BNode, data)
 
     data.tempBEE1[icc] = data.params.bBandEdgeEnergy[icc, bnode.region] + data.paramsnodal.bandEdgeEnergy[icc, bnode.index]
 
 end
 
 # Defining locally the band-edge energy for edges.
-function get_BEE!(icc, edge::VoronoiFVM.Edge, data)
+function get_BEE!(icc::QType, edge::VoronoiFVM.Edge, data)
 
     data.tempBEE1[icc] = data.params.bandEdgeEnergy[icc, edge.region] + data.paramsnodal.bandEdgeEnergy[icc, edge.node[1]]
     data.tempBEE2[icc] = data.params.bandEdgeEnergy[icc, edge.region] + data.paramsnodal.bandEdgeEnergy[icc, edge.node[2]]
@@ -269,6 +269,7 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
     # indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (passed through recombination)
     iphin       = data.bulk_recombination.iphin # integer index of φ_n
     iphip       = data.bulk_recombination.iphip # integer index of φ_p
+    looplist    = (iphin, iphip)
 
     ipsi        = data.index_psi
 
@@ -289,7 +290,7 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
 
     kernelSRH = 1.0 / (  1.0/params.recombinationSRHvelocity[iphip, bnode.region] * (n + params.bRecombinationSRHTrapDensity[iphin, bnode.region]) + 1.0/params.recombinationSRHvelocity[iphin, bnode.region] * (p + params.bRecombinationSRHTrapDensity[iphip, bnode.region] ) )
 
-    for icc ∈ (iphin, iphip)
+    for icc in 1:length(looplist)
         f[icc] =  q * params.chargeNumbers[icc] * kernelSRH *  excessDensTerm
     end
 
@@ -312,6 +313,7 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin] # = Quantity or integer
     iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
+    looplist    = (iphin, iphip)
 
     params      = data.params
     paramsnodal = data.paramsnodal
@@ -344,7 +346,7 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
 
     kernelSRH2 = 1.0 / (  1.0/recombinationVelocity[iphip, bnode.region-2] * (n2 + params.recombinationSRHTrapDensity[iphin, bnode.cellregions[2]])+ 1.0/recombinationVelocity[iphin, bnode.region-2] * (p2 + params.recombinationSRHTrapDensity[iphip, bnode.cellregions[2]]))
 
-    for icc ∈ (iphin, iphip) # equations for qF potentials
+    for icc in 1:length(looplist) # equations for qF potentials
         react1     =  q *  params.chargeNumbers[icc] *  kernelSRH1 *  excessDensTerm1
         react2     =  q *  params.chargeNumbers[icc] *  kernelSRH2 *  excessDensTerm2
 
@@ -420,10 +422,11 @@ function bstorage!(f, u, bnode, data, ::Type{InterfaceModelTangentialFlux})
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin] # = Quantity or integer
     iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
+    looplist    = (iphin, iphip)
 
     ipsi        = data.index_psi
 
-    for icc ∈ (iphin, iphip)
+    for icc = 1:length(looplist)
 
         get_DOS!(icc, bnode, data)
         Ni     = data.tempDOS[icc]
@@ -486,12 +489,13 @@ function bflux!(f, u, bedge, data, ::Type{ExcessChemicalPotential})
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
     ipsi        = data.index_psi                  # final index for electrostatic potential
+    looplist    = (iphin, iphip)
 
     # ############################################################
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
 
     # k = 1 refers to left side, where as l = 2 refers to right side.
-    for icc ∈ (iphin, iphip)
+    for icc = 1:length(looplist)
 
         j0           = params.chargeNumbers[icc] * q * params.bMobility[icc, ireg] * params.UT * params.bDensityOfStates[icc, ireg]
 
@@ -541,67 +545,74 @@ function reaction!(f, u, node, data, ::Type{InEquilibrium})
 end
 
 
-"""
-$(TYPEDSIGNATURES)
-SRH kernel for case of non-existing rate.
+function addRecombination!(f, u, node, data, SRHWithoutTraps)
 
-"""
-function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{SRHOff})
+    ireg  = node.region
 
-    return 0.0
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
+    iphin       = data.bulk_recombination.iphin
+    iphip       = data.bulk_recombination.iphip
 
-end
+    # based on user index and regularity of solution quantities or integers are used and depicted here
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+    looplist    = (iphin, iphip)
 
-"""
-$(TYPEDSIGNATURES)
-SRH kernel for case of using stationary formula, i.e. case where no present traps are assumed.
+    get_DOS!(iphin, node, data); get_DOS!(iphip, node, data)
 
-"""
-function kernelSRH(data, ireg, iphin, iphip, n, p, ::Type{SRHStationary})
+    Nc    = data.tempDOS1[iphin];      Nv = data.tempDOS1[iphip]
 
-    return  1.0 / (  data.params.recombinationSRHLifetime[iphip, ireg] * (n + data.params.recombinationSRHTrapDensity[iphin, ireg]) + data.params.recombinationSRHLifetime[iphin, ireg] * (p + data.params.recombinationSRHTrapDensity[iphip, ireg]) )
+    etan  = etaFunction(u, node, data, iphin)
+    etap  = etaFunction(u, node, data, iphip)
+    n     = Nc * data.F[iphin](etan)
+    p     = Nv * data.F[iphip](etap)
 
-end
+    taun  = data.params.recombinationSRHLifetime[iphin, ireg]
+    n0    = data.params.recombinationSRHTrapDensity[iphin, ireg]
+    taup  = data.params.recombinationSRHLifetime[iphip, ireg]
+    p0    = data.params.recombinationSRHTrapDensity[iphip, ireg]
 
-function addRecombination!(f, u, node, data, iphin, iphip, n, p, SRHWithoutTraps)
-
-    ireg        = node.region
-    ipsi        = data.index_psi
-
-    exponentialTerm = exp((q *u[iphin] - q * u[iphip]) / (kB * data.params.temperature))
+    exponentialTerm = exp((q * u[iphin] - q * u[iphip]) / (kB * data.params.temperature))
     excessDensTerm  = n * p * (1.0 - exponentialTerm)
 
+    # calculate recombination kernel. If user adjusted Auger, radiative or SRH recombination,
+    # they are set to 0. Hence, adding them here, has no influence since we simply add by 0.0.
+    kernelRad   = data.params.recombinationRadiative[ireg]
+    kernelAuger = (data.params.recombinationAuger[iphin, ireg] * n + data.params.recombinationAuger[iphip, ireg] * p)
+    kernelSRH   = data.params.prefactor_SRH / ( taup * (n + n0) + taun * (p + p0) )
+    kernel      = kernelRad + kernelAuger + kernelSRH
     ###########################################################
     ####       right-hand side of continuity equations     ####
     ####       for φ_n and φ_p (bipolar reaction)          ####
     ###########################################################
-    for icc ∈ (iphin, iphip)
-
-        # gives you the recombination kernel based on choice of user
-        # If user, adjusted Auger or radiative recombination, they are set to 0. Hence, adding them here, has no influence since
-        # we simply add by 0.0.
-        kernel      = data.params.recombinationRadiative[ireg] + (data.params.recombinationAuger[iphin, ireg] * n + data.params.recombinationAuger[iphip, ireg] * p)
-        kernel      = kernel + kernelSRH(data, ireg, iphin, iphip, n, p, data.bulk_recombination.bulk_recomb_SRH)
-
-        f[icc]      = q * data.params.chargeNumbers[icc] *  kernel *  excessDensTerm
-    end
+    f[iphin] = q * data.params.chargeNumbers[iphin] * kernel * excessDensTerm
+    f[iphip] = q * data.params.chargeNumbers[iphip] * kernel * excessDensTerm
 
 end
 
 
-function addRecombination!(f, u, node, data, iphin, iphip, n, p, ::Type{SRHTrapsTransient})
+function addRecombination!(f, u, node, data, ::Type{SRHTrapsTransient})
 
     params      = data.params
     ireg        = node.region
 
-    ipsi        = data.index_psi
-    # indices (∈ IN ) of traps used by user (they pass it through recombination)
+    # indices (∈ IN) used by user
+    iphin       = data.bulk_recombination.iphin
+    iphip       = data.bulk_recombination.iphip
     itrap       = data.enable_traps.traps
 
-    # based on user index and regularity of solution quantities or integers are used
+    # based on user index and regularity of solution quantities or integers are used and depicted here
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
     itrap       = data.chargeCarrierList[itrap]
 
-    Nt    = params.densityOfStates[itrap, ireg]
+    get_DOS!(iphin, node, data); get_DOS!(iphip, node, data)
+
+    Nc = data.tempDOS1[iphin];      Nv = data.tempDOS1[iphip]
+    Nt = params.densityOfStates[itrap, ireg]
+
+    n     = Nc * data.F[iphin](etaFunction(u, node, data, iphin))
+    p     = Nv * data.F[iphip](etaFunction(u, node, data, iphip))
     t     = Nt * data.F[itrap](etaFunction(u, node, data, itrap))
 
     taun  = params.recombinationSRHLifetime[iphin, ireg]
@@ -627,11 +638,23 @@ function addRecombination!(f, u, node, data, iphin, iphip, n, p, ::Type{SRHTraps
 
 end
 
-function addGeneration!(f, u, node, data, iphin, iphip)
+function addGeneration!(f, u, node, data)
 
-    for icc ∈ (iphin, iphip)
-        f[icc] = f[icc] - q * data.params.chargeNumbers[icc] * generation(data, node.region,  node.coord[node.index], data.generation_model)
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
+    iphin       = data.bulk_recombination.iphin
+    iphip       = data.bulk_recombination.iphip
+
+    # based on user index and regularity of solution quantities or integers are used and depicted here
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+    list        = (iphin, iphip)
+
+    generationTerm = generation(data, node.region, node.coord[node.index], data.generation_model)
+
+    for icc = 1:length(list)
+        f[icc] = f[icc] - q * data.params.chargeNumbers[icc] * generationTerm
     end
+
 
 end
 
@@ -673,26 +696,10 @@ Function which builds right-hand side of electric charge carriers.
 """
 function RHSContinuityEquations!(f, u, node, data)
 
-    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
-    iphin       = data.bulk_recombination.iphin
-    iphip       = data.bulk_recombination.iphip
-
-    # based on user index and regularity of solution quantities or integers are used and depicted here
-    iphin       = data.chargeCarrierList[iphin]
-    iphip       = data.chargeCarrierList[iphip]
-    ipsi        = data.index_psi                # final index for electrostatic potential
-
-    get_DOS!(iphin, node, data); get_DOS!(iphip, node, data)
-
-    Nc = data.tempDOS1[iphin];      Nv = data.tempDOS1[iphip]
-
-    n  = Nc * data.F[iphin](etaFunction(u, node, data, iphin))
-    p  = Nv * data.F[iphip](etaFunction(u, node, data, iphip))
-
     # dependent on user information concerncing recombination
-    addRecombination!(f, u, node, data, iphin, iphip, n, p, data.bulk_recombination.bulk_recomb_SRH)
+    addRecombination!(f, u, node, data, data.bulk_recombination.bulk_recomb_SRH)
     # dependent on user information concerncing generation
-    addGeneration!(f, u, node, data, iphin, iphip)
+    addGeneration!(f, u, node, data)
 
 end
 

@@ -227,6 +227,10 @@ mutable struct Params
     """
     r0                           ::  Float64
 
+    """
+    Prefactor for stationary SRH recombination.
+    """
+    prefactor_SRH                ::  Float64
 
     ###############################################################
     ####              number of boundary regions               ####
@@ -651,6 +655,7 @@ function Params(grid, numberOfCarriers)
     params.UT                           = (kB * 300 * K ) / q # thermal voltage
     params.γ                            = 0.27                # parameter for Blakemore statistics
     params.r0                           = 0.0                 # r0 prefactor electro-chemical reaction
+    params.prefactor_SRH                = 1.0
 
     ###############################################################
     ####              number of boundary regions               ####
@@ -800,7 +805,7 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
     ###############################################################
     data.isContinuous           = Bool[ true for i = 1:numberOfCarriers]
     # default values for most simple case
-    data.chargeCarrierList      = collect(1:numberOfCarriers)
+    data.chargeCarrierList      = QType[ii for ii = 1:numberOfCarriers]
 
     data.index_psi              = numberOfCarriers + 1
 
@@ -858,13 +863,17 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
     # DA: caution with the interface_model with ionic interface charges (in future versions,
     # we will work with VoronoiFVM.InterfaceQuantites)
 
-    # put Auger and radiative on or off
+    # put Auger, radiative and SRH recombination on or off
     if data.bulk_recombination.bulk_recomb_Auger == false
         data.params.recombinationAuger .= 0.0
     end
 
     if data.bulk_recombination.bulk_recomb_radiative == false
         data.params.recombinationRadiative .= 0.0
+    end
+
+    if data.bulk_recombination.bulk_recomb_SRH == SRHOff
+        data.params.prefactor_SRH = 0.0
     end
 
     data.index_psi         = num_species_sys
@@ -956,14 +965,17 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontq
 
     data.index_psi        = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)
 
-
-    # put Auger and radiative on or off
+    # put Auger, radiative and SRH recombination on or off
     if data.bulk_recombination.bulk_recomb_Auger == false
         data.params.recombinationAuger .= 0.0
     end
 
     if data.bulk_recombination.bulk_recomb_radiative == false
         data.params.recombinationRadiative .= 0.0
+    end
+
+    if data.bulk_recombination.bulk_recomb_SRH == SRHOff
+        data.params.prefactor_SRH = 0.0
     end
 
     physics    = VoronoiFVM.Physics(data        = data,
