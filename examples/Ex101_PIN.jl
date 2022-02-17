@@ -9,7 +9,7 @@ The simulations are performed out of equilibrium and for the
 stationary problem.
 =#
 
-module Example101_PIN
+module Ex101_PIN
 
 using VoronoiFVM       # PDE solver with a FVM spatial discretization
 using ChargeTransport  # drift-diffusion solver

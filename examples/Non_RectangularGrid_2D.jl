@@ -7,7 +7,7 @@ domain. The grid is produced with Triangulate.jl.
 =#
 ENV["LC_NUMERIC"]="C"
 
-module Example201_2D_non_rectangularGrid
+module Non_RectangularGrid_2D
 
 using ChargeTransport
 using ExtendableGrids

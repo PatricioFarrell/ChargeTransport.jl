@@ -10,7 +10,7 @@ stationary problem.
 A special feature here is that the doping is spatially varying, i.e. node-dependent.
 =#
 
-module Example102_PIN_nodal_doping
+module Ex102_PIN_nodal_doping
 
 using VoronoiFVM
 using ChargeTransport

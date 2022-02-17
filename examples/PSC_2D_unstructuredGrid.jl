@@ -1,10 +1,10 @@
 #=
-# PSC device on 2D domain (Tensor grid).
+# PSC device on 2D domain (unstructured grid).
 ([source code](SOURCE_URL))
 
 Simulating a three layer PSC device Pedot| MAPI | PCBM with mobile ions
 where the ion vacancy accumulation is limited by the Fermi-Dirac integral of order -1.
-The simulations are performed in 2D on a tensor grid, out of equilibrium and with
+The simulations are performed in 2D on an unstructured grid, out of equilibrium and with
 abrupt interfaces. A linear I-V measurement protocol is included and the corresponding
 solution vectors after the scan protocol can be depicted.
 
@@ -14,15 +14,24 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 (with adjustments on layer lengths)
 =#
 
-module Example108_PSC_2D_tensorGrid
+ENV["LC_NUMERIC"]="C" # put this in to work with Triangulate.jl, where the package is originally written in c++
+
+module PSC_2D_unstructuredGrid
 
 using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
 using GridVisualize
+
+## For using this example one additionally needs to add Triangulate. SimplexGridFactory is a wrapper for using this meshgenerator.
+## using SimplexGridFactory
+## using Triangulate
+
+## problem with linux, when including PyPlot not until the end: "ERROR: LoadError: InitError: could not load library "/home/abdel/.julia/artifacts/8cc532f6a1ace8d1b756fc413f4ab340195ec3c3/lib/libgio-2.0.so"/home/abdel/.julia/artifacts/8cc532f6a1ace8d1b756fc413f4ab340195ec3c3/lib/libgobject-2.0.so.0: undefined symbol: g_uri_ref"
+## It seems that this problem is common: https://discourse.julialang.org/t/could-not-load-library-librsvg-very-strange-error/21276
 using PyPlot
 
-function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -47,69 +56,58 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfBoundaryRegions = length(bregions)
 
     ## grid
-    h_pdoping               = 3.00e-6 * cm + 1.0e-7 *cm
-    h_intrinsic             = 3.00e-5 * cm
-    h_ndoping               = 8.50e-6 * cm + 1.0e-7 *cm
-    height                  = 5.00e-6 * cm
+    h_pdoping       = 3.00e-6 * cm + 1.0e-7 *cm
+    h_intrinsic     = 3.00e-5 * cm
+    h_ndoping       = 8.50e-6 * cm + 1.0e-7 *cm
+    height          = 1.00e-5 * cm
 
-    x0                      = 0.0 * cm
-    δ                       = 3*n        # the larger, the finer the mesh
-    t                       = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
-    k                       = 1.5        # the closer to 1, the closer to the boundary geomspace works
+    b               = SimplexGridBuilder(Generator=Triangulate)
 
-    coord_p_u               = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.3*δ)))
-    coord_p_g               = geomspace(h_pdoping/2,
-                                        h_pdoping,
-                                        h_pdoping/(0.4*δ),
-                                        h_pdoping/(1.1*δ),
-                                        tol=t)
-    coord_i_g1              = geomspace(h_pdoping,
-                                        h_pdoping+h_intrinsic/k,
-                                        h_intrinsic/(6.8*δ),
-                                        h_intrinsic/(0.8*δ),
-                                        tol=t)
-    coord_i_g2              = geomspace(h_pdoping+h_intrinsic/k,
-                                        h_pdoping+h_intrinsic,
-                                        h_intrinsic/(0.8*δ),
-                                        h_intrinsic/(7.8*δ),
-                                        tol=t)
-    coord_n_g               = geomspace(h_pdoping+h_intrinsic,
-                                        h_pdoping+h_intrinsic+h_ndoping/2,
-                                        h_ndoping/(2.8*δ),
-                                        h_ndoping/(0.5*δ),
-                                        tol=t)
-    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.1*δ)))
+    ## specify boundary nodes
+    length_0        = point!(b, 0.0, 0.0)
+    length_p        = point!(b, h_pdoping, 0.0)
+    length_pi       = point!(b, h_pdoping + h_intrinsic, 0.0)
+    length_pin      = point!(b, h_pdoping + h_intrinsic + h_ndoping, 0.0)
 
-    coord                   = glue(coord_p_u,coord_p_g,  tol=10*t)
-    coord                   = glue(coord,    coord_i_g1, tol=10*t)
-    coord                   = glue(coord,    coord_i_g2, tol=10*t)
-    coord                   = glue(coord,    coord_n_g,  tol=10*t)
-    coord_length            = glue(coord,    coord_n_u,  tol=10*t)
+    height_0        = point!(b, 0.0, height)
+    height_p        = point!(b, h_pdoping, height)
+    height_pi       = point!(b, h_pdoping + h_intrinsic, height)
+    height_pin      = point!(b, h_pdoping + h_intrinsic + h_ndoping, height)
 
-    height_L                = geomspace(0.0, height/2, height/(0.5*δ), height/(0.5*δ))
-    height_R                = geomspace(height/2, height, height/(0.5*δ), height/(0.5*δ))
-    coord_height            = glue(height_L, height_R, tol = 10*t)
+    ## specify boundary regions
+    ## metal interface
+    facetregion!(b, bregionAcceptor)
+    facet!(b, length_0, height_0)
+    facetregion!(b, bregionDonor)
+    facet!(b, length_pin, height_pin)
 
-    grid                    = simplexgrid(coord_length, coord_height)
+    ## no flux
+    facetregion!(b, bregionNoFlux)
+    facet!(b, length_0, length_pin)
+    facetregion!(b, bregionNoFlux)
+    facet!(b, height_0, height_pin)
 
-    numberOfNodes           = size(grid[Coordinates], 2)
+    ## inner interface
+    facetregion!(b, bregionJunction1)
+    facet!(b, length_p, height_p)
+    facetregion!(b, bregionJunction2)
+    facet!(b, length_pi, height_pi)
 
-    ## specify inner regions
-    cellmask!(grid, [0.0, 0.0],                     [h_pdoping, height],                           regionAcceptor, tol = 1.0e-18) # p-doped region   = 1
-    cellmask!(grid, [h_pdoping, 0.0],               [h_pdoping + h_intrinsic, height],             regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
-    cellmask!(grid, [h_pdoping + h_intrinsic, 0.0], [h_pdoping + h_intrinsic + h_ndoping, height], regionDonor, tol = 1.0e-18)   # n-doped region   = 3
+    ## cell regions
+    cellregion!(b, regionAcceptor)
+	regionpoint!(b, h_pdoping/2, height/2)
+    cellregion!(b,regionIntrinsic)
+	regionpoint!(b, (h_pdoping + h_intrinsic)/2, height/2)
+    cellregion!(b,regionDonor)
+	regionpoint!(b, h_pdoping + h_intrinsic + h_ndoping/2, height/2)
 
-    ## specifiy outer regions
-    ## metal interfaces
-    bfacemask!(grid, [0.0, 0.0], [0.0, height], bregionAcceptor) # BregionNumber = 1
-    bfacemask!(grid, [h_pdoping + h_intrinsic + h_ndoping, 0.0], [h_pdoping + h_intrinsic + h_ndoping, height], bregionDonor) # BregionNumber = 2
+    options!(b,maxvolume=1.0e-16)
 
-    ## no flux interfaces [xmin, ymin], [xmax, ymax]
-    bfacemask!(grid, [0.0, 0.0], [h_pdoping + h_intrinsic + h_ndoping, 0.0], bregionNoFlux) # BregionNumber = 5
-    bfacemask!(grid, [0.0, height], [h_pdoping + h_intrinsic + h_ndoping, height], bregionNoFlux) # # BregionNumber = 5
+    grid           = simplexgrid(b)
+    numberOfNodes  = size(grid[Coordinates])[2]
 
     if plotting
-        gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.5, legend=:lt)
+        GridVisualize.gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.5, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -117,7 +115,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     if test == false
         println("*** done\n")
     end
-
     ################################################################################
     if test == false
         println("Define physical parameters and model")
@@ -132,103 +129,99 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfCarriers    = 3 # electrons, holes and anion vacancies
 
     ## temperature
-    T                   =  300.0                 *  K
+    T                =  300.0                 *  K
 
     ## band edge energies
-    Ec_a                = -3.0                  *  eV
-    Ev_a                = -5.1                  *  eV
+    Ec_a             = -3.0                  *  eV
+    Ev_a             = -5.1                  *  eV
 
-    Ec_i                = -3.8                  *  eV
-    Ev_i                = -5.4                  *  eV
+    Ec_i             = -3.8                  *  eV
+    Ev_i             = -5.4                  *  eV
 
-    Ec_d                = -3.8                  *  eV
-    Ev_d                = -6.2                  *  eV
+    Ec_d             = -3.8                  *  eV
+    Ev_d             = -6.2                  *  eV
 
-    EC                  = [Ec_a, Ec_i, Ec_d]
-    EV                  = [Ev_a, Ev_i, Ev_d]
-
+    EC               = [Ec_a, Ec_i, Ec_d]
+    EV               = [Ev_a, Ev_i, Ev_d]
 
     ## effective densities of state
-    Nc_a                = 1.0e20                / (cm^3)
-    Nv_a                = 1.0e20                / (cm^3)
+    Nc_a             = 1.0e20                / (cm^3)
+    Nv_a             = 1.0e20                / (cm^3)
 
-    Nc_i                = 1.0e19                / (cm^3)
-    Nv_i                = 1.0e19                / (cm^3)
+    Nc_i             = 1.0e19                / (cm^3)
+    Nv_i             = 1.0e19                / (cm^3)
 
-    ## ############ adjust Na, Ea for anion vacancies here ###########
-    Nanion              = 1.0e18                / (cm^3)
-    Ea_i                = -4.4                *  eV
+    ## ###################### adjust Na, Ea here #####################
+    Nanion           = 1.0e18                / (cm^3)
+    Ea_i             = -4.4                  *  eV
     ## for the labels in the figures
-    textEa              = Ea_i./eV
-    textNa              = Nanion.*cm^3
-    ## ############ adjust Na, Ea for anion vacancies here ###########
-    EA                  = [0.0,  Ea_i,  0.0]
+    textEa           = Ea_i./eV
+    textNa           = Nanion.*cm^3
+    ## ###################### adjust Na, Ea here #####################
+    EA               = [0.0,  Ea_i,  0.0]
 
-    Nc_d                = 1.0e19                / (cm^3)
-    Nv_d                = 1.0e19                / (cm^3)
+    Nc_d             = 1.0e19                / (cm^3)
+    Nv_d             = 1.0e19                / (cm^3)
 
-    NC                  = [Nc_a, Nc_i, Nc_d]
-    NV                  = [Nv_a, Nv_i, Nv_d]
-    NAnion              = [0.0,  Nanion, 0.0]
+    NC               = [Nc_a, Nc_i, Nc_d]
+    NV               = [Nv_a, Nv_i, Nv_d]
+    NAnion           = [0.0,  Nanion, 0.0]
 
     ## mobilities
-    μn_a                = 0.1                   * (cm^2) / (V * s)
-    μp_a                = 0.1                   * (cm^2) / (V * s)
+    μn_a             = 0.1                   * (cm^2) / (V * s)
+    μp_a             = 0.1                   * (cm^2) / (V * s)
 
-    μn_i                = 2.00e1                * (cm^2) / (V * s)
-    μp_i                = 2.00e1                * (cm^2) / (V * s)
-    μa_i                = 1.00e-10              * (cm^2) / (V * s)
+    μn_i             = 2.00e1                * (cm^2) / (V * s)
+    μp_i             = 2.00e1                * (cm^2) / (V * s)
+    μa_i             = 1.00e-10              * (cm^2) / (V * s)
 
-    μn_d                = 1.0e-3                * (cm^2) / (V * s)
-    μp_d                = 1.0e-3                * (cm^2) / (V * s)
+    μn_d             = 1.0e-3                * (cm^2) / (V * s)
+    μp_d             = 1.0e-3                * (cm^2) / (V * s)
 
-    μn                  = [μn_a, μn_i, μn_d]
-    μp                  = [μp_a, μp_i, μp_d]
-    μa                  = [0.0,  μa_i, 0.0 ]
+    μn               = [μn_a, μn_i, μn_d]
+    μp               = [μp_a, μp_i, μp_d]
+    μa               = [0.0,  μa_i, 0.0 ]
 
     ## relative dielectric permittivity
-    ε_a                 = 4.0                   *  1.0
-    ε_i                 = 23.0                  *  1.0
-    ε_d                 = 3.0                   *  1.0
+    ε_a              = 4.0                   *  1.0
+    ε_i              = 23.0                  *  1.0
+    ε_d              = 3.0                   *  1.0
 
-    ε                   = [ε_a, ε_i, ε_d]
+    ε               = [ε_a, ε_i, ε_d]
 
     ## radiative recombination
-    r0_a                = 6.3e-11               * cm^3 / s
-    r0_i                = 3.6e-12               * cm^3 / s
-    r0_d                = 6.8e-11               * cm^3 / s
+    r0_a            = 6.3e-11               * cm^3 / s
+    r0_i            = 3.6e-12               * cm^3 / s
+    r0_d            = 6.8e-11               * cm^3 / s
 
-    r0                  = [r0_a, r0_i, r0_d]
+    r0              = [r0_a, r0_i, r0_d]
 
     ## life times and trap densities
-    τn_a                = 1.0e-6              * s
-    τp_a                = 1.0e-6              * s
+    τn_a            = 1.0e-6              * s
+    τp_a            = 1.0e-6              * s
 
-    τn_i                = 1.0e-7              * s
-    τp_i                = 1.0e-7              * s
-    τn_d                = τn_a
-    τp_d                = τp_a
+    τn_i            = 1.0e-7              * s
+    τp_i            = 1.0e-7              * s
+    τn_d            = τn_a
+    τp_d            = τp_a
 
-    τn                  = [τn_a, τn_i, τn_d]
-    τp                  = [τp_a, τp_i, τp_d]
+    τn              = [τn_a, τn_i, τn_d]
+    τp              = [τp_a, τp_i, τp_d]
 
-    ## SRH trap energies (needed for calculation of trap_density! (SRH))
-    Ei_a                = -4.05              * eV
-    Ei_i                = -4.60              * eV
-    Ei_d                = -5.00              * eV
+    ## SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
+    Ei_a            = -4.05              * eV
+    Ei_i            = -4.60              * eV
+    Ei_d            = -5.00              * eV
 
-    EI                  = [Ei_a, Ei_i, Ei_d]
+    EI              = [Ei_a, Ei_i, Ei_d]
 
-    ## Auger recombination
-    Auger               = 0.0
-
-    ## doping (doping values are from Driftfusion calculations, not stated in the parameter list online)
-    Nd                  = 2.089649130192123e17 / (cm^3)
-    Na                  = 4.529587947185444e18 / (cm^3)
-    C0                  = 1.0e18               / (cm^3)
+    ## doping (doping values are from Phils paper, not stated in the parameter list online)
+    Nd              =   2.089649130192123e17 / (cm^3)
+    Na              =   4.529587947185444e18 / (cm^3)
+    C0              =   1.0e18               / (cm^3)
 
     ## contact voltages
-    voltageAcceptor     = 1.0                  * V
+    voltageAcceptor =  1.0                  * V
 
     if test == false
         println("*** done\n")
@@ -246,12 +239,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## possible choices: Stationary, Transient
     data.model_type                     = Transient
 
-    ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
-    ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
+    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                  bulk_recomb_Auger = true,
+                                                                  bulk_recomb_Auger = false,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
@@ -323,8 +315,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
         params.recombinationSRHTrapDensity[iphin, ireg] = trap_density!(iphin, ireg, data, EI[ireg])
         params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, data, EI[ireg])
-        params.recombinationAuger[iphin, ireg]          = Auger
-        params.recombinationAuger[iphip, ireg]          = Auger
 
     end
 
@@ -340,6 +330,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
+    ## print data
     if test == false
         show_params(ctsys)
         println("*** done\n")
@@ -365,7 +356,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    control                   = NewtonControl()
+    control                   = VoronoiFVM.NewtonControl()
     control.verbose           = verbose
     control.max_iterations    = 300
     control.tol_absolute      = 1.0e-10
@@ -373,8 +364,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.handle_exceptions = true
     control.tol_round         = 1.0e-10
     control.max_round         = 5
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.21 # >= 1
 
     if test == false
         println("*** done\n")
@@ -426,11 +415,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
+    ## set calculation type to OutOfEquilibrium for starting with respective simulation.
     ctsys.data.calculation_type  = OutOfEquilibrium
 
     ## primary data for I-V scan protocol
     scanrate                      = 0.04 * V/s
-    number_tsteps                 = 16
+    number_tsteps                 = 41
     endVoltage                    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     tend                          = endVoltage/scanrate
 
@@ -442,7 +432,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     IV                           = zeros(0) # for IV values
     biasValues                   = zeros(0) # for bias values
 
-    for istep = 2:number_tsteps
+    for istep = 2:length(tvalues)
 
         t                     = tvalues[istep]       # Actual time
         Δu                    = t * scanrate         # Applied voltage
@@ -451,13 +441,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## Apply new voltage; set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        if test == false
+        if verbose
             println("time value: t = $(t)")
         end
-
-        ## Solve time step problems with timestep Δt. initialGuess plays the role of the solution
-        ## from last timestep
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
         ## get I-V data
         current = get_current_val(ctsys, solution, initialGuess, Δt)
@@ -467,6 +453,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         initialGuess .= solution
     end # time loop
+
+    if test == false
+        println("*** done\n")
+    end
 
     if plotting
         Plotter.figure()
@@ -490,17 +480,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.xlabel("Applied Voltage [V]")
     end
 
-    if test == false
-        println("*** done\n")
-    end
-
     testval = solution[4, 42]
     return testval
 
 end #  main
 
 function test()
-    testval = -4.067800512080874
+    testval = -4.068873400363844
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

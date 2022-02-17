@@ -1,12 +1,12 @@
 #=
-# PSC device with sinusoidal applied voltage (1D).
+# PSC device with uniform generation rate (1D).
 ([source code](SOURCE_URL))
 
 Simulating a three layer PSC device Pedot| MAPI | PCBM.
-The simulations are performed out of equilibrium, time-dependent and with
-abrupt interfaces.
-A sinusoidal I-V measurement protocol is included and the corresponding
-solution vectors after the scan can be depicted.
+The simulations are performed out of equilibrium, time-dependent, with
+abrupt interfaces and with a uniform generation.
+A linear I-V measurement protocol is included and the corresponding
+solution vectors after the scan protocol can be depicted.
 
 The paramters can be found here and are from
 Calado et al.:
@@ -14,7 +14,7 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 (with adjustments on layer lengths)
 =#
 
-module Example107_PSC_withIons_sinusoidalVoltage
+module Ex108_PSC_uniform_Generation
 
 using VoronoiFVM
 using ChargeTransport
@@ -22,7 +22,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -201,10 +201,20 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## Auger recombination
     Auger               = 0.0
 
+    ## generation
+    generation_a        = 0.0
+    generation_i        = 2.64e21 / (cm^3 * s)
+    generation_d        = 0.0
+
+    generation_uniform   = [generation_a, generation_i, generation_d]
+
     ## doping
     Nd                  =   2.089649130192123e17 / (cm^3)
     Na                  =   4.529587947185444e18 / (cm^3)
     C0                  =   1.0e18               / (cm^3)
+
+    ## contact voltages
+    voltageAcceptor     =  1.1                  * V
 
     if test == false
         println("*** done\n")
@@ -230,6 +240,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
+
+    ## possible choices: GenerationNone, GenerationUniform
+    data.generation_model               = GenerationUniform
 
     ## possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
     ## InterfaceModelSurfaceReco (inner boundary).
@@ -303,6 +316,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.recombinationAuger[iphin, ireg]          = Auger
         params.recombinationAuger[iphip, ireg]          = Auger
 
+        params.generationUniform[ireg]                  = generation_uniform[ireg]
     end
 
     ## interior doping
@@ -388,64 +402,62 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## for anion vacancy
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"
         label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
-        # ## ##### set legend for plotting routines #####
-        # plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
-        # Plotter.figure()
-        # plot_densities(Plotter, grid, data, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
-        # Plotter.figure()
-        # plot_solution(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+        ## ##### set legend for plotting routines #####
+        plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
+        Plotter.figure()
+        plot_densities(Plotter, grid, data, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
+        Plotter.figure()
+        plot_solution(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
     if test == false
         println("*** done\n")
     end
 
-     ################################################################################
-     if test == false
-        println("IV Measurement loop")
+    ################################################################################
+    if test == false
+        println("Loop for putting generation on")
     end
     ################################################################################
 
     ## set calculation type to OutOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type = OutOfEquilibrium
+    ctsys.data.calculation_type   = OutOfEquilibrium
 
-    control.damp_initial        = 0.5
-    control.damp_growth         = 1.61 # >= 1
-    control.max_round           = 7
+    ## primary data for I-V scan protocol
+    scanrate                      = 0.04 * V/s
+    number_tsteps                 = 31
+    endVoltage                    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                          = endVoltage/scanrate
 
-    ## time mesh
-    number_tsteps               = 50
-    endTime                     = 1.0e-4 * s
-    tvalues                     = range(0, stop = endTime, length = number_tsteps)
+    ## with fixed timestep sizes we can calculate the times
+    ## a priori
+    tvalues                       = range(0, stop = tend, length = number_tsteps)
 
-    ## sinusoidal applied voltage
-    frequence                   = 0.11 * Hz
-    amplitude                   = 10.0 * V
-    biasValues                  = Float64[amplitude * sin(2.0 * pi * frequence * tvalues[i]) for i=1:number_tsteps]
-
-    ## for saving I-V data
-    IV                            = zeros(0) # for IV values
+    ## these values are needed for putting the generation slightly on
+    I      = collect(length(tvalues):-1:0.0)
+    LAMBDA = 10 .^ (-I)
 
     for istep = 2:number_tsteps
 
-        t                     = tvalues[istep]       # Actual time
-        Δu                    = biasValues[istep]    # Applied voltage
-        Δt                    = t - tvalues[istep-1] # Time step size
+        t                              = tvalues[istep]       # Actual time
+        Δu                             = t * scanrate         # Applied voltage
+        Δt                             = t - tvalues[istep-1] # Time step size
 
-        ## Apply new voltage (set non equilibrium boundary conditions)
+        ## Apply new voltage
+        ## set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        if verbose == true
+        ## turn slowly generation on
+        ctsys.fvmsys.physics.data.λ2   = LAMBDA[istep + 1]
+
+        if verbose
+            println("generation on: λ2 = $(ctsys.data.λ2)")
             println("time value: t = $(t)")
         end
 
-        ## Solve time step problems with timestep Δt
+        ## Solve time step problems with timestep Δt. initialGuess plays the role of the solution
+        ## from last timestep
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
-
-        ## get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
-
-        push!(IV, current)
 
         initialGuess .= solution
 
@@ -454,18 +466,104 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     if test == false
         println("*** done\n")
     end
+    ################################################################################
+    if test == false
+        println("Reverse IV Scan Protocol")
+    end
+    ################################################################################
 
-    ## here in res the biasValues and the corresponding current are stored.
-    ## res = [biasValues IV];
+    ## for saving I-V data
+    IVReverse          = zeros(0) # for IV values
+    biasValuesReverse  = zeros(0) # for bias values
+
+    for istep = number_tsteps:-1:2
+
+        t                     = tvalues[istep]       # Actual time
+        Δu                    = t * scanrate         # Applied voltage
+        Δt                    = t - tvalues[istep-1] # Time step size
+
+        ## Apply new voltage
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
+
+        if verbose
+            println("time value: t = $(t)")
+        end
+
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+
+        initialGuess .= solution
+
+        ## get I-V data
+        current = get_current_val(ctsys, solution, initialGuess, Δt)
+
+        push!(IVReverse, current)
+        push!(biasValuesReverse, Δu)
+
+    end # time loop
+
+    if test == false
+        println("*** done\n")
+    end
+
+    ################################################################################
+    if test == false
+        println("Forward IV Scan Protocol")
+    end
+    ################################################################################
+
+    ## for saving I-V data
+    IVForward          = zeros(0) # for IV values
+    biasValuesForward  = zeros(0) # for bias values
+
+    for istep = 2:number_tsteps
+
+        t                     = tvalues[istep]       # Actual time
+        Δu                    = t * scanrate         # Applied voltage
+        Δt                    = t - tvalues[istep-1] # Time step size
+
+        ## Apply new voltage
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
+
+        if verbose
+            println("time value: t = $(t)")
+        end
+
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+
+        ## get I-V data
+        current = get_current_val(ctsys, solution, initialGuess, Δt)
+
+        push!(IVForward, current)
+        push!(biasValuesForward, Δu)
+
+        initialGuess .= solution
+
+
+    end # time loop
+
+    if test == false
+        println("*** done\n")
+    end
+
+    ##resForward = [biasValuesForward IVForward]
 
     if plotting
-        plot_energies(Plotter, grid, data, solution, "Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
+
+        plot_densities(Plotter, grid, data, solution, "\$ \\Delta u = $(biasValuesForward[end])\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$", label_density)
+        ## ###############
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+        plot_solution(Plotter, grid, data, solution, "\$ \\Delta u = $(biasValuesForward[end])\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$", label_solution)
+        ## ###############
         Plotter.figure()
-        plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+
+        Plotter.plot(biasValuesForward, IVForward.*(cm^2), label = "forward",  linewidth= 3, linestyle="--", color="red")
+        Plotter.plot(biasValuesReverse, IVReverse.*(cm^2), label = "reverse",  linewidth= 3, linestyle="--", color="blue")
+        Plotter.legend()
+        Plotter.xlabel("Applied Voltage [V]")
+        Plotter.ylabel("current density [A \$ cm^{-2}\$ ]")
+        Plotter.title("\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (without internal BC)")
+        Plotter.tight_layout()
     end
 
     testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
@@ -474,7 +572,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 31.906313312098675
+    testval = 39.06872444917981
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

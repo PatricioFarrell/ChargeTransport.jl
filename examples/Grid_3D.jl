@@ -8,7 +8,7 @@ The grid is produced with TetGen.jl.
 =#
 
 
-module Example202_3D_grid
+module Grid_3D
 
 using ExtendableGrids
 using GridVisualize

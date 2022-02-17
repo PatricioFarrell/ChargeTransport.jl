@@ -39,7 +39,7 @@ function run_all_tests()
         #     run_tests_from_directory(@__DIR__,"test_")
         # end
         @testset "Examples" begin
-            run_tests_from_directory(joinpath(@__DIR__,"..","examples"),"Example1")
+            run_tests_from_directory(joinpath(@__DIR__,"..","examples"),"Ex")
         end
     end
 end

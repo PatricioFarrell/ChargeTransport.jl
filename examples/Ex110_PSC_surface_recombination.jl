@@ -13,7 +13,7 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 (with adjustments on layer lengths)
 =#
 
-module Example110_PSC_surface_recombination
+module Ex110_PSC_surface_recombination
 
 using VoronoiFVM
 using ChargeTransport

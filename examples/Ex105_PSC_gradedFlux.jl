@@ -1,5 +1,5 @@
 #=
-# PSC device with graded interfaces & Schottky contacts (1D).
+# PSC device with graded interfaces (1D).
 ([source code](SOURCE_URL))
 
 Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions.
@@ -8,7 +8,6 @@ two junctions between perovskite layer and transport layers, to
 which we refer as graded interfaces.
 Hence, a graded flux discretization with space dependent
 band-edge energies and density of states is tested here.
-Additionally to that instead of the usual ohmic contacts, we tested here Schottky contacts.
 
 This simulation coincides with the one made in Section 4.3
 of Calado et al. (https://arxiv.org/abs/2009.04384).
@@ -17,7 +16,7 @@ in the publication here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 =#
 
-module Example104_PSC_gradedFlux_Schottky_contacts
+module Ex105_PSC_gradedFlux
 
 using VoronoiFVM
 using ChargeTransport
@@ -119,11 +118,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     lengthLayers            = [1, length_n, length_j1, length_i, length_j2, numberOfNodes]
 
     ## set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor)       # n-doped region   = 1
-    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionJunction1)   # first junction   = 2
-    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionIntrinsic)   # intrinsic region = 3
-    cellmask!(grid, [heightLayers[3]], [heightLayers[4]], regionJunction2)   # sec. junction    = 4
-    cellmask!(grid, [heightLayers[4]], [heightLayers[5]], regionAcceptor)    # p-doped region   = 5
+    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor)      # n-doped region   = 1
+    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionJunction1)  # first junction   = 2
+    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionIntrinsic)  # intrinsic region = 3
+    cellmask!(grid, [heightLayers[3]], [heightLayers[4]], regionJunction2)  # sec. junction    = 4
+    cellmask!(grid, [heightLayers[4]], [heightLayers[5]], regionAcceptor)   # p-doped region   = 5
 
     if plotting
         gridplot(grid, Plotter = Plotter)
@@ -142,24 +141,23 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## set indices of the quasi Fermi potentials
-    iphin                   = 1 # electron quasi Fermi potential
-    iphip                   = 2 # hole quasi Fermi potential
+    iphin                   = 2 # electron quasi Fermi potential
+    iphip                   = 1 # hole quasi Fermi potential
     numberOfCarriers        = 2
 
     ## ##########      physical data      ##########
     ## temperature
     T                       = 300.0                 *  K
 
-    Eref                    = 4.1                   *  eV  # reference energy
     ## band edge energies
-    Ec_d                    = -4.0                  *  eV  + Eref
-    Ev_d                    = -6.0                  *  eV  + Eref
+    Ec_d                    = -4.0                  *  eV
+    Ev_d                    = -6.0                  *  eV
 
-    Ec_i                    = -3.7                  *  eV  + Eref
-    Ev_i                    = -5.4                  *  eV  + Eref
+    Ec_i                    = -3.7                  *  eV
+    Ev_i                    = -5.4                  *  eV
 
-    Ec_a                    = -3.1                  *  eV  + Eref
-    Ev_a                    = -5.1                  *  eV  + Eref
+    Ec_a                    = -3.1                  *  eV
+    Ev_a                    = -5.1                  *  eV
 
     ## these parameters at the junctions for E_\alpha and N_\alpha will be overwritten.
     Ec_j1                   = Ec_d;     Ec_j2     = Ec_i
@@ -246,8 +244,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     Auger                  = 0.0
 
     ## doping (doping values are from Driftfusion)
-    Nd                     = 1.03e18             / (cm^3)
-    Na                     = 1.03e18             / (cm^3)
+    Nd                     =   1.03e18             / (cm^3)
+    Na                     =   1.03e18             / (cm^3)
+    Ni_acceptor            =   8.32e7              / (cm^3)
 
     ## contact voltages
     voltageAcceptor        =  1.2                 * V
@@ -262,10 +261,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## initialize Data instance and fill in data
+    ## initialize Data instance and fill in predefined data
     data                                = Data(grid, numberOfCarriers)
-
-    ## #### declare here all necessary information concerning the model ###
 
     ## possible choices: Stationary, Transient
     data.model_type                     = Stationary
@@ -281,8 +278,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
     ## InterfaceModelSurfaceReco (inner boundary).
-    data.boundary_type[bregionDonor]    = SchottkyContact
-    data.boundary_type[bregionAcceptor] = SchottkyContact
+    data.boundary_type[bregionDonor]    = OhmicContact
+    data.boundary_type[bregionAcceptor] = OhmicContact
 
     ## choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
@@ -340,24 +337,18 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## interior doping
     params.doping[iphin, regionDonor]               = Nd
+    params.doping[iphip, regionIntrinsic]           = Ni_acceptor
     params.doping[iphip, regionAcceptor]            = Na
 
     ## boundary doping
     params.bDoping[iphip, bregionAcceptor]          = Na        # data.bDoping  = [Na  0.0;
     params.bDoping[iphin, bregionDonor]             = Nd        #                  0.0  Nd]
 
-    ## values for the schottky contacts
-    params.SchottkyBarrier[bregionDonor]            =  0.0
-    params.SchottkyBarrier[bregionAcceptor]         = -5.0  * eV  -  (-4.1  * eV) # difference between boundary Fermi level
-    params.bVelocity                                = [1.0e7 * cm/s    0.0   * cm/s;
-                                                       0.0   * cm/s    1.0e7 * cm/s]
-
-
     data.params                                     = params
     data.paramsnodal                                = paramsnodal
     ctsys                                           = System(grid, data, unknown_storage=unknown_storage)
 
-
+    ## print data
     if test == false
         show_params(ctsys)
     end
@@ -371,10 +362,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## set Schottky contacts. For this we need to know at which outer boundary the contact
-    ## voltage shall be applied (which is in this case bregionAcceptor)
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
+    ## set zero voltage ohmic contacts for each charge carrier at all outerior boundaries.
     set_contact!(ctsys, bregionDonor,    Δu = 0.0)
+    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
 
     if test == false
         println("*** done\n")
@@ -411,6 +401,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     solution              = unknowns(ctsys)
 
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
+
     initialGuess         .= solution
 
     if plotting
@@ -435,7 +426,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.figure()
     end
 
-
     if test == false
         println("*** done\n")
     end
@@ -452,11 +442,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.max_round                                = 7
 
     maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 25)
+    biasValues = range(0, stop = maxBias, length = 13)
 
     for Δu in biasValues
         if verbose
-            println("Bias value: Δu = $(Δu)")
+            println("Bias value: Δu = $(Δu) (no illumination)")
         end
 
         ## set non equilibrium boundary conditions
@@ -470,24 +460,24 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## plotting
     if plotting
-        plot_energies(Plotter,  grid, data, solution, "Applied voltage Δu = $maxBias", label_energy)
+        plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias", label_density)
         Plotter.figure()
-        plot_solution(Plotter,  grid, data, solution, "Applied voltage Δu = $maxBias", label_solution)
+        plot_solution(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias", label_solution)
     end
 
     if test == false
         println("*** done\n")
     end
 
-    testval = solution[3, 20] # the 3 corresponds to the index of ipsi
+    testval = solution[data.index_psi, 20]
     return testval
 
 end #  main
 
 function test()
-    testval=0.11725154137943199
+    testval=-3.9827484795022645
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

@@ -5,7 +5,7 @@
 Simulating transient charge transport in a GaAs pin diode with an electron trap.
 =#
 
-module Example109_Traps
+module Ex109_Traps
 
 using VoronoiFVM
 using ChargeTransport

@@ -14,7 +14,7 @@ The paramters can be found here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv.
 =#
 
-module Example106_PSC_withIons_IVMeasurement
+module Ex106_PSC_withIons_IVMeasurement
 
 using VoronoiFVM
 using ChargeTransport

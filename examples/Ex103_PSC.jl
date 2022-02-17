@@ -15,7 +15,7 @@ in the publication here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 =#
 
-module Example103_PSC
+module Ex103_PSC
 
 using VoronoiFVM
 using ChargeTransport
