@@ -281,7 +281,7 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
         # Set calculation type to OutOfEquilibrium for starting with respective simulation.
         ctsys.data.calculation_type      = OutOfEquilibrium
 
-        maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+        maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
         biasValues = range(0, stop = maxBias, length = 4)
 
         for Δu in biasValues

@@ -134,7 +134,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## possible choices: Stationary, Transient
     data.model_type                     = Transient
 
-    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -339,12 +340,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## Scan rate and time steps
     scanrate                      = 1.0 * V/s
     number_tsteps                 = 81
-    endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    endVoltage                    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
 
     IV                            = zeros(0) # for IV values
     biasValues                    = zeros(0) # for bias values
-
-    ## The end time then is calculated here:
     tend                          = endVoltage/scanrate
 
     ## with fixed timestep sizes we can calculate the times

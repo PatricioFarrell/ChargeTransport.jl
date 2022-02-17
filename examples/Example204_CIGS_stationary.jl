@@ -154,7 +154,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## possible choices: Stationary, Transient
     data.model_type                     = Stationary
 
-    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -653,7 +654,8 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     ## possible choices: Stationary, Transient
 #     data.model_type                     = Stationary
 
-#     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+#     ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+#     ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
 #     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
 #     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -665,8 +667,9 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
     # InterfaceModelSurfaceReco (inner boundary).
 #     data.generation_model               = GenerationBeerLambert # GenerationUniform
 
-#     ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
-#     ## In this application ion vacancies only live in active perovskite layer
+#     ## Here, the user gives information on which indices belong to ionic charge carriers and
+#     ## in which regions these charge carriers are present. In this application ion vacancies
+#     ## only live in active perovskite layer.
 #     data.boundary_type[bregionAcceptor] = SchottkyContact
 #     data.boundary_type[bregionDonor]    = OhmicContact
 

@@ -213,7 +213,8 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## possible choices: Stationary, Transient
     data.model_type                     = Stationary
 
-    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= FermiDiracOneHalfTeSCA
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -395,7 +396,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.damp_growth                              = 1.21 # >= 1
     control.max_round                                = 7
 
-    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 13)
 
     for Δu in biasValues

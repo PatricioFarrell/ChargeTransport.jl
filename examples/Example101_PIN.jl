@@ -133,7 +133,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.model_type                     = Stationary
 
     ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
-    ## FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
     ## Here, we need to specify which numbers are associated with electron and hole quasi
@@ -337,7 +337,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         control.max_iterations    = 30
     end
 
-    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 32)
     IV         = zeros(0)
 

@@ -232,7 +232,8 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## possible choices: Stationary, Transient
     data.model_type                      = Transient
 
-    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                               = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -247,8 +248,9 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundary_type[bregionJunction2] = InterfaceModelSurfaceReco
     data.boundary_type[bregionDonor]     = OhmicContact
 
-    ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
-    ## In this application ion vacancies only live in active perovskite layer
+    ## Here, the user gives information on which indices belong to ionic charge carriers and
+    ## in which regions these charge carriers are present. In this application ion vacancies
+    ## only live in active perovskite layer.
     data.enable_ionic_carriers            = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
     ## choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
@@ -437,10 +439,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## Here we assume these primary data
     scanrate                      = 1.0 * V/s
     ntsteps                       = 31
-    vend                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    v0                            = 0.0
-
-    ## The end time then is calculated here:
+    vend                          = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     tend                          = vend/scanrate
 
     ## with fixed timestep sizes we can calculate the times
@@ -454,7 +453,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     for istep = 2:ntsteps
 
         t                         = tvalues[istep]       # Actual time
-        Δu                        = v0 + t*scanrate      # Applied voltage
+        Δu                        = t * scanrate      # Applied voltage
         Δt                        = t - tvalues[istep-1] # Time step size
 
         ## Apply new voltage (set non-equilibrium values)

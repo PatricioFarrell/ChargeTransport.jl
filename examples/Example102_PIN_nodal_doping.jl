@@ -106,7 +106,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ## possible choices: Stationary, Transient
     data.model_type                     = Stationary
 
-    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -283,7 +284,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     # Set calculation type to OutOfEquilibrium for starting with respective simulation.
     ctsys.data.calculation_type      = OutOfEquilibrium
 
-    maxBias                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    maxBias                          = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues                       = range(0, stop = maxBias, length = 41)
     IV                               = zeros(0)
 
