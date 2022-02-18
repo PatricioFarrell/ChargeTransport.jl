@@ -32,23 +32,24 @@ include("ct_datatypes.jl")
 
 export StandardFuncSet, QType
 
-export OuterBoundaryModel, OuterBoundaryModel, InterfaceModel
+export OuterBoundaryModelType, OuterBoundaryModelType, InterfaceModelType
 export OhmicContact, SchottkyContact
 export InterfaceModelNone, InterfaceModelSurfaceReco, InterfaceModelTangentialFlux, InterfaceModelDiscontqF
 export InterfaceModelIonCharge, InterfaceModelSurfaceRecoAndTangentialFlux
 
 export ModelType, Transient, Stationary
 
-export FluxApproximations
+export FluxApproximationType
 export ScharfetterGummel, ExcessChemicalPotential, DiffusionEnhanced, GeneralizedSG
 export ScharfetterGummelGraded, ExcessChemicalPotentialGraded
 
 export InEquilibrium, OutOfEquilibrium
 
-export SRHWithoutTraps, SRHWithTraps
+export SRHModelType, SRHWithoutTrapsType, SRHWithTrapsType
 export SRHOff, SRHWithoutTrapsStationary, SRHTrapsTransient
 
-export GenerationModel, GenerationNone, GenerationBeerLambert, GenerationUniform
+export GenerationModelType
+export GenerationNone, GenerationBeerLambert, GenerationUniform
 
 ##################################################################
 

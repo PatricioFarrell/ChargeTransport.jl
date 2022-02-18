@@ -233,9 +233,10 @@ function breaction!(f, u, bnode, data,  ::Type{SchottkyContact})
     # based on user index and regularity of solution quantities or integers are used
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
+    looplist    = (iphin, iphip)
     ipsi        = data.index_psi
 
-    for icc in (iphin,iphip)
+    for icc in 1:length(looplist)
 
         get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
         Ni     = data.tempDOS1[icc]
@@ -406,7 +407,7 @@ bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF}) = emptyFunction()
 bstorage!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
 
 # No bstorage! is used, if an ohmic and schottky contact model is chosen.
-bstorage!(f, u, bnode, data, OuterBoundaryModel) =  emptyFunction()
+bstorage!(f, u, bnode, data, ::OuterBoundaryModelType) =  emptyFunction()
 
 bstorage!(f, u, bnode, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = bstorage!(f, u, bnode, data, InterfaceModelTangentialFlux)
 
@@ -545,7 +546,7 @@ function reaction!(f, u, node, data, ::Type{InEquilibrium})
 end
 
 
-function addRecombination!(f, u, node, data, SRHWithoutTraps)
+function addRecombination!(f, u, node, data, ::SRHWithoutTrapsType)
 
     ireg  = node.region
 
@@ -556,7 +557,6 @@ function addRecombination!(f, u, node, data, SRHWithoutTraps)
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
-    looplist    = (iphin, iphip)
 
     get_DOS!(iphin, node, data); get_DOS!(iphip, node, data)
 
@@ -591,7 +591,7 @@ function addRecombination!(f, u, node, data, SRHWithoutTraps)
 end
 
 
-function addRecombination!(f, u, node, data, ::Type{SRHTrapsTransient})
+function addRecombination!(f, u, node, data, ::SRHWithTrapsType)
 
     params      = data.params
     ireg        = node.region
@@ -647,11 +647,11 @@ function addGeneration!(f, u, node, data)
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
-    list        = (iphin, iphip)
+    looplist    = (iphin, iphip)
 
     generationTerm = generation(data, node.region, node.coord[node.index], data.generation_model)
 
-    for icc = 1:length(list)
+    for icc = 1:length(looplist)
         f[icc] = f[icc] - q * data.params.chargeNumbers[icc] * generationTerm
     end
 
@@ -695,6 +695,10 @@ Function which builds right-hand side of electric charge carriers.
 
 """
 function RHSContinuityEquations!(f, u, node, data)
+
+    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+        f[icc] = u[icc]
+    end
 
     # dependent on user information concerncing recombination
     addRecombination!(f, u, node, data, data.bulk_recombination.bulk_recomb_SRH)

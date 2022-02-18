@@ -1,6 +1,4 @@
 """
-
-$(TYPEDEF)
 Type of statistics functions. (This will help us to save allocations.)
 
 """
@@ -9,8 +7,6 @@ const StandardFuncSet = Union{typeof(Boltzmann), typeof(Blakemore), typeof(Fermi
 
 ##########################################################
 """
-
-$(TYPEDEF)
 Type of charge carriers and the electric potential. (This will help us to save allocations.)
 
 """
@@ -68,30 +64,25 @@ abstract type InterfaceModelIonCharge end
 
 ##########################################################
 """
-
-$(TYPEDEF)
 Possible types of outer boundary model.
 
 """
-const OuterBoundaryModel = Union{Type{OhmicContact}, Type{SchottkyContact}}
+const OuterBoundaryModelType = Union{Type{OhmicContact}, Type{SchottkyContact}}
 
 
 """
-$(TYPEDEF)
 Possible Types for interface model (interior boundary conditions).
 
 """
-const InterfaceModel = Union{Type{InterfaceModelNone}, Type{InterfaceModelSurfaceReco},
+const InterfaceModelType = Union{Type{InterfaceModelNone}, Type{InterfaceModelSurfaceReco},
                              Type{InterfaceModelDiscontqF}, Type{InterfaceModelTangentialFlux},
                              Type{InterfaceModelSurfaceRecoAndTangentialFlux}, Type{InterfaceModelIonCharge}}
 
 """
-
-$(TYPEDEF)
 Possible types of boundary models.
 
 """
-const BoundaryModel      = Union{OuterBoundaryModel, InterfaceModel}
+const BoundaryModelType  = Union{OuterBoundaryModelType, InterfaceModelType}
 
 ##########################################################
 ##########################################################
@@ -112,12 +103,11 @@ abstract type Stationary end
 
 ##########################################################
 """
-$(TYPEDEF)
 Possible types which indicate, if we consider stationary
 or transient problem.
 
 """
-const ModelType = Union{ Type{Transient}, Type{Stationary}}
+const ModelType = Union{Type{Transient}, Type{Stationary}}
 
 ##########################################################
 ##########################################################
@@ -185,11 +175,10 @@ abstract type GeneralizedSG end
 
 ##########################################################
 """
-$(TYPEDEF)
 Possible types of flux discretization schemes.
 
 """
-const FluxApproximations = Union{Type{ScharfetterGummel}, Type{ExcessChemicalPotential},
+const FluxApproximationType = Union{Type{ScharfetterGummel}, Type{ExcessChemicalPotential},
                                  Type{DiffusionEnhanced}, Type{GeneralizedSG},
                                  Type{ScharfetterGummelGraded}, Type{ExcessChemicalPotentialGraded}}
 
@@ -214,7 +203,6 @@ abstract type OutOfEquilibrium end
 
 ##########################################################
 """
-$(TYPEDEF)
 Possible types for calculation type.
 
 """
@@ -229,18 +217,18 @@ abstract type SRHTrapsTransient end
 
 ##########################################################
 """
-$(TYPEDEF)
 Possible type for SRH recombination without traps.
 
 """
-const SRHWithoutTraps = Union{Type{SRHStationary}, Type{SRHOff}}
+const SRHWithoutTrapsType = Union{Type{SRHStationary}, Type{SRHOff}}
 
 """
-$(TYPEDEF)
 Possible types for SRH recombination without traps.
 
 """
-const SRHWithTraps = Union{Type{SRHTrapsTransient}}
+const SRHWithTrapsType = Type{SRHTrapsTransient}
+
+const SRHModelType = Union{SRHWithoutTrapsType, SRHWithTrapsType}
 
 ##########################################################
 ##########################################################
@@ -274,12 +262,10 @@ abstract type GenerationNone end
 
 ##########################################################
 """
-$(TYPEDEF)
-
 Possible types for generation model.
 
 """
-const GenerationModel = Union{Type{GenerationUniform}, Type{GenerationBeerLambert}, Type{GenerationNone}}
+const GenerationModelType = Union{Type{GenerationUniform}, Type{GenerationBeerLambert}, Type{GenerationNone}}
 
 
 ##########################################################
