@@ -36,7 +36,7 @@ mutable struct BulkRecombination
     """
     DataType for present SRH recombination in bulk
     """
-    bulk_recomb_SRH       ::  Union{SRHWithoutTraps, SRHWithTraps}
+    bulk_recomb_SRH       ::  SRHModelType
 
     BulkRecombination() = new()
 
@@ -453,7 +453,7 @@ mutable struct Data{TFuncs<:Function}
     """
     An array of DataTypes with the type of boundary model for each boundary (interior and exterior).
     """
-    boundary_type                ::  Array{BoundaryModel, 1}
+    boundary_type                ::  Array{BoundaryModelType, 1}
 
     """
     A struct containing information concerning the bulk recombination model.
@@ -475,7 +475,7 @@ mutable struct Data{TFuncs<:Function}
     DataType which stores information about which inner interface model is chosen by user.
     This quantity cannot be seen by the user and is needed for the core of package.
     """
-    inner_interface_model        ::  InterfaceModel
+    inner_interface_model        ::  InterfaceModelType
 
     ###############################################################
     ####                 Numerics information                  ####
@@ -483,7 +483,7 @@ mutable struct Data{TFuncs<:Function}
     """
     A DataType for the flux discretization method.
     """
-    flux_approximation           ::  FluxApproximations
+    flux_approximation           ::  FluxApproximationType
 
     """
     A DataType for equilibrium or out of equilibrium calculations.
@@ -498,7 +498,7 @@ mutable struct Data{TFuncs<:Function}
     """
     A DataType for for generation model.
     """
-    generation_model             ::  GenerationModel
+    generation_model             ::  GenerationModelType
 
     """
     An embedding parameter used to solve the nonlinear Poisson problem, where for
@@ -767,14 +767,14 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
     ###############################################################
 
     data.F                      = TFuncs[ Boltzmann for i=1:numberOfCarriers]
-    data.boundary_type          = BoundaryModel[ InterfaceModelNone for i = 1:numberOfBoundaryRegions]
+    data.boundary_type          = BoundaryModelType[ InterfaceModelNone for i = 1:numberOfBoundaryRegions]
 
     # bulk_recombination is a struct holding the input information
-    data.bulk_recombination     = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = false, bulk_recomb_radiative = false,
-                                                         bulk_recomb_SRH = false)
+    data.bulk_recombination     = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = true, bulk_recomb_radiative = true,
+                                                         bulk_recomb_SRH = true)
 
     # enable_ionic_carriers is a struct holding the input information
-    data.enable_ionic_carriers  = enable_ionic_carriers(ionic_carriers = [3], regions = [2])
+    data.enable_ionic_carriers  = IonicChargeCarriers()
 
     data.enable_traps           = Traps()
 
@@ -860,8 +860,6 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
 
     # Here, in this case for the loops within physics methods we set the chargeCarrierList to normal indexing.
     data.chargeCarrierList = collect(1:data.params.numberOfCarriers)
-    # DA: caution with the interface_model with ionic interface charges (in future versions,
-    # we will work with VoronoiFVM.InterfaceQuantites)
 
     # put Auger, radiative and SRH recombination on or off
     if data.bulk_recombination.bulk_recomb_Auger == false
@@ -895,14 +893,17 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
         enable_species!(ctsys.fvmsys, icc, 1:data.params.numberOfRegions)
     end
 
-    if data.params.numberOfCarriers > 2 # when ionic vacancies are present
-
-        # get the ion vacancy indices by user input which where parsed into the struct
-        # data.enable_ionic_carriers
-        ionic_carriers = data.enable_ionic_carriers.ionic_carriers
-
-        for icc ∈ ionic_carriers # Then, ion vacancies only present in user defined layers, i.e. adjust previous specification
+    # if ionic carriers are present
+    if isdefined(data.enable_ionic_carriers, :regions)
+        for icc ∈ data.enable_ionic_carriers.ionic_carriers
             enable_species!(ctsys.fvmsys, icc, data.enable_ionic_carriers.regions)
+        end
+    end
+
+    # if traps are present
+    if isdefined(data.enable_traps, :regions)
+        for icc ∈ data.enable_traps.traps
+            enable_species!(ctsys.fvmsys, icc, data.enable_traps.regions)
         end
     end
 
@@ -915,7 +916,8 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
 
 end
 
-
+# DA: caution with the interface_model with ionic interface charges (in future versions,
+# we will work with VoronoiFVM.InterfaceQuantites)
 # The core of the new system constructor. Here, the system for discontinuous quantities
 # is build.
 function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontqF})
