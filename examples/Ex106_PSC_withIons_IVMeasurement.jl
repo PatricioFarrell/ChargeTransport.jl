@@ -22,7 +22,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -88,9 +88,9 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfNodes           = length(coord)
 
     ## set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-12)       # n-doped region   = 1
-    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-12)   # intrinsic region = 2
-    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-12)    # p-doped region   = 3
+    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)       # n-doped region   = 1
+    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18)   # intrinsic region = 2
+    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)    # p-doped region   = 3
 
     if plotting
         gridplot(grid, Plotter = Plotter)
@@ -492,7 +492,7 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 40.543299668622225
+    testval = 26.046765170194163
     main(test = true, unknown_storage=:dense) ≈ testval  #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

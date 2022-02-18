@@ -23,7 +23,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -56,17 +56,17 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord_n_u               = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
     coord_n_g               = geomspace(h_ndoping/2,
                                         h_ndoping,
-                                        h_ndoping/(1.1*δ),
-                                        h_ndoping/(1.1*δ),
+                                        h_ndoping/(1.0*δ),
+                                        h_ndoping/(1.0*δ),
                                         tol=t)
     coord_i_g1              = geomspace(h_ndoping,
                                         h_ndoping+h_intrinsic/k,
                                         h_intrinsic/(2.8*δ),
-                                        h_intrinsic/(2.8*δ),
+                                        h_intrinsic/(2.0*δ),
                                         tol=t)
     coord_i_g2              = geomspace(h_ndoping+h_intrinsic/k,
                                         h_ndoping+h_intrinsic,
-                                        h_intrinsic/(2.8*δ),
+                                        h_intrinsic/(2.0*δ),
                                         h_intrinsic/(2.8*δ),
                                         tol=t)
     coord_p_g               = geomspace(h_ndoping+h_intrinsic,
@@ -82,6 +82,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord                   = glue(coord,     coord_p_g,  tol=10*t)
     coord                   = glue(coord,     coord_p_u,  tol=10*t)
     grid                    = simplexgrid(coord)
+
 
     ## set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],                [h_ndoping],                           regionDonor)     # n-doped region   = 1
@@ -220,7 +221,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = true)
+                                                                  bulk_recomb_SRH = false)
 
     ## possible choices: OhmicContact, SchottkyContact(outer boundary) and InterfaceModelNone,
     ## InterfaceModelSurfaceReco (inner boundary).
@@ -426,13 +427,13 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("*** done\n")
     end
 
-    testval = solution[3, 20] # the 3 corresponds to the index of ipsi
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
 end #  main
 
 function test()
-    testval = -4.052906367630599
+    testval = 22.166685901417342
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
