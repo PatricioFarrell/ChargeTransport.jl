@@ -286,23 +286,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
 
     if plotting
-        ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
-        label_density  = Array{String, 1}(undef, numberOfCarriers)
-        label_solution = Array{String, 1}(undef, numberOfCarriers)
+        ## set legend for plotting routines. Either you can use the predefined labes or write your own.
+        label_solution, label_density, label_energy = set_plotting_labels(data)
 
-        ## for electrons
-        label_energy[1, iphin] = "\$E_c-q\\psi\$";       label_energy[2, iphin] = "\$ - q \\varphi_n\$"
-        label_density[iphin]   = "n";                    label_solution[iphin]  = "\$ \\varphi_n\$"
-
-        ## for holes
-        label_energy[1, iphip] = "\$E_v-q\\psi\$";       label_energy[2, iphip] = "\$ - q \\varphi_p\$"
-        label_density[iphip]   = "p";                    label_solution[iphip]  = "\$ \\varphi_p\$"
-
-        ## for traps
+        ## add labels for traps
         label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
         label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
-        ## ##### set legend for plotting routines #####
+
         plot_energies(Plotter, grid, data, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution,"Equilibrium", label_density)
@@ -385,7 +375,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## Apply new voltage: set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        if verbose
+        if test == false
             println("time value: t = $(t)")
         end
 
@@ -417,7 +407,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.figure()
         plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_solution)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
     end
 
     testval = solution[iphit, 17]

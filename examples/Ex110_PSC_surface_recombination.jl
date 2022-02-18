@@ -478,6 +478,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
         if plotting
             label_solution = Array{String, 1}(undef, numberOfCarriers)
             label_solution[iphin]  = "\$ \\varphi_n\$"; label_solution[iphip]  = "\$ \\varphi_p\$"; label_solution[iphia]  = "\$ \\varphi_a\$"
+
             plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
         end
 

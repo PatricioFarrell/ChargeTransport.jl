@@ -372,28 +372,18 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     initialGuess         .= solution
 
     if plotting
-        ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
-        label_density  = Array{String, 1}(undef, numberOfCarriers)
-        label_solution = Array{String, 1}(undef, numberOfCarriers)
+        ## set legend for plotting routines. Either you can use the predefined labes or write your own.
+        label_solution, label_density, label_energy = set_plotting_labels(data)
 
-        ## for electrons
-        label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"
-        label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
-
-        ## for holes
-        label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"
-        label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
-
-        ## for anion vacancy
+        ## add labels for anion vacancy
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"
         label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
-        # ## ##### set legend for plotting routines #####
-        # plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
-        # Plotter.figure()
-        # plot_densities(Plotter, grid, data, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
-        # Plotter.figure()
-        # plot_solution(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+
+        plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
+        Plotter.figure()
+        plot_densities(Plotter, grid, data, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
+        Plotter.figure()
+        plot_solution(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
     if test == false
@@ -435,7 +425,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## Apply new voltage (set non equilibrium boundary conditions)
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        if verbose == true
+        if test == false
             println("time value: t = $(t)")
         end
 
@@ -465,7 +455,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.figure()
         plot_solution(Plotter, grid, data, solution, "Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,IV, "Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", plotGridpoints = true)
     end
 
     testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)

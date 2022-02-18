@@ -1,3 +1,33 @@
+
+"""
+$(TYPEDSIGNATURES)
+Method which can be used to construct the arrays parsed to the plotting routines for labeling.
+The description for electrons and holes are predefined. If one wishes to extend by labels for,
+e.g. mobile ionic carriers or traps, this can be done within the main file.
+
+"""
+function set_plotting_labels(data)
+
+    label_energy   = Array{String, 2}(undef, 2, data.params.numberOfCarriers) # band-edge energies and potential
+    label_BEE      = Array{String, 1}(undef, data.params.numberOfCarriers)    # band-edge energie parameters
+    label_density  = Array{String, 1}(undef, data.params.numberOfCarriers)
+    label_solution = Array{String, 1}(undef, data.params.numberOfCarriers)
+
+    # indices (∈ IN) of electron and hole quasi Fermi potentials specified by user
+    iphin       = data.bulk_recombination.iphin # integer index of φ_n
+    iphip       = data.bulk_recombination.iphip # integer index of φ_p
+
+    ## for electrons
+    label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"; label_BEE[iphin] = "\$E_c\$"
+    label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
+
+    ## for holes
+    label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"; label_BEE[iphip] = "\$E_v\$"
+    label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
+
+    return label_solution, label_density, label_energy, label_BEE
+end
+
 """
 $(TYPEDSIGNATURES)
 Plotting routine, where the charge carrier densities are depicted
@@ -437,11 +467,11 @@ end
 
 """
 $(TYPEDSIGNATURES)
-Method for showing the total current in dependence of the applied voltage.
+Method for showing the total current.
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
 """
-function plot_IV(Plotter, biasValues,IV, Δu, ;plotGridpoints=false)
+function plot_IV(Plotter, biasValues,IV, title, ;plotGridpoints=false)
 
     if plotGridpoints == true
         marker = "o"
@@ -451,7 +481,7 @@ function plot_IV(Plotter, biasValues,IV, Δu, ;plotGridpoints=false)
 
     Plotter.plot(biasValues[1:length(IV)], IV, marker = marker)
     Plotter.grid()
-    Plotter.title("bias \$\\Delta u\$ = $Δu")
+    Plotter.title(title)
     Plotter.xlabel("bias [V]")
     Plotter.ylabel("total current [A]")
     Plotter.tight_layout()

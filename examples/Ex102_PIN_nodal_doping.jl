@@ -249,19 +249,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     initialGuess         .= solution
 
     if plotting
-        ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
-        label_density  = Array{String, 1}(undef, numberOfCarriers)
-        label_solution = Array{String, 1}(undef, numberOfCarriers)
-
-        ## for electrons
-        label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"
-        label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
-
-        ## for holes
-        label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"
-        label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
-        ##### set legend for plotting routines #####
+        ## set legend for plotting routines. Either you can use the predefined labes or write your own.
+        label_solution, label_density, label_energy = set_plotting_labels(data)
 
         Plotter.figure()
         plot_energies(Plotter, grid, data, solution,  "Equilibrium", label_energy)
@@ -319,7 +308,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,IV, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
     end
 
     testval = solution[15]

@@ -311,23 +311,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("*** done\n")
 
     if plotting
-        ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
-        label_density  = Array{String, 1}(undef, numberOfCarriers)
-        label_solution = Array{String, 1}(undef, numberOfCarriers)
+        ## set legend for plotting routines. Either you can use the predefined labes or write your own.
+        label_solution, label_density, label_energy = set_plotting_labels(data)
 
-        ## for electrons
-        label_energy[1, iphin] = "\$E_c-q\\psi\$";       label_energy[2, iphin] = "\$ - q \\varphi_n\$"
-        label_density[iphin]   = "n";                    label_solution[iphin]  = "\$ \\varphi_n\$"
-
-        ## for holes
-        label_energy[1, iphip] = "\$E_v-q\\psi\$";       label_energy[2, iphip] = "\$ - q \\varphi_p\$"
-        label_density[iphip]   = "p";                    label_solution[iphip]  = "\$ \\varphi_p\$"
-
-        ## for traps
+        ## add labels for traps
         label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
         label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
-        ## ##### set legend for plotting routines #####
+
         plot_energies(Plotter, grid, data, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution,"Equilibrium", label_density)
@@ -371,7 +361,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## increase generation rate with bias
         ctsys.data.λ2 = 10.0^(-biasSteps + i)
 
-        if verbose
+        if test == false
             println("bias: Δu = $(Δu)")
         end
 
@@ -402,13 +392,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.figure()
         plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_solution)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,chargeDensities, biasValues[end], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,chargeDensities, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
         Plotter.title("Charge density in donor region")
         Plotter.ylabel("Charge density [C]")
         Plotter.figure()
-        plot_IV(Plotter, biasValues,staticCapacitance, biasValues[end-1], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,staticCapacitance, "bias \$\\Delta u\$ = $(biasValues[end-1])", plotGridpoints = true)
         Plotter.title("Static capacitance in donor region")
         Plotter.ylabel("Static capacitance [C/V]")
 
@@ -470,7 +460,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ##     Plotter.figure()
     ##     plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_solution)
     ##     Plotter.figure()
-    ##     plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+    ##     plot_IV(Plotter, biasValues,IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
     ## end
 
     ## println("Max error")
@@ -911,13 +901,13 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #         Plotter.figure()
 #         plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_solution)
 #         Plotter.figure()
-#         plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+#         plot_IV(Plotter, biasValues,IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
 #         Plotter.figure()
-#         plot_IV(Plotter, biasValues,chargeDensities, biasValues[end], plotGridpoints = true)
+#         plot_IV(Plotter, biasValues,chargeDensities, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
 #         Plotter.title("Charge density in donor region")
 #         Plotter.ylabel("Charge density [C]")
 #         Plotter.figure()
-#         plot_IV(Plotter, biasValues,staticCapacitance, biasValues[end-1], plotGridpoints = true)
+#         plot_IV(Plotter, biasValues,staticCapacitance, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
 #         Plotter.title("Static capacitance in donor region")
 #         Plotter.ylabel("Static capacitance [C/V]")
 
@@ -979,7 +969,7 @@ Simulating stationary charge transport in a pn junction with hole traps and a Sc
 #     ##     Plotter.figure()
 #     ##     plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tend)\$", label_solution)
 #     ##     Plotter.figure()
-#     ##     plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+#     ##     plot_IV(Plotter, biasValues,IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
 #     ## end
 
 #     ## println("Max error")
