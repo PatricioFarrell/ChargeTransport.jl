@@ -1,5 +1,5 @@
 # PSC device without mobile ions (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample103_PSC.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx103_PSC.jl))
 
 Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions
 and in stationary state (i.e. no time-dependency). This means we consider
@@ -14,7 +14,7 @@ in the publication here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 
 ````julia
-module Example103_PSC
+module Ex103_PSC
 
 using VoronoiFVM
 using ChargeTransport
@@ -22,7 +22,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -55,17 +55,17 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord_n_u               = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
     coord_n_g               = geomspace(h_ndoping/2,
                                         h_ndoping,
-                                        h_ndoping/(1.1*δ),
-                                        h_ndoping/(1.1*δ),
+                                        h_ndoping/(1.0*δ),
+                                        h_ndoping/(1.0*δ),
                                         tol=t)
     coord_i_g1              = geomspace(h_ndoping,
                                         h_ndoping+h_intrinsic/k,
                                         h_intrinsic/(2.8*δ),
-                                        h_intrinsic/(2.8*δ),
+                                        h_intrinsic/(2.0*δ),
                                         tol=t)
     coord_i_g2              = geomspace(h_ndoping+h_intrinsic/k,
                                         h_ndoping+h_intrinsic,
-                                        h_intrinsic/(2.8*δ),
+                                        h_intrinsic/(2.0*δ),
                                         h_intrinsic/(2.8*δ),
                                         tol=t)
     coord_p_g               = geomspace(h_ndoping+h_intrinsic,
@@ -81,6 +81,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord                   = glue(coord,     coord_p_g,  tol=10*t)
     coord                   = glue(coord,     coord_p_u,  tol=10*t)
     grid                    = simplexgrid(coord)
+
 
     # set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],                [h_ndoping],                           regionDonor)     # n-doped region   = 1
@@ -218,13 +219,14 @@ We initialize the Data instance and fill in predefined data.
     # possible choices: Stationary, Transient
     data.model_type                     = Stationary
 
-    # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    # FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= FermiDiracOneHalfTeSCA
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = true)
+                                                                  bulk_recomb_SRH = false)
 
     # possible choices: OhmicContact, SchottkyContact(outer boundary) and InterfaceModelNone,
     # InterfaceModelSurfaceReco (inner boundary).
@@ -400,7 +402,7 @@ We initialize the Data instance and fill in predefined data.
     control.damp_growth                              = 1.21 # >= 1
     control.max_round                                = 7
 
-    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 13)
 
     for Δu in biasValues
@@ -430,13 +432,13 @@ We initialize the Data instance and fill in predefined data.
         println("*** done\n")
     end
 
-    testval = solution[3, 20] # the 3 corresponds to the index of ipsi
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
 end #  main
 
 function test()
-    testval = -4.052906367630599
+    testval = 22.166685901417342
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

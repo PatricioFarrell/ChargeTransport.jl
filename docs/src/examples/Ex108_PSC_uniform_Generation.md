@@ -1,5 +1,5 @@
 # PSC device with uniform generation rate (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample107_PSC_uniform_Generation.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx108_PSC_uniform_Generation.jl))
 
 Simulating a three layer PSC device Pedot| MAPI | PCBM.
 The simulations are performed out of equilibrium, time-dependent, with
@@ -13,7 +13,7 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 (with adjustments on layer lengths)
 
 ````julia
-module Example107_PSC_uniform_Generation
+module Ex108_PSC_uniform_Generation
 
 using VoronoiFVM
 using ChargeTransport
@@ -231,7 +231,8 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     # possible choices: Stationary, Transient
     data.model_type                     = Transient
 
-    # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    # FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -247,8 +248,9 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundary_type[bregionAcceptor] = OhmicContact
     data.boundary_type[bregionDonor]    = OhmicContact
 
-    # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
-    # In this application ion vacancies only live in active perovskite layer
+    # Here, the user gives information on which indices belong to ionic charge carriers and
+    # in which regions these charge carriers are present. In this application ion vacancies
+    # only live in active perovskite layer.
     data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
     # choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
@@ -423,11 +425,12 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     # primary data for I-V scan protocol
     scanrate                      = 0.04 * V/s
     number_tsteps                 = 31
-    endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    endVoltage                    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                          = endVoltage/scanrate
 
     # with fixed timestep sizes we can calculate the times
     # a priori
-    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = LinearScanProtocol)
+    tvalues                       = range(0, stop = tend, length = number_tsteps)
 
     # these values are needed for putting the generation slightly on
     I      = collect(length(tvalues):-1:0.0)

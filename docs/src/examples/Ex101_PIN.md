@@ -1,5 +1,5 @@
 # GaAs diode (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample101_PIN.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx101_PIN.jl))
 
 We simulate charge transport in a GaAs pin diode, where use the van Roosbroeck
 system of equations as charge transport model. The unknowns are given by the quasi Fermi
@@ -8,7 +8,7 @@ The simulations are performed out of equilibrium and for the
 stationary problem.
 
 ````julia
-module Example101_PIN
+module Ex101_PIN
 
 using VoronoiFVM       # PDE solver with a FVM spatial discretization
 using ChargeTransport  # drift-diffusion solver
@@ -138,7 +138,7 @@ We initialize the Data instance and fill in predefined data.
     data.model_type                     = Stationary
 
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
-    # FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
     # Here, we need to specify which numbers are associated with electron and hole quasi
@@ -354,7 +354,7 @@ Set calculation type to OutOfEquilibrium for starting with respective simulation
         control.max_iterations    = 30
     end
 
-    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 32)
     IV         = zeros(0)
 

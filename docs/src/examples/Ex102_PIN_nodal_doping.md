@@ -1,5 +1,5 @@
 # GaAs diode with spatially varying doping (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample102_PIN_nodal_doping.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx102_PIN_nodal_doping.jl))
 
 Simulating charge transport in a GaAs pin diode. This means
 the corresponding PDE problem corresponds to the van Roosbroeck
@@ -9,7 +9,7 @@ stationary problem.
 A special feature here is that the doping is spatially varying, i.e. node-dependent.
 
 ````julia
-module Example102_PIN_nodal_doping
+module Ex102_PIN_nodal_doping
 
 using VoronoiFVM
 using ChargeTransport
@@ -108,7 +108,8 @@ We initialize the Data instance and fill in predefined data.
     # possible choices: Stationary, Transient
     data.model_type                     = Stationary
 
-    # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    # FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -291,7 +292,7 @@ Set calculation type to OutOfEquilibrium for starting with respective simulation
 ````julia
     ctsys.data.calculation_type      = OutOfEquilibrium
 
-    maxBias                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    maxBias                          = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues                       = range(0, stop = maxBias, length = 41)
     IV                               = zeros(0)
 

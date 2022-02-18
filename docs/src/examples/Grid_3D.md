@@ -1,12 +1,12 @@
 # Example code for a 3D grid.
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample202_3D_grid.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesGrid_3D.jl))
 
 This code provides an unstructured grid for a three-dimensional
 domain with an additional hole within the the device.
 The grid is produced with TetGen.jl.
 
 ````julia
-module Example202_3D_grid
+module Grid_3D
 
 using ExtendableGrids
 using GridVisualize

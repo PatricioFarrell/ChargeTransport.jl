@@ -1,10 +1,10 @@
 # GaAs diode: transient with traps (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample109_Traps.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx109_Traps.jl))
 
 Simulating transient charge transport in a GaAs pin diode with an electron trap.
 
 ````julia
-module Example109_Traps
+module Ex109_Traps
 
 using VoronoiFVM
 using ChargeTransport
@@ -133,7 +133,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # possible choices: Stationary, Transient
     data.model_type                     = Transient
 
-    # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    # FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -338,12 +339,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # Scan rate and time steps
     scanrate                      = 1.0 * V/s
     number_tsteps                 = 81
-    endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    endVoltage                    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
 
     IV                            = zeros(0) # for IV values
     biasValues                    = zeros(0) # for bias values
-
-    # The end time then is calculated here:
     tend                          = endVoltage/scanrate
 
     # with fixed timestep sizes we can calculate the times
@@ -430,7 +429,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.0245795906936692
+    testval = 1.0245795906936774
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

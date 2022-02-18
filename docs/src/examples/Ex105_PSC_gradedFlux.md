@@ -1,5 +1,5 @@
 # PSC device with graded interfaces (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample105_PSC_gradedFlux.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx105_PSC_gradedFlux.jl))
 
 Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions.
 The simulations are performed out of equilibrium, stationary and with
@@ -15,7 +15,7 @@ in the publication here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 
 ````julia
-module Example105_PSC_gradedFlux
+module Ex105_PSC_gradedFlux
 
 using VoronoiFVM
 using ChargeTransport
@@ -266,7 +266,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     # possible choices: Stationary, Transient
     data.model_type                     = Stationary
 
-    # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    # FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -439,7 +440,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.damp_growth                              = 1.61 # >= 1
     control.max_round                                = 7
 
-    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 13)
 
     for Δu in biasValues

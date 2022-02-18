@@ -1,5 +1,5 @@
 # PSC device on 2D domain (unstructured grid).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample201_PSC_2D_unstructuredGrid.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesPSC_2D_unstructuredGrid.jl))
 
 Simulating a three layer PSC device Pedot| MAPI | PCBM with mobile ions
 where the ion vacancy accumulation is limited by the Fermi-Dirac integral of order -1.
@@ -15,7 +15,7 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 ````julia
 ENV["LC_NUMERIC"]="C" # put this in to work with Triangulate.jl, where the package is originally written in c++
 
-module Example201_PSC_2D_unstructuredGrid
+module PSC_2D_unstructuredGrid
 
 using VoronoiFVM
 using ChargeTransport
@@ -251,8 +251,9 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     data.boundary_type[bregionAcceptor] = OhmicContact
     data.boundary_type[bregionDonor]    = OhmicContact
 
-    # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
-    # In this application ion vacancies only live in active perovskite layer
+    # Here, the user gives information on which indices belong to ionic charge carriers and
+    # in which regions these charge carriers are present. In this application ion vacancies
+    # only live in active perovskite layer.
     data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
     # choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
@@ -419,11 +420,12 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     # primary data for I-V scan protocol
     scanrate                      = 0.04 * V/s
     number_tsteps                 = 41
-    endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    endVoltage                    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                          = endVoltage/scanrate
 
     # with fixed timestep sizes we can calculate the times
     # a priori
-    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = LinearScanProtocol)
+    tvalues                       = range(0, stop = tend, length = number_tsteps)
 
     # for saving I-V data
     IV                           = zeros(0) # for IV values

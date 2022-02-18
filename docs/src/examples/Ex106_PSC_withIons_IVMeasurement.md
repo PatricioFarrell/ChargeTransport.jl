@@ -1,5 +1,5 @@
 # PSC device with ions and linear I-V scan protocol (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample106_PSC_withIons_IVMeasurement.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx106_PSC_withIons_IVMeasurement.jl))
 
 Simulating a three layer PSC device SiO2| MAPI | SiO2 with mobile ions
 where the ion vacancy accumulation is limited by the Fermi-Dirac integral of order -1.
@@ -13,7 +13,7 @@ The paramters can be found here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv.
 
 ````julia
-module Example106_PSC_withIons_IVMeasurement
+module Ex106_PSC_withIons_IVMeasurement
 
 using VoronoiFVM
 using ChargeTransport
@@ -21,7 +21,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -87,9 +87,9 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfNodes           = length(coord)
 
     # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-12)       # n-doped region   = 1
-    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-12)   # intrinsic region = 2
-    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-12)    # p-doped region   = 3
+    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)       # n-doped region   = 1
+    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18)   # intrinsic region = 2
+    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)    # p-doped region   = 3
 
     if plotting
         gridplot(grid, Plotter = Plotter)
@@ -230,7 +230,8 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     # possible choices: Stationary, Transient
     data.model_type                     = Transient
 
-    # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    # FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -243,8 +244,9 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundary_type[bregionAcceptor] = OhmicContact
     data.boundary_type[bregionDonor]    = OhmicContact
 
-    # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
-    # In this application ion vacancies only live in active perovskite layer
+    # Here, the user gives information on which indices belong to ionic charge carriers and
+    # in which regions these charge carriers are present. In this application ion vacancies
+    # only live in active perovskite layer.
     data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
     # choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
@@ -428,11 +430,11 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     # primary data for I-V scan protocol
     scanrate                      = 1.0 * V/s
     number_tsteps                 = 31
-    endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    endVoltage                    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                          = endVoltage/scanrate
 
-    # with fixed timestep sizes we can calculate the times
-    # a priori
-    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = LinearScanProtocol)
+    # with fixed timestep sizes we can calculate the times a priori
+    tvalues                       = range(0, stop = tend, length = number_tsteps)
 
     # for saving I-V data
     IV                            = zeros(0) # for IV values
@@ -489,7 +491,7 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 40.543299668622225
+    testval = 26.046765170194163
     main(test = true, unknown_storage=:dense) ≈ testval  #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
