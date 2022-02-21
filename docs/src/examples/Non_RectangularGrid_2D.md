@@ -1,8 +1,8 @@
 # Example code for a 2D non rectangular grid.
 ([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesNon_RectangularGrid_2D.jl))
 
-This code provides an unstructured grid for a non rectangular two-dimensional
-domain. The grid is produced with Triangulate.jl.
+This code provides an unstructured grid for a non rectangular two-dimensional domain.
+The grid is produced with Triangulate.jl.
 
 ````julia
 ENV["LC_NUMERIC"]="C"

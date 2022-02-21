@@ -1,11 +1,10 @@
 # GaAs diode (1D).
 ([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx101_PIN.jl))
 
-We simulate charge transport in a GaAs pin diode, where use the van Roosbroeck
+We simulate charge transport in a GaAs pin diode, where we use the van Roosbroeck
 system of equations as charge transport model. The unknowns are given by the quasi Fermi
 potentials of electrons and holes $\varphi_n$, $\varphi_p$ and the electric potential $\psi$.
-The simulations are performed out of equilibrium and for the
-stationary problem.
+The simulations are performed out of equilibrium and for the stationary problem.
 
 ````julia
 module Ex101_PIN
@@ -29,7 +28,7 @@ function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping
 end
 
 
-function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = true, unknown_storage=:sparse)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -52,9 +51,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # grid
     refinementfactor        = 2^(n-1)
-    h_pdoping               = 2 * μm
-    h_intrinsic             = 2 * μm
-    h_ndoping               = 2 * μm
+    h_pdoping               = 2.0    * μm
+    h_intrinsic             = 2.0    * μm
+    h_ndoping               = 2.0    * μm
+    w_device                = 0.5    * μm  # width of device
+    z_device                = 1.0e-4 * cm  # depth of device
     coord                   = initialize_pin_grid(refinementfactor,
                                                   h_pdoping,
                                                   h_intrinsic,
@@ -115,7 +116,7 @@ We define the physical data.
     # intrinsic concentration
     ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T))
 
-    # contact voltages: we impose an applied voltage only on one boundary.
+    # contact voltage: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
     voltageAcceptor   = 1.5                  * V
 
@@ -174,8 +175,8 @@ We initialize the Data instance and fill in predefined data.
 ````
 
 Define the Params struct. Params contains all necessary physical parameters. If one
-wants to simulate space-dependent variable, one additionally needs to generate a
-ParamsNodal struct, see Example102.
+wants to simulate space-dependent variables, one additionally needs to generate a
+ParamsNodal struct, see Ex102.
 
 ````julia
     params                                              = Params(grid, numberOfCarriers)
@@ -185,7 +186,7 @@ ParamsNodal struct, see Example102.
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
 
-    for ibreg in 1:numberOfBoundaryRegions   # boundary region data
+    for ibreg in 1:numberOfBoundaryRegions  # boundary region data
         params.bDensityOfStates[iphin, ibreg]           = Nc
         params.bDensityOfStates[iphip, ibreg]           = Nv
         params.bBandEdgeEnergy[iphin, ibreg]            = Ec
@@ -259,7 +260,7 @@ VoronoiFVMSys is not dependent on the data we initialized but rather on default 
     # We set zero voltage ohmic contacts for each charge carrier at all outerior boundaries
     # for the equilibrium calculations.
     set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor, Δu = 0.0)
+    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
     if test == false
         println("*** done\n")
@@ -269,20 +270,8 @@ VoronoiFVMSys is not dependent on the data we initialized but rather on default 
         ################################################################################
         println("Plot electroneutral potential, band-edge energies and doping")
         ################################################################################
-        # ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
-        label_BEE      = Array{String, 1}(undef, numberOfCarriers)    # band-edge energie parameters
-        label_density  = Array{String, 1}(undef, numberOfCarriers)
-        label_solution = Array{String, 1}(undef, numberOfCarriers)
-
-        # for electrons
-        label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"; label_BEE[iphin] = "\$E_c\$"
-        label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
-
-        # for holes
-        label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"; label_BEE[iphip] = "\$E_v\$"
-        label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
-        # ##### set legend for plotting routines #####
+        # set legend for plotting routines. Either you can use the predefined labels or write your own.
+        label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
 
         psi0 = electroNeutralSolution!(grid, data)
         plot_energies(Plotter, grid, data, label_BEE)
@@ -301,14 +290,11 @@ VoronoiFVMSys is not dependent on the data we initialized but rather on default 
 
     control                   = NewtonControl()
     control.verbose           = verbose
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.21
     control.max_iterations    = 250
     control.tol_absolute      = 1.0e-14
     control.tol_relative      = 1.0e-14
     control.handle_exceptions = true
     control.tol_round         = 1.0e-8
-    control.max_round         = 5
 
     if test == false
         println("*** done\n")
@@ -320,18 +306,17 @@ VoronoiFVMSys is not dependent on the data we initialized but rather on default 
     end
     ################################################################################
 
-    control.damp_initial  = 0.5
-    control.damp_growth   = 1.2 # >= 1
-    control.max_round     = 3
+    control.damp_initial = 0.5
+    control.damp_growth  = 1.2 # >= 1
+    control.max_round    = 3
 
     # initialize solution and starting vectors
-    initialGuess          = unknowns(ctsys)
-    solution              = unknowns(ctsys)
+    initialGuess         = unknowns(ctsys)
+    solution             = unknowns(ctsys)
 
-    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
+    solution             = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution
-
+    initialGuess        .= solution
 
     if test == false
         println("*** done\n")
@@ -346,24 +331,15 @@ VoronoiFVMSys is not dependent on the data we initialized but rather on default 
 Set calculation type to OutOfEquilibrium for starting with respective simulation.
 
 ````julia
-    ctsys.data.calculation_type      = OutOfEquilibrium
+    data.calculation_type = OutOfEquilibrium
 
-    if !(data.F == Boltzmann) # adjust control, when not using Boltzmann
-        control.damp_initial      = 0.5
-        control.damp_growth       = 1.2
-        control.max_iterations    = 30
-    end
-
-    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 32)
-    IV         = zeros(0)
-
-    w_device = 0.5    * μm  # width of device
-    z_device = 1.0e-4 * cm  # depth of device
+    maxBias               = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    biasValues            = range(0, stop = maxBias, length = 32)
+    IV                    = zeros(0)
 
     for Δu in biasValues
 
-        if verbose
+        if test == false
             println("Δu  = ", Δu )
         end
         # set non equilibrium boundary conditions
@@ -392,7 +368,7 @@ Set calculation type to OutOfEquilibrium for starting with respective simulation
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,IV,  "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
     end
 
     testval = solution[15]
