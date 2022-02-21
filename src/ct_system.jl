@@ -4,7 +4,7 @@
 """
 $(TYPEDEF)
 
-A struct holding all information necessary for building bulk recombination.
+A struct holding all necessary information for building bulk recombination.
 With help of this constructor we can read out the indices the user chooses for
 electron and hole quasi Fermi potentials.
 
@@ -14,27 +14,28 @@ $(TYPEDFIELDS)
 mutable struct BulkRecombination
 
     """
-    Index for data construction of quasi Fermi potential of electrons
+    Index for FVM construction of electron quasi Fermi potential.
     """
 	iphin                 ::  Int64
 
     """
-    Index for data construction of quasi Fermi potential of holes
+    Index for FVM construction of hole quasi Fermi potential.
     """
     iphip                 ::  Int64
 
     """
-    Boolean for present Auger recombination in bulk
+    Boolean for present Auger recombination in bulk.
     """
     bulk_recomb_Auger     ::  Bool
 
     """
-    Boolean for present radiative recombination in bulk
+    Boolean for present radiative recombination in bulk.
     """
     bulk_recomb_radiative ::  Bool
 
     """
-    DataType for present SRH recombination in bulk
+    DataType for present SRH recombination in bulk. This needs to be a Type due to cases
+    with or without mobile traps.
     """
     bulk_recomb_SRH       ::  SRHModelType
 
@@ -48,9 +49,9 @@ $(SIGNATURES)
 Corresponding constructor for the bulk recombination model.
 """
 function set_bulk_recombination(;iphin = 1, iphip = 2,
-                                  bulk_recomb_Auger = true,
-                                  bulk_recomb_radiative = true,
-                                  bulk_recomb_SRH = true)
+                                bulk_recomb_Auger = true,
+                                bulk_recomb_radiative = true,
+                                bulk_recomb_SRH = true)
 
     bulk_recombination = BulkRecombination()
 
@@ -73,11 +74,9 @@ end
 """
 $(TYPEDEF)
 
-A struct holding all information necessary for enabling traps
-in the SRH recombination.
-With help of this constructor we can read out the index the user chooses for
-trap quasi Fermi potentials and the respective regions in which they are
-defined.
+A struct holding all information necessary for enabling traps in the SRH recombination.
+With help of this constructor we can read out the index the user chooses for trap quasi Fermi
+potentials and the respective regions in which they are defined.
 
 $(TYPEDFIELDS)
 
@@ -101,7 +100,7 @@ end
 """
 $(TYPEDEF)
 
-Corresponding constructor for the present trap density and the respective regions.
+Corresponding constructor for the present traps and the respective regions.
 """
 function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
 
@@ -218,7 +217,7 @@ mutable struct Params
     UT                           ::  Float64
 
     """
-    The parameter of the Blakemore statistics.
+    The parameter of the Blakemore statistics (needed for the generalizedSG flux).
     """
     γ                            ::  Float64
 
@@ -331,7 +330,8 @@ mutable struct Params
     #### number of regions x 2 (for electrons and holes only!) ####
     ###############################################################
     """
-    A 2D array with the corresponding SRH lifetimes ``\\tau_n, \\tau_p`` for electrons and holes.
+    A 2D array with the corresponding SRH lifetimes ``\\tau_n, \\tau_p``
+    for electrons and holes.
     """
     recombinationSRHLifetime     ::  Array{Float64,2}
 
@@ -451,7 +451,8 @@ mutable struct Data{TFuncs<:Function}
     F                            ::  Array{TFuncs,1}
 
     """
-    An array of DataTypes with the type of boundary model for each boundary (interior and exterior).
+    An array of DataTypes with the type of boundary model for each boundary
+    (interior and exterior).
     """
     boundary_type                ::  Array{BoundaryModelType, 1}
 
@@ -467,13 +468,13 @@ mutable struct Data{TFuncs<:Function}
     enable_ionic_carriers        ::  IonicChargeCarriers
 
     """
-    An AbstractVector which contains information on present SRH traps.
+    A struct which contains information on present SRH traps.
     """
     enable_traps                 ::  Traps
 
     """
     DataType which stores information about which inner interface model is chosen by user.
-    This quantity cannot be seen by the user and is needed for the core of package.
+    This quantity cannot be seen by the user and is needed for the core of the package.
     """
     inner_interface_model        ::  InterfaceModelType
 
@@ -508,12 +509,12 @@ mutable struct Data{TFuncs<:Function}
     λ1                           ::  Float64
 
     """
-    An embedding parameter for the generation rate ``G``.
+    An embedding parameter for the generation rate.
     """
     λ2                           ::  Float64
 
     """
-    An embedding parameter for the electrochemical reaction.
+    An embedding parameter for an electrochemical reaction.
     """
     λ3                           ::  Float64
 
@@ -529,7 +530,7 @@ mutable struct Data{TFuncs<:Function}
     tempBEE1                     ::  Array{Float64, 1}
 
     """
-    See the description of tempBEE1
+    See the description of tempBEE1.
     """
     tempBEE2                     ::  Array{Float64, 1}
 
@@ -541,7 +542,7 @@ mutable struct Data{TFuncs<:Function}
     tempDOS1                     ::  Array{Float64, 1}
 
     """
-    See the desciption of tempDOS2
+    See the desciption of tempDOS2.
     """
     tempDOS2                     ::  Array{Float64, 1}
 
@@ -550,26 +551,23 @@ mutable struct Data{TFuncs<:Function}
     ###############################################################
 
     """
-    An array which contains information on whether charge carriers
-    are continuous or discontinuous.
-    This is needed for building the AbstractQuantities which handle the
+    An array containing information on whether charge carriers are continuous or
+    discontinuous. This is needed for building the AbstractQuantities which handle the
     indices of charge carriers on different regions.
     """
     isContinuous                 :: Array{Bool, 1}
 
 
     """
-    This list stores all charge carriers. Based on
-    the user choice we have with this new type the opportunity to
-    simulate discontinuous unknowns.
+    This list stores all charge carriers. Based on the user choice we have with this new type
+    the opportunity to simulate discontinuous unknowns.
     """
     chargeCarrierList            :: Array{QType, 1}
 
 
     """
-    This variable stores the index of the electric potential. Based on
-    the user choice we have with this new type the opportunity to
-    simulate discontinuous unknowns.
+    This variable stores the index of the electric potential. Based on the user choice we have
+    with this new type the opportunity to simulate discontinuous unknowns.
     """
     index_psi                    :: QType
 
@@ -627,8 +625,7 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Simplified constructor for Params which only takes the grid
-and the numberOfCarriers as argument.
+Simplified constructor for Params which only takes the grid and the numberOfCarriers as argument.
 
 """
 function Params(grid, numberOfCarriers)
@@ -720,11 +717,11 @@ and the numberOfCarriers as argument.
 """
 function ParamsNodal(grid, numberOfCarriers)
 
-    numberOfNodes                       = length(grid[Coordinates])
+    numberOfNodes  = length(grid[Coordinates])
 
     ###############################################################
 
-    paramsnodal                         = ParamsNodal()
+    paramsnodal    = ParamsNodal()
 
     ###############################################################
     ####                    number of nodes                    ####
@@ -766,30 +763,29 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
     ####                   model information                   ####
     ###############################################################
 
-    data.F                      = TFuncs[ Boltzmann for i=1:numberOfCarriers]
-    data.boundary_type          = BoundaryModelType[ InterfaceModelNone for i = 1:numberOfBoundaryRegions]
+    data.F                     = TFuncs[ Boltzmann for i=1:numberOfCarriers]
+    data.boundary_type         = BoundaryModelType[InterfaceModelNone for i = 1:numberOfBoundaryRegions]
 
     # bulk_recombination is a struct holding the input information
-    data.bulk_recombination     = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = true, bulk_recomb_radiative = true,
-                                                         bulk_recomb_SRH = true)
+    data.bulk_recombination    = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = true,
+                                                        bulk_recomb_radiative = true,
+                                                        bulk_recomb_SRH = true)
 
-    # enable_ionic_carriers is a struct holding the input information
-    data.enable_ionic_carriers  = IonicChargeCarriers()
+    data.enable_ionic_carriers = IonicChargeCarriers()
+    data.enable_traps          = Traps()
 
-    data.enable_traps           = Traps()
-
-    data.inner_interface_model  = InterfaceModelNone
+    data.inner_interface_model = InterfaceModelNone
 
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
     data.flux_approximation     = ScharfetterGummel
-    data.calculation_type       = InEquilibrium       # do performances InEquilibrium or OutOfEquilibrium
-    data.model_type             = Stationary          # indicates if we need additional time dependent part
-    data.generation_model       = GenerationNone      # generation model
-    data.λ1                     = 1.0                 # λ1: embedding parameter for NLP
-    data.λ2                     = 1.0                 # λ2: embedding parameter for G
-    data.λ3                     = 1.0                 # λ3: embedding parameter for electro chemical reaction
+    data.calculation_type       = InEquilibrium     # do performances InEquilibrium or OutOfEquilibrium
+    data.model_type             = Stationary        # indicates if we need additional time dependent part
+    data.generation_model       = GenerationNone    # generation model
+    data.λ1                     = 1.0               # λ1: embedding parameter for NLP
+    data.λ2                     = 1.0               # λ2: embedding parameter for G
+    data.λ3                     = 1.0               # λ3: embedding parameter for electro chemical reaction
 
     ###############################################################
     ####             Templates for DOS and BEE                 ####
@@ -803,10 +799,9 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
     ###############################################################
     ####        Quantities (for discontinuous solving)         ####
     ###############################################################
-    data.isContinuous           = Bool[ true for i = 1:numberOfCarriers]
     # default values for most simple case
+    data.isContinuous           = Bool[true for i = 1:numberOfCarriers]
     data.chargeCarrierList      = QType[ii for ii = 1:numberOfCarriers]
-
     data.index_psi              = numberOfCarriers + 1
 
     ###############################################################
@@ -827,11 +822,9 @@ end
 """
 $(SIGNATURES)
 
-System constructor which builds all necessary information needed based
-on the input parameters with special regard to additional interface models.
-This is the main struct in which all information on the input data, but also
-on the solving system, with which the calculations are performed,
-are stored.
+System constructor which builds all necessary information needed based on the input parameters
+with special regard to interface models. This is the main struct in which all information on
+the input data, but also on the solving system, are stored.
 
 """
 function System(grid, data ;unknown_storage)
@@ -855,13 +848,13 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
 
     ctsys                  = System()
 
-    # save this information such that there is no need to calculate it again for boundary conditions
+    # save this information such that there is no need to calculate it again for outer boundary conditions
     data.inner_interface_model = InterfaceModelNone
 
     # Here, in this case for the loops within physics methods we set the chargeCarrierList to normal indexing.
     data.chargeCarrierList = collect(1:data.params.numberOfCarriers)
 
-    # put Auger, radiative and SRH recombination on or off
+    # put Auger, radiative and SRH recombination on or off (based on user information)
     if data.bulk_recombination.bulk_recomb_Auger == false
         data.params.recombinationAuger .= 0.0
     end
@@ -916,17 +909,29 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
 
 end
 
-# DA: caution with the interface_model with ionic interface charges (in future versions,
-# we will work with VoronoiFVM.InterfaceQuantites)
 # The core of the new system constructor. Here, the system for discontinuous quantities
 # is build.
+# DA: caution this method is still not well tested and will be adjusted in future versions.
 function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontqF})
 
     ctsys        = System()
     fvmsys       = VoronoiFVM.System(grid, unknown_storage=unknown_storage)
 
-    # save this information such that there is no need to calculate it again for boundary conditions
+    # save this information such that there is no need to calculate it again for outer boundary conditions
     data.inner_interface_model = InterfaceModelDiscontqF
+
+    # put Auger, radiative and SRH recombination on or off
+    if data.bulk_recombination.bulk_recomb_Auger == false
+        data.params.recombinationAuger .= 0.0
+    end
+
+    if data.bulk_recombination.bulk_recomb_radiative == false
+        data.params.recombinationRadiative .= 0.0
+    end
+
+    if data.bulk_recombination.bulk_recomb_SRH == SRHOff
+        data.params.prefactor_SRH = 0.0
+    end
 
     data.chargeCarrierList = Array{VoronoiFVM.AbstractQuantity, 1}(undef, data.params.numberOfCarriers)
 
@@ -965,20 +970,7 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontq
 
     end
 
-    data.index_psi        = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)
-
-    # put Auger, radiative and SRH recombination on or off
-    if data.bulk_recombination.bulk_recomb_Auger == false
-        data.params.recombinationAuger .= 0.0
-    end
-
-    if data.bulk_recombination.bulk_recomb_radiative == false
-        data.params.recombinationRadiative .= 0.0
-    end
-
-    if data.bulk_recombination.bulk_recomb_SRH == SRHOff
-        data.params.prefactor_SRH = 0.0
-    end
+    data.index_psi = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)
 
     physics    = VoronoiFVM.Physics(data        = data,
                                     flux        = flux!,
@@ -1049,9 +1041,8 @@ function inner_interface_model(data::Data)
 
     elseif countInterfaceCharge > 0 # build ion interface charge system
 
-        # DA: currently for this case, since InterfaceQuantites is not well tested we stick with the no inferface case, i.e.
-        #     the known case how we build the system. Since we did not change anything, the code in
-        #     Example107 works perfectly fine since the choice of species number is already set.
+        # DA: currently for this case, since InterfaceQuantites is not well tested we stick
+        #     with the no inferface case.
         return InterfaceModelNone
 
     elseif countDiscontqF + countInterfaceCharge == 0 # build system without further interface conditions
@@ -1065,7 +1056,6 @@ end
 
 # Method which determines with input parameters which inner interface model was chosen by user.
 function inner_interface_model(ctsys::System)
-
 
     countDiscontqF = 0::Int64; countInterfaceCharge = 0::Int64
 
@@ -1091,9 +1081,8 @@ function inner_interface_model(ctsys::System)
 
     elseif countInterfaceCharge > 0 # build ion interface charge system
 
-        # DA: currently for this case, since InterfaceQuantites is not well tested we stick with the no inferface case, i.e.
-        #     the known case how we build the system. Since we did not change anything, the code in
-        #     Example107 works perfectly fine since the choice of species number is already set.
+        # DA: currently for this case, since InterfaceQuantites is not well tested we stick
+        #     with the no inferface case.
         return InterfaceModelNone
 
     elseif countDiscontqF + countInterfaceCharge == 0 # build system without further interface conditions
@@ -1131,7 +1120,7 @@ end
 
 function __set_contact!(ctsys, ibreg, Δu, ::Type{OhmicContact})
 
-    interface_model       = ctsys.data.inner_interface_model
+    interface_model = ctsys.data.inner_interface_model
 
     set_ohmic_contact!(ctsys, ibreg, Δu, interface_model)
 
@@ -1154,7 +1143,7 @@ function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{InterfaceModelNone})
 
 end
 
-function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{InterfaceModelSurfaceReco})
+function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{InterfaceModelSurfaceReco})
 
     iphin = ctsys.data.bulk_recombination.iphin
     iphip = ctsys.data.bulk_recombination.iphip
@@ -1163,14 +1152,14 @@ function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{InterfaceModelSurf
     iphip = ctsys.data.chargeCarrierList[iphip]
 
     ctsys.fvmsys.boundary_factors[iphin, ibreg] = VoronoiFVM.Dirichlet
-    ctsys.fvmsys.boundary_values[iphin, ibreg]  = contact_val
+    ctsys.fvmsys.boundary_values[iphin, ibreg]  = Δu
     ctsys.fvmsys.boundary_factors[iphip, ibreg] = VoronoiFVM.Dirichlet
-    ctsys.fvmsys.boundary_values[iphip, ibreg]  = contact_val
+    ctsys.fvmsys.boundary_values[iphip, ibreg]  = Δu
 
 end
 
 
-function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{InterfaceModelDiscontqF})
+function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{InterfaceModelDiscontqF})
 
     iphin = ctsys.data.bulk_recombination.iphin
     iphip = ctsys.data.bulk_recombination.iphip
@@ -1182,14 +1171,14 @@ function set_ohmic_contact!(ctsys, ibreg, contact_val, ::Type{InterfaceModelDisc
 
         for icc ∈ [iphin, iphip]
             ctsys.fvmsys.boundary_factors[icc.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
-            ctsys.fvmsys.boundary_values[icc.regionspec[ibreg], ibreg] = contact_val
+            ctsys.fvmsys.boundary_values[icc.regionspec[ibreg], ibreg]  = Δu
         end
 
     else
 
         for icc ∈ [iphin, iphip]
             ctsys.fvmsys.boundary_factors[icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] = VoronoiFVM.Dirichlet
-            ctsys.fvmsys.boundary_values[ icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] = contact_val
+            ctsys.fvmsys.boundary_values[ icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] =  Δu
         end
 
     end
@@ -1283,7 +1272,7 @@ end
 """
 Calculates current for stationary problem.
 """
-function get_current_val(ctsys, U) # DA: But caution, still need some small modification!
+function get_current_val(ctsys, U)
 
     factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
 
@@ -1394,6 +1383,7 @@ function compute_energies!(grid, data, sol)
 
     for icc in 1:params.numberOfCarriers
 
+        # DA: potential bug. We need to distinguish between boundary and interior energies!
         for inode in 1:params.numberOfNodes
              E                      = params.bandEdgeEnergy[icc, cellregions[inode]] + paramsnodal.bandEdgeEnergy[icc, inode]
              energies[icc, inode]   = E - q * sol[ipsi, inode]
@@ -1475,6 +1465,16 @@ function electroNeutralSolution!(grid, data; Newton=false)
 
 end
 
+"""
+
+$(TYPEDSIGNATURES)
+
+Compute the charge density for each region separately.
+"""
+function charge_density(ctsys, sol)
+    integrate(ctsys.fvmsys,reaction!,sol)[ctsys.data.index_psi,:]
+end
+
 
 """
 
@@ -1492,9 +1492,8 @@ end
 
 $(TYPEDSIGNATURES)
 
-First try of debugger. Print the Jacobi matrix for a given node, i.e.
-the number of the node in the grid and not the excact coordinate.
-This is only done for the one dimensional case so far.
+First try of debugger. Print the Jacobi matrix for a given node, i.e. the number of node in
+the grid and not the excact coordinate. This is only done for the one dimensional case so far.
 """
 function printJacobi(node, sys)
     ctdata = data(sys)
@@ -1506,14 +1505,4 @@ function printJacobi(node, sys)
     else
         println(sys.matrix[3*node-2:3*node, 3*node-5:3*node+3])
     end
-end
-
-"""
-
-$(TYPEDSIGNATURES)
-
-Compute the charge density for each region separately.
-"""
-function charge_density(ctsys, sol)
-    integrate(ctsys.fvmsys,reaction!,sol)[ctsys.data.index_psi,:]
 end

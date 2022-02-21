@@ -11,21 +11,19 @@ using Roots
 include("ct_constants.jl")
 
 export kB, Planck_constant, mₑ, q, ε0
-
+##################################################################
 
 include("ct_units.jl")
 
 export K, J, A, V, m, s, C, kg, Hz
 export cm, mm, μm, nm, ms, μs, ns, ps, eV
 export tiny_penalty_value
-
 ##################################################################
 
 include("ct_distributions.jl")
 
 export Boltzmann, Blakemore, FermiDiracMinusOne, FermiDiracOneHalfBednarczyk
 export FermiDiracOneHalfTeSCA, FermiDiracZero
-
 ##################################################################
 
 include("ct_datatypes.jl")
@@ -50,13 +48,11 @@ export SRHOff, SRHWithoutTrapsStationary, SRHTrapsTransient
 
 export GenerationModelType
 export GenerationNone, GenerationBeerLambert, GenerationUniform
-
 ##################################################################
 
 include("ct_physics.jl")
 
 export breaction!, bstorage!, reaction!, storage!, flux!
-
 ##################################################################
 
 include("ct_system.jl")
@@ -69,7 +65,6 @@ export compute_densities!, compute_energies!, electroNeutralSolution!, print_jac
 export show_params, trap_density!
 export get_current_val, charge_density
 export enable_traps!
-
 ##################################################################
 
 include("ct_plotting.jl")

@@ -3,8 +3,7 @@
     Famous constants in SI units
 """
 
-### Below is a first try with Unitful/PhysicalConstants.
-### Problem: Units need to be erased, see Quire #109 in ChargeTransport
+### Below is a first try with Unitful/PhysicalConstants. Problem: Units need to be erased.
 
 # using Unitful
 # using PhysicalConstants.CODATA2018
@@ -25,7 +24,7 @@ const ε0              = 8.8541878176e-12  # (A*s)/(V*m) --- absolute dielectric
 # Numerical parameters
 const tiny_penalty_value = 1.0e-10        # tiny penalty value
 
-# Set this as temporary values from pdelib, figure out the recent SI stuff (Unitful.jl) ?
+# Set this as temporary values from pdelib
 function set_pdelib_constants()
     global kB = 1.3806503e-23
     global q  = 1.602176462e-19

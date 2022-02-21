@@ -2,16 +2,12 @@
 # PSC device without mobile ions (1D).
 ([source code](SOURCE_URL))
 
-Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions
-and in stationary state (i.e. no time-dependency). This means we consider
-hetero interfaces.
-The simulations are performed out of equilibrium and with
+Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions and in stationary
+state. We consider heterojunctions. The simulations are performed out of equilibrium and with
 abrupt interfaces. For simplicity, the generation is off.
 
 This simulation coincides with the one made in Section 4.3
-of Calado et al. (https://arxiv.org/abs/2009.04384).
-The paramters can be found in Table S.13 or slightly modified than the one
-in the publication here:
+of Calado et al. (https://arxiv.org/abs/2009.04384) with the parameters in Table S.13. Or here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 =#
 
@@ -43,7 +39,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     bregionAcceptor         = 2
     bregions                = [bregionAcceptor, bregionDonor]
 
-    ## grid: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
     h_ndoping               = 9.90e-6 * cm
     h_intrinsic             = 4.00e-5 * cm + 2.0e-7 * cm # add 2.e-7 cm to this layer for agreement with grid of Driftfusion
     h_pdoping               = 1.99e-5 * cm
@@ -194,7 +189,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     Na                  =   1.03e18             / (cm^3)
     Ni_acceptor         =   8.32e7              / (cm^3)
 
-    ## contact voltages: we impose an applied voltage only on one boundary.
+    ## contact voltage: we impose an applied voltage only on one boundary.
     ## At the other boundary the applied voltage is zero.
     voltageAcceptor     =  1.2                  * V
 
@@ -211,10 +206,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # We initialize the Data instance and fill in predefined data.
     data                                = Data(grid, numberOfCarriers)
 
-    ## possible choices: Stationary, Transient
+    ## Possible choices: Stationary, Transient
     data.model_type                     = Stationary
 
-    ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    ## Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk,
     ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= FermiDiracOneHalfTeSCA
 
@@ -223,12 +218,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = false)
 
-    ## possible choices: OhmicContact, SchottkyContact(outer boundary) and InterfaceModelNone,
+    ## Possible choices: OhmicContact, SchottkyContact(outer boundary) and InterfaceModelNone,
     ## InterfaceModelSurfaceReco (inner boundary).
     data.boundary_type[bregionAcceptor] = OhmicContact
     data.boundary_type[bregionDonor]    = OhmicContact
 
-    ## choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
     data.flux_approximation             = ExcessChemicalPotential
 
@@ -335,7 +330,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.tol_relative      = 1.0e-13
     control.handle_exceptions = true
     control.tol_round         = 1.0e-13
-    control.max_round         = 5
 
     if test == false
         println("*** done\n")
@@ -347,9 +341,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    control.damp_initial      = 0.8
-    control.damp_growth       = 1.61 # >= 1
-    control.max_round         = 5
+    control.damp_initial  = 0.8
+    control.damp_growth   = 1.61 # >= 1
+    control.max_round     = 5
 
     ## initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
@@ -360,7 +354,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     initialGuess         .= solution
 
     if plotting
-        ## set legend for plotting routines. Either you can use the predefined labes or write your own.
         label_solution, label_density, label_energy = set_plotting_labels(data)
 
         plot_energies(Plotter,  grid, data, solution, "Equilibrium", label_energy)
@@ -381,11 +374,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ctsys.data.calculation_type                      = OutOfEquilibrium
+    ctsys.data.calculation_type = OutOfEquilibrium
 
-    control.damp_initial                             = 0.6
-    control.damp_growth                              = 1.21 # >= 1
-    control.max_round                                = 7
+    control.damp_initial        = 0.6
+    control.damp_growth         = 1.21 # >= 1
+    control.max_round           = 7
 
     maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 13)

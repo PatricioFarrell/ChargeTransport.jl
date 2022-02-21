@@ -2,11 +2,10 @@
 # GaAs diode (1D).
 ([source code](SOURCE_URL))
 
-We simulate charge transport in a GaAs pin diode, where use the van Roosbroeck
+We simulate charge transport in a GaAs pin diode, where we use the van Roosbroeck
 system of equations as charge transport model. The unknowns are given by the quasi Fermi
 potentials of electrons and holes $\varphi_n$, $\varphi_p$ and the electric potential $\psi$.
-The simulations are performed out of equilibrium and for the
-stationary problem.
+The simulations are performed out of equilibrium and for the stationary problem.
 =#
 
 module Ex101_PIN
@@ -53,9 +52,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## grid
     refinementfactor        = 2^(n-1)
-    h_pdoping               = 2 * μm
-    h_intrinsic             = 2 * μm
-    h_ndoping               = 2 * μm
+    h_pdoping               = 2.0    * μm
+    h_intrinsic             = 2.0    * μm
+    h_ndoping               = 2.0    * μm
+    w_device                = 0.5    * μm  # width of device
+    z_device                = 1.0e-4 * cm  # depth of device
     coord                   = initialize_pin_grid(refinementfactor,
                                                   h_pdoping,
                                                   h_intrinsic,
@@ -113,7 +114,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## intrinsic concentration
     ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T))
 
-    ## contact voltages: we impose an applied voltage only on one boundary.
+    ## contact voltage: we impose an applied voltage only on one boundary.
     ## At the other boundary the applied voltage is zero.
     voltageAcceptor   = 1.5                  * V
 
@@ -168,8 +169,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     # Define the Params struct. Params contains all necessary physical parameters. If one
-    # wants to simulate space-dependent variable, one additionally needs to generate a
-    # ParamsNodal struct, see Example102.
+    # wants to simulate space-dependent variables, one additionally needs to generate a
+    # ParamsNodal struct, see Ex102.
     params                                              = Params(grid, numberOfCarriers)
 
     params.temperature                                  = T
@@ -177,7 +178,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
 
-    for ibreg in 1:numberOfBoundaryRegions   # boundary region data
+    for ibreg in 1:numberOfBoundaryRegions  # boundary region data
         params.bDensityOfStates[iphin, ibreg]           = Nc
         params.bDensityOfStates[iphip, ibreg]           = Nv
         params.bBandEdgeEnergy[iphin, ibreg]            = Ec
@@ -245,7 +246,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## We set zero voltage ohmic contacts for each charge carrier at all outerior boundaries
     ## for the equilibrium calculations.
     set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor, Δu = 0.0)
+    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
     if test == false
         println("*** done\n")
@@ -255,7 +256,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ################################################################################
         println("Plot electroneutral potential, band-edge energies and doping")
         ################################################################################
-        ## set legend for plotting routines. Either you can use the predefined labes or write your own.
+        ## set legend for plotting routines. Either you can use the predefined labels or write your own.
         label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
 
         psi0 = electroNeutralSolution!(grid, data)
@@ -275,14 +276,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     control                   = NewtonControl()
     control.verbose           = verbose
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.21
     control.max_iterations    = 250
     control.tol_absolute      = 1.0e-14
     control.tol_relative      = 1.0e-14
     control.handle_exceptions = true
     control.tol_round         = 1.0e-8
-    control.max_round         = 5
 
     if test == false
         println("*** done\n")
@@ -294,18 +292,17 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    control.damp_initial  = 0.5
-    control.damp_growth   = 1.2 # >= 1
-    control.max_round     = 3
+    control.damp_initial = 0.5
+    control.damp_growth  = 1.2 # >= 1
+    control.max_round    = 3
 
     ## initialize solution and starting vectors
-    initialGuess          = unknowns(ctsys)
-    solution              = unknowns(ctsys)
+    initialGuess         = unknowns(ctsys)
+    solution             = unknowns(ctsys)
 
-    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
+    solution             = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution
-
+    initialGuess        .= solution
 
     if test == false
         println("*** done\n")
@@ -317,20 +314,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     # Set calculation type to OutOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type      = OutOfEquilibrium
+    ctsys.data.calculation_type = OutOfEquilibrium
 
-    if !(data.F == Boltzmann) # adjust control, when not using Boltzmann
-        control.damp_initial      = 0.5
-        control.damp_growth       = 1.2
-        control.max_iterations    = 30
-    end
-
-    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 32)
-    IV         = zeros(0)
-
-    w_device = 0.5    * μm  # width of device
-    z_device = 1.0e-4 * cm  # depth of device
+    maxBias                     = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    biasValues                  = range(0, stop = maxBias, length = 32)
+    IV                          = zeros(0)
 
     for Δu in biasValues
 

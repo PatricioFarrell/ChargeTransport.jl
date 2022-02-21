@@ -1,6 +1,3 @@
-"""
-Distribution integrals.
-"""
 
 using ForwardDiff
 
@@ -39,10 +36,9 @@ end
 $(TYPEDSIGNATURES)
 
 
-The Fermi-Dirac integral of order ``-1`` which reads
-``1/(\\exp(-x) + 1)``, see J.S. Blakemore, Approximations for Fermi-Dirac integrals,
-especially the function ``F_{1/2} (\\eta)`` used to describe electron density in a
-semiconductor, Solid-State Electronics 25 (11) (1982) 1067 – 1076.
+The Fermi-Dirac integral of order ``-1`` which reads ``1/(\\exp(-x) + 1)``, see J.S. Blakemore,
+Approximations for Fermi-Dirac integrals, especially the function ``F_{1/2} (\\eta)`` used to
+describe electron density in a semiconductor, Solid-State Electronics 25 (11) (1982) 1067 – 1076.
 """
 function FermiDiracMinusOne(x::Real)
     Blakemore(x, 1.0)
@@ -53,8 +49,7 @@ end
 $(TYPEDSIGNATURES)
 
 
-The incomplete Fermi-Dirac integral of order 1/2,
-implemented according to [Bednarczyk1978,
+The incomplete Fermi-Dirac integral of order 1/2, implemented according to [Bednarczyk1978,
 "The Approximation of the Fermi-Dirac integral ``F_{1/2}(\\eta)``"].
 """
 function FermiDiracOneHalfBednarczyk(x::Real)
@@ -68,9 +63,8 @@ end
 $(TYPEDSIGNATURES)
 
 
-The incomplete Fermi-Dirac integral of order 1/2,
-implemented according to the software package TeSCA,
-see https://wias-berlin.de/software/index.jsp?lang=1&id=TeSCA.
+The incomplete Fermi-Dirac integral of order 1/2, implemented according to the software
+package TeSCA, see https://wias-berlin.de/software/index.jsp?lang=1&id=TeSCA.
 """
 function FermiDiracOneHalfTeSCA(x::Real)
     if x < 1.6107
@@ -78,7 +72,6 @@ function FermiDiracOneHalfTeSCA(x::Real)
         y  = 1+ex
         w  = y-1
         z  = w==0 ? ex : ex*log(y)/w
-        #z = log(1+ exp(x) )
         return ( 1 + 0.16 * z ) * z
     elseif 1.6107 <= x <= 344.7
         z = log( 1 + exp( x^(3/4)) )

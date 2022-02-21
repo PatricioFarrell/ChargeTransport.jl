@@ -2,8 +2,8 @@
 # Example code for a 2D non rectangular grid.
 ([source code](SOURCE_URL))
 
-This code provides an unstructured grid for a non rectangular two-dimensional
-domain. The grid is produced with Triangulate.jl.
+This code provides an unstructured grid for a non rectangular two-dimensional domain.
+The grid is produced with Triangulate.jl.
 =#
 ENV["LC_NUMERIC"]="C"
 
