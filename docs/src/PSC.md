@@ -36,7 +36,7 @@ Differences to the previous example include
 A quick survey on how to use `ChargeTransport.jl` to adjust the input parameters such that these features can be simulated will be given in the following.
 
 ## Example 1: Graded interfaces
-By default, we assume abrupt inner interfaces. If one wishes to simulate graded interfaces, where for example the effective density of states and the band-edge energy may vary, we refer to [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example105_PSC_gradedFlux.jl).
+By default, we assume abrupt inner interfaces. If one wishes to simulate graded interfaces, where for example the effective density of states and the band-edge energy may vary, we refer to [this](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex104_PSC_gradedFlux_Schottky_contacts.jl) or [this](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex105_PSC_gradedFlux.jl) example.
 
 We sketch the relevant parts here. First, we need to define two additional thin interface layers
 
@@ -67,7 +67,7 @@ paramsnodal.bandEdgeEnergy[iphin, :]  = grading_parameter!(paramsnodal.bandEdgeE
 ```
 
 ## Example 2: Linear IV scan protocol
-Here, we summarize the main parts of [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example106_PSC_withIons_IVMeasurement.jl).
+Here, we summarize the main parts of [this](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex106_PSC_withIons_IVMeasurement.jl) example.
 Define three charge carriers.
 ```julia
 iphin                       = 2 # electrons
@@ -112,19 +112,20 @@ Add uniform illumination to the previous code by setting
 ```julia
 data.generation_model    = GenerationUniform
 ```
-and specifing the uniform generation rate in each region, i.e.
+and specify the uniform generation rate in each region, i.e.
 
 ```julia
 for ireg in 1:numberOfRegions
     params.generationUniform[ireg]  = generationUniform[ireg]
 end
 ```
-for given data  stored in `generationUniform`. Note that also Beer-Lambert generation is implemented but yet not well tested.
-Furthermore, we recommend to perform a time loop while increasing the generation rate and afterwards applying the scan protocol with a full generation due to numerical stability, see this [example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example107_PSC_uniform_Generation.jl).
+for given data stored in `generationUniform`. Note that also Beer-Lambert generation is implemented but yet not well tested.
+Furthermore, we recommend to perform a time loop while increasing the generation rate and afterwards applying the scan protocol with a full generation due to numerical stability, see this [example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex108_PSC_uniform_Generation.jl).
 
 ## Example 4: 2D and 3D problems
 It is also possible to perform multi-dimensional simulations.
 
-For a 2D mesh you may use a structured grid via [ExtendableGrids.jl](https://github.com/j-fu/ExtendableGrids.jl), see [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example108_PSC_2D_tensorGrid.jl) or an unstructured mesh via the Julia wrapper [Triangulate.jl](https://github.com/JuliaGeometry/Triangulate.jl) for Jonathan Richard Shewchuk's Triangle mesh generator, see [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example201_PSC_2D_unstructuredGrid.jl) for the simulation on a rectangular grid or [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example201_2D_non_rectangularGrid.jl) for a non-rectangular one.
+For a 2D mesh you may use a structured grid via [ExtendableGrids.jl](https://github.com/j-fu/ExtendableGrids.jl) or an unstructured mesh via the Julia wrapper [Triangulate.jl](https://github.com/JuliaGeometry/Triangulate.jl) for Jonathan Richard Shewchuk's Triangle mesh generator.
+Respective examples can be likewise found within this package.
 
-Lastly, with help of the [TetGen.jl](https://github.com/JuliaGeometry/TetGen.jl) wrapper, three dimensional tetrahedral meshes can be generated, see [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example202_3D_grid.jl).
+Lastly, with help of the [TetGen.jl](https://github.com/JuliaGeometry/TetGen.jl) wrapper, three dimensional tetrahedral meshes can be generated, see [this](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Grid_3D.jl) example.

@@ -2,13 +2,13 @@
 Mathematical drift-diffusion models
 ================================
 `ChargeTransport.jl` relies on the drift-diffusion semiconductor equations which are sometimes
-referred to as van Roosbroeck system. This nonlinear system of partial differential equations 
-couples Poisson's equation to several continuity equations. The precise type and amount will vary with the specific application. 
+referred to as van Roosbroeck system. This nonlinear system of partial differential equations
+couples Poisson's equation to several continuity equations. The precise type and amount will vary with the specific application.
 
-In this section, we would like to 
-describe the mathematical theory a bit more in detail. We denote with $\alpha$ the charge 
-carrier, with $n_\alpha$ its corresponding density in a device region $\mathbf{\Omega}$ during a 
-finite time interval $[0, t_F]$. 
+In this section, we would like to
+describe the mathematical theory a bit more in detail. We denote with $\alpha$ the charge
+carrier, with $n_\alpha$ its corresponding density in a device region $\mathbf{\Omega}$ during a
+finite time interval $[0, t_F]$.
 
 ## Poisson's equation
 
@@ -18,11 +18,11 @@ Poisson's equation for the electric potential $\psi$ is given by
 - \nabla \cdot \Bigl(\varepsilon_s \nabla \psi(\mathbf{x}, t) \Bigr) &= q \sum_{\alpha} z_\alpha \Bigl( n_\alpha(\mathbf{x}, t) - C_\alpha(\mathbf{x}) \Bigr).
 \end{aligned}
 ```
-Here, 
+Here,
 $\varepsilon_s$
 denotes the dielectric permittivity and $ q $ the elementary charge. The right-hand side of Poisson's equation, the space charge density, is the sum of charge carrier densities
 $n_\alpha$
-multiplied by their respective charge numbers 
+multiplied by their respective charge numbers
 $z_\alpha$
 and some corresponding fixed charges, the doping $ C_\alpha $.
 
@@ -31,33 +31,33 @@ and some corresponding fixed charges, the doping $ C_\alpha $.
 Poisson's equation is coupled to additional continuity equations for each charge carrier $\alpha$, which describe the motion of free charge carriers in an electric field
 ```math
 \begin{aligned}
-z_\alpha q \partial_t n_\alpha +  \nabla\cdot \mathbf{j}_\alpha 
-	&= 
+z_\alpha q \partial_t n_\alpha +  \nabla\cdot \mathbf{j}_\alpha
+	&=
 	z_\alpha q	r_\alpha.
 \end{aligned}
 ```
 Here, the flux
 $\mathbf{j}_\alpha$
 refers to the the carrier's current density and $r_\alpha$ to some production/reduction rates.
-These rates may be chosen to represent different recombination or generation models such as Shockley-Read-Hall, Auger or direct recombination. Further details on which recombination or generation models are implemented can be found in [the general description of the code](@ref generalDescription).
+These rates may be chosen to represent different recombination or generation models such as Shockley-Read-Hall, Auger or direct recombination.
 
 The amount and type of charge carriers will be dependent on the specific application. The standard semiconductor equations use electrons $\alpha=n$ and holes $\alpha=p$.
 
 ## Drift-diffusion fluxes
 Our code uses as independent variables the electrostatic potential $\psi$ as well as the quasi Fermi
-potentials $\varphi_\alpha$. The charge carrier densities $n_\alpha$ are linked to the corresponding quasi Fermi potentials via the state equations 
+potentials $\varphi_\alpha$. The charge carrier densities $n_\alpha$ are linked to the corresponding quasi Fermi potentials via the state equations
 ```math
 \begin{aligned}
 n_\alpha = N_\alpha \mathcal{F}_\alpha \Bigl(\eta_\alpha(\psi, \varphi_\alpha) \Bigr), \quad \eta_\alpha = z_\alpha \frac{q (\varphi_\alpha - \psi) + E_\alpha}{k_B T},
 \end{aligned}
 ```
-where the physical quantities are defined [in the list of notations](@ref notation). With this definition we can formulate the carrier current given by
+where the physical parameters are defined [in the list of notations](@ref notation). With this definition we can formulate the carrier current given by
 ```math
 \begin{aligned}
-    \mathbf{j}_\alpha 
+    \mathbf{j}_\alpha
 	=
-    - (z_\alpha)^2 q \mu_\alpha  
-    n_\alpha  
+    - (z_\alpha)^2 q \mu_\alpha
+    n_\alpha
     \nabla\varphi_\alpha
     ~
 \end{aligned}
@@ -84,7 +84,7 @@ For a comprehensive overview of drift-diffusion models, semiconductor applicatio
 | :---:         |     :---:      |          :---: |          :---: |          :---: |          :---: |          :---: |          :---: |
 | $ \alpha $   | mobile charge carrier     |      |      |      |      | $ n_\alpha $    | charge carrier density of $ \alpha $    |
 | $\varepsilon_s$     | dielectric permittivity       |      |      |      |      | $ \psi $      | electrostatic potential      |
-| $ q $     | elementary charge       |      |      |      |      | $C$      | doping/background charge      |
+| $ q $     | elementary charge       |      |      |      |      | $ C_\alpha $      | doping/background charge      |
 | $ z_\alpha $     | charge number for $ \alpha $       |      |      |      |      | $ r_\alpha $     | production/reaction rate for $ \alpha $       |      |      |      |      | $ \mathbf{j}_\alpha $      | current density for $ \alpha $      |
 | $ N_\alpha $     | effective density of states for $ \alpha $       |      |      |      |      | $ \mathcal{F}_\alpha $      | statistics function      |
 | $ \varphi_\alpha $     | quasi Fermi potential for $ \alpha $       |      |      |      |      | $ E_\alpha $      | band-edge energy for $ \alpha $      |

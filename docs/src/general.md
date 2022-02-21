@@ -6,16 +6,16 @@ ChargeTransport.jl -- Simulating charge transport in semiconductors
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://PatricioFarrell.github.io/ChargeTransport.jl/dev)
 
 
-`ChargeTransport.jl` simulates charge transport in semiconductors. To this end, it discretizes 
+`ChargeTransport.jl` simulates charge transport in semiconductors. To this end, it discretizes
 the semiconductor drift-diffusion equations via the Voronoi finite volume method as implemented in [VoronoiFVM.jl](https://github.com/j-fu/VoronoiFVM.jl).
 
-### Special features 
+### Special features
 
 - heterostructures
-- 1D, 2D and 3D simulations 
+- 1D, 2D and 3D simulations
 - stationary and transient simulations
 - IV curves and scan protocols
-- an arbitrary amount of charge carriers may be added 
+- an arbitrary amount of charge carriers may be added
 - thermodynamically consistent, physics preserving numerical methods
 - different charge carrier statistics per species (Boltzmann, Blakemore, Fermi-Dirac)
 
@@ -32,8 +32,8 @@ julia> Pkg.add("ChargeTransport")
 The following packages need to be loaded
 
 ```julia
-julia> using ChargeTransport 
-julia> using VoronoiFVM      # nonlinear PDE solver 
+julia> using ChargeTransport
+julia> using VoronoiFVM      # nonlinear PDE solver
 julia> using ExtendableGrids # grid package
 ```
 We recommend to have a look at the example files:
@@ -49,9 +49,9 @@ Depth = 2
 You can load an example as follows
 
 ```julia
-julia> include("Example103_PSC.jl")
-julia> Example103_PSC.main()                
-julia> Example103_PSC.main(plotting = true) # show plots 
+julia> include("Ex103_PSC.jl")
+julia> Ex103_PSC.main()
+julia> Ex103_PSC.main(plotting = true) # show plots
 ```
 Since the examples are encapsulated into modules, you can load as many examples as you wish. If you would like to modify one of the examples, consider using [Revise.jl](https://github.com/timholy/Revise.jl) and `includet`.
 
