@@ -304,16 +304,16 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ctsys.data.calculation_type   = OutOfEquilibrium
+    data.calculation_type   = OutOfEquilibrium
 
     ## Scan rate and time steps
-    scanrate                      = 1.0 * V/s
-    number_tsteps                 = 25
-    endVoltage                    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    scanrate                = 1.0 * V/s
+    number_tsteps           = 25
+    endVoltage              = voltageAcceptor # bias goes until the given voltage at acceptor boundary
 
-    IV                            = zeros(0) # for IV values
-    biasValues                    = zeros(0) # for bias values
-    tend                          = endVoltage/scanrate
+    IV                      = zeros(0) # for IV values
+    biasValues              = zeros(0) # for bias values
+    tend                    = endVoltage/scanrate
 
     ## with fixed timestep sizes we can calculate the times
     ## a priori

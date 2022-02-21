@@ -407,7 +407,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    ctsys.data.calculation_type  = OutOfEquilibrium
+    data.calculation_type  = OutOfEquilibrium
 
     ## primary data for I-V scan protocol
     scanrate       = 0.04 * V/s

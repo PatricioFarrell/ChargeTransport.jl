@@ -421,11 +421,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ctsys.data.calculation_type = OutOfEquilibrium
+    data.calculation_type = OutOfEquilibrium
 
-    control.damp_initial        = 0.9
-    control.damp_growth         = 1.61 # >= 1
-    control.max_round           = 7
+    control.damp_initial  = 0.9
+    control.damp_growth   = 1.61 # >= 1
+    control.max_round     = 7
 
     maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 25)
@@ -457,7 +457,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("*** done\n")
     end
 
-    testval = solution[data.index_ipsi, 20]
+    testval = solution[data.index_psi, 20]
     return testval
 
 end #  main

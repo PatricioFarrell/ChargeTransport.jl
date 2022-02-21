@@ -422,24 +422,24 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## set calculation type to OutOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type   = OutOfEquilibrium
+    data.calculation_type   = OutOfEquilibrium
 
-    control.damp_initial          = 0.5
-    control.damp_growth           = 1.21
-    control.max_round             = 5
+    control.damp_initial    = 0.5
+    control.damp_growth     = 1.21
+    control.max_round       = 5
 
     ## there are different ways to control time stepping. Here we assume these primary data
-    scanrate                      = 1.0 * V/s
-    ntsteps                       = 31
-    vend                          = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend                          = vend/scanrate
+    scanrate                = 1.0 * V/s
+    ntsteps                 = 31
+    vend                    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                    = vend/scanrate
 
     ## with fixed timestep sizes we can calculate the times a priori
-    tvalues                       = range(0, stop = tend, length = ntsteps)
+    tvalues                 = range(0, stop = tend, length = ntsteps)
 
     ## for saving I-V data
-    IV                            = zeros(0) # for IV values
-    biasValues                    = zeros(0) # for bias values
+    IV                      = zeros(0) # for IV values
+    biasValues              = zeros(0) # for bias values
 
     for istep = 2:ntsteps
 
