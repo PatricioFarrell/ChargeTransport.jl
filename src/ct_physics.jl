@@ -150,7 +150,7 @@ Master breaction! function. This is the function which enters VoronoiFVM and han
 for each boundary the chosen boundary model.
 
 """
-breaction!(f, u, bnode, data) =  breaction!(f, u, bnode, data, data.boundary_type[bnode.region])
+breaction!(f, u, bnode, data) =  breaction!(f, u, bnode, data, data.boundaryType[bnode.region])
 
 
 """
@@ -227,8 +227,8 @@ function breaction!(f, u, bnode, data,  ::Type{SchottkyContact})
     paramsnodal   = data.paramsnodal
 
     # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
-    iphin       = data.bulk_recombination.iphin
-    iphip       = data.bulk_recombination.iphip
+    iphin       = data.bulkRecombination.iphin
+    iphip       = data.bulkRecombination.iphip
 
     # based on user index and regularity of solution quantities or integers are used
     iphin       = data.chargeCarrierList[iphin]
@@ -263,13 +263,13 @@ breaction!(f, u, bnode, data, ::Type{InterfaceModelTangentialFlux}) = emptyFunct
 
 
 function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
-    if data.calculation_type == InEquilibrium
+    if data.calculationType == InEquilibrium
         return
     end
 
     # indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (passed through recombination)
-    iphin       = data.bulk_recombination.iphin # integer index of φ_n
-    iphip       = data.bulk_recombination.iphip # integer index of φ_p
+    iphin       = data.bulkRecombination.iphin # integer index of φ_n
+    iphip       = data.bulkRecombination.iphip # integer index of φ_p
     looplist    = (iphin, iphip)
 
     ipsi        = data.index_psi
@@ -301,15 +301,15 @@ end
 # breaction term for case where qF are discontinuous.
 function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
 
-    if data.calculation_type == InEquilibrium
+    if data.calculationType == InEquilibrium
         return emptyFunction()
     end
 
     ipsi = data.index_psi
 
     #indices (∈ N) of electron and hole quasi Fermi potentials specified by user (passed through recombination)
-    iphin       = data.bulk_recombination.iphin # integer index of φ_n
-    iphip       = data.bulk_recombination.iphip # integer index of φ_p
+    iphin       = data.bulkRecombination.iphin # integer index of φ_n
+    iphip       = data.bulkRecombination.iphip # integer index of φ_p
 
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin] # = Quantity or integer
@@ -391,11 +391,11 @@ Master bstorage! function. This is the function which enters VoronoiFVM and hand
 for each boundary the time-dependent part of the chosen boundary model.
 
 """
-bstorage!(f, u, bnode, data) = bstorage!(f, u, bnode, data, data.model_type)
+bstorage!(f, u, bnode, data) = bstorage!(f, u, bnode, data, data.modelType)
 
 bstorage!(f, u, bnode, data, ::Type{Stationary})  = emptyFunction()
 
-bstorage!(f, u, bnode, data, ::Type{Transient}) = bstorage!(f, u, bnode, data, data.boundary_type[bnode.region])
+bstorage!(f, u, bnode, data, ::Type{Transient}) = bstorage!(f, u, bnode, data, data.boundaryType[bnode.region])
 
 
 bstorage!(f, u, bnode, data, ::Type{InterfaceModelNone}) = emptyFunction()
@@ -417,8 +417,8 @@ function bstorage!(f, u, bnode, data, ::Type{InterfaceModelTangentialFlux})
     paramsnodal = data.paramsnodal
 
     #indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
-    iphin       = data.bulk_recombination.iphin # integer index of φ_n
-    iphip       = data.bulk_recombination.iphip # integer index of φ_p
+    iphin       = data.bulkRecombination.iphin # integer index of φ_n
+    iphip       = data.bulkRecombination.iphip # integer index of φ_p
 
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin] # = Quantity or integer
@@ -447,7 +447,7 @@ Master bflux! function. This is the function which enters VoronoiFVM and hands o
 for each boundary the flux within the boundary.
 
 """
-bflux!(f, u, bedge, data) = bflux!(f, u, bedge, data, data.calculation_type)
+bflux!(f, u, bedge, data) = bflux!(f, u, bedge, data, data.calculationType)
 
 
 # In case of equilibrium, the bflux shall not enter.
@@ -455,7 +455,7 @@ bflux!(f, u, bedge, data, ::Type{InEquilibrium})             = emptyFunction()
 
 
 # Out of equilibrium, we need to additionally check for boundary type.
-bflux!(f, u, bedge, data, ::Type{OutOfEquilibrium})          = bflux!(f, u, bedge, data, data.boundary_type[bedge.region])
+bflux!(f, u, bedge, data, ::Type{OutOfEquilibrium})          = bflux!(f, u, bedge, data, data.boundaryType[bedge.region])
 
 bflux!(f, u, bedge, data, ::Type{InterfaceModelNone})        = emptyFunction()
 
@@ -466,9 +466,9 @@ bflux!(f, u, bedge, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
 
 
 # Cases, where we have a tangential flux.
-bflux!(f, u, bedge, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = bflux!(f, u, bedge, data, data.flux_approximation)
+bflux!(f, u, bedge, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = bflux!(f, u, bedge, data, data.fluxApproximation)
 
-bflux!(f, u, bedge, data, ::Type{InterfaceModelTangentialFlux}) = bflux!(f, u, bedge, data, data.flux_approximation)
+bflux!(f, u, bedge, data, ::Type{InterfaceModelTangentialFlux}) = bflux!(f, u, bedge, data, data.fluxApproximation)
 
 
 # excess chemical potential flux discretization scheme for inner boundaries.
@@ -483,8 +483,8 @@ function bflux!(f, u, bedge, data, ::Type{ExcessChemicalPotential})
     ireg        =   bedge.region
 
     # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
-    iphin       = data.bulk_recombination.iphin
-    iphip       = data.bulk_recombination.iphip
+    iphin       = data.bulkRecombination.iphin
+    iphip       = data.bulkRecombination.iphip
 
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin]
@@ -526,7 +526,7 @@ Master reaction! function. This is the function which enters VoronoiFVM and hand
 reaction terms for concrete calculation type and bulk recombination model.
 
 """
-reaction!(f, u, node, data) = reaction!(f, u, node, data, data.calculation_type)
+reaction!(f, u, node, data) = reaction!(f, u, node, data, data.calculationType)
 
 """
 $(TYPEDSIGNATURES)
@@ -551,8 +551,8 @@ function addRecombination!(f, u, node, data, ::SRHWithoutTrapsType)
     ireg  = node.region
 
     # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
-    iphin       = data.bulk_recombination.iphin
-    iphip       = data.bulk_recombination.iphip
+    iphin       = data.bulkRecombination.iphin
+    iphip       = data.bulkRecombination.iphip
 
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin]
@@ -597,9 +597,9 @@ function addRecombination!(f, u, node, data, ::SRHWithTrapsType)
     ireg        = node.region
 
     # indices (∈ IN) used by user
-    iphin       = data.bulk_recombination.iphin
-    iphip       = data.bulk_recombination.iphip
-    itrap       = data.enable_traps.traps
+    iphin       = data.bulkRecombination.iphin
+    iphip       = data.bulkRecombination.iphip
+    itrap       = data.enableTraps.traps
 
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin]
@@ -641,15 +641,15 @@ end
 function addGeneration!(f, u, node, data)
 
     # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
-    iphin       = data.bulk_recombination.iphin
-    iphip       = data.bulk_recombination.iphip
+    iphin       = data.bulkRecombination.iphin
+    iphip       = data.bulkRecombination.iphip
 
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
     looplist    = (iphin, iphip)
 
-    generationTerm = generation(data, node.region, node.coord[node.index], data.generation_model)
+    generationTerm = generation(data, node.region, node.coord[node.index], data.generationModel)
 
     for icc = 1:length(looplist)
         f[icc] = f[icc] - q * data.params.chargeNumbers[icc] * generationTerm
@@ -701,7 +701,7 @@ function RHSContinuityEquations!(f, u, node, data)
     end
 
     # dependent on user information concerncing recombination
-    addRecombination!(f, u, node, data, data.bulk_recombination.bulk_recomb_SRH)
+    addRecombination!(f, u, node, data, data.bulkRecombination.bulk_recomb_SRH)
     # dependent on user information concerncing generation
     addGeneration!(f, u, node, data)
 
@@ -785,7 +785,7 @@ Master storage! function. This is the function which enters VoronoiFVM and hands
 a storage term, if we consider transient problem.
 
 """
-storage!(f, u, node, data) = storage!(f, u, node, data, data.model_type)
+storage!(f, u, node, data) = storage!(f, u, node, data, data.modelType)
 
 storage!(f, u, node, data, ::Type{Stationary})  = emptyFunction()
 
@@ -832,7 +832,7 @@ no flux is passed. If outOfEquilibrium, we choose the flux approximation
 which the user chose.
 
 """
-flux!(f, u, edge, data) = flux!(f, u, edge, data, data.calculation_type)
+flux!(f, u, edge, data) = flux!(f, u, edge, data, data.calculationType)
 
 function flux!(f, u, edge, data, ::Type{InEquilibrium})
 
@@ -849,7 +849,7 @@ function flux!(f, u, edge, data, ::Type{InEquilibrium})
 
 end
 
-flux!(f, u, edge, data, ::Type{OutOfEquilibrium}) = flux!(f, u, edge, data, data.flux_approximation)
+flux!(f, u, edge, data, ::Type{OutOfEquilibrium}) = flux!(f, u, edge, data, data.fluxApproximation)
 
 
 # The classical Scharfetter-Gummel flux scheme. This also works for space-dependent

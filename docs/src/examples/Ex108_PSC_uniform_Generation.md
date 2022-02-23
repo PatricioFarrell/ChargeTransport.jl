@@ -223,34 +223,34 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     # Initialize Data instance and fill in predefined data
-    data                                = Data(grid, numberOfCarriers)
+    data                               = Data(grid, numberOfCarriers)
 
     # Possible choices: Stationary, Transient
-    data.model_type                     = Transient
+    data.modelType                     = Transient
 
     # Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA,
     # FermiDiracMinusOne, Blakemore
-    data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
+    data.F                             = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                  bulk_recomb_Auger = true,
-                                                                  bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = true)
+    data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                                 bulk_recomb_Auger = true,
+                                                                 bulk_recomb_radiative = true,
+                                                                 bulk_recomb_SRH = true)
 
     # Possible choices: GenerationNone, GenerationUniform
-    data.generation_model               = GenerationUniform
+    data.generationModel               = GenerationUniform
 
     # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
     # InterfaceModelSurfaceReco (inner boundary).
-    data.boundary_type[bregionAcceptor] = OhmicContact
-    data.boundary_type[bregionDonor]    = OhmicContact
+    data.boundaryType[bregionAcceptor] = OhmicContact
+    data.boundaryType[bregionDonor]    = OhmicContact
 
     # Present ionic vacancies in perovskite layer
-    data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.flux_approximation             = ExcessChemicalPotential
+    data.fluxApproximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -403,16 +403,16 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculation_type = OutOfEquilibrium
+    data.calculationType = OutOfEquilibrium
 
     # primary data for I-V scan protocol
-    scanrate              = 0.04 * V/s
-    number_tsteps         = 31
-    endVoltage            = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend                  = endVoltage/scanrate
+    scanrate             = 0.04 * V/s
+    number_tsteps        = 31
+    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                 = endVoltage/scanrate
 
     # with fixed timestep sizes we can calculate the times priori
-    tvalues               = range(0, stop = tend, length = number_tsteps)
+    tvalues              = range(0, stop = tend, length = number_tsteps)
 
     # these values are needed for putting the generation slightly on
     I      = collect(length(tvalues):-1:0.0)
@@ -495,9 +495,9 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for istep = 2:number_tsteps
 
-        t                     = tvalues[istep]       # Actual time
-        Δu                    = t * scanrate         # Applied voltage
-        Δt                    = t - tvalues[istep-1] # Time step size
+        t  = tvalues[istep]       # Actual time
+        Δu = t * scanrate         # Applied voltage
+        Δt = t - tvalues[istep-1] # Time step size
 
         # Apply new voltage
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)

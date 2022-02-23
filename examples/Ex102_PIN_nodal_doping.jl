@@ -100,28 +100,28 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ################################################################################
 
     # We initialize the Data instance and fill in predefined data.
-    data                                = Data(grid, numberOfCarriers)
+    data                               = Data(grid, numberOfCarriers)
 
     ## Possible choices: Stationary, Transient
-    data.model_type                     = Stationary
+    data.modelType                     = Stationary
 
     ## Possible choices for F: Boltzmann, FermiDiracOneHalfBednarczyk,
     ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
-    data.F                             .= Boltzmann
+    data.F                            .= Boltzmann
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                  bulk_recomb_Auger = false,
-                                                                  bulk_recomb_radiative = false,
-                                                                  bulk_recomb_SRH = true)
+    data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                                bulk_recomb_Auger = false,
+                                                                bulk_recomb_radiative = false,
+                                                                bulk_recomb_SRH = true)
 
     ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
     ## InterfaceModelSurfaceReco (inner boundary).
-    data.boundary_type[bregionAcceptor] = OhmicContact
-    data.boundary_type[bregionDonor]    = OhmicContact
+    data.boundaryType[bregionAcceptor] = OhmicContact
+    data.boundaryType[bregionDonor]    = OhmicContact
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.flux_approximation             = ScharfetterGummel
+    data.fluxApproximation             = ScharfetterGummel
 
     if test == false
         println("*** done\n")
@@ -268,12 +268,12 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    # Set calculation type to OutOfEquilibrium for starting with respective simulation.
-    data.calculation_type   = OutOfEquilibrium
+    # Set calculationType to OutOfEquilibrium for starting with respective simulation.
+    data.calculationType = OutOfEquilibrium
 
-    maxBias                 = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    biasValues              = range(0, stop = maxBias, length = 41)
-    IV                      = zeros(0)
+    maxBias              = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    biasValues           = range(0, stop = maxBias, length = 41)
+    IV                   = zeros(0)
 
     for Δu in biasValues
 

@@ -100,98 +100,98 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## set indices of the quasi Fermi potentials
-    iphin             = 2 # electron quasi Fermi potential
-    iphip             = 1 # hole quasi Fermi potential
-    numberOfCarriers  = 2
+    iphin            = 2 # electron quasi Fermi potential
+    iphip            = 1 # hole quasi Fermi potential
+    numberOfCarriers = 2
 
     # Define the physical data.
     ## temperature
-    T                 = 300.0                 *  K
+    T                = 300.0                 *  K
 
     ## band edge energies
-    Ec_d              = -4.0                  *  eV
-    Ev_d              = -6.0                  *  eV
+    Ec_d             = -4.0                  *  eV
+    Ev_d             = -6.0                  *  eV
 
-    Ec_i              = -3.7                  *  eV
-    Ev_i              = -5.4                  *  eV
+    Ec_i             = -3.7                  *  eV
+    Ev_i             = -5.4                  *  eV
 
-    Ec_a              = -3.1                  *  eV
-    Ev_a              = -5.1                  *  eV
+    Ec_a             = -3.1                  *  eV
+    Ev_a             = -5.1                  *  eV
 
-    EC                = [Ec_d, Ec_i, Ec_a]
-    EV                = [Ev_d, Ev_i, Ev_a]
+    EC               = [Ec_d, Ec_i, Ec_a]
+    EV               = [Ev_d, Ev_i, Ev_a]
 
     ## effective densities of state
-    Nc_d               = 5.0e19                / (cm^3)
-    Nv_d               = 5.0e19                / (cm^3)
+    Nc_d             = 5.0e19                / (cm^3)
+    Nv_d             = 5.0e19                / (cm^3)
 
-    Nc_i               = 8.1e18                / (cm^3)
-    Nv_i               = 5.8e18                / (cm^3)
+    Nc_i             = 8.1e18                / (cm^3)
+    Nv_i             = 5.8e18                / (cm^3)
 
-    Nc_a               = 5.0e19                / (cm^3)
-    Nv_a               = 5.0e19                / (cm^3)
+    Nc_a             = 5.0e19                / (cm^3)
+    Nv_a             = 5.0e19                / (cm^3)
 
-    NC                 = [Nc_d, Nc_i, Nc_a]
-    NV                 = [Nv_d, Nv_i, Nv_a]
+    NC               = [Nc_d, Nc_i, Nc_a]
+    NV               = [Nv_d, Nv_i, Nv_a]
 
     ## mobilities
-    μn_d               = 3.89                  * (cm^2) / (V * s)
-    μp_d               = 3.89                  * (cm^2) / (V * s)
+    μn_d             = 3.89                  * (cm^2) / (V * s)
+    μp_d             = 3.89                  * (cm^2) / (V * s)
 
-    μn_i               = 6.62e1                * (cm^2) / (V * s)
-    μp_i               = 6.62e1                * (cm^2) / (V * s)
+    μn_i             = 6.62e1                * (cm^2) / (V * s)
+    μp_i             = 6.62e1                * (cm^2) / (V * s)
 
-    μn_a               = 3.89e-1               * (cm^2) / (V * s)
-    μp_a               = 3.89e-1               * (cm^2) / (V * s)
+    μn_a             = 3.89e-1               * (cm^2) / (V * s)
+    μp_a             = 3.89e-1               * (cm^2) / (V * s)
 
-    μn                 = [μn_d, μn_i, μn_a]
-    μp                 = [μp_d, μp_i, μp_a]
+    μn               = [μn_d, μn_i, μn_a]
+    μp               = [μp_d, μp_i, μp_a]
 
     ## relative dielectric permittivity
 
-    ε_d                = 10.0                  *  1.0
-    ε_i                = 24.1                  *  1.0
-    ε_a                = 3.0                   *  1.0
+    ε_d              = 10.0                  *  1.0
+    ε_i              = 24.1                  *  1.0
+    ε_a              = 3.0                   *  1.0
 
-    ε                  = [ε_d, ε_i, ε_a]
+    ε                = [ε_d, ε_i, ε_a]
 
     ## radiative recombination
-    r0_d               = 0.0e+0               * cm^3 / s
-    r0_i               = 1.0e-12              * cm^3 / s
-    r0_a               = 0.0e+0               * cm^3 / s
+    r0_d             = 0.0e+0               * cm^3 / s
+    r0_i             = 1.0e-12              * cm^3 / s
+    r0_a             = 0.0e+0               * cm^3 / s
 
-    r0                 = [r0_d, r0_i, r0_a]
+    r0               = [r0_d, r0_i, r0_a]
 
     ## life times and trap densities
-    τn_d               = 1.0e100              * s
-    τp_d               = 1.0e100              * s
+    τn_d             = 1.0e100              * s
+    τp_d             = 1.0e100              * s
 
-    τn_i               = 3.0e-10              * s
-    τp_i               = 3.0e-8               * s
-    τn_a               = τn_d
-    τp_a               = τp_d
+    τn_i             = 3.0e-10              * s
+    τp_i             = 3.0e-8               * s
+    τn_a             = τn_d
+    τp_a             = τp_d
 
-    τn                 = [τn_d, τn_i, τn_a]
-    τp                 = [τp_d, τp_i, τp_a]
+    τn               = [τn_d, τn_i, τn_a]
+    τp               = [τp_d, τp_i, τp_a]
 
     ## SRH trap energies (needed for calculation of trap_density! (SRH))
-    Ei_d               = -5.0                 * eV
-    Ei_i               = -4.55                * eV
-    Ei_a               = -4.1                 * eV
+    Ei_d             = -5.0                 * eV
+    Ei_i             = -4.55                * eV
+    Ei_a             = -4.1                 * eV
 
-    EI                 = [Ei_d, Ei_i, Ei_a]
+    EI               = [Ei_d, Ei_i, Ei_a]
 
     ## Auger recombination
-    Auger              = 0.0
+    Auger            = 0.0
 
     ## doping
-    Nd                  =   1.03e18             / (cm^3)
-    Na                  =   1.03e18             / (cm^3)
-    Ni_acceptor         =   8.32e7              / (cm^3)
+    Nd               =   1.03e18             / (cm^3)
+    Na               =   1.03e18             / (cm^3)
+    Ni_acceptor      =   8.32e7              / (cm^3)
 
     ## contact voltage: we impose an applied voltage only on one boundary.
     ## At the other boundary the applied voltage is zero.
-    voltageAcceptor     =  1.2                  * V
+    voltageAcceptor  =  1.2                  * V
 
     if test == false
         println("*** done\n")
@@ -204,28 +204,28 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     # We initialize the Data instance and fill in predefined data.
-    data                                = Data(grid, numberOfCarriers)
+    data                               = Data(grid, numberOfCarriers)
 
     ## Possible choices: Stationary, Transient
-    data.model_type                     = Stationary
+    data.modelType                     = Stationary
 
     ## Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk,
     ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
-    data.F                             .= FermiDiracOneHalfTeSCA
+    data.F                            .= FermiDiracOneHalfTeSCA
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                  bulk_recomb_Auger = true,
-                                                                  bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = false)
+    data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                                 bulk_recomb_Auger = true,
+                                                                 bulk_recomb_radiative = true,
+                                                                 bulk_recomb_SRH = false)
 
     ## Possible choices: OhmicContact, SchottkyContact(outer boundary) and InterfaceModelNone,
     ## InterfaceModelSurfaceReco (inner boundary).
-    data.boundary_type[bregionAcceptor] = OhmicContact
-    data.boundary_type[bregionDonor]    = OhmicContact
+    data.boundaryType[bregionAcceptor] = OhmicContact
+    data.boundaryType[bregionDonor]    = OhmicContact
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.flux_approximation             = ExcessChemicalPotential
+    data.fluxApproximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -237,12 +237,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    params                                              = Params(grid, numberOfCarriers)
+    params                                          = Params(grid, numberOfCarriers)
 
-    params.temperature                                  = T
-    params.UT                                           = (kB * params.temperature) / q
-    params.chargeNumbers[iphin]                         = -1
-    params.chargeNumbers[iphip]                         =  1
+    params.temperature                              = T
+    params.UT                                       = (kB * params.temperature) / q
+    params.chargeNumbers[iphin]                     = -1
+    params.chargeNumbers[iphip]                     =  1
 
     ## boundary region data
     params.bDensityOfStates[iphin, bregionDonor]    = Nc_d
@@ -374,11 +374,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculation_type = OutOfEquilibrium
+    data.calculationType = OutOfEquilibrium
 
-    control.damp_initial  = 0.6
-    control.damp_growth   = 1.21 # >= 1
-    control.max_round     = 7
+    control.damp_initial = 0.6
+    control.damp_growth  = 1.21 # >= 1
+    control.max_round    = 7
 
     maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 13)

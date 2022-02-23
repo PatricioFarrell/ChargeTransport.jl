@@ -213,31 +213,31 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## Initialize Data instance and fill in predefined data
-    data                                = Data(grid, numberOfCarriers)
+    data                               = Data(grid, numberOfCarriers)
 
     ## Possible choices: Stationary, Transient
-    data.model_type                     = Transient
+    data.modelType                     = Transient
 
     ## Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA,
     ## FermiDiracMinusOne, Blakemore
-    data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
+    data.F                             = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                  bulk_recomb_Auger = true,
-                                                                  bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = true)
+    data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                                 bulk_recomb_Auger = true,
+                                                                 bulk_recomb_radiative = true,
+                                                                 bulk_recomb_SRH = true)
 
     ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
     ## InterfaceModelSurfaceReco (inner boundary).
-    data.boundary_type[bregionAcceptor] = OhmicContact
-    data.boundary_type[bregionDonor]    = OhmicContact
+    data.boundaryType[bregionAcceptor] = OhmicContact
+    data.boundaryType[bregionDonor]    = OhmicContact
 
     ## Present ionic vacancies in perovskite layer
-    data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.flux_approximation             = ExcessChemicalPotential
+    data.fluxApproximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -389,30 +389,30 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculation_type = OutOfEquilibrium
+    data.calculationType = OutOfEquilibrium
 
-    control.damp_initial  = 0.5
-    control.damp_growth   = 1.61 # >= 1
-    control.max_round     = 7
+    control.damp_initial = 0.5
+    control.damp_growth  = 1.61 # >= 1
+    control.max_round    = 7
 
     ## time mesh
-    number_tsteps               = 50
-    endTime                     = 1.0e-4 * s
-    tvalues                     = range(0, stop = endTime, length = number_tsteps)
+    number_tsteps        = 50
+    endTime              = 1.0e-4 * s
+    tvalues              = range(0, stop = endTime, length = number_tsteps)
 
     ## sinusoidal applied voltage
-    frequence                   = 0.11 * Hz
-    amplitude                   = 10.0 * V
-    biasValues                  = Float64[amplitude * sin(2.0 * pi * frequence * tvalues[i]) for i=1:number_tsteps]
+    frequence            = 0.11 * Hz
+    amplitude            = 10.0 * V
+    biasValues           = Float64[amplitude * sin(2.0 * pi * frequence * tvalues[i]) for i=1:number_tsteps]
 
     ## for saving I-V data
-    IV                          = zeros(0) # for IV values
+    IV                   = zeros(0) # for IV values
 
     for istep = 2:number_tsteps
 
-        t    = tvalues[istep]       # Actual time
-        Δu   = biasValues[istep]    # Applied voltage
-        Δt   = t - tvalues[istep-1] # Time step size
+        t  = tvalues[istep]       # Actual time
+        Δu = biasValues[istep]    # Applied voltage
+        Δt = t - tvalues[istep-1] # Time step size
 
         ## Apply new voltage (set non equilibrium boundary conditions)
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)

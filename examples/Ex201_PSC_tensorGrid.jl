@@ -234,31 +234,31 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## Initialize Data instance and fill in data
-    data                                = Data(grid, numberOfCarriers)
+    data                               = Data(grid, numberOfCarriers)
 
     ## Possible choices: Stationary, Transient
-    data.model_type                     = Transient
+    data.modelType                     = Transient
 
     ## Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA,
     ## FermiDiracMinusOne, Blakemore
-    data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
+    data.F                             = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                  bulk_recomb_Auger = true,
-                                                                  bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = true)
+    data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                                 bulk_recomb_Auger = true,
+                                                                 bulk_recomb_radiative = true,
+                                                                 bulk_recomb_SRH = true)
 
     ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
     ## InterfaceModelSurfaceReco (inner boundary).
-    data.boundary_type[bregionAcceptor] = OhmicContact
-    data.boundary_type[bregionDonor]    = OhmicContact
+    data.boundaryType[bregionAcceptor] = OhmicContact
+    data.boundaryType[bregionDonor]    = OhmicContact
 
     ## Present ionic vacancies in perovskite layer
-    data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.flux_approximation             = ExcessChemicalPotential
+    data.fluxApproximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -417,7 +417,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculation_type  = OutOfEquilibrium
+    data.calculationType = OutOfEquilibrium
 
     ## primary data for I-V scan protocol
     scanrate        = 0.04 * V/s

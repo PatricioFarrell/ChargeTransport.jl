@@ -128,34 +128,34 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     # Initialize Data instance and fill in data
-    data                                = Data(grid, numberOfCarriers)
+    data                               = Data(grid, numberOfCarriers)
 
     # Possible choices: Stationary, Transient
-    data.model_type                     = Transient
+    data.modelType                     = Transient
 
     # Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA,
     # FermiDiracMinusOne, Blakemore
-    data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
+    data.F                            .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                  bulk_recomb_Auger = true,
-                                                                  bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = true)
+    data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                                 bulk_recomb_Auger = true,
+                                                                 bulk_recomb_radiative = true,
+                                                                 bulk_recomb_SRH = true)
 
     # Here, we enable the traps and parse the respective index and the regions where the trap is defined.
     enable_traps!(data = data, traps = iphit, regions = regions)
 
     # Possible choices: GenerationNone, GenerationUniform
-    data.generation_model               = GenerationUniform
+    data.generationModel               = GenerationUniform
 
     # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
     # InterfaceModelSurfaceReco (inner boundary).
-    data.boundary_type[bregionAcceptor] = OhmicContact
-    data.boundary_type[bregionDonor]    = OhmicContact
+    data.boundaryType[bregionAcceptor] = OhmicContact
+    data.boundaryType[bregionDonor]    = OhmicContact
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.flux_approximation             = ExcessChemicalPotential
+    data.fluxApproximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -269,8 +269,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculation_type = InEquilibrium
-
     # initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
     solution              = unknowns(ctsys)
@@ -303,25 +301,25 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculation_type   = OutOfEquilibrium
+    data.calculationType = OutOfEquilibrium
 
     # Scan rate and time steps
-    scanrate                = 1.0 * V/s
-    number_tsteps           = 25
-    endVoltage              = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    scanrate             = 1.0 * V/s
+    number_tsteps        = 25
+    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
 
-    IV                      = zeros(0) # for IV values
-    biasValues              = zeros(0) # for bias values
-    tend                    = endVoltage/scanrate
+    IV                   = zeros(0) # for IV values
+    biasValues           = zeros(0) # for bias values
+    tend                 = endVoltage/scanrate
 
     # with fixed timestep sizes we can calculate the times
     # a priori
-    tvalues                       = range(0.0, stop = tend, length = number_tsteps)
+    tvalues              = range(0.0, stop = tend, length = number_tsteps)
 
-    steps                         = 20
-    I                             = collect(steps:-1:0.0)
-    LAMBDA                        = 10 .^ (I)
-    Δt                            = tvalues[2] - tvalues[1]
+    steps                = 20
+    I                    = collect(steps:-1:0.0)
+    LAMBDA               = 10 .^ (I)
+    Δt                   = tvalues[2] - tvalues[1]
 
     for i in 1:length(LAMBDA)
 
@@ -347,9 +345,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for istep = 2:number_tsteps
 
-        t   = tvalues[istep]          # Actual time
-        Δu  = t * scanrate            # Applied voltage
-        Δt  = t - tvalues[istep-1]    # Time step size
+        t  = tvalues[istep]          # Actual time
+        Δu = t * scanrate            # Applied voltage
+        Δt = t - tvalues[istep-1]    # Time step size
 
         # Apply new voltage: set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)

@@ -84,41 +84,41 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     # set indices of the quasi Fermi potentials
-    iphin              = 1 # electron quasi Fermi potential
-    iphip              = 2 # hole quasi Fermi potential
-    numberOfCarriers   = 2
+    iphin            = 1 # electron quasi Fermi potential
+    iphip            = 2 # hole quasi Fermi potential
+    numberOfCarriers = 2
 ````
 
 We define the physical data.
 
 ````julia
-    Ec                 = 1.424                *  eV
-    Ev                 = 0.0                  *  eV
-    Nc                 = 4.351959895879690e17 / (cm^3)
-    Nv                 = 9.139615903601645e18 / (cm^3)
-    mun                = 8500.0               * (cm^2) / (V * s)
-    mup                = 400.0                * (cm^2) / (V * s)
-    εr                 = 12.9                 *  1.0              # relative dielectric permittivity of GAs
-    T                  = 300.0                *  K
+    Ec               = 1.424                *  eV
+    Ev               = 0.0                  *  eV
+    Nc               = 4.351959895879690e17 / (cm^3)
+    Nv               = 9.139615903601645e18 / (cm^3)
+    mun              = 8500.0               * (cm^2) / (V * s)
+    mup              = 400.0                * (cm^2) / (V * s)
+    εr               = 12.9                 *  1.0              # relative dielectric permittivity of GAs
+    T                = 300.0                *  K
 
     # recombination parameters
-    Auger             = 1.0e-29              * cm^6 / s
-    SRH_TrapDensity   = 1.0e10               / cm^3
-    SRH_LifeTime      = 1.0                  * ns
-    Radiative         = 1.0e-10              * cm^3 / s
+    Auger            = 1.0e-29              * cm^6 / s
+    SRH_TrapDensity  = 1.0e10               / cm^3
+    SRH_LifeTime     = 1.0                  * ns
+    Radiative        = 1.0e-10              * cm^3 / s
 
     # doping
-    dopingFactorNd    = 1.0
-    dopingFactorNa    = 0.46
-    Nd                = dopingFactorNd * Nc
-    Na                = dopingFactorNa * Nv
+    dopingFactorNd   = 1.0
+    dopingFactorNa   = 0.46
+    Nd               = dopingFactorNd * Nc
+    Na               = dopingFactorNa * Nv
 
     # intrinsic concentration
-    ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T))
+    ni               = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T))
 
     # contact voltage: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
-    voltageAcceptor   = 1.5                  * V
+    voltageAcceptor  = 1.5                  * V
 
     if test == false
         println("*** done\n")
@@ -133,35 +133,35 @@ We define the physical data.
 We initialize the Data instance and fill in predefined data.
 
 ````julia
-    data                                = Data(grid, numberOfCarriers)
+    data                               = Data(grid, numberOfCarriers)
 
     # Following variable declares, if we want to solve stationary or transient problem
-    data.model_type                     = Stationary
+    data.modelType                     = Stationary
 
     # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
     # FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
-    data.F                             .= Boltzmann
+    data.F                            .= Boltzmann
 
     # Here, we need to specify which numbers are associated with electron and hole quasi
     # Fermi potential. Further, the desired recombination processes can be chosen here.
     # Note that, if you choose a SRH recombination you can further specify a transient SRH
-    # recombination by the method enable_traps! and adjusting the model_type. Otherwise, by
+    # recombination by the method enable_traps! and adjusting the modelType. Otherwise, by
     # default we use the stationary model for this type of recombination.
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                  bulk_recomb_Auger = true,
-                                                                  bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = true)
+    data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                                 bulk_recomb_Auger = true,
+                                                                 bulk_recomb_radiative = true,
+                                                                 bulk_recomb_SRH = true)
 
     # Following choices are possible for boundary model: For contacts currently only
     # OhmicContact and SchottkyContact are possible. For inner boundaries we have
     # InterfaceModelNone, InterfaceModelSurfaceReco.
-    data.boundary_type[bregionAcceptor] = OhmicContact
-    data.boundary_type[bregionDonor]    = OhmicContact
+    data.boundaryType[bregionAcceptor] = OhmicContact
+    data.boundaryType[bregionDonor]    = OhmicContact
 
     # Following choices are possible for the flux discretization scheme: ScharfetterGummel,
     # ScharfetterGummelGraded, ExcessChemicalPotential, ExcessChemicalPotentialGraded,
     # DiffusionEnhanced, GeneralizedSG
-    data.flux_approximation             = ExcessChemicalPotential
+    data.fluxApproximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -328,19 +328,19 @@ VoronoiFVMSys is not dependent on the data we initialized but rather on default 
     ################################################################################
 ````
 
-Set calculation type to OutOfEquilibrium for starting with respective simulation.
+Set calculationType to OutOfEquilibrium for starting with respective simulation.
 
 ````julia
-    data.calculation_type = OutOfEquilibrium
+    data.calculationType = OutOfEquilibrium
 
-    maxBias               = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    biasValues            = range(0, stop = maxBias, length = 32)
-    IV                    = zeros(0)
+    maxBias              = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    biasValues           = range(0, stop = maxBias, length = 32)
+    IV                   = zeros(0)
 
     for Δu in biasValues
 
         if test == false
-            println("Δu  = ", Δu )
+            println("Δu  = ", Δu)
         end
         # set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)

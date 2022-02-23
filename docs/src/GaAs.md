@@ -66,36 +66,36 @@ Furthermore, we define the charge carrier indices. The index for the electrostat
 
 ```julia
 # Set indices for the quasi Fermi potentials
-iphin                    = 1    # electrons
-iphip                    = 2    # holes
-numberOfCarriers         = 2
+iphin                  = 1    # electrons
+iphip                  = 2    # holes
+numberOfCarriers       = 2
 
 # Initialize Data instance
-data                     = Data(grid, numberOfCarriers)
+data                   = Data(grid, numberOfCarriers)
 
 # Solve the stationary problem instead of the transient one
-data.model_type          = Stationary
+data.modelType         = Stationary
 
 # Choose statistical relation between density and qF potential
 # options: Boltzmann, FermiDiracOneHalfBednarczyk,
 #          FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
-data.F                  .= Boltzmann
+data.F                .= Boltzmann
 
 # Enable/Disable recombination processes, the default is stationary SRH recombination.
-data.bulk_recombination  = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                   bulk_recomb_Auger = true,
-                                                   bulk_recomb_radiative = true,
-                                                   bulk_recomb_SRH = true)
+data.bulkRecombination = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                 bulk_recomb_Auger = true,
+                                                 bulk_recomb_radiative = true,
+                                                 bulk_recomb_SRH = true)
 
 # choose boundary models
 # exterior boundaries: OhmicContact and SchottkyContact
 # interior boundaries: InterfaceModelNone, InterfaceModelSurfaceReco.
-data.boundary_type[bregionAcceptor] = OhmicContact
-data.boundary_type[bregionDonor]    = OhmicContact
+data.boundaryType[bregionAcceptor] = OhmicContact
+data.boundaryType[bregionDonor]    = OhmicContact
 
 # choose flux discretization scheme: ScharfetterGummel ScharfetterGummelGraded,
 # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-data.flux_approximation             = ExcessChemicalPotential
+data.fluxApproximation             = ExcessChemicalPotential
 ```
 
 Next, we fill in pre-defined or externally read in parameter values.
@@ -165,16 +165,16 @@ set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 Solve the equilibrium. Note that `control` refers to the Newton control
 parameters given in `VoronoiFVM`.
 ```julia
-solution         = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-initialGuess    .= solution
+solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
+initialGuess .= solution
 ```
 
 ### Step 4: Solve the problem for an applied bias
 Starting from the equilibrium solution, we increase the applied voltage. Note that it is important to set `OutOfEqulibrium`.
 ```julia
-data.calculation_type  = OutOfEquilibrium
-maxBias                = voltageAcceptor # bias at acceptor boundary
-biasValues             = range(0, stop = maxBias, length = 32)
+data.calculationType = OutOfEquilibrium
+maxBias              = voltageAcceptor # bias at acceptor boundary
+biasValues           = range(0, stop = maxBias, length = 32)
 
 for Δu in biasValues
     set_contact!(ctsys, bregionAcceptor, Δu = Δu) # non equilibrium bc
@@ -198,7 +198,7 @@ Now, instead of using regionwise doping it is possible to apply a nodal doping. 
 For this, go to previous Step 2, where you build your parameter set and adjust the doping initialization (code snippet is from [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex102_PIN_nodal_doping.jl))
 
 ```julia
-paramsnodal  = ParamsNodal(grid, numberOfCarriers)
+paramsnodal = ParamsNodal(grid, numberOfCarriers)
 
 # initialize the space dependent doping
 NDoping = 1.0e17  / cm^3; κ = 500.0

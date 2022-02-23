@@ -28,7 +28,7 @@ using GridVisualize
 ## It seems that this problem is common: https://discourse.julialang.org/t/could-not-load-library-librsvg-very-strange-error/21276
 using PyPlot
 
-function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -51,23 +51,23 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     bregionNoFlux    = 5
 
     ## grid
-    h_pdoping       = 3.00e-6 * cm + 1.0e-7 *cm
-    h_intrinsic     = 3.00e-5 * cm
-    h_ndoping       = 8.50e-6 * cm + 1.0e-7 *cm
-    height          = 1.00e-5 * cm
+    h_pdoping        = 3.00e-6 * cm + 1.0e-7 *cm
+    h_intrinsic      = 3.00e-5 * cm
+    h_ndoping        = 8.50e-6 * cm + 1.0e-7 *cm
+    height           = 1.00e-5 * cm
 
-    b               = SimplexGridBuilder(Generator=Triangulate)
+    b                = SimplexGridBuilder(Generator=Triangulate)
 
     ## specify boundary nodes
-    length_0        = point!(b, 0.0, 0.0)
-    length_p        = point!(b, h_pdoping, 0.0)
-    length_pi       = point!(b, h_pdoping + h_intrinsic, 0.0)
-    length_pin      = point!(b, h_pdoping + h_intrinsic + h_ndoping, 0.0)
+    length_0         = point!(b, 0.0, 0.0)
+    length_p         = point!(b, h_pdoping, 0.0)
+    length_pi        = point!(b, h_pdoping + h_intrinsic, 0.0)
+    length_pin       = point!(b, h_pdoping + h_intrinsic + h_ndoping, 0.0)
 
-    height_0        = point!(b, 0.0, height)
-    height_p        = point!(b, h_pdoping, height)
-    height_pi       = point!(b, h_pdoping + h_intrinsic, height)
-    height_pin      = point!(b, h_pdoping + h_intrinsic + h_ndoping, height)
+    height_0         = point!(b, 0.0, height)
+    height_p         = point!(b, h_pdoping, height)
+    height_pi        = point!(b, h_pdoping + h_intrinsic, height)
+    height_pin       = point!(b, h_pdoping + h_intrinsic + h_ndoping, height)
 
     ## specify boundary regions
     ## metal interface
@@ -123,99 +123,99 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     numberOfCarriers = 3 # electrons, holes and anion vacancies
 
     ## temperature
-    T               =  300.0                 *  K
+    T                =  300.0                 *  K
 
     ## band edge energies
-    Ec_a            = -3.0                  *  eV
-    Ev_a            = -5.1                  *  eV
+    Ec_a             = -3.0                  *  eV
+    Ev_a             = -5.1                  *  eV
 
-    Ec_i            = -3.8                  *  eV
-    Ev_i            = -5.4                  *  eV
+    Ec_i             = -3.8                  *  eV
+    Ev_i             = -5.4                  *  eV
 
-    Ec_d            = -3.8                  *  eV
-    Ev_d            = -6.2                  *  eV
+    Ec_d             = -3.8                  *  eV
+    Ev_d             = -6.2                  *  eV
 
-    EC              = [Ec_a, Ec_i, Ec_d]
-    EV              = [Ev_a, Ev_i, Ev_d]
+    EC               = [Ec_a, Ec_i, Ec_d]
+    EV               = [Ev_a, Ev_i, Ev_d]
 
     ## effective densities of state
-    Nc_a            = 1.0e20                / (cm^3)
-    Nv_a            = 1.0e20                / (cm^3)
+    Nc_a             = 1.0e20                / (cm^3)
+    Nv_a             = 1.0e20                / (cm^3)
 
-    Nc_i            = 1.0e19                / (cm^3)
-    Nv_i            = 1.0e19                / (cm^3)
+    Nc_i             = 1.0e19                / (cm^3)
+    Nv_i             = 1.0e19                / (cm^3)
 
     ## ###################### adjust Na, Ea here #####################
-    Nanion          = 1.0e18                / (cm^3)
-    Ea_i            = -4.4                  *  eV
+    Nanion           = 1.0e18                / (cm^3)
+    Ea_i             = -4.4                  *  eV
     ## for the labels in the figures
-    textEa          = Ea_i./eV
-    textNa          = Nanion.*cm^3
+    textEa           = Ea_i./eV
+    textNa           = Nanion.*cm^3
     ## ###################### adjust Na, Ea here #####################
-    EA              = [0.0,  Ea_i,  0.0]
+    EA               = [0.0,  Ea_i,  0.0]
 
-    Nc_d            = 1.0e19                / (cm^3)
-    Nv_d            = 1.0e19                / (cm^3)
+    Nc_d             = 1.0e19                / (cm^3)
+    Nv_d             = 1.0e19                / (cm^3)
 
-    NC              = [Nc_a, Nc_i, Nc_d]
-    NV              = [Nv_a, Nv_i, Nv_d]
-    NAnion          = [0.0,  Nanion, 0.0]
+    NC               = [Nc_a, Nc_i, Nc_d]
+    NV               = [Nv_a, Nv_i, Nv_d]
+    NAnion           = [0.0,  Nanion, 0.0]
 
     ## mobilities
-    μn_a            = 0.1                   * (cm^2) / (V * s)
-    μp_a            = 0.1                   * (cm^2) / (V * s)
+    μn_a             = 0.1                   * (cm^2) / (V * s)
+    μp_a             = 0.1                   * (cm^2) / (V * s)
 
-    μn_i            = 2.00e1                * (cm^2) / (V * s)
-    μp_i            = 2.00e1                * (cm^2) / (V * s)
-    μa_i            = 1.00e-10              * (cm^2) / (V * s)
+    μn_i             = 2.00e1                * (cm^2) / (V * s)
+    μp_i             = 2.00e1                * (cm^2) / (V * s)
+    μa_i             = 1.00e-10              * (cm^2) / (V * s)
 
-    μn_d            = 1.0e-3                * (cm^2) / (V * s)
-    μp_d            = 1.0e-3                * (cm^2) / (V * s)
+    μn_d             = 1.0e-3                * (cm^2) / (V * s)
+    μp_d             = 1.0e-3                * (cm^2) / (V * s)
 
-    μn              = [μn_a, μn_i, μn_d]
-    μp              = [μp_a, μp_i, μp_d]
-    μa              = [0.0,  μa_i, 0.0 ]
+    μn               = [μn_a, μn_i, μn_d]
+    μp               = [μp_a, μp_i, μp_d]
+    μa               = [0.0,  μa_i, 0.0 ]
 
     ## relative dielectric permittivity
-    ε_a             = 4.0                   *  1.0
-    ε_i             = 23.0                  *  1.0
-    ε_d             = 3.0                   *  1.0
+    ε_a              = 4.0                   *  1.0
+    ε_i              = 23.0                  *  1.0
+    ε_d              = 3.0                   *  1.0
 
-    ε               = [ε_a, ε_i, ε_d]
+    ε                = [ε_a, ε_i, ε_d]
 
     ## radiative recombination
-    r0_a            = 6.3e-11               * cm^3 / s
-    r0_i            = 3.6e-12               * cm^3 / s
-    r0_d            = 6.8e-11               * cm^3 / s
+    r0_a             = 6.3e-11               * cm^3 / s
+    r0_i             = 3.6e-12               * cm^3 / s
+    r0_d             = 6.8e-11               * cm^3 / s
 
-    r0              = [r0_a, r0_i, r0_d]
+    r0               = [r0_a, r0_i, r0_d]
 
     ## life times and trap densities
-    τn_a            = 1.0e-6              * s
-    τp_a            = 1.0e-6              * s
+    τn_a             = 1.0e-6              * s
+    τp_a             = 1.0e-6              * s
 
-    τn_i            = 1.0e-7              * s
-    τp_i            = 1.0e-7              * s
-    τn_d            = τn_a
-    τp_d            = τp_a
+    τn_i             = 1.0e-7              * s
+    τp_i             = 1.0e-7              * s
+    τn_d             = τn_a
+    τp_d             = τp_a
 
-    τn              = [τn_a, τn_i, τn_d]
-    τp              = [τp_a, τp_i, τp_d]
+    τn               = [τn_a, τn_i, τn_d]
+    τp               = [τp_a, τp_i, τp_d]
 
     ## SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
-    Ei_a            = -4.05              * eV
-    Ei_i            = -4.60              * eV
-    Ei_d            = -5.00              * eV
+    Ei_a             = -4.05              * eV
+    Ei_i             = -4.60              * eV
+    Ei_d             = -5.00              * eV
 
-    EI              = [Ei_a, Ei_i, Ei_d]
+    EI               = [Ei_a, Ei_i, Ei_d]
 
     ## doping (doping values are from Phils paper, not stated in the parameter list online)
-    Nd              =   2.089649130192123e17 / (cm^3)
-    Na              =   4.529587947185444e18 / (cm^3)
-    C0              =   1.0e18               / (cm^3)
+    Nd               =   2.089649130192123e17 / (cm^3)
+    Na               =   4.529587947185444e18 / (cm^3)
+    C0               =   1.0e18               / (cm^3)
 
     ## contact voltage
-    voltageAcceptor =  1.0                  * V
+    voltageAcceptor  =  1.0                  * V
 
     if test == false
         println("*** done\n")
@@ -228,30 +228,30 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     ################################################################################
 
     ## Initialize Data instance and fill in data
-    data                                = Data(grid, numberOfCarriers)
+    data                               = Data(grid, numberOfCarriers)
 
     ## Possible choices: Stationary, Transient
-    data.model_type                     = Transient
+    data.modelType                     = Transient
 
     ## Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
-    data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
+    data.F                             = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                  bulk_recomb_Auger = false,
-                                                                  bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = true)
+    data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                                 bulk_recomb_Auger = false,
+                                                                 bulk_recomb_radiative = true,
+                                                                 bulk_recomb_SRH = true)
 
     ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
     ## InterfaceModelSurfaceReco (inner boundary).
-    data.boundary_type[bregionAcceptor] = OhmicContact
-    data.boundary_type[bregionDonor]    = OhmicContact
+    data.boundaryType[bregionAcceptor] = OhmicContact
+    data.boundaryType[bregionDonor]    = OhmicContact
 
     ## Present ionic vacancies in perovskite layer
-    data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.flux_approximation             = ExcessChemicalPotential
+    data.fluxApproximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -407,20 +407,20 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    data.calculation_type  = OutOfEquilibrium
+    ctsys.data.calculationType = OutOfEquilibrium
 
     ## primary data for I-V scan protocol
-    scanrate       = 0.04 * V/s
-    number_tsteps  = 41
-    endVoltage     = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend           = endVoltage/scanrate
+    scanrate      = 0.04 * V/s
+    number_tsteps = 41
+    endVoltage    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend          = endVoltage/scanrate
 
     ## with fixed timestep sizes we can calculate the times a priori
-    tvalues        = range(0, stop = tend, length = number_tsteps)
+    tvalues       = range(0, stop = tend, length = number_tsteps)
 
     ## for saving I-V data
-    IV             = zeros(0) # for IV values
-    biasValues     = zeros(0) # for bias values
+    IV            = zeros(0) # for IV values
+    biasValues    = zeros(0) # for bias values
 
     for istep = 2:length(tvalues)
 
@@ -434,6 +434,8 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
         if test == false
             println("time value: t = $(t)")
         end
+
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
         ## get I-V data
         current = get_current_val(ctsys, solution, initialGuess, Δt)
@@ -470,13 +472,13 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
         Plotter.xlabel("Applied Voltage [V]")
     end
 
-    testval = solution[4, 42]
+    testval = solution[data.index_psi, 42]
     return testval
 
 end #  main
 
 function test()
-    testval = -4.068873400363844
+    testval = -4.068873400363849
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

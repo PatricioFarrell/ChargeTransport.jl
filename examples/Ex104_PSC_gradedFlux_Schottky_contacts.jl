@@ -257,28 +257,28 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## initialize Data instance and fill in data
-    data                                = Data(grid, numberOfCarriers)
+    data                               = Data(grid, numberOfCarriers)
 
     ## Possible choices: Stationary, Transient
-    data.model_type                     = Stationary
+    data.modelType                     = Stationary
 
     ## Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA,
     ## FermiDiracMinusOne, Blakemore
-    data.F                             .= Boltzmann
+    data.F                            .= Boltzmann
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                  bulk_recomb_Auger = true,
-                                                                  bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = true)
+    data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                                 bulk_recomb_Auger = true,
+                                                                 bulk_recomb_radiative = true,
+                                                                 bulk_recomb_SRH = true)
 
     ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
     ## InterfaceModelSurfaceReco (inner boundary).
-    data.boundary_type[bregionDonor]    = SchottkyContact
-    data.boundary_type[bregionAcceptor] = SchottkyContact
+    data.boundaryType[bregionDonor]    = SchottkyContact
+    data.boundaryType[bregionAcceptor] = SchottkyContact
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.flux_approximation             = ScharfetterGummelGraded
+    data.fluxApproximation             = ScharfetterGummelGraded
 
     ################################################################################
     if test == false
@@ -421,11 +421,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculation_type = OutOfEquilibrium
+    data.calculationType = OutOfEquilibrium
 
-    control.damp_initial  = 0.9
-    control.damp_growth   = 1.61 # >= 1
-    control.max_round     = 7
+    control.damp_initial = 0.9
+    control.damp_growth  = 1.61 # >= 1
+    control.max_round    = 7
 
     maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 25)

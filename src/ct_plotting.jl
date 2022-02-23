@@ -14,8 +14,8 @@ function set_plotting_labels(data)
     label_solution = Array{String, 1}(undef, data.params.numberOfCarriers)
 
     # indices (∈ IN) of electron and hole quasi Fermi potentials specified by user
-    iphin       = data.bulk_recombination.iphin # integer index of φ_n
-    iphip       = data.bulk_recombination.iphip # integer index of φ_p
+    iphin       = data.bulkRecombination.iphin # integer index of φ_n
+    iphip       = data.bulkRecombination.iphip # integer index of φ_p
 
     ## for electrons
     label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"; label_BEE[iphin] = "\$E_c\$"

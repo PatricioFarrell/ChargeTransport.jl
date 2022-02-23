@@ -42,64 +42,63 @@ We sketch the relevant parts here. First, we need to define two additional thin 
 
 ```julia
 # region numbers
-regionDonor             = 1       # n doped region
-regionJunction1         = 2
-regionIntrinsic         = 3       # intrinsic region
-regionJunction2         = 4
-regionAcceptor          = 5       # p doped region
+regionDonor            = 1       # n doped region
+regionJunction1        = 2
+regionIntrinsic        = 3       # intrinsic region
+regionJunction2        = 4
+regionAcceptor         = 5       # p doped region
 ```
 which need to be taken into account by the initialization of the grid.
 
 Second, since we allow varying parameters within the thin interface layers, the flux discretization scheme needs to be chosen accordingly and we need to construct a nodally dependent parameter struct
 
 ```julia
-data.flux_approximation = ScharfetterGummelGraded
+data.fluxApproximation = ScharfetterGummelGraded
 
-paramsnodal             = ParamsNodal(grid, numberOfCarriers)
+paramsnodal            = ParamsNodal(grid, numberOfCarriers)
 ```
 
 Finally, we introduce graded parameters. Currently, only a linear grading is implemented.
 
 ```julia
-paramsnodal.bandEdgeEnergy[iphin, :]  = grading_parameter!(paramsnodal.bandEdgeEnergy[iphin, :],
-                                                        coord, regionTransportLayers, regionJunctions,
-                                                        h, heightLayers, lengthLayers, EC)
+paramsnodal.bandEdgeEnergy[iphin, :] = grading_parameter!(paramsnodal.bandEdgeEnergy[iphin, :],
+                                                         coord, regionTransportLayers, regionJunctions,
+                                                         h, heightLayers, lengthLayers, EC)
 ```
 
 ## Example 2: Linear IV scan protocol
 Here, we summarize the main parts of [this](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex106_PSC_withIons_IVMeasurement.jl) example.
 Define three charge carriers.
 ```julia
-iphin                       = 2 # electrons
-iphip                       = 1 # holes
-iphia                       = 3 # anion vacancies
-numberOfCarriers            = 3
+iphin                    = 2 # electrons
+iphip                    = 1 # holes
+iphia                    = 3 # anion vacancies
+numberOfCarriers         = 3
 ```
 Consider the transient problem and enable the ionic charge carriers only in the active layer:
 ```julia
-data.model_type             = Transient
-data.enable_ionic_carriers  = enable_ionic_carriers(ionic_carriers = [iphia],
-                                                    regions = [regionIntrinsic])
+data.modelType           = Transient
+data.enableIonicCarriers = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 ```
 
 Following specification is needed for a linear I-V scan protocol.
 
 ```julia
-scanrate                      = 1.0 * V/s
-number_tsteps                 = 31
-endVoltage                    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-tend                          = endVoltage/scanrate
+scanrate                 = 1.0 * V/s
+number_tsteps            = 31
+endVoltage               = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+tend                     = endVoltage/scanrate
 
 ## with fixed timestep sizes we can calculate the times a priori
-tvalues                       = range(0, stop = tend, length = number_tsteps)
+tvalues                    = range(0, stop = tend, length = number_tsteps)
 ```
 Solve the transient problem:
 ```julia
 for istep = 2:number_tsteps
 
-    t             = tvalues[istep]                  # current time
-    Δu            = t * scanrate                    # applied voltage
-    Δt            = t - tvalues[istep-1]            # time step
+    t  = tvalues[istep]                  # current time
+    Δu = t * scanrate                    # applied voltage
+    Δt = t - tvalues[istep-1]            # time step
     set_contact!(ctsys, bregionAcceptor, Δu = Δu)
     solve!(solution, initialGuess, ctsys, control = control, tstep = Δt) # provide time step
     initialGuess .= solution
@@ -110,13 +109,13 @@ end
 Add uniform illumination to the previous code by setting
 
 ```julia
-data.generation_model    = GenerationUniform
+data.generationModel = GenerationUniform
 ```
 and specify the uniform generation rate in each region, i.e.
 
 ```julia
 for ireg in 1:numberOfRegions
-    params.generationUniform[ireg]  = generationUniform[ireg]
+    params.generationUniform[ireg] = generationUniform[ireg]
 end
 ```
 for given data stored in `generationUniform`. Note that also Beer-Lambert generation is implemented but yet not well tested.
