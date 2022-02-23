@@ -365,8 +365,8 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
             scalen = 1.0e0
             scalep = 1.0e0
 
-            k0n = - q * zn * UT * mun *  params.bDensityOfStates[iphin_b1, 3]/data.d
-            k0p = - q * zp * UT * mup * params.bDensityOfStates[iphip_b1, 3]/data.d
+            k0n = q * zn * UT * mun * Nc/data.d
+            k0p = q * zp * UT * mup * Nv/data.d
 
             #left values
             etan1 = zn / UT * ( (u[iphin, 1] - u[ipsi]) + Ec / q ) # left
