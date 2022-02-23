@@ -28,6 +28,8 @@ export FermiDiracOneHalfTeSCA, FermiDiracZero
 
 include("ct_datatypes.jl")
 
+export AbstractModelSRH, ModelSRH, SRH2SpeciesPresentTrapDens
+
 export StandardFuncSet, QType
 
 export OuterBoundaryModelType, OuterBoundaryModelType, InterfaceModelType

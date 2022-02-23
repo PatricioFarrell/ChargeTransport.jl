@@ -39,6 +39,12 @@ mutable struct BulkRecombination
     """
     bulk_recomb_SRH       ::  SRHModelType
 
+    """
+    Auxiliary quantitiy for simulations with present trap density in Poisson, but without
+    traps as own unknowns. Note that this one may be deleted in future versions.
+    """
+    SRH_2species_trap     ::  DataType
+
     BulkRecombination() = new()
 
 end
@@ -66,6 +72,8 @@ function set_bulk_recombination(;iphin = 1, iphip = 2,
     else
         bulkRecombination.bulk_recomb_SRH   = SRHOff
     end
+
+    bulkRecombination.SRH_2species_trap     = ModelSRH
 
     return bulkRecombination
 
@@ -117,6 +125,12 @@ function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
 
     data.enableTraps = enableTraps
 
+end
+
+# Corresponding constructor for the present trap density and the respective regions.
+# DA: Note that, this one will may be deleted in future versions.
+function enable_traps!(data)
+    data.bulkRecombination.SRH_2species_trap = SRH2SpeciesPresentTrapDens
 end
 
 ###########################################################

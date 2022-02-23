@@ -739,8 +739,59 @@ function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
     RHSPoisson!(f, u, node, data)             # RHS of Poisson
     RHSContinuityEquations!(f, u, node, data) # RHS of Charge Carriers with special treatment of recombination
 
+    # DA: needed for Example_204_CIGS_stationary_2_species.jl
+    addTrapDensity!(f, u, node, data)    # if desired, add trap density to RHS of Poisson
+
 end
 
+# Function which adds additional trap density to right-hand side of Poisson equation
+# without modeling traps as own charge carrier.
+# Note that this one may be deleted in future version.
+
+addTrapDensity!(f, u, node, data) = addTrapDensity!(f, u, node, data, data.bulkRecombination.SRH_2species_trap)
+
+
+function addTrapDensity!(f, u, node, data, ::Type{T}) where T<:ModelSRH
+    return
+end
+
+function addTrapDensity!(f, u, node, data, ::Type{SRH2SpeciesPresentTrapDens})
+
+    params = data.params
+    ireg   = node.region
+    ipsi   = data.index_psi
+
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
+    iphin       = data.bulkRecombination.iphin
+    iphip       = data.bulkRecombination.iphip
+
+    # based on user index and regularity of solution quantities or integers are used and depicted here
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+
+    get_DOS!(iphin, node, data); get_DOS!(iphip, node, data)
+
+    Nc = data.tempDOS1[iphin];      Nv = data.tempDOS1[iphip]
+
+    n     = Nc * data.F[iphin](etaFunction(u, node, data, iphin))
+    p     = Nv * data.F[iphip](etaFunction(u, node, data, iphip))
+
+    n0     = params.recombinationSRHTrapDensity[iphin, ireg]
+    p0     = params.recombinationSRHTrapDensity[iphip, ireg]
+    taun   = params.recombinationSRHLifetime[iphin, ireg]
+    taup   = params.recombinationSRHLifetime[iphip, ireg]
+    z      = 1
+
+    if ireg == 3
+        Nt = 5e14                / (cm^3)
+    else
+        Nt = 5e14                / (cm^3)
+    end
+
+    # add equilibrium trap density
+    f[ipsi] = f[ipsi] - q * z * Nt * ( 1 - (taun*p0 + taup*n) / (taun*(p0+p) + taup*(n0+n)) )
+
+end
 
 """
 $(SIGNATURES)

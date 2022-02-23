@@ -205,8 +205,14 @@ const CalculationType = Union{Type{InEquilibrium}, Type{OutOfEquilibrium}}
 
 ##########################################################
 ##########################################################
-abstract type SRHStationary  end
-abstract type SRHOff         end
+abstract type AbstractModelSRH end
+
+abstract type ModelSRH <: AbstractModelSRH      end
+abstract type SRH2SpeciesPresentTrapDens <: AbstractModelSRH end
+##############################################
+
+abstract type SRHStationary <:ModelSRH end
+abstract type SRHOff       <:ModelSRH  end
 
 abstract type SRHTrapsTransient end
 
