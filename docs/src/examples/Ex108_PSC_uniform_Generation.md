@@ -1,19 +1,17 @@
 # PSC device with uniform generation rate (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample107_PSC_uniform_Generation.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx108_PSC_uniform_Generation.jl))
 
-Simulating a three layer PSC device Pedot| MAPI | PCBM.
-The simulations are performed out of equilibrium, time-dependent, with
-abrupt interfaces and with a uniform generation.
-A linear I-V measurement protocol is included and the corresponding
-solution vectors after the scan protocol can be depicted.
+Simulating a three layer PSC device Pedot| MAPI | PCBM. The simulations are performed out of
+equilibrium, time-dependent, with abrupt interfaces and with a uniform generation.
+A linear I-V measurement protocol is included and the corresponding solution vectors after
+the scan protocol can be depicted.
 
-The paramters can be found here and are from
-Calado et al.:
+The paramters are from Calado et al.:
 https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_mapi_pcbm.csv.
 (with adjustments on layer lengths)
 
 ````julia
-module Example107_PSC_uniform_Generation
+module Ex108_PSC_uniform_Generation
 
 using VoronoiFVM
 using ChargeTransport
@@ -21,7 +19,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
 
     ################################################################################
     if test == false
@@ -42,38 +40,38 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     bregions                = [bregionAcceptor, bregionDonor]
     numberOfBoundaryRegions = length(bregions)
 
-    # grid: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
-    h_pdoping               = 3.00e-6 * cm + 1.0e-7 *cm# add 1.e-7 cm to this layer for agreement with grid of Driftfusion
+    # grid
+    h_pdoping               = 3.00e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
     h_intrinsic             = 3.00e-5 * cm
-    h_ndoping               = 8.50e-6 * cm + 1.0e-7 *cm# add 1.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_ndoping               = 8.50e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
 
     x0                      = 0.0 * cm
     δ                       = 4*n        # the larger, the finer the mesh
     t                       = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
     k                       = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    coord_p_u               = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.9*δ)))
+    coord_p_u               = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.6*δ)))
     coord_p_g               = geomspace(h_pdoping/2,
                                         h_pdoping,
-                                        h_pdoping/(1.2*δ),
-                                        h_pdoping/(1.2*δ),
+                                        h_pdoping/(0.8*δ),
+                                        h_pdoping/(0.6*δ),
                                         tol=t)
     coord_i_g1              = geomspace(h_pdoping,
                                         h_pdoping+h_intrinsic/k,
-                                        h_intrinsic/(7.1*δ),
-                                        h_intrinsic/(7.1*δ),
+                                        h_intrinsic/(6.1*δ),
+                                        h_intrinsic/(2.1*δ),
                                         tol=t)
     coord_i_g2              = geomspace(h_pdoping+h_intrinsic/k,
                                         h_pdoping+h_intrinsic,
-                                        h_intrinsic/(7.1*δ),
-                                        h_intrinsic/(7.1*δ),
+                                        h_intrinsic/(2.1*δ),
+                                        h_intrinsic/(6.1*δ),
                                         tol=t)
     coord_n_g               = geomspace(h_pdoping+h_intrinsic,
                                         h_pdoping+h_intrinsic+h_ndoping/2,
-                                        h_ndoping/(2.0*δ),
-                                        h_ndoping/(2.0*δ),
+                                        h_ndoping/(1.5*δ),
+                                        h_ndoping/(0.9*δ),
                                         tol=t)
-    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(1.0*δ)))
+    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.5*δ)))
 
     coord                   = glue(coord_p_u, coord_p_g,  tol=10*t)
     coord                   = glue(coord,     coord_i_g1, tol=10*t)
@@ -83,9 +81,9 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     grid                    = simplexgrid(coord)
 
     # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor, tol = 1.0e-18)     # n-doped region   = 1
+    cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor, tol = 1.0e-18)  # n-doped region   = 1
     cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
-    cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor, tol = 1.0e-18)  # p-doped region   = 3
+    cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor, tol = 1.0e-18)     # p-doped region   = 3
 
     if plotting
         gridplot(grid, Plotter = Plotter)
@@ -103,118 +101,116 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     ################################################################################
 
     # set indices of the quasi Fermi potentials
-    iphin               = 1 # electron quasi Fermi potential
-    iphip               = 2 # hole quasi Fermi potential
-    iphia               = 3 # anion vacancy quasi Fermi potential
-
-    numberOfCarriers    = 3 # electrons, holes and anion vacancies
+    iphin              = 1 # electron quasi Fermi potential
+    iphip              = 2 # hole quasi Fermi potential
+    iphia              = 3 # anion vacancy quasi Fermi potential
+    numberOfCarriers   = 3 # electrons, holes and anion vacancies
 
     # temperature
-    T                   =  300.0                 *  K
+    T                  =  300.0                 *  K
 
     # band edge energies
-    Ec_a                = -3.0                  *  eV
-    Ev_a                = -5.1                  *  eV
+    Ec_a               = -3.0                  *  eV
+    Ev_a               = -5.1                  *  eV
 
-    Ec_i                = -3.8                  *  eV
-    Ev_i                = -5.4                  *  eV
+    Ec_i               = -3.8                  *  eV
+    Ev_i               = -5.4                  *  eV
 
-    Ec_d                = -3.8                  *  eV
-    Ev_d                = -6.2                  *  eV
+    Ec_d               = -3.8                  *  eV
+    Ev_d               = -6.2                  *  eV
 
-    EC                  = [Ec_a, Ec_i, Ec_d]
-    EV                  = [Ev_a, Ev_i, Ev_d]
+    EC                 = [Ec_a, Ec_i, Ec_d]
+    EV                 = [Ev_a, Ev_i, Ev_d]
 
     # effective densities of state
-    Nc_a                = 1.0e20                / (cm^3)
-    Nv_a                = 1.0e20                / (cm^3)
+    Nc_a               = 1.0e20                / (cm^3)
+    Nv_a               = 1.0e20                / (cm^3)
 
-    Nc_i                = 1.0e19                / (cm^3)
-    Nv_i                = 1.0e19                / (cm^3)
+    Nc_i               = 1.0e19                / (cm^3)
+    Nv_i               = 1.0e19                / (cm^3)
 
     # ############ adjust Na, Ea for anion vacancies here ###########
-    Nanion              = 1.21e22                / (cm^3)
-    Ea_i                = -5.175                *  eV
+    Nanion             = 1.21e22                / (cm^3)
+    Ea_i               = -5.175                *  eV
     # for the labels in the figures
-    textEa              = Ea_i./eV
-    textNa              = Nanion.*cm^3
+    textEa             = Ea_i./eV
+    textNa             = Nanion.*cm^3
     # ############ adjust Na, Ea for anion vacancies here ###########
 
-    EA                  = [0.0,  Ea_i,  0.0]
+    EA                 = [0.0,  Ea_i,  0.0]
 
-    Nc_d                = 1.0e19                / (cm^3)
-    Nv_d                = 1.0e19                / (cm^3)
+    Nc_d               = 1.0e19                / (cm^3)
+    Nv_d               = 1.0e19                / (cm^3)
 
-    NC                  = [Nc_a, Nc_i, Nc_d]
-    NV                  = [Nv_a, Nv_i, Nv_d]
-    NAnion              = [0.0,  Nanion, 0.0]
+    NC                 = [Nc_a, Nc_i, Nc_d]
+    NV                 = [Nv_a, Nv_i, Nv_d]
+    NAnion             = [0.0,  Nanion, 0.0]
 
     # mobilities
-    μn_a                = 0.1                   * (cm^2) / (V * s)
-    μp_a                = 0.1                   * (cm^2) / (V * s)
+    μn_a               = 0.1                   * (cm^2) / (V * s)
+    μp_a               = 0.1                   * (cm^2) / (V * s)
 
-    μn_i                = 2.00e1                * (cm^2) / (V * s)
-    μp_i                = 2.00e1                * (cm^2) / (V * s)
-    μa_i                = 1.00e-10              * (cm^2) / (V * s)
+    μn_i               = 2.00e1                * (cm^2) / (V * s)
+    μp_i               = 2.00e1                * (cm^2) / (V * s)
+    μa_i               = 1.00e-10              * (cm^2) / (V * s)
 
-    μn_d                = 1.0e-3                * (cm^2) / (V * s)
-    μp_d                = 1.0e-3                * (cm^2) / (V * s)
+    μn_d               = 1.0e-3                * (cm^2) / (V * s)
+    μp_d               = 1.0e-3                * (cm^2) / (V * s)
 
-    μn                  = [μn_a, μn_i, μn_d]
-    μp                  = [μp_a, μp_i, μp_d]
-    μa                  = [0.0,  μa_i, 0.0 ]
+    μn                 = [μn_a, μn_i, μn_d]
+    μp                 = [μp_a, μp_i, μp_d]
+    μa                 = [0.0,  μa_i, 0.0 ]
 
     # relative dielectric permittivity
-    ε_a                 = 4.0                   *  1.0
-    ε_i                 = 23.0                  *  1.0
-    ε_d                 = 3.0                   *  1.0
+    ε_a                = 4.0                   *  1.0
+    ε_i                = 23.0                  *  1.0
+    ε_d                = 3.0                   *  1.0
 
-    ε                   = [ε_a, ε_i, ε_d]
+    ε                  = [ε_a, ε_i, ε_d]
 
     # radiative recombination
-    r0_a                = 6.3e-11               * cm^3 / s
-    r0_i                = 3.6e-12               * cm^3 / s
-    r0_d                = 6.8e-11               * cm^3 / s
+    r0_a               = 6.3e-11               * cm^3 / s
+    r0_i               = 3.6e-12               * cm^3 / s
+    r0_d               = 6.8e-11               * cm^3 / s
 
-    r0                  = [r0_a, r0_i, r0_d]
+    r0                 = [r0_a, r0_i, r0_d]
 
     # life times and trap densities
-    τn_a                = 1.0e-6              * s
-    τp_a                = 1.0e-6              * s
+    τn_a               = 1.0e-6              * s
+    τp_a               = 1.0e-6              * s
 
-    τn_i                = 1.0e-7              * s
-    τp_i                = 1.0e-7              * s
-    τn_d                = τn_a
-    τp_d                = τp_a
+    τn_i               = 1.0e-7              * s
+    τp_i               = 1.0e-7              * s
+    τn_d               = τn_a
+    τp_d               = τp_a
 
-    τn                  = [τn_a, τn_i, τn_d]
-    τp                  = [τp_a, τp_i, τp_d]
+    τn                 = [τn_a, τn_i, τn_d]
+    τp                 = [τp_a, τp_i, τp_d]
 
-    # SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
-    Ei_a                = -4.05              * eV
-    Ei_i                = -4.60              * eV
-    Ei_d                = -5.00              * eV
+    # SRH trap energies
+    Ei_a               = -4.05              * eV
+    Ei_i               = -4.60              * eV
+    Ei_d               = -5.00              * eV
 
-    EI                  = [Ei_a, Ei_i, Ei_d]
+    EI                 = [Ei_a, Ei_i, Ei_d]
 
     # Auger recombination
-    Auger               = 0.0
+    Auger              = 0.0
 
     # generation
-    generation_model    = generation_uniform
-    generation_a        = 0.0
-    generation_i        = 2.64e21 / (cm^3 * s)
-    generation_d        = 0.0
+    generation_a       = 0.0
+    generation_i       = 2.64e21 / (cm^3 * s)
+    generation_d       = 0.0
 
-    generationUniform   = [generation_a, generation_i, generation_d]
+    generation_uniform = [generation_a, generation_i, generation_d]
 
     # doping
-    Nd                  =   2.089649130192123e17 / (cm^3)
-    Na                  =   4.529587947185444e18 / (cm^3)
-    C0                  =   1.0e18               / (cm^3)
+    Nd                 =   2.089649130192123e17 / (cm^3)
+    Na                 =   4.529587947185444e18 / (cm^3)
+    C0                 =   1.0e18               / (cm^3)
 
-    # contact voltages
-    voltageAcceptor     =  1.2                  * V
+    # contact voltage
+    voltageAcceptor    =  1.1                  * V
 
     if test == false
         println("*** done\n")
@@ -226,13 +222,14 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    # initialize Data instance and fill in predefined data
+    # Initialize Data instance and fill in predefined data
     data                                = Data(grid, numberOfCarriers)
 
-    # possible choices: model_stationary, model_transient
-    data.model_type                     = model_transient
+    # Possible choices: Stationary, Transient
+    data.model_type                     = Transient
 
-    # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA,
+    # FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -240,21 +237,20 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
-    # possible choices: generation_none, generation_uniform
-    data.generation_model               = generation_model
+    # Possible choices: GenerationNone, GenerationUniform
+    data.generation_model               = GenerationUniform
 
-    # possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    # interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
+    # InterfaceModelSurfaceReco (inner boundary).
+    data.boundary_type[bregionAcceptor] = OhmicContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
-    # Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
-    # In this application ion vacancies only live in active perovskite layer
+    # Present ionic vacancies in perovskite layer
     data.enable_ionic_carriers          = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
 
-    # possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    # excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -314,7 +310,7 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
         params.recombinationAuger[iphin, ireg]          = Auger
         params.recombinationAuger[iphip, ireg]          = Auger
 
-        params.generationUniform[ireg]                  = generationUniform[ireg]
+        params.generationUniform[ireg]                  = generation_uniform[ireg]
     end
 
     # interior doping
@@ -340,9 +336,9 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    # set zero voltage ohmic contacts for each charge carrier at all outerior boundaries.
-    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
+    # set zero voltage ohmic contacts for electrons and holes at all outerior boundaries.
+    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
+    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
     if test == false
         println("*** done\n")
@@ -376,31 +372,20 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     ################################################################################
 
     # initialize solution and starting vectors
-    initialGuess          = unknowns(ctsys)
-    solution              = unknowns(ctsys)
+    initialGuess  = unknowns(ctsys)
+    solution      = unknowns(ctsys)
 
-    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
+    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution
+    initialGuess .= solution
 
     if plotting
-        # ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
-        label_density  = Array{String, 1}(undef, numberOfCarriers)
-        label_solution = Array{String, 1}(undef, numberOfCarriers)
+        label_solution, label_density, label_energy = set_plotting_labels(data)
 
-        # for electrons
-        label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"
-        label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
-
-        # for holes
-        label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"
-        label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
-
-        # for anion vacancy
+        # add labels for anion vacancy
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"
         label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
-        # ##### set legend for plotting routines #####
+
         plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
@@ -418,17 +403,16 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    # set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type   = outOfEquilibrium
+    data.calculation_type = OutOfEquilibrium
 
     # primary data for I-V scan protocol
-    scanrate                      = 0.04 * V/s
-    number_tsteps                 = 21
-    endVoltage                    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    scanrate              = 0.04 * V/s
+    number_tsteps         = 31
+    endVoltage            = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                  = endVoltage/scanrate
 
-    # with fixed timestep sizes we can calculate the times
-    # a priori
-    tvalues                       = set_time_mesh(scanrate, endVoltage, number_tsteps, type_protocol = linearScanProtocol)
+    # with fixed timestep sizes we can calculate the times priori
+    tvalues               = range(0, stop = tend, length = number_tsteps)
 
     # these values are needed for putting the generation slightly on
     I      = collect(length(tvalues):-1:0.0)
@@ -436,24 +420,21 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
 
     for istep = 2:number_tsteps
 
-        t                              = tvalues[istep]       # Actual time
-        Δu                             = t * scanrate         # Applied voltage
-        Δt                             = t - tvalues[istep-1] # Time step size
+        t  = tvalues[istep]       # Actual time
+        Δu = t * scanrate         # Applied voltage
+        Δt = t - tvalues[istep-1] # Time step size
 
-        # Apply new voltage
-        # set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+        # Apply new voltage by setting non equilibrium boundary conditions
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         # turn slowly generation on
-        ctsys.fvmsys.physics.data.λ2   = LAMBDA[istep + 1]
+        data.λ2   = LAMBDA[istep + 1]
 
-        if verbose
-            println("generation on: λ2 = $(ctsys.data.λ2)")
+        if test == false
+            println("increase generation with λ2 = $(data.λ2)")
             println("time value: t = $(t)")
         end
 
-        # Solve time step problems with timestep Δt. initialGuess plays the role of the solution
-        # from last timestep
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
         initialGuess .= solution
@@ -469,22 +450,32 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
     end
     ################################################################################
 
+    # for saving I-V data
+    IVReverse          = zeros(0) # for IV values
+    biasValuesReverse  = zeros(0) # for bias values
+
     for istep = number_tsteps:-1:2
 
-        t                     = tvalues[istep]       # Actual time
-        Δu                    = t * scanrate         # Applied voltage
-        Δt                    = t - tvalues[istep-1] # Time step size
+        t  = tvalues[istep]       # Actual time
+        Δu = t * scanrate         # Applied voltage
+        Δt = t - tvalues[istep-1] # Time step size
 
         # Apply new voltage
-        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        if verbose
+        if test == false
             println("time value: t = $(t)")
         end
 
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
         initialGuess .= solution
+
+        # get I-V data
+        current = get_current_val(ctsys, solution, initialGuess, Δt)
+
+        push!(IVReverse, current)
+        push!(biasValuesReverse, Δu)
 
     end # time loop
 
@@ -509,9 +500,9 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
         Δt                    = t - tvalues[istep-1] # Time step size
 
         # Apply new voltage
-        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        if verbose
+        if test == false
             println("time value: t = $(t)")
         end
 
@@ -544,20 +535,22 @@ function main(;n = 13, Plotter = PyPlot, plotting = false, verbose = false, test
         # ###############
         Plotter.figure()
 
-        Plotter.plot(biasValuesForward, IVForward.*(cm^2), label = "\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (without internal BC)",  linewidth= 3, linestyle="--", color="red")
+        Plotter.plot(biasValuesForward, IVForward.*(cm^2), label = "forward",  linewidth= 3, linestyle="--", color="red")
+        Plotter.plot(biasValuesReverse, IVReverse.*(cm^2), label = "reverse",  linewidth= 3, linestyle="--", color="blue")
         Plotter.legend()
         Plotter.xlabel("Applied Voltage [V]")
         Plotter.ylabel("current density [A \$ cm^{-2}\$ ]")
+        Plotter.title("\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (without internal BC)")
         Plotter.tight_layout()
     end
 
-    testval = solution[data.index_psi, 102]
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
 end #  main
 
 function test()
-    testval = -3.92993784639653
+    testval = 39.06872444917981
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

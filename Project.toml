@@ -19,5 +19,5 @@ PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 [compat]
 ExtendableGrids = "^0.8"
 GridVisualize =  "^0.4.7, 0.5"
-VoronoiFVM = "^0.15"
+VoronoiFVM = "^0.16"
 julia = "^1.6"

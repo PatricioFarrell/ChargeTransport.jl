@@ -33,7 +33,9 @@ end
 function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
-    println("Set up grid and regions")
+    if test == false
+        println("Set up grid and regions")
+    end
     ################################################################################
 
     ## region numbers
@@ -80,10 +82,14 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.figure()
     end
 
-    println("*** done\n")
+    if test == false
+        println("*** done\n")
+    end
 
     ################################################################################
-    println("Define physical parameters and model")
+    if test == false
+        println("Define physical parameters and model")
+    end
     ################################################################################
 
     iphin             = 1 # index electron quasi Fermi potential
@@ -143,18 +149,22 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## we will impose this applied voltage on one boundary
     voltageAcceptor   = 2.0 * V
 
-    println("*** done\n")
+    if test == false
+        println("*** done\n")
+    end
     ################################################################################
-    println("Define System and fill in information about model")
+    if test == false
+        println("Define System and fill in information about model")
+    end
     ################################################################################
 
     ## initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
 
-    ## possible choices: model_stationary, model_transient
-    data.model_type                     = model_stationary
+    ## Possible choices: Stationary, Transient
+    data.model_type                     = Stationary
 
-    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    ## Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA]
 
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -164,21 +174,26 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     enable_traps!(data)
 
-    data.generation_model               = generation_beer_lambert #generation_uniform #generation_beer_lambert
+    ## Possible choices: GenerationNone, GenerationUniform, GenerationBeerLambert
+    data.generation_model               = GenerationBeerLambert
 
-    ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
-    ## In this application ion vacancies only live in active perovskite layer
-    data.boundary_type[bregionAcceptor] = schottky_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
+    ## InterfaceModelSurfaceReco (inner boundary).
+    data.boundary_type[bregionAcceptor] = SchottkyContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
-    ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ExcessChemicalPotential
 
-    println("*** done\n")
+    if test == false
+        println("*** done\n")
+    end
 
     ################################################################################
-    println("Define Params and fill in physical parameters")
+    if test == false
+        println("Define Params and fill in physical parameters")
+    end
     ################################################################################
 
     ## physical parameters
@@ -267,21 +282,29 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
-    show_params(ctsys)
-    println("*** done\n")
+    if test == false
+        show_params(ctsys)
+        println("*** done\n")
+    end
 
     ################################################################################
-    println("Define outerior boundary conditions and enabled layers")
+    if test == false
+        println("Define outerior boundary conditions")
+    end
     ################################################################################
 
-    ## set ohmic contact in bregionDonor and schottky contact in bregionAcceptor
-    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
-    set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = 0.0)
+    ## set zero voltage ohmic contacts for all charge carriers at all outerior boundaries.
+    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
+    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
-    println("*** done\n")
+    if test == false
+        println("*** done\n")
+    end
 
     ################################################################################
-    println("Define control parameters for Newton solver")
+    if test == false
+        println("Define control parameters for Newton solver")
+    end
     ################################################################################
 
     control                   = NewtonControl()
@@ -295,41 +318,31 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.tol_round         = 1.0e-8
     control.max_round         = 5
 
-    println("*** done\n")
+    if test == false
+        println("*** done\n")
+    end
 
     ################################################################################
-    println("Compute solution in thermodynamic equilibrium")
+    if test == false
+        println("Compute solution in thermodynamic equilibrium")
+    end
     ################################################################################
 
     ## initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
     solution              = unknowns(ctsys)
 
-    data.calculation_type = inEquilibrium
-
     ## solve thermodynamic equilibrium and update initial guess
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
     initialGuess         .= solution
 
-    println("*** done\n")
+    if test == false
+        println("*** done\n")
+    end
 
     if plotting
-        ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
-        label_density  = Array{String, 1}(undef, numberOfCarriers)
-        label_solution = Array{String, 1}(undef, numberOfCarriers)
+        label_solution, label_density, label_energy = set_plotting_labels(data)
 
-        ## for electrons
-        label_energy[1, iphin] = "\$E_c-q\\psi\$";       label_energy[2, iphin] = "\$ - q \\varphi_n\$"
-        label_density[iphin]   = "n";                    label_solution[iphin]  = "\$ \\varphi_n\$"
-
-        ## for holes
-        label_energy[1, iphip] = "\$E_v-q\\psi\$";       label_energy[2, iphip] = "\$ - q \\varphi_p\$"
-        label_density[iphip]   = "p";                    label_solution[iphip]  = "\$ \\varphi_p\$"
-
-        ## for traps
-        # label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
-        # label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
         ## ##### set legend for plotting routines #####
         plot_energies(Plotter, grid, data, solution, "Equilibrium", label_energy)
         Plotter.figure()
@@ -340,11 +353,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
 
     ################################################################################
-    println("Stationary bias loop")
+    if test == false
+        println("Stationary bias loop")
+    end
     ################################################################################
 
-    ## set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type   = outOfEquilibrium      # Rn = Rp = R, since the model type is stationary
+    ## set calculation type to OutOfEquilibrium for starting with respective simulation.
+    ctsys.data.calculation_type   = OutOfEquilibrium      # Rn = Rp = R, since the model type is stationary
     endVoltage                    = voltageAcceptor       # final bias value
 
     IV         = zeros(0)
@@ -369,13 +384,15 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         Δu = biasValues[i] # bias
 
-        ## set non equilibrium boundary condition
-        set_schottky_contact!(ctsys, bregionAcceptor, appliedVoltage = Δu)
+        ## Apply new voltage: set non equilibrium boundary conditions
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         ## increase generation rate with bias
         ctsys.data.λ2 = 10.0^(-biasSteps + i)
 
-        println("bias: Δu = $(Δu)")
+        if test == false
+            println("bias: Δu = $(Δu)")
+        end
 
         ## solve time step problems with timestep Δt
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
@@ -385,13 +402,15 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         push!(IV, w_device * z_device * current)
 
         ## store charge density in donor region (ZnO)
-        push!(chargeDensities,chargeDensity(ctsys,solution)[regionDonor])
+        push!(chargeDensities,charge_density(ctsys,solution)[regionDonor])
 
         initialGuess .= solution
 
     end # bias loop
 
-    println("*** done\n")
+    if test == false
+        println("*** done\n")
+    end
 
     ## compute static capacitance: check this is correctly computed
     staticCapacitance = diff(chargeDensities) ./ diff(biasValues)
@@ -404,13 +423,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.figure()
         plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_solution)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,chargeDensities, biasValues[end], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,chargeDensities, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
         Plotter.title("Charge density in donor region")
         Plotter.ylabel("Charge density [C]")
         Plotter.figure()
-        plot_IV(Plotter, biasValues,staticCapacitance, biasValues[end-1], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,staticCapacitance, "bias \$\\Delta u\$ = $(biasValues[end-1])", plotGridpoints = true)
         Plotter.title("Static capacitance in donor region")
         Plotter.ylabel("Static capacitance [C/V]")
 
@@ -481,7 +500,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## @show max(abs.(solution_stationary_bias[iphit,:].-solution[iphit,:])...)
     ## @show max(abs.(solution_stationary_bias[ipsi,:].-solution[ipsi,:])...)
 
-    testval = solution[data.index_psi, 10]
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
     println("*** done\n")
@@ -489,11 +508,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.3214196490674017
+    testval = 23.96747612965515
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
-println("This message should show when this module has successfully recompiled.")
+if test == false
+    println("This message should show when this module has successfully recompiled.")
+end
 
 
 end # module

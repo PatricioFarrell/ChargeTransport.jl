@@ -1,20 +1,16 @@
 # PSC device without mobile ions (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample103_PSC.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx103_PSC.jl))
 
-Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions
-and in stationary state (i.e. no time-dependency). This means we consider
-hetero interfaces.
-The simulations are performed out of equilibrium and with
+Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions and in stationary
+state. We consider heterojunctions. The simulations are performed out of equilibrium and with
 abrupt interfaces. For simplicity, the generation is off.
 
 This simulation coincides with the one made in Section 4.3
-of Calado et al. (https://arxiv.org/abs/2009.04384).
-The paramters can be found in Table S.13 or slightly modified than the one
-in the publication here:
+of Calado et al. (https://arxiv.org/abs/2009.04384) with the parameters in Table S.13. Or here:
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 
 ````julia
-module Example103_PSC
+module Ex103_PSC
 
 using VoronoiFVM
 using ChargeTransport
@@ -22,7 +18,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -42,7 +38,6 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     bregionAcceptor         = 2
     bregions                = [bregionAcceptor, bregionDonor]
 
-    # grid: Using geomspace to create uniform mesh is not a good idea. It may create virtual duplicates at boundaries.
     h_ndoping               = 9.90e-6 * cm
     h_intrinsic             = 4.00e-5 * cm + 2.0e-7 * cm # add 2.e-7 cm to this layer for agreement with grid of Driftfusion
     h_pdoping               = 1.99e-5 * cm
@@ -55,17 +50,17 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord_n_u               = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
     coord_n_g               = geomspace(h_ndoping/2,
                                         h_ndoping,
-                                        h_ndoping/(1.1*δ),
-                                        h_ndoping/(1.1*δ),
+                                        h_ndoping/(1.0*δ),
+                                        h_ndoping/(1.0*δ),
                                         tol=t)
     coord_i_g1              = geomspace(h_ndoping,
                                         h_ndoping+h_intrinsic/k,
                                         h_intrinsic/(2.8*δ),
-                                        h_intrinsic/(2.8*δ),
+                                        h_intrinsic/(2.0*δ),
                                         tol=t)
     coord_i_g2              = geomspace(h_ndoping+h_intrinsic/k,
                                         h_ndoping+h_intrinsic,
-                                        h_intrinsic/(2.8*δ),
+                                        h_intrinsic/(2.0*δ),
                                         h_intrinsic/(2.8*δ),
                                         tol=t)
     coord_p_g               = geomspace(h_ndoping+h_intrinsic,
@@ -81,6 +76,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord                   = glue(coord,     coord_p_g,  tol=10*t)
     coord                   = glue(coord,     coord_p_u,  tol=10*t)
     grid                    = simplexgrid(coord)
+
 
     # set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],                [h_ndoping],                           regionDonor)     # n-doped region   = 1
@@ -195,7 +191,7 @@ Define the physical data.
     Na                  =   1.03e18             / (cm^3)
     Ni_acceptor         =   8.32e7              / (cm^3)
 
-    # contact voltages: we impose an applied voltage only on one boundary.
+    # contact voltage: we impose an applied voltage only on one boundary.
     # At the other boundary the applied voltage is zero.
     voltageAcceptor     =  1.2                  * V
 
@@ -215,27 +211,26 @@ We initialize the Data instance and fill in predefined data.
 ````julia
     data                                = Data(grid, numberOfCarriers)
 
-    # possible choices: model_stationary, model_transient
-    data.model_type                     = model_stationary
+    # Possible choices: Stationary, Transient
+    data.model_type                     = Stationary
 
-    # possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    # Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk,
+    # FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= FermiDiracOneHalfTeSCA
 
-    # possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    # interface_model_surface_recombination (inner boundary).
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = true)
+                                                                  bulk_recomb_SRH = false)
 
-    # possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    # interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    # Possible choices: OhmicContact, SchottkyContact(outer boundary) and InterfaceModelNone,
+    # InterfaceModelSurfaceReco (inner boundary).
+    data.boundary_type[bregionAcceptor] = OhmicContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
-    # Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
-    # excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -320,8 +315,8 @@ We initialize the Data instance and fill in predefined data.
 
     # We set zero voltage ohmic contacts for each charge carrier at all outerior boundaries
     # for the equilibrium calculations.
-    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
+    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
+    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
     if test == false
         println("*** done\n")
@@ -340,7 +335,6 @@ We initialize the Data instance and fill in predefined data.
     control.tol_relative      = 1.0e-13
     control.handle_exceptions = true
     control.tol_round         = 1.0e-13
-    control.max_round         = 5
 
     if test == false
         println("*** done\n")
@@ -352,9 +346,9 @@ We initialize the Data instance and fill in predefined data.
     end
     ################################################################################
 
-    control.damp_initial      = 0.8
-    control.damp_growth       = 1.61 # >= 1
-    control.max_round         = 5
+    control.damp_initial  = 0.8
+    control.damp_growth   = 1.61 # >= 1
+    control.max_round     = 5
 
     # initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
@@ -365,19 +359,8 @@ We initialize the Data instance and fill in predefined data.
     initialGuess         .= solution
 
     if plotting
-        # ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
-        label_density  = Array{String, 1}(undef, numberOfCarriers)
-        label_solution = Array{String, 1}(undef, numberOfCarriers)
+        label_solution, label_density, label_energy = set_plotting_labels(data)
 
-        # for electrons
-        label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"
-        label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
-
-        # for holes
-        label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"
-        label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
-        # ##### set legend for plotting routines #####
         plot_energies(Plotter,  grid, data, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution, "Equilibrium", label_density)
@@ -396,22 +379,22 @@ We initialize the Data instance and fill in predefined data.
     end
     ################################################################################
 
-    ctsys.data.calculation_type                      = outOfEquilibrium
+    data.calculation_type = OutOfEquilibrium
 
-    control.damp_initial                             = 0.6
-    control.damp_growth                              = 1.21 # >= 1
-    control.max_round                                = 7
+    control.damp_initial  = 0.6
+    control.damp_growth   = 1.21 # >= 1
+    control.max_round     = 7
 
-    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
+    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 13)
 
     for Δu in biasValues
-        if verbose
-            println("Bias value: Δu = $(Δu) (no illumination)")
+        if test == false
+            println("Bias value: Δu = $(Δu)")
         end
 
         # set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 
@@ -432,13 +415,13 @@ We initialize the Data instance and fill in predefined data.
         println("*** done\n")
     end
 
-    testval = solution[3, 20] # the 3 corresponds to the index of ipsi
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
 end #  main
 
 function test()
-    testval = -4.052906367630599
+    testval = 22.166685901417342
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

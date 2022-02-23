@@ -1,7 +1,7 @@
 van Roosbroeck system
 ================================
 
-In both of the following examples, we solve the van Roosbroeck equations, a system of partial differential equations which describe current flow in a bipolar three layer device:
+In both of the following examples, we solve the van Roosbroeck equations, a system of partial differential equations which describe current flow in a bipolar multi layer device:
 
 ```math
 \begin{aligned}
@@ -18,10 +18,10 @@ Step 2: Initialize physical model
 
 Step 3: Solve the problem in equilibrium
 
-Step 4: Solve the problem for an applied bias 
+Step 4: Solve the problem for an applied bias
 
 ## Example 1: Stationary 1D problem (region doping)
-We consider a three-layer GaAs p-i-n device in one dimension. We will explain [Example101_PIN](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example101_PIN.jl) in 
+We consider a three-layer GaAs p-i-n device in one dimension. We will explain [the PIN example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex101_PIN.jl) in
 greater detail.
 
 
@@ -65,43 +65,43 @@ Next, we choose relevant physical models such as the underlying statistics funct
 Furthermore, we define the charge carrier indices. The index for the electrostatic potential is set automatically to `numberOfCarriers + 1`.
 
 ```julia
-# set indices for the quasi Fermi potentials
+# Set indices for the quasi Fermi potentials
 iphin                    = 1    # electrons
 iphip                    = 2    # holes
 numberOfCarriers         = 2
 
-# initialize Data instance
+# Initialize Data instance
 data                     = Data(grid, numberOfCarriers)
 
-# solve the stationary problem instead of the transient one
-data.model_type          = model_stationary
+# Solve the stationary problem instead of the transient one
+data.model_type          = Stationary
 
-# choose statistical relation between density and qF potential 
-# options: Boltzmann, FermiDiracOneHalfBednarczyk, 
+# Choose statistical relation between density and qF potential
+# options: Boltzmann, FermiDiracOneHalfBednarczyk,
 #          FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
 data.F                  .= Boltzmann
 
-# choose recombination processes, the default is stationary SRH recombination.
-data.bulk_recombination  = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+# Enable/Disable recombination processes, the default is stationary SRH recombination.
+data.bulk_recombination  = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                    bulk_recomb_Auger = true,
                                                    bulk_recomb_radiative = true,
                                                    bulk_recomb_SRH = true)
 
 # choose boundary models
-#   exterior boundaries: ohmic_contact and schottky_contact 
-#   interior boundaries: interface_model_none, interface_model_surface_recombination.
-data.boundary_type[bregionAcceptor] = ohmic_contact                       
-data.boundary_type[bregionDonor]    = ohmic_contact   
-    
-# choose flux discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
-# excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-data.flux_approximation             = excess_chemical_potential
+# exterior boundaries: OhmicContact and SchottkyContact
+# interior boundaries: InterfaceModelNone, InterfaceModelSurfaceReco.
+data.boundary_type[bregionAcceptor] = OhmicContact
+data.boundary_type[bregionDonor]    = OhmicContact
+
+# choose flux discretization scheme: ScharfetterGummel ScharfetterGummelGraded,
+# ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+data.flux_approximation             = ExcessChemicalPotential
 ```
 
 Next, we fill in pre-defined or externally read in parameter values.
 
 ```julia
-# params contains all necessary physical parameters 
+# params contains all necessary physical parameters
 params                                              = Params(grid, numberOfCarriers)
 params.temperature                                  = T
 params.UT                                           = (kB * params.temperature) / q
@@ -140,14 +140,14 @@ for ireg in 1:numberOfRegions           # interior region data
 end
 
 # interior doping
-params.doping[iphin, regionDonor]                   = Nd   
-params.doping[iphin, regionIntrinsic]               = ni    
-params.doping[iphip, regionIntrinsic]               = 0.0     
+params.doping[iphin, regionDonor]                   = Nd
+params.doping[iphin, regionIntrinsic]               = ni
+params.doping[iphip, regionIntrinsic]               = 0.0
 params.doping[iphip, regionAcceptor]                = Na
 
 # boundary doping
-params.bDoping[iphin, bregionDonor]                 = Nd     
-params.bDoping[iphip, bregionAcceptor]              = Na 
+params.bDoping[iphin, bregionDonor]                 = Nd
+params.bDoping[iphip, bregionAcceptor]              = Na
 
 # Initialize a ChargeTransport struct
 data.params   = params
@@ -157,8 +157,8 @@ ctsys         = System(grid, data, unknown_storage=unknown_storage)
 We use ohmic contacts and set the applied voltage to zero in equilibrium.
 
 ```julia
-set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
-set_ohmic_contact!(ctsys, bregionDonor, 0.0)
+set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
+set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 ```
 
 ### Step 3: Solve the problem in equilibrium
@@ -166,21 +166,21 @@ Solve the equilibrium. Note that `control` refers to the Newton control
 parameters given in `VoronoiFVM`.
 ```julia
 solution         = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-initialGuess    .= solution 
+initialGuess    .= solution
 ```
 
-### Step 4: Solve the problem for an applied bias 
-Starting from the equilibrium solution, we increase the applied voltage. Note that it is important to set `outOfEqulibrium`.
+### Step 4: Solve the problem for an applied bias
+Starting from the equilibrium solution, we increase the applied voltage. Note that it is important to set `OutOfEqulibrium`.
 ```julia
-ctsys.data.calculation_type  = outOfEquilibrium
-maxBias                      = voltageAcceptor # bias at acceptor boundary
-biasValues                   = range(0, stop = maxBias, length = 32)
+data.calculation_type  = OutOfEquilibrium
+maxBias                = voltageAcceptor # bias at acceptor boundary
+biasValues             = range(0, stop = maxBias, length = 32)
 
 for Δu in biasValues
-    set_ohmic_contact!(ctsys, bregionAcceptor, Δu) # non equilibrium bc
+    set_contact!(ctsys, bregionAcceptor, Δu = Δu) # non equilibrium bc
     solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
     initialGuess .= solution
-end 
+end
 ```
 
 ### Step 5: Postprocessing
@@ -194,8 +194,8 @@ Moreover, there are several different plotting routines, see [ct_plotting.jl](ht
 
 ## Example 2: Stationary 1D problem (nodal doping)
 
-Now, instead of using regionwise doping it is possible to apply a nodal doping. (This is indeed also possible for other quantities, see the description of [ParamsNodal](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/ab0684293845859fb142ea69d786a88b597a8b67/src/ct_system.jl#L426).)
-For this, go to previous Step 2, where you build your parameter set and adjust the doping initialization (code snippet from [Example102\_PIN\_nodal\_doping.jl](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Example102_PIN_nodal_doping.jl))
+Now, instead of using regionwise doping it is possible to apply a nodal doping. (This is indeed also possible for other physical parameters, see the description of [ParamsNodal](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/ab0684293845859fb142ea69d786a88b597a8b67/src/ct_system.jl#L426).)
+For this, go to previous Step 2, where you build your parameter set and adjust the doping initialization (code snippet is from [this example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex102_PIN_nodal_doping.jl))
 
 ```julia
 paramsnodal  = ParamsNodal(grid, numberOfCarriers)
@@ -203,7 +203,7 @@ paramsnodal  = ParamsNodal(grid, numberOfCarriers)
 # initialize the space dependent doping
 NDoping = 1.0e17  / cm^3; κ = 500.0
 for icoord = 1:numberOfNodes
-    t1 = tanh( (0.1 - coord[icoord]/μm) *κ )    
+    t1 = tanh( (0.1 - coord[icoord]/μm) *κ )
     t2 = 1.0 + tanh( (coord[icoord]/μm - 0.2) * κ )
     paramsnodal.doping[icoord] = NDoping * 0.5 * ( 1.0  +  t1  - t2 )
 end

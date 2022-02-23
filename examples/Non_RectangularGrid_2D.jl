@@ -1,32 +1,32 @@
+#=
 # Example code for a 2D non rectangular grid.
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample201_2D_non_rectangularGrid.jl))
+([source code](SOURCE_URL))
 
-This code provides an unstructured grid for a non rectangular two-dimensional
-domain. The grid is produced with Triangulate.jl.
-
-````julia
+This code provides an unstructured grid for a non rectangular two-dimensional domain.
+The grid is produced with Triangulate.jl.
+=#
 ENV["LC_NUMERIC"]="C"
 
-module Example201_2D_non_rectangularGrid
+module Non_RectangularGrid_2D
 
 using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-# For using this example, one additionally needs to add Triangulate. SimplexGridFactory is a wrapper for using this meshgenerator.
-# using SimplexGridFactory
-# using Triangulate
+## For using this example, one additionally needs to add Triangulate. SimplexGridFactory is a wrapper for using this meshgenerator.
+## using SimplexGridFactory
+## using Triangulate
 
 function main(;Plotter = PyPlot, plotting = false)
 
-    # region numbers
+    ## region numbers
     regionDonor      = 1                           # n doped region
     regionIntrinsic  = 2                           # intrinsic region
     regionAcceptor   = 3                           # p doped region
     regions          = [regionDonor, regionIntrinsic, regionAcceptor]
 
-    # boundary region numbers
+    ## boundary region numbers
     bregionDonor     = 1
     bregionAcceptor  = 2
     bregionJunction1 = 3
@@ -34,7 +34,7 @@ function main(;Plotter = PyPlot, plotting = false)
     bregionNoFlux    = 5
     bregions         = [bregionDonor, bregionAcceptor, bregionJunction1, bregionJunction2, bregionNoFlux]
 
-    # grid
+    ## grid
     h_ndoping        = 9.90e-6 * cm
     h_intrinsic      = 4.00e-5 * cm + 2.0e-7 * cm
     h_pdoping        = 1.99e-5 * cm
@@ -51,7 +51,7 @@ function main(;Plotter = PyPlot, plotting = false)
 
     b                = SimplexGridBuilder(Generator=Triangulate)
 
-    # specify boundary nodes
+    ## specify boundary nodes
     length_0   = point!(b, 0.0, 0.0)
     length_n   = point!(b, h_ndoping, 0.0)
     length_ni  = point!(b, h_ndoping + h_intrinsic, 0.0)
@@ -59,20 +59,20 @@ function main(;Plotter = PyPlot, plotting = false)
     height_0   = point!(b, 0.0, height)
     height_n   = point!(b, h_ndoping, height)
 
-    # for L shape
+    ## for L shape
     height_ni12  = point!(b, h_ndoping + h_intrinsic/2, height)
     height_ni2  = point!(b, h_ndoping + h_intrinsic/2, height/2)
     height_ni  = point!(b, h_ndoping + h_intrinsic, height/2)
     height_nip = point!(b, h_ndoping + h_intrinsic + h_pdoping, height/2)
 
-    # specify boundary regions
-    # metal interface
+    ## specify boundary regions
+    ## metal interface
     facetregion!(b, bregionDonor)
     facet!(b, length_0, height_0)
     facetregion!(b, bregionAcceptor)
     facet!(b, length_nip, height_nip)
 
-    # no flux
+    ## no flux
     facetregion!(b, bregionNoFlux)
     facet!(b, length_0, length_nip)
     facetregion!(b, bregionNoFlux)
@@ -84,17 +84,17 @@ function main(;Plotter = PyPlot, plotting = false)
     facetregion!(b, bregionNoFlux)
     facet!(b, height_ni2, height_nip)
 
-    # inner interface
+    ## inner interface
     facetregion!(b, bregionJunction1)
     facet!(b, length_n, height_n)
     facetregion!(b, bregionJunction2)
     facet!(b, length_ni, height_ni)
 
     refinement_center = [h_ndoping + h_intrinsic/2, height/2]
-    # Activate unsuitable callback
+    ## Activate unsuitable callback
     options!(b,unsuitable=unsuitable)
 
-    # cell regions
+    ## cell regions
     cellregion!(b, regionDonor)
     regionpoint!(b, h_ndoping-1.0e-6*cm, height/2-1.0e-6*cm)
     cellregion!(b,regionIntrinsic)
@@ -109,19 +109,13 @@ function main(;Plotter = PyPlot, plotting = false)
     numberOfNodes   = size(grid[Coordinates])[2]
 
     if plotting
-        # GridVisualize.gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.6)
-        # Plotter.xlabel("length [m]")
-        # Plotter.ylabel("height [m]")
-        # Plotter.tight_layout()
+        ## GridVisualize.gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.6)
+        ## Plotter.xlabel("length [m]")
+        ## Plotter.ylabel("height [m]")
+        ## Plotter.tight_layout()
         builderplot(b,Plotter=Plotter,resolution=(750,700))
 end
 
 end # main
 
 end # module
-````
-
----
-
-*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
-

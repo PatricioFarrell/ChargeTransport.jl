@@ -4,7 +4,6 @@ using Test
 # as default.
 ENV["VORONOIFVM_CHECK_ALLOCS"]="false"
 
-
 modname(fname)=splitext(basename(fname))[1]
 
 #
@@ -15,21 +14,19 @@ modname(fname)=splitext(basename(fname))[1]
 #
 function run_tests_from_directory(testdir,prefix)
     println("Directory $(testdir):")
-    @time begin
-        examples=modname.(readdir(testdir))
-        for example in examples
+    examples=modname.(readdir(testdir))
+    for example in examples
+        if length(example)>=length(prefix) &&example[1:length(prefix)]==prefix
             println("  $(example):")
-            if length(example)>=length(prefix) &&example[1:length(prefix)]==prefix
-                path=joinpath(testdir,"$(example).jl")
-                @eval begin
-                    include($path)
-                    # Compile + run test
-                    print("   compile:")
-                    @time @test eval(Meta.parse("$($example).test()"))
-                    # Second run: pure execution time.
-                    print("       run:")
-                    @time eval(Meta.parse("$($example).test()"))
-                end
+            path=joinpath(testdir,"$(example).jl")
+            @eval begin
+                include($path)
+                # Compile + run test
+                print("   compile:")
+                @time @test eval(Meta.parse("$($example).test()"))
+                # Second run: pure execution time.
+                print("       run:")
+                @time eval(Meta.parse("$($example).test()"))
             end
         end
     end
@@ -38,9 +35,13 @@ end
 
 function run_all_tests()
     @time begin
-        run_tests_from_directory(@__DIR__,"test_")
-        run_tests_from_directory(joinpath(@__DIR__,"..","examples"),"Example1")
+        # @testset "Basictest" begin
+        #     run_tests_from_directory(@__DIR__,"test_")
+        # end
+        @testset "Examples" begin
+            run_tests_from_directory(joinpath(@__DIR__,"..","examples"),"Ex")
+        end
     end
 end
 
-run_all_tests() 
+run_all_tests()

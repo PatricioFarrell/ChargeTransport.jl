@@ -1,13 +1,14 @@
+#=
 # GaAs diode (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesExample101_PIN.jl))
+([source code](SOURCE_URL))
 
-We simulate charge transport in a GaAs pin diode, where use the van Roosbroeck
-system of equations as charge transport model. The unknowns are given by the quasi Fermi potentials of electrons and holes $\varphi_n$, $\varphi_p$ and the electric potential $\psi$.
-The simulations are performed out of equilibrium and for the
-stationary problem.
+We simulate charge transport in a GaAs pin diode, where we use the van Roosbroeck
+system of equations as charge transport model. The unknowns are given by the quasi Fermi
+potentials of electrons and holes $\varphi_n$, $\varphi_p$ and the electric potential $\psi$.
+The simulations are performed out of equilibrium and for the stationary problem.
+=#
 
-````julia
-module Example101_PIN
+module Ex101_PIN
 
 using VoronoiFVM       # PDE solver with a FVM spatial discretization
 using ChargeTransport  # drift-diffusion solver
@@ -16,7 +17,7 @@ using GridVisualize    # grid visualizer
 using PyPlot           # solution visualizer
 
 
-# This function is used to initialize the grid for a possible extension to other p-i-n devices.
+## This function is used to initialize the grid for a possible extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
     coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 3 * refinementfactor))
     coord_intrinsic  = collect(range(h_ndoping, stop = (h_ndoping + h_intrinsic), length = 3 * refinementfactor))
@@ -28,7 +29,7 @@ function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping
 end
 
 
-function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = true, unknown_storage=:sparse)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -36,24 +37,26 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # region numbers
+    ## region numbers
     regionAcceptor          = 1          # p doped region
     regionIntrinsic         = 2          # intrinsic region
     regionDonor             = 3          # n doped region
     regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
     numberOfRegions         = length(regions)
 
-    # boundary region numbers
+    ## boundary region numbers
     bregionAcceptor         = 1
     bregionDonor            = 2
     bregions                = [bregionAcceptor, bregionDonor]
     numberOfBoundaryRegions = length(bregions)
 
-    # grid
+    ## grid
     refinementfactor        = 2^(n-1)
-    h_pdoping               = 2 * μm
-    h_intrinsic             = 2 * μm
-    h_ndoping               = 2 * μm
+    h_pdoping               = 2.0    * μm
+    h_intrinsic             = 2.0    * μm
+    h_ndoping               = 2.0    * μm
+    w_device                = 0.5    * μm  # width of device
+    z_device                = 1.0e-4 * cm  # depth of device
     coord                   = initialize_pin_grid(refinementfactor,
                                                   h_pdoping,
                                                   h_intrinsic,
@@ -61,7 +64,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     grid                    = simplexgrid(coord)
 
-    # cellmask! for defining the subregions and assigning region number
+    ## cellmask! for defining the subregions and assigning region number
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor)  # p-doped region = 1
     cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
@@ -81,15 +84,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # set indices of the quasi Fermi potentials
+    ## set indices of the quasi Fermi potentials
     iphin              = 1 # electron quasi Fermi potential
     iphip              = 2 # hole quasi Fermi potential
     numberOfCarriers   = 2
-````
 
-We define the physical data.
-
-````julia
+    # We define the physical data.
     Ec                 = 1.424                *  eV
     Ev                 = 0.0                  *  eV
     Nc                 = 4.351959895879690e17 / (cm^3)
@@ -99,23 +99,23 @@ We define the physical data.
     εr                 = 12.9                 *  1.0              # relative dielectric permittivity of GAs
     T                  = 300.0                *  K
 
-    # recombination parameters
+    ## recombination parameters
     Auger             = 1.0e-29              * cm^6 / s
     SRH_TrapDensity   = 1.0e10               / cm^3
     SRH_LifeTime      = 1.0                  * ns
     Radiative         = 1.0e-10              * cm^3 / s
 
-    # doping
+    ## doping
     dopingFactorNd    = 1.0
     dopingFactorNa    = 0.46
     Nd                = dopingFactorNd * Nc
     Na                = dopingFactorNa * Nv
 
-    # intrinsic concentration
+    ## intrinsic concentration
     ni                = sqrt(Nc * Nv) * exp(-(Ec - Ev) / (2 * kB * T))
 
-    # contact voltages: we impose an applied voltage only on one boundary.
-    # At the other boundary the applied voltage is zero.
+    ## contact voltage: we impose an applied voltage only on one boundary.
+    ## At the other boundary the applied voltage is zero.
     voltageAcceptor   = 1.5                  * V
 
     if test == false
@@ -126,35 +126,37 @@ We define the physical data.
         println("Define System and fill in information about model")
     end
     ################################################################################
-````
 
-We initialize the Data instance and fill in predefined data.
-
-````julia
+    # We initialize the Data instance and fill in predefined data.
     data                                = Data(grid, numberOfCarriers)
 
-    # Following variable declares, if we want to solve stationary or transient problem
-    data.model_type                     = model_stationary
+    ## Following variable declares, if we want to solve stationary or transient problem
+    data.model_type                     = Stationary
 
-    # Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    ## Following choices are possible for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    # Here, we need to specify which numbers are associated with electron and hole quasi Fermi potential. Further, the desired recombination
-    # processes can be chosen here. Note that, if you choose a SRH recombination you can further specify a transient SRH recombination by
-    # the method enable_traps! and adjusting the model_type. Otherwise, by default we use the stationary model for this type of recombination.
+    ## Here, we need to specify which numbers are associated with electron and hole quasi
+    ## Fermi potential. Further, the desired recombination processes can be chosen here.
+    ## Note that, if you choose a SRH recombination you can further specify a transient SRH
+    ## recombination by the method enable_traps! and adjusting the model_type. Otherwise, by
+    ## default we use the stationary model for this type of recombination.
     data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
 
-    # Following choices are possible for boundary model: For contacts currently only ohmic_contact and schottky_contact are possible.
-    # For inner boundaries we have interface_model_none, interface_model_surface_recombination.
-    data.boundary_type[bregionAcceptor] = ohmic_contact
-    data.boundary_type[bregionDonor]    = ohmic_contact
+    ## Following choices are possible for boundary model: For contacts currently only
+    ## OhmicContact and SchottkyContact are possible. For inner boundaries we have
+    ## InterfaceModelNone, InterfaceModelSurfaceReco.
+    data.boundary_type[bregionAcceptor] = OhmicContact
+    data.boundary_type[bregionDonor]    = OhmicContact
 
-    # Following choices are possible for the flux_discretization scheme: scharfetter_gummel, scharfetter_gummel_graded,
-    # excess_chemical_potential, excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    ## Following choices are possible for the flux discretization scheme: ScharfetterGummel,
+    ## ScharfetterGummelGraded, ExcessChemicalPotential, ExcessChemicalPotentialGraded,
+    ## DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -165,12 +167,10 @@ We initialize the Data instance and fill in predefined data.
         println("Define Params and fill in physical parameters")
     end
     ################################################################################
-````
 
-Define the Params struct. Params contains all necessary physical parameters. If one wants to simulate
-space-dependent variable, one additionally needs to generate a ParamsNodal struct, see Example102.
-
-````julia
+    # Define the Params struct. Params contains all necessary physical parameters. If one
+    # wants to simulate space-dependent variables, one additionally needs to generate a
+    # ParamsNodal struct, see Ex102.
     params                                              = Params(grid, numberOfCarriers)
 
     params.temperature                                  = T
@@ -178,7 +178,7 @@ space-dependent variable, one additionally needs to generate a ParamsNodal struc
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
 
-    for ibreg in 1:numberOfBoundaryRegions   # boundary region data
+    for ibreg in 1:numberOfBoundaryRegions  # boundary region data
         params.bDensityOfStates[iphin, ibreg]           = Nc
         params.bDensityOfStates[iphip, ibreg]           = Nv
         params.bBandEdgeEnergy[iphin, ibreg]            = Ec
@@ -189,7 +189,7 @@ space-dependent variable, one additionally needs to generate a ParamsNodal struc
 
         params.dielectricConstant[ireg]                 = εr
 
-        # effective DOS, band-edge energy and mobilities
+        ## effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
         params.densityOfStates[iphip, ireg]             = Nv
         params.bandEdgeEnergy[iphin, ireg]              = Ec
@@ -197,7 +197,7 @@ space-dependent variable, one additionally needs to generate a ParamsNodal struc
         params.mobility[iphin, ireg]                    = mun
         params.mobility[iphip, ireg]                    = mup
 
-        # recombination parameters
+        ## recombination parameters
         params.recombinationRadiative[ireg]             = Radiative
         params.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime
         params.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime
@@ -208,35 +208,31 @@ space-dependent variable, one additionally needs to generate a ParamsNodal struc
 
     end
 
-    # interior doping
-    params.doping[iphin, regionDonor]                   = Nd        # data.doping   = [0.0  Na;
-    params.doping[iphin, regionIntrinsic]               = ni        #                  ni   0.0;
-    params.doping[iphip, regionIntrinsic]               = 0.0       #                  Nd  0.0]
+    ## interior doping
+    params.doping[iphin, regionDonor]                   = Nd     # data.doping   = [0.0  Na;
+    params.doping[iphin, regionIntrinsic]               = ni     #                  ni   0.0;
+    params.doping[iphip, regionIntrinsic]               = 0.0    #                  Nd  0.0]
     params.doping[iphip, regionAcceptor]                = Na
 
-    # boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd        # data.bDoping  = [0.0  Na;
-    params.bDoping[iphip, bregionAcceptor]              = Na        #                  Nd  0.0]
-````
+    ## boundary doping
+    params.bDoping[iphin, bregionDonor]                 = Nd     # data.bDoping  = [0.0  Na;
+    params.bDoping[iphip, bregionAcceptor]              = Na     #                  Nd  0.0]
 
-Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed
-in next step.
-
-````julia
+    # Region dependent params is now a substruct of data which is again a substruct of the
+    # system and will be parsed in next step.
     data.params                                         = params
-````
 
-In the last step, we initialize our system with previous data which is likewise dependent on the parameters.
-It is important that this is in the end, otherwise our VoronoiFVMSys is not dependent on the data we initialized
-but rather on default data.
-
-````julia
+    # In the last step, we initialize our system with previous data which is likewise
+    # dependent on the parameters. It is important that this is in the end, otherwise our
+    # VoronoiFVMSys is not dependent on the data we initialized but rather on default data.
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
     if test == false
-        # Here we cn show region dependent physical parameters. show_params() only supports region dependent parameters, but, if one wishes to
-        # print nodal dependent parameters, currently this is possible with println(ctsys.data.paramsnodal). We neglected here, since
-        # in most applications where the numberOfNodes is >> 10 this would results in a large output in the terminal.
+        ## Here we cn show region dependent physical parameters. show_params() only supports
+        ## region dependent parameters, but, if one wishes to print nodal dependent parameters,
+        ## currently this is possible with println(ctsys.data.paramsnodal). We neglected here,
+        ## since in most applications where the numberOfNodes is >> 10 this would results in a
+        ## large output in the terminal.
         show_params(ctsys)
         println("*** done\n")
     end
@@ -247,10 +243,10 @@ but rather on default data.
     end
     ################################################################################
 
-    # We set zero voltage ohmic contacts for each charge carrier at all outerior boundaries
-    # for the equilibrium calculations.
-    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
+    ## We set zero voltage ohmic contacts for each charge carrier at all outerior boundaries
+    ## for the equilibrium calculations.
+    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
+    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
     if test == false
         println("*** done\n")
@@ -260,20 +256,8 @@ but rather on default data.
         ################################################################################
         println("Plot electroneutral potential, band-edge energies and doping")
         ################################################################################
-        # ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential
-        label_BEE      = Array{String, 1}(undef, numberOfCarriers)    # band-edge energie parameters
-        label_density  = Array{String, 1}(undef, numberOfCarriers)
-        label_solution = Array{String, 1}(undef, numberOfCarriers)
-
-        # for electrons
-        label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"; label_BEE[iphin] = "\$E_c\$"
-        label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
-
-        # for holes
-        label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"; label_BEE[iphip] = "\$E_v\$"
-        label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
-        # ##### set legend for plotting routines #####
+        ## set legend for plotting routines. Either you can use the predefined labels or write your own.
+        label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
 
         psi0 = electroNeutralSolution!(grid, data)
         plot_energies(Plotter, grid, data, label_BEE)
@@ -292,14 +276,11 @@ but rather on default data.
 
     control                   = NewtonControl()
     control.verbose           = verbose
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.21
     control.max_iterations    = 250
     control.tol_absolute      = 1.0e-14
     control.tol_relative      = 1.0e-14
     control.handle_exceptions = true
     control.tol_round         = 1.0e-8
-    control.max_round         = 5
 
     if test == false
         println("*** done\n")
@@ -311,18 +292,17 @@ but rather on default data.
     end
     ################################################################################
 
-    control.damp_initial  = 0.5
-    control.damp_growth   = 1.2 # >= 1
-    control.max_round     = 3
+    control.damp_initial = 0.5
+    control.damp_growth  = 1.2 # >= 1
+    control.max_round    = 3
 
-    # initialize solution and starting vectors
-    initialGuess          = unknowns(ctsys)
-    solution              = unknowns(ctsys)
+    ## initialize solution and starting vectors
+    initialGuess         = unknowns(ctsys)
+    solution             = unknowns(ctsys)
 
-    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
+    solution             = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution
-
+    initialGuess        .= solution
 
     if test == false
         println("*** done\n")
@@ -332,39 +312,27 @@ but rather on default data.
         println("Bias loop")
     end
     ################################################################################
-````
 
-Set calculation type to outOfEquilibrium for starting with respective simulation.
+    # Set calculation type to OutOfEquilibrium for starting with respective simulation.
+    data.calculation_type = OutOfEquilibrium
 
-````julia
-    ctsys.data.calculation_type      = outOfEquilibrium
-
-    if !(data.F == Boltzmann) # adjust control, when not using Boltzmann
-        control.damp_initial      = 0.5
-        control.damp_growth       = 1.2
-        control.max_iterations    = 30
-    end
-
-    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 32)
-    IV         = zeros(0)
-
-    w_device = 0.5    * μm  # width of device
-    z_device = 1.0e-4 * cm  # depth of device
+    maxBias               = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    biasValues            = range(0, stop = maxBias, length = 32)
+    IV                    = zeros(0)
 
     for Δu in biasValues
 
-        if verbose
+        if test == false
             println("Δu  = ", Δu )
         end
-        # set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+        ## set non equilibrium boundary conditions
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
 
         initialGuess .= solution
 
-        # get I-V data
+        ## get I-V data
         current = get_current_val(ctsys, solution)
 
         push!(IV,  abs.(w_device * z_device * ( current)) )
@@ -375,7 +343,7 @@ Set calculation type to outOfEquilibrium for starting with respective simulation
         println("*** done\n")
     end
 
-    # plot solution and IV curve
+    ## plot solution and IV curve
     if plotting
         plot_energies(Plotter, grid, data, solution,  "Applied voltage Δu = $(biasValues[end])", label_energy,   plotGridpoints = false)
         Plotter.figure()
@@ -383,7 +351,7 @@ Set calculation type to outOfEquilibrium for starting with respective simulation
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,IV,  "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
     end
 
     testval = solution[15]
@@ -405,9 +373,3 @@ if test == false
 end
 
 end # module
-````
-
----
-
-*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
-

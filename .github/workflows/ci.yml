@@ -16,8 +16,8 @@ jobs:
       matrix:
         version:
           - '1.6' # Replace this with the minimum Julia version that your package supports. E.g. if your package requires Julia 1.5 or higher, change this to '1.5'.
-          #- '1'   # Leave this line unchanged. '1' will automatically expand to the latest stable 1.x release of Julia.
-          - 'nightly' 
+          # - '1'   # Leave this line unchanged. '1' will automatically expand to the latest stable 1.x release of Julia.
+          - 'nightly'
         os:
           - ubuntu-latest
           - macos-latest
@@ -42,10 +42,12 @@ jobs:
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+        env:
+          PYTHON: ""
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v1
         with:
-          file: lcov.info
+          PYTHON: ""
   docs:
     name: Documentation
     runs-on: ubuntu-latest
@@ -59,6 +61,8 @@ jobs:
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()'
+      #  env:
+      #    JULIA_PKG_SERVER: ""
       # - run: |
       #     julia --project=docs -e '
       #       using Documenter: doctest

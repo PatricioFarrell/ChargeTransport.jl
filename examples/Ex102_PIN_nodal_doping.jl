@@ -2,15 +2,12 @@
 # GaAs diode with spatially varying doping (1D).
 ([source code](SOURCE_URL))
 
-Simulating charge transport in a GaAs pin diode. This means
-the corresponding PDE problem corresponds to the van Roosbroeck
-system of equations.
-The simulations are performed out of equilibrium and for the
-stationary problem.
-A special feature here is that the doping is spatially varying, i.e. node-dependent.
+Simulating charge transport in a GaAs pin diode. This means the PDE problem corresponds to the
+van Roosbroeck system of equations. The simulations are performed out of equilibrium and for
+the stationary problem. A special feature here is that the doping is node-dependent.
 =#
 
-module Example102_PIN_nodal_doping
+module Ex102_PIN_nodal_doping
 
 using VoronoiFVM
 using ChargeTransport
@@ -39,18 +36,20 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     bregions                = [bregionAcceptor, bregionDonor]
     numberOfBoundaryRegions = length(bregions)
 
-    h_pdoping              = 0.1 * μm
-    h_intrinsic            = 0.1 * μm
-    h_ndoping              = 0.1 * μm
+    h_pdoping               = 0.1    * μm
+    h_intrinsic             = 0.1    * μm
+    h_ndoping               = 0.1    * μm
+    w_device                = 0.1    * μm  # width of device
+    z_device                = 1.0e-5 * cm  # depth of device
 
-    coord                  = range(0.0, stop = h_ndoping + h_intrinsic + h_pdoping, length = 25)
-    coord                  = collect(coord)
-    grid                   = simplexgrid(coord)
-    numberOfNodes          = length(coord)
+    coord                   = range(0.0, stop = h_ndoping + h_intrinsic + h_pdoping, length = 25)
+    coord                   = collect(coord)
+    grid                    = simplexgrid(coord)
+    numberOfNodes           = length(coord)
 
     ## set different regions in grid
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor,  tol = 1.0e-15)    # p-doped region = 1
-    cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic],            regionIntrinsic, tol = 1.0e-15)    # intrinsic region = 2
+    cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic, tol = 1.0e-15)    # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor,     tol = 1.0e-15)    # n-doped region = 3
 
     if plotting
@@ -70,7 +69,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ## set indices of the quasi Fermi potentials
     iphin              = 1 # electron quasi Fermi potential
     iphip              = 2 # hole quasi Fermi potential
-    numberOfCarriers   = 2 
+    numberOfCarriers   = 2
 
     ## Define the physical data.
     Ec                 = 1.424                *  eV
@@ -83,11 +82,11 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     T                  = 300.0                *  K
 
     ## recombination parameters
-    SRH_TrapDensity_n  = 4.760185435081902e5    / cm^3       
+    SRH_TrapDensity_n  = 4.760185435081902e5    / cm^3
     SRH_TrapDensity_p  = 9.996936448738406e6    / cm^3
-    SRH_LifeTime       = 1.0                    * ps   
+    SRH_LifeTime       = 1.0                    * ps
 
-    ## contact voltages
+    ## contact voltage
     voltageAcceptor    = 1.4 * V
 
     if test == false
@@ -103,25 +102,26 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     # We initialize the Data instance and fill in predefined data.
     data                                = Data(grid, numberOfCarriers)
 
-    ## possible choices: model_stationary, model_transient
-    data.model_type                     = model_stationary
+    ## Possible choices: Stationary, Transient
+    data.model_type                     = Stationary
 
-    ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
+    ## Possible choices for F: Boltzmann, FermiDiracOneHalfBednarczyk,
+    ## FermiDiracOneHalfTeSCA, FermiDiracMinusOne, Blakemore
     data.F                             .= Boltzmann
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
+    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = false,
                                                                   bulk_recomb_radiative = false,
                                                                   bulk_recomb_SRH = true)
 
-    ## possible choices: ohmic_contact, schottky_contact (outer boundary) and interface_model_none,
-    ## interface_model_surface_recombination (inner boundary).
-    data.boundary_type[bregionAcceptor] = ohmic_contact                       
-    data.boundary_type[bregionDonor]    = ohmic_contact   
-    
-    ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = scharfetter_gummel
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
+    ## InterfaceModelSurfaceReco (inner boundary).
+    data.boundary_type[bregionAcceptor] = OhmicContact
+    data.boundary_type[bregionDonor]    = OhmicContact
+
+    ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.flux_approximation             = ScharfetterGummel
 
     if test == false
         println("*** done\n")
@@ -133,8 +133,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    # Define the Params struct. Params contains all necessary physical parameters. For
-    # space-dependent variables we have an additional ParamsNodal.
+    # Define the Params and ParamsNodal struct.
     params                                              = Params(grid, numberOfCarriers)
     paramsnodal                                         = ParamsNodal(grid, numberOfCarriers)
 
@@ -143,7 +142,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
 
-    for ibreg in 1:numberOfBoundaryRegions   # boundary region data
+    for ibreg in 1:numberOfBoundaryRegions  # boundary region data
 
         params.bDensityOfStates[iphin, ibreg]           = Nc
         params.bDensityOfStates[iphip, ibreg]           = Nv
@@ -171,9 +170,9 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     end
 
-    ## initialize the space dependent doping
-    NDoping           =   1.0e17  / cm^3
-    κ = 500.0
+    ## initialize the space dependent doping (see FarrellPeschka2019, Computers & Mathematics with Applications, 2019).
+    NDoping  =   1.0e17  / cm^3
+    κ        = 500.0
     for icoord = 1:numberOfNodes
         paramsnodal.doping[icoord] = NDoping * 0.5 * ( 1.0  +  tanh( (0.1 - coord[icoord]/μm) *κ )  - ( 1.0 + tanh( (coord[icoord]/μm - 0.2) * κ )) )
     end
@@ -199,7 +198,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         plot_doping(Plotter, grid, paramsnodal)
         println("*** done\n")
     end
-    
+
     ################################################################################
     if test == false
         println("Define outerior boundary conditions")
@@ -207,8 +206,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ################################################################################
 
     ## set zero voltage ohmic contacts for each charge carrier at all outerior boundaries.
-    set_ohmic_contact!(ctsys, bregionAcceptor, 0.0)
-    set_ohmic_contact!(ctsys, bregionDonor, 0.0)
+    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
+    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
     if test == false
         println("*** done\n")
@@ -245,29 +244,18 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution 
+    initialGuess         .= solution
 
     if plotting
-        ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
-        label_density  = Array{String, 1}(undef, numberOfCarriers)
-        label_solution = Array{String, 1}(undef, numberOfCarriers)
-        
-        ## for electrons 
-        label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"
-        label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
-        
-        ## for holes 
-        label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"
-        label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
-        ##### set legend for plotting routines #####
+        ## set legend for plotting routines. Either you can use the predefined labels or write your own.
+        label_solution, label_density, label_energy = set_plotting_labels(data)
 
         Plotter.figure()
-        plot_energies(Plotter, grid, data, solution,  "Equilibrium", label_energy)
+        plot_energies(Plotter,  grid, data, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution, "Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution,  "Equilibrium", label_solution)
+        plot_solution(Plotter,  grid, data, solution, "Equilibrium", label_solution)
         Plotter.figure()
     end
 
@@ -280,20 +268,17 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    # Set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type      = outOfEquilibrium
-     
-    maxBias                          = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues                       = range(0, stop = maxBias, length = 41)
-    IV                               = zeros(0)
+    # Set calculation type to OutOfEquilibrium for starting with respective simulation.
+    data.calculation_type   = OutOfEquilibrium
 
-    w_device                         = 0.1    * μm  # width of device
-    z_device                         = 1.0e-5 * cm  # depth of device
+    maxBias                 = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    biasValues              = range(0, stop = maxBias, length = 41)
+    IV                      = zeros(0)
 
     for Δu in biasValues
 
         ## set non equilibrium boundary conditions
-        set_ohmic_contact!(ctsys, bregionAcceptor, Δu)
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
 
@@ -310,7 +295,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     end # bias loop
 
-    
+
     if plotting # plot solution and IV curve
         plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])",  label_energy)
         Plotter.figure()
@@ -318,7 +303,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
+        plot_IV(Plotter, biasValues,IV, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
     end
 
     testval = solution[15]
