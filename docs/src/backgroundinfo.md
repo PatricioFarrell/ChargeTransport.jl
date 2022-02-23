@@ -1,8 +1,7 @@
 
 Mathematical drift-diffusion models
 ================================
-`ChargeTransport.jl` relies on the drift-diffusion semiconductor equations which are sometimes
-referred to as van Roosbroeck system. This nonlinear system of partial differential equations
+`ChargeTransport.jl` aims to discretize charge transport models based on drift-diffusion equations. The bipolar case is sometimes referred to as van Roosbroeck system. This nonlinear system of partial differential equations
 couples Poisson's equation to several continuity equations. The precise type and amount will vary with the specific application.
 
 In this section, we would like to

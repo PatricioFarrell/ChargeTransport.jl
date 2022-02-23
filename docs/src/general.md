@@ -15,9 +15,11 @@ the semiconductor drift-diffusion equations via the Voronoi finite volume method
 - 1D, 2D and 3D simulations
 - stationary and transient simulations
 - IV curves and scan protocols
-- an arbitrary amount of charge carriers may be added
+- an arbitrary amount of charge carriers (electrons, heavy holes, light holes, ions, ...)
 - thermodynamically consistent, physics preserving numerical methods
 - different charge carrier statistics per species (Boltzmann, Blakemore, Fermi-Dirac)
+- Auger, radiative, Shockley-Read-Hall recombination including transient traps
+- uniform and Beer-Lambert generation
 
 Installation and first steps
 ================================

@@ -31,7 +31,7 @@ Differences to the previous example include
 - parameter jumps across heterojunctions
 - the transient case
 - a generation rate $G$
-- higher dimensional problem (2D and 3D).
+- higher dimensional problem.
 
 A quick survey on how to use `ChargeTransport.jl` to adjust the input parameters such that these features can be simulated will be given in the following.
 
@@ -122,7 +122,7 @@ end
 for given data stored in `generationUniform`. Note that also Beer-Lambert generation is implemented but yet not well tested.
 Furthermore, we recommend to perform a time loop while increasing the generation rate and afterwards applying the scan protocol with a full generation due to numerical stability, see this [example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex108_PSC_uniform_Generation.jl).
 
-## Example 4: 2D and 3D problems
+## Example 4: Multi-dimensional problems
 It is also possible to perform multi-dimensional simulations.
 
 For a 2D mesh you may use a structured grid via [ExtendableGrids.jl](https://github.com/j-fu/ExtendableGrids.jl) or an unstructured mesh via the Julia wrapper [Triangulate.jl](https://github.com/JuliaGeometry/Triangulate.jl) for Jonathan Richard Shewchuk's Triangle mesh generator.
