@@ -212,7 +212,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
 
     ## inner boundary region data
-    data.d                                              = 6.28 * 10e-4 * cm  # lattice size of perovskite (from Eames et al.)
+    data.d                                              = 6.28 * 10e-4 * cm  # lattice size of perovskite (from Eames et al.):6.28 * 10e-8 * cm
     params.bDensityOfStates[iphin_b1, bregionJunction1] = data.d * params.densityOfStates[iphin, regionIntrinsic]
     params.bDensityOfStates[iphip_b1, bregionJunction1] = data.d * params.densityOfStates[iphip, regionIntrinsic]
 
@@ -342,7 +342,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     # biasValues = range(0, stop = maxBias, length = 3)
 
     maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = voltageAcceptor, length = 51)
+    biasValues = range(0, stop = voltageAcceptor, length = 21)
 
     IV         = zeros(0)
 
@@ -430,7 +430,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 end #  main
 
 function test()
-    testval = 9.439041265344695
+    testval = 29.077893611261146
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
