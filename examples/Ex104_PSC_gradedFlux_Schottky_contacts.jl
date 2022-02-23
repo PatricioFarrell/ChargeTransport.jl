@@ -339,7 +339,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bDoping[iphin, bregionDonor]      = Nd
 
     ## values for the schottky contacts
-    params.SchottkyBarrier[bregionDonor]            =  0.0
+    params.SchottkyBarrier[bregionDonor]     =  0.0
     params.SchottkyBarrier[bregionAcceptor]  = -5.0  * eV  -  (-4.1  * eV) # difference between boundary Fermi level
     params.bVelocity                         = [1.0e7 * cm/s    0.0   * cm/s;
                                                 0.0   * cm/s    1.0e7 * cm/s]

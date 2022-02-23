@@ -15,7 +15,7 @@ export kB, Planck_constant, mₑ, q, ε0
 
 include("ct_units.jl")
 
-export K, J, A, V, m, s, C, kg, Hz
+export K, J, A, V, m, s, C, kg, Hz, kHz
 export cm, mm, μm, nm, ms, μs, ns, ps, eV
 export tiny_penalty_value
 ##################################################################

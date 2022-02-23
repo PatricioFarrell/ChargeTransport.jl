@@ -14,6 +14,7 @@ const s  = 1.0      # seconds
 const C  = A * s    # Coulomb
 const kg = 1.0      # kilogramm
 const Hz = 1 / s    # Hertz
+const kHz = 1.0e3 * Hz # Kilohertz
 
 
 # scaled SI units
