@@ -1300,7 +1300,7 @@ For given potentials, compute corresponding densities. This function is needed
 for the method, plotting the densities.
 
 """
-function compute_densities!(u, data, inode, region, icc, ipsi, in_region::Bool)
+function compute_densities!(u, data, inode, region, icc, in_region::Bool)
 
     params      = data.params
     paramsnodal = data.paramsnodal

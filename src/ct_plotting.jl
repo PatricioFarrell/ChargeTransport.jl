@@ -67,8 +67,8 @@ function plot_densities(Plotter, grid, data::Data, sol, title, label_density, ;p
         u2         = sol[:, 2]
         ireg       = cellregions[1]
 
-        icc1       = compute_densities!(u1, data, 1, 1,    icc, ipsi, false) # breg = 1 since we are on the left boundary
-        icc2       = compute_densities!(u2, data, 2, ireg, icc, ipsi, true)
+        icc1       = compute_densities!(u1, data, 1, 1,    icc, false) # breg = 1 since we are on the left boundary
+        icc2       = compute_densities!(u2, data, 2, ireg, icc, true)
 
         label_icc  = label_density[icc]
 
@@ -84,8 +84,8 @@ function plot_densities(Plotter, grid, data::Data, sol, title, label_density, ;p
             u1    = sol[:, i1]
             u2    = sol[:, i2]
 
-            icc1  = compute_densities!(u1, data, i1, ireg, icc, ipsi, in_region)
-            icc2  = compute_densities!(u2, data, i2, ireg, icc, ipsi, in_region)
+            icc1  = compute_densities!(u1, data, i1, ireg, icc, in_region)
+            icc2  = compute_densities!(u2, data, i2, ireg, icc, in_region)
 
             # multiplying by 1.0e-6 gives us the densities in cm^(-3)
             Plotter.semilogy([coordinates[i1]./1, coordinates[i2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2)
@@ -97,9 +97,9 @@ function plot_densities(Plotter, grid, data::Data, sol, title, label_density, ;p
         ireg      = cellregions[end]
         node      = cellnodes[2, end]
 
-        icc1      = compute_densities!(u1, data, node-1, ireg, icc, ipsi, true)
+        icc1      = compute_densities!(u1, data, node-1, ireg, icc, true)
         # breg = 2 since we are on the right boundary
-        icc2      = compute_densities!(u2, data, node, 2, icc, ipsi, false)
+        icc2      = compute_densities!(u2, data, node, 2, icc, false)
 
         # multiplying by 1.0e-6 gives us the densities in cm^(-3)
         Plotter.semilogy([coordinates[node-1]./1, coordinates[node]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2)
