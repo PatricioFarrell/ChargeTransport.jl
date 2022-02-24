@@ -25,6 +25,9 @@ jobs:
         arch:
           - x64
     steps:
+      - name: Install dependencies
+        run: |
+          pip install matplotlib
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
         with:
