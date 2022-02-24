@@ -84,6 +84,6 @@ makedocs(sitename = "ChargeTransport.jl",
         "Examples"=>generated_examples]
 )
 
-# deploydocs(
-#     repo = "github.com/PatricioFarrell/ChargeTransport.jl.git"
-# )
+deploydocs(
+    repo = "github.com/PatricioFarrell/ChargeTransport.jl.git"
+)
