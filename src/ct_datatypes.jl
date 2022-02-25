@@ -42,6 +42,8 @@ abstract type InterfaceModelNone end
 #
 abstract type InterfaceModelDiscontqF end
 
+abstract type InterfaceModelDiscontqFNoReaction end
+
 """
 $(TYPEDEF)
 Abstract type for surface recombination mechanisms.
@@ -71,7 +73,7 @@ Possible Types of interface model (interior boundary conditions).
 """
 const InterfaceModelType = Union{Type{InterfaceModelNone}, Type{InterfaceModelSurfaceReco},
                              Type{InterfaceModelDiscontqF}, Type{InterfaceModelTangentialFlux},
-                             Type{InterfaceModelSurfaceRecoAndTangentialFlux}, Type{InterfaceModelIonCharge}}
+                             Type{InterfaceModelSurfaceRecoAndTangentialFlux}, Type{InterfaceModelIonCharge}, Type{InterfaceModelDiscontqFNoReaction}}
 
 """
 Possible types of boundary models.

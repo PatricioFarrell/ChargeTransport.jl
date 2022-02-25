@@ -179,17 +179,26 @@ end
 ###########################################################
 ###########################################################
 
+# DA:
+# 1. get here array of indices of all interface carriers with respective boundary regions.
+#  -> needed to build repective InterfaceQuantities and to enable them
+#
+# 2. get for interface reaction the index of the respective bulk species.
+#
+# 3. they need to be parsed in correct order.
+#
+# CAUTION!!! only one boundary layer allowed ....
 mutable struct InterfaceCarriers
 
+    bulkIndex           ::  Array{QType, 1}
     """
     index for data construction of Interface species
     """
-	index                 ::  Array{Int64,1} # here the id's of the AbstractQuantities or the integer indices are parsed.
-
+	interfaceIndex      ::  Array{Union{VoronoiFVM.InterfaceQuantity{Int32}, Int64}, 1}
     """
     boundary region number
     """
-    boundary_region       ::  Int64
+    boundaryRegion      ::  Int64
 
     InterfaceCarriers() = new()
 
@@ -200,14 +209,15 @@ $(SIGNATURES)
 
 Corresponding constructor for the interface species.
 """
-function enable_interface_carrier!(data,; species::Array{Int64, 1}, boundary_region::Int64)
+function enable_interface_carriers!(data,; bulkSpecies, interfaceSpecies, boundaryRegion)
 
     interfaceCarriers = InterfaceCarriers()
 
-    interfaceCarriers.index           = species
-    interfaceCarriers.boundary_region = boundary_region
+    interfaceCarriers.bulkIndex      = bulkSpecies
+    interfaceCarriers.interfaceIndex = interfaceSpecies
+    interfaceCarriers.boundaryRegion = boundaryRegion
 
-    data.interfaceCarriers            = interfaceCarriers
+    data.interfaceCarriers           = interfaceCarriers
 
 end
 
@@ -833,6 +843,7 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
 
     data.enableIonicCarriers = IonicChargeCarriers()
     data.enableTraps         = Traps()
+    data.interfaceCarriers   = InterfaceCarriers()
 
     data.innerInterfaceModel = InterfaceModelNone
 
@@ -960,6 +971,13 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
         end
     end
 
+    # if interface carriers are present
+    if isdefined(data.interfaceCarriers, :interfaceIndex)
+        for icc ∈ data.interfaceCarriers.interfaceIndex
+            enable_boundary_species!(ctsys.fvmsys, icc, data.interfaceCarriers.boundaryRegion)
+        end
+    end
+
     enable_species!(ctsys.fvmsys, data.index_psi, 1:data.params.numberOfRegions) # ipsi defined on whole domain
 
     # for detection of number of species
@@ -993,7 +1011,15 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontq
         data.params.prefactor_SRH = 0.0
     end
 
-    for icc in 1:2# Integers
+    # if interface carriers are present
+    if isdefined(data.interfaceCarriers, :interfaceIndex)
+        numberOfInterfaceCarriers = length(data.interfaceCarriers.interfaceIndex)
+    end
+
+    bulkCarriers      = data.chargeCarrierList[1:end-numberOfInterfaceCarriers]
+    InterfaceCarriers = data.chargeCarrierList[numberOfInterfaceCarriers+1:end]
+
+    for icc in bulkCarriers
         if data.isContinuous[icc] == false
             data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
         elseif data.isContinuous[icc] == true
@@ -1001,9 +1027,9 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontq
         end
     end
 
-    if data.params.numberOfCarriers > 2
-        data.chargeCarrierList[3] = InterfaceQuantity(fvmsys, 3, id = 3)
-        data.chargeCarrierList[4] = InterfaceQuantity(fvmsys, 3, id = 4)
+    # DA: caution: only one boundary layer allowed up to now.
+    for icc in InterfaceCarriers
+        data.chargeCarrierList[icc] = InterfaceQuantity(fvmsys, data.interfaceCarriers.boundaryRegion, id = icc)
     end
 
     data.index_psi = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)

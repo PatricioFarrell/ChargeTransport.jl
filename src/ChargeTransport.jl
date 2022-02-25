@@ -35,6 +35,8 @@ export OhmicContact, SchottkyContact
 export InterfaceModelNone, InterfaceModelSurfaceReco, InterfaceModelTangentialFlux, InterfaceModelDiscontqF
 export InterfaceModelIonCharge, InterfaceModelSurfaceRecoAndTangentialFlux
 
+export InterfaceModelDiscontqFNoReaction
+
 export ModelType, Transient, Stationary
 
 export FluxApproximationType
@@ -65,6 +67,8 @@ export compute_densities!, compute_energies!, electroNeutralSolution!, print_jac
 export show_params, trap_density!
 export get_current_val, charge_density
 export enable_traps!
+
+export enable_interface_carriers!
 ##################################################################
 
 include("ct_plotting.jl")
