@@ -329,11 +329,11 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
 
     ################################################################################
     if test == false
-        println("Define outerior boundary conditions")
+        println("Define oute boundary conditions")
     end
     ################################################################################
 
-    # set zero voltage ohmic contacts for electrons and holes at all outerior boundaries.
+    # set zero voltage ohmic contacts for electrons and holes at all outer boundaries.
     set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
     set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 

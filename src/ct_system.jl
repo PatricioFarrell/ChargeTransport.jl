@@ -194,7 +194,7 @@ mutable struct Params
     """
     Number of boundary regions ``(\\partial \\mathbf{\\Omega})_k`` such that
     `` \\partial \\mathbf{\\Omega} = \\cup_k (\\partial \\mathbf{\\Omega})_k``.
-    Note that here are interior and outerior boundaries calculated.
+    Note that here are inner and outer boundaries calculated.
     """
     numberOfBoundaryRegions      ::  Int64
 
