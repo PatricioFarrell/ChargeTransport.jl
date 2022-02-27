@@ -41,7 +41,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     t                       = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
     k                       = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    coord_p_u               = collect(range(x0, 2/3 * h_pdoping, step=h_pdoping/(0.1*δ)))
+    coord_p_u               = collect(range(x0, 2/3 * h_pdoping, step=h_pdoping/(0.3*δ)))
     coord_p_g               = geomspace(2/3 * h_pdoping,
                                         h_pdoping,
                                         h_pdoping/(0.4*δ),
@@ -62,7 +62,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
                                         h_ndoping/(2.0*δ),
                                         h_ndoping/(0.4*δ),
                                         tol=t)
-    coord_n_u               = collect(range(h_pdoping+h_intrinsic+1/3 * h_ndoping, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.1*δ)))
+    coord_n_u               = collect(range(h_pdoping+h_intrinsic+1/3 * h_ndoping, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.3*δ)))
 
     coord                   = glue(coord_p_u,coord_p_g,  tol=10*t)
     icoord_p                = length(coord)
@@ -186,7 +186,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     C0                  = 1.0e18                / (cm^3)
 
     ## contact voltages
-    voltageAcceptor     =  1.0                  * V
+    voltageAcceptor     =  1.2                  * V
 
     if test == false
         println("*** done\n")
@@ -280,8 +280,8 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     # ##############################################################
 
     ## inner boundary region data
-    delta1                                              = 0.0
-    delta2                                              = 0.0
+    delta1                                              = 0.01 * eV
+    delta2                                              = 0.01 * eV
     data.d                                              = 6.28 * 10e-8 * cm # lattice size perovskite
     params.bDensityOfStates[iphin_b1, bregionJunction1] = data.d * params.densityOfStates[iphin, regionIntrinsic]
     params.bDensityOfStates[iphip_b1, bregionJunction1] = data.d * params.densityOfStates[iphip, regionIntrinsic]
@@ -302,9 +302,9 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
     ## print all params stored in ctsys.data.params
-    if test == false
-        show_params(ctsys)
-    end
+    #if test == false
+    #    show_params(ctsys)
+    #end
 
     if test == false
         println("*** done\n")
@@ -350,7 +350,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     end
     ################################################################################
 
-    control.damp_initial      = 0.05
+    control.damp_initial      = 0.5
     control.damp_growth       = 1.21 # >= 1
     control.max_round         = 5
 
@@ -361,36 +361,6 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     solution                  = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
     initialGuess             .= solution
-
-    if plotting == true
-
-        vis = GridVisualizer(Plotter = PyPlot, layout=(3,1))
-
-        subgrids = VoronoiFVM.subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
-        phin_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
-        phip_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
-        psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
-
-        for i = 1:length(phin_sol)
-            scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
-            scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
-            scalarplot!(vis[1, 1], subgrids[i], psi_sol[i],  clear = false, color=:blue)
-            if i == 3
-                scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
-                scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$",  color=:red)
-                scalarplot!(vis[1, 1], subgrids[i], psi_sol[i],  clear = false, label = "\$ \\psi \$",color=:blue)
-            end
-        end
-
-        sol_ref_EQ = readdlm("data/reference-sol-EQ.dat")
-        PyPlot.plot(sol_ref_EQ[:, 1], sol_ref_EQ[:, 2], linestyle="--", color = "black")
-        PyPlot.plot(sol_ref_EQ[:, 1], sol_ref_EQ[:, 3], linestyle="--", color = "black")
-        PyPlot.plot(sol_ref_EQ[:, 1], sol_ref_EQ[:, 4], linestyle="--", color = "black")
-        Plotter.legend(fancybox = true, loc = "best", fontsize=11)
-        Plotter.title("Solution in EQ")
-
-    end
-    #writedlm("reference-sol-EQ.dat", [coord solution'])
 
     if test == false
         println("*** done\n")
@@ -407,10 +377,9 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     control.damp_initial          = 0.5
     control.damp_growth           = 1.21
     control.max_round             = 7
-    control.max_iterations        = 300
 
     maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 101)
+    biasValues = range(0, stop = maxBias, length = 31)
     IV         = zeros(0)
 
     for Δu in biasValues
@@ -421,22 +390,6 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
-
-        subgrids = VoronoiFVM.subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
-        phin_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
-        phip_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
-        psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
-
-        for i = 1:length(phin_sol)
-            scalarplot!(vis[2, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
-            scalarplot!(vis[2, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
-            scalarplot!(vis[2, 1], subgrids[i], psi_sol[i],  clear = false, color=:blue)
-            if i == 3
-                scalarplot!(vis[2, 1], subgrids[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
-                scalarplot!(vis[2, 1], subgrids[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$",  color=:red)
-                scalarplot!(vis[2, 1], subgrids[i], psi_sol[i],  clear = false, label = "\$ \\psi \$",color=:blue)
-            end
-        end
 
         initialGuess .= solution
 
@@ -461,8 +414,16 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         println("*** done\n")
     end
 
+    function compute_densities(icc, ireg, phin, psi)
+        eta = data.params.chargeNumbers[icc] ./ data.params.UT .* ( (phin .- psi) .+ data.params.bandEdgeEnergy[icc, ireg] ./ q )
+
+        return data.params.densityOfStates[icc, ireg] .* data.F[icc].(eta)
+    end
+
+
     if plotting == true
 
+        vis = GridVisualizer(Plotter = PyPlot, layout=(3,1))
 
         subgrids = VoronoiFVM.subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
         phin_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
@@ -470,13 +431,13 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
 
         for i = 1:length(phin_sol)
-            scalarplot!(vis[2, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
-            scalarplot!(vis[2, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
-            scalarplot!(vis[2, 1], subgrids[i], psi_sol[i],  clear = false, color=:blue)
+            scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
+            scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
+            scalarplot!(vis[1, 1], subgrids[i], psi_sol[i],  clear = false, color=:blue)
             if i == 3
-                scalarplot!(vis[2, 1], subgrids[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
-                scalarplot!(vis[2, 1], subgrids[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$",  color=:red)
-                scalarplot!(vis[2, 1], subgrids[i], psi_sol[i],  clear = false, label = "\$ \\psi \$",color=:blue)
+                scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
+                scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$",  color=:red)
+                scalarplot!(vis[1, 1], subgrids[i], psi_sol[i],  clear = false, label = "\$ \\psi \$",color=:blue)
             end
         end
 
@@ -486,6 +447,11 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         PyPlot.plot(sol_ref[:, 1], sol_ref[:, 4], linestyle="--", color = "black")
         Plotter.legend(fancybox = true, loc = "best", fontsize=11)
         Plotter.title("Solution with Bias")
+
+        for i = 1:length(phin_sol)
+            scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphin, subgrids[i][CellRegions][1], phin_sol[i], psi_sol[i])), clear = false, color=:green)
+            scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i])), clear = false, color=:red)
+        end
         ##########################################################
         scalarplot!(vis[3, 1], biasValues, IV, clear = false, color=:green)
         IV_ref         = readdlm("data/reference-IV.dat")

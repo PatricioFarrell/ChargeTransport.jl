@@ -323,10 +323,10 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFNoReaction}
         xx         =  [1.0e14 1.0e14; 1.0e14 1.0e14]
 
         etan1 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 1] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # left
-        etan2 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 2] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[2]] / q ) # right
+        etan2 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 2] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # right
 
         n1 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan1)
-        n2 = params.densityOfStates[icc, bnode.cellregions[2]] * data.F[icc](etan2)
+        n2 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan2)
 
         react     = q * params.chargeNumbers[icc] * xx[icc, bnode.region-2]  * (n1 - n2)
 
@@ -406,16 +406,19 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     n2    = Nc * data.F[iphin](etan2)
     p2    = Nv * data.F[iphip](etap2)
 
+    Kn = exp(- zn/ (kB * data.params.temperature) * (Ec - Ec_b))
+    Kp = exp(- zp/ (kB * data.params.temperature) * (Ev - Ev_b))
+
     ##############################################################
-    reactn1  = k0n * (n1/Nc - n_b1/Nc_b)
-    reactn2  = k0n * (n2/Nc - n_b1/Nc_b)
+    reactn1  = k0n * (Kn^(1/2) * n1/Nc - Kn^(- 1/2) * n_b1/Nc_b)
+    reactn2  = k0n * (Kn^(- 1/2) * n2/Nc - Kn^(1/2) * n_b1/Nc_b)
 
     f[iphin, 1] =   reactn1
     f[iphin, 2] =   reactn2
     f[iphin_b1] = - reactn1 - reactn2
 
-    reactp1     = k0p * (p1/Nv - p_b1/Nv_b)
-    reactp2     = k0p * (p2/Nv - p_b1/Nv_b)
+    reactp1     = k0p * (Kp^(1/2) * p1/Nv - Kp^(- 1/2) * p_b1/Nv_b)
+    reactp2     = k0p * (Kp^(- 1/2) * p2/Nv - Kp^( 1/2) * p_b1/Nv_b)
 
     f[iphip, 1] =   reactp1
     f[iphip, 2] =   reactp2
