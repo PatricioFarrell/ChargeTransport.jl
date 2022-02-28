@@ -125,7 +125,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     Ap                = 4 * pi * q * mₑ * kB^2 / Planck_constant^3
     vn                = An * T^2 / (q*Nc)
     vp                = Ap * T^2 / (q*Nv)
-    barrier           = Ev_CIGS + 0.1 * eV
+    barrier           = Ev_CIGS + 0.4 * eV
 
     ## recombination parameters
     ni_CIGS           = sqrt(Nc * Nv) * exp(-(Ec_CIGS - Ev_CIGS) / (2 * kB * T)) # intrinsic concentration
@@ -147,7 +147,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     Na                = 5.5e15 / (cm^3)
 
     ## we will impose this applied voltage on one boundary
-    voltageAcceptor   = 2.0 * V
+    voltageAcceptor   = 1.0 * V
 
     if test == false
         println("*** done\n")

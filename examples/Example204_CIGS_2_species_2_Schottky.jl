@@ -143,30 +143,31 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     data                                = Data(grid, numberOfCarriers)
 
     ## possible choices: model_stationary, model_transient
-    data.model_type                     = model_stationary
+    data.modelType                      = Stationary
 
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA]
 
-    data.bulk_recombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip, 
-                                                                  bulk_recomb_Auger = false,
-                                                                  bulk_recomb_radiative = false,
-                                                                  bulk_recomb_SRH = false)
+    data.bulkRecombination              = set_bulk_recombination(;iphin = iphin, iphip = iphip,
+                                                                 bulk_recomb_Auger = true,
+                                                                 bulk_recomb_radiative = true,
+                                                                 bulk_recomb_SRH = true)
 
     #enable_traps!(data)
     
-    data.generation_model               = generation_beer_lambert #generation_uniform #generation_beer_lambert
+    ## Possible choices: GenerationNone, GenerationUniform, GenerationBeerLambert
+    data.generationModel                = GenerationBeerLambert
 
-    ## Here, the user gives information on which indices belong to ionic charge carriers and in which regions these charge carriers are present.
-    ## In this application ion vacancies only live in active perovskite layer
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
+    ## InterfaceModelSurfaceReco (inner boundary).
     #data.boundary_type[bregionAcceptorLeft ]    = ohmic_contact#schottky_contact                       
     #data.boundary_type[bregionAcceptorRight]    = ohmic_contact#schottky_contact   
-    data.boundary_type[bregionAcceptorLeft ]    = schottky_contact                       
-    data.boundary_type[bregionAcceptorRight]    = schottky_contact    
+    data.boundaryType[bregionAcceptorLeft ]    = SchottkyContact                       
+    data.boundaryType[bregionAcceptorRight]    = SchottkyContact   
     
-    ## possible choices: scharfetter_gummel, scharfetter_gummel_graded, excess_chemical_potential,
-    ## excess_chemical_potential_graded, diffusion_enhanced, generalized_sg
-    data.flux_approximation             = excess_chemical_potential
+    ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
+    ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
+    data.fluxApproximation              = ExcessChemicalPotential
    
     println("*** done\n")
 
@@ -271,10 +272,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## set ohmic contact in bregionAcceptorRight and schottky contact in bregionAcceptorLeft
-    set_schottky_contact!(ctsys, bregionAcceptorRight, appliedVoltage = 0.0)
-    set_schottky_contact!(ctsys, bregionAcceptorLeft , appliedVoltage = 0.0)
+    #set_schottky_contact!(ctsys, bregionAcceptorRight, appliedVoltage = 0.0)
+    #set_schottky_contact!(ctsys, bregionAcceptorLeft , appliedVoltage = 0.0)
     #set_ohmic_contact!(ctsys, bregionAcceptorRight   , 0.0)
     #set_ohmic_contact!(ctsys, bregionAcceptorLeft, 0.0)
+    set_contact!(ctsys, bregionAcceptorRight, Δu = 0.0)
+    set_contact!(ctsys, bregionAcceptorLeft,  Δu = 0.0)
+
 
     println("*** done\n")
 
@@ -303,7 +307,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     initialGuess          = unknowns(ctsys)
     solution              = unknowns(ctsys)
 
-    data.calculation_type = inEquilibrium 
+    #data.calculationType = inEquilibrium 
 
     ## solve thermodynamic equilibrium and update initial guess
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
@@ -341,8 +345,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     println("Stationary bias loop")
     ################################################################################
     
-    ## set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculation_type   = outOfEquilibrium      # Rn = Rp = R, since the model type is stationary
+    ## set calculationType to OutOfEquilibrium for starting with respective simulation.
+    data.calculationType = OutOfEquilibrium      # Rn = Rp = R, since the model type is stationary
     endVoltage                    = voltageAcceptor       # final bias value
 
     IV         = zeros(0)   
@@ -368,7 +372,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Δu = biasValues[i] # bias
 
         ## set non equilibrium boundary condition
-        set_schottky_contact!(ctsys, bregionAcceptorLeft, appliedVoltage = Δu)
+        #set_schottky_contact!(ctsys, bregionAcceptorLeft, appliedVoltage = Δu)
+        set_contact!(ctsys, bregionAcceptorLeft, Δu = Δu)
 
         ## increase generation rate with bias
         ctsys.data.λ2 = 10.0^(-biasSteps + i)
@@ -383,7 +388,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         push!(IV, w_device * z_device * current)
 
         ## store charge density in donor region (ZnO)
-        push!(chargeDensities,chargeDensity(ctsys,solution)[regionAcceptorLeft])
+        #push!(chargeDensities,chargeDensity(ctsys,solution)[regionAcceptorLeft])
+        push!(chargeDensities,charge_density(ctsys,solution)[regionAcceptorLeft])
 
         initialGuess .= solution
 
