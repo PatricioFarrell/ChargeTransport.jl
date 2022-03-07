@@ -1,5 +1,5 @@
 
-module PSC_InterfaceSpecies
+module PSC_Transient
 
 using VoronoiFVM
 using ChargeTransport
@@ -84,11 +84,11 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     bfacemask!(grid, [h_pdoping],               [h_pdoping],                           bregionJunction1)  # first  inner interface
     bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)  # second inner interface
 
-    # if plotting
-    #     GridVisualize.gridplot(grid, Plotter = Plotter)
-    #     Plotter.title("Grid")
-    #     Plotter.figure()
-    # end
+    if plotting
+        GridVisualize.gridplot(grid, Plotter = Plotter)
+        Plotter.title("Grid")
+        Plotter.figure()
+    end
 
     if test == false
         println("*** done\n")
@@ -101,9 +101,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     iphin               = 1 # electron quasi Fermi potential
     iphip               = 2 # hole quasi Fermi potential
-    iphin_b1            = 3
-    iphip_b1            = 4
-    numberOfCarriers    = 4
+    numberOfCarriers    = 2
 
     ## temperature
     T                   =  300.0                *  K
@@ -202,7 +200,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     data                                = Data(grid, numberOfCarriers)
 
     ## possible choices: Stationary, Transient
-    data.modelType                      = Stationary
+    data.modelType                      = Transient
 
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann]
@@ -213,15 +211,9 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
                                                                   bulk_recomb_SRH = true)
 
     data.boundaryType[bregionAcceptor]  = OhmicContact
-    data.boundaryType[bregionJunction1] = InterfaceModelDiscontqF
-    data.boundaryType[bregionJunction2] = InterfaceModelDiscontqFNoReaction
+    data.boundaryType[bregionJunction1] = InterfaceModelNone
+    data.boundaryType[bregionJunction2] = InterfaceModelNone
     data.boundaryType[bregionDonor]     = OhmicContact
-
-    # wäre schöner, wenn pro iphin_b1 nur iphin, das wäre toll.
-    enable_interface_carriers!(data, bulkSpecies = [iphin, iphip], interfaceSpecies = [iphin_b1, iphip_b1], boundaryRegion = bregionJunction1)
-
-    data.isContinuous[iphin]            = false
-    data.isContinuous[iphip]            = false
 
     data.fluxApproximation              = ScharfetterGummel
 
@@ -276,18 +268,6 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
     params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
-
-    # ##############################################################
-
-    ## inner boundary region data
-    delta1                                              = 0.3 * eV
-    delta2                                              = 0.3 * eV
-    data.d                                              = 6.28 * 10e-8 * cm # lattice size perovskite
-    params.bDensityOfStates[iphin_b1, bregionJunction1] = data.d * params.densityOfStates[iphin, regionIntrinsic]
-    params.bDensityOfStates[iphip_b1, bregionJunction1] = data.d * params.densityOfStates[iphip, regionIntrinsic]
-
-    params.bBandEdgeEnergy[iphin_b1, bregionJunction1]  = params.bandEdgeEnergy[iphin, regionIntrinsic] + delta1
-    params.bBandEdgeEnergy[iphip_b1, bregionJunction1]  = params.bandEdgeEnergy[iphip, regionIntrinsic] + delta2
 
     ##############################################################
 
@@ -368,96 +348,81 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ################################################################################
     if test == false
-        println("Bias loop")
+        println("IV Measurement")
     end
     ################################################################################
 
-    # Set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculationType    = OutOfEquilibrium
-    control.damp_initial          = 0.5
-    control.damp_growth           = 1.21
-    control.max_round             = 7
+    ################################################################################
+    data.calculationType = OutOfEquilibrium
 
-    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 51)
-    IV         = zeros(0)
+    ## primary data for I-V scan protocol
+    scanrate             = 0.04 * V/s
+    number_tsteps        = 61
+    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                 = endVoltage/scanrate
 
-    for Δu in biasValues
+    ## with fixed timestep sizes we can calculate the times a priori
+    tvalues              = range(0, stop = tend, length = number_tsteps)
 
-        println("Δu  = ", Δu )
+    ## for saving I-V data
+    IV                   = zeros(0) # for IV values
+    biasValues           = zeros(0) # for bias values
 
-        ## set non equilibrium boundary conditions
+    for istep = 2:number_tsteps
+
+        t  = tvalues[istep]       # Actual time
+        Δu = t * scanrate         # Applied voltage
+        Δt = t - tvalues[istep-1] # Time step size
+
+        ## Apply new voltage by setting non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
+        if test == false
+            println("time value: t = $(t)")
+        end
+
+        ## Solve time step problems with timestep Δt. initialGuess plays the role of the solution
+        ## from last timestep
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
         initialGuess .= solution
 
         factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
         tf      = testfunction(factory, [1], [2])
-        I       = integrate(ctsys.fvmsys, tf, solution)
+        I       = integrate(ctsys.fvmsys, tf, solution, initialGuess, Δt)
 
         val = 0.0
-        for ii = 1:length(I)-1
+        for ii = 1:length(I)
             val = val + I[ii]
         end
 
         push!(IV, abs(val) )
+        push!(biasValues, Δu )
 
-    end # bias loop
+    end # time loop
 
-    # writedlm("reference-sol.dat", [coord solution'])
+    # writedlm("PSC-transient-reference-sol.dat", [coord solution'])
     # res = [biasValues IV]
-    # writedlm("reference-IV.dat", res)
+    # writedlm("PSC-transient-reference-IV.dat", res)
 
     if test == false
         println("*** done\n")
     end
 
-    function compute_densities(icc, ireg, phin, psi)
-        eta = data.params.chargeNumbers[icc] ./ data.params.UT .* ( (phin .- psi) .+ data.params.bandEdgeEnergy[icc, ireg] ./ q )
+    if plotting
+        IV_measured    = readdlm("data/Driftfusion-IV-measurement-pcbm-forward.dat")
 
-        return data.params.densityOfStates[icc, ireg] .* data.F[icc].(eta)
+        label_solution, label_density, label_energy = set_plotting_labels(data)
+
+        plot_densities(Plotter, grid, data, solution,"Final time \$ t \$ = $(tvalues[end])", label_density)
+        Plotter.figure()
+        plot_solution(Plotter, grid, data, solution, "Final time \$ t \$ = $(tvalues)", label_solution)
+        Plotter.figure()
+        plot_IV(Plotter, biasValues,IV.*(cm^2).*1.0e3, "Final time \$ t \$ = $(tvalues[end])", plotGridpoints = true)
+        PyPlot.plot(IV_measured[:, 1], IV_measured[:, 2], label = "measurement",  linestyle="--", color = "black")
+        PyPlot.ylim(0.0, 0.006*1.0e3)
     end
 
-
-    if plotting == true
-
-        vis = GridVisualizer(Plotter = PyPlot, layout=(3,1))
-
-        subgrids = VoronoiFVM.subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
-        phin_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
-        phip_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
-        psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
-
-        for i = 1:length(phin_sol)
-            scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
-            scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
-            scalarplot!(vis[1, 1], subgrids[i], psi_sol[i],  clear = false, color=:blue)
-            if i == 3
-                scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
-                scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$",  color=:red)
-                scalarplot!(vis[1, 1], subgrids[i], psi_sol[i],  clear = false, label = "\$ \\psi \$",color=:blue)
-            end
-        end
-
-        sol_ref = readdlm("data/PSC-stationary-reference-sol.dat")
-        PyPlot.plot(sol_ref[:, 1], sol_ref[:, 2], linestyle="--", color = "black")
-        PyPlot.plot(sol_ref[:, 1], sol_ref[:, 3], linestyle="--", color = "black")
-        PyPlot.plot(sol_ref[:, 1], sol_ref[:, 4], linestyle="--", color = "black")
-        Plotter.legend(fancybox = true, loc = "best", fontsize=11)
-        Plotter.title("Solution with Bias")
-
-        for i = 1:length(phin_sol)
-            scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphin, subgrids[i][CellRegions][1], phin_sol[i], psi_sol[i])), clear = false, color=:green)
-            scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i])), clear = false, color=:red)
-        end
-        ##########################################################
-        scalarplot!(vis[3, 1], biasValues, IV, clear = false, color=:green)
-        IV_ref         = readdlm("data/PSC-stationary-reference-IV.dat")
-        PyPlot.plot(IV_ref[:, 1], IV_ref[:, 2], linestyle="--", color = "black")
-
-    end
 
     testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval

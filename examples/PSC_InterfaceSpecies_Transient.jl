@@ -1,5 +1,5 @@
 
-module PSC_InterfaceSpecies
+module PSC_InterfaceSpecies_Transient
 
 using VoronoiFVM
 using ChargeTransport
@@ -202,7 +202,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     data                                = Data(grid, numberOfCarriers)
 
     ## possible choices: Stationary, Transient
-    data.modelType                      = Stationary
+    data.modelType                      = Transient
 
     ## possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA FermiDiracMinusOne, Blakemore
     data.F                              = [Boltzmann, Boltzmann]
@@ -280,8 +280,8 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     # ##############################################################
 
     ## inner boundary region data
-    delta1                                              = 0.3 * eV
-    delta2                                              = 0.3 * eV
+    delta1                                              = 0.02 * eV
+    delta2                                              = 0.02 * eV
     data.d                                              = 6.28 * 10e-8 * cm # lattice size perovskite
     params.bDensityOfStates[iphin_b1, bregionJunction1] = data.d * params.densityOfStates[iphin, regionIntrinsic]
     params.bDensityOfStates[iphip_b1, bregionJunction1] = data.d * params.densityOfStates[iphip, regionIntrinsic]
@@ -368,43 +368,58 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ################################################################################
     if test == false
-        println("Bias loop")
+        println("IV Measurement")
     end
     ################################################################################
 
-    # Set calculation type to outOfEquilibrium for starting with respective simulation.
-    ctsys.data.calculationType    = OutOfEquilibrium
-    control.damp_initial          = 0.5
-    control.damp_growth           = 1.21
-    control.max_round             = 7
+    ################################################################################
+    data.calculationType = OutOfEquilibrium
 
-    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 51)
-    IV         = zeros(0)
+    ## primary data for I-V scan protocol
+    scanrate             = 0.04 * V/s
+    number_tsteps        = 61
+    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                 = endVoltage/scanrate
 
-    for Δu in biasValues
+    ## with fixed timestep sizes we can calculate the times a priori
+    tvalues              = range(0, stop = tend, length = number_tsteps)
 
-        println("Δu  = ", Δu )
+    ## for saving I-V data
+    IV                   = zeros(0) # for IV values
+    biasValues           = zeros(0) # for bias values
 
-        ## set non equilibrium boundary conditions
+    for istep = 2:number_tsteps
+
+        t  = tvalues[istep]       # Actual time
+        Δu = t * scanrate         # Applied voltage
+        Δt = t - tvalues[istep-1] # Time step size
+
+        ## Apply new voltage by setting non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
+        if test == false
+            println("time value: t = $(t)")
+        end
+
+        ## Solve time step problems with timestep Δt. initialGuess plays the role of the solution
+        ## from last timestep
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
 
         initialGuess .= solution
 
         factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
         tf      = testfunction(factory, [1], [2])
-        I       = integrate(ctsys.fvmsys, tf, solution)
+        I       = integrate(ctsys.fvmsys, tf, solution, initialGuess, Δt)
 
         val = 0.0
-        for ii = 1:length(I)-1
+        for ii = 1:length(I)
             val = val + I[ii]
         end
 
         push!(IV, abs(val) )
+        push!(biasValues, Δu )
 
-    end # bias loop
+    end # time loop
 
     # writedlm("reference-sol.dat", [coord solution'])
     # res = [biasValues IV]
@@ -441,7 +456,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
             end
         end
 
-        sol_ref = readdlm("data/PSC-stationary-reference-sol.dat")
+        sol_ref = readdlm("data/PSC-transient-reference-sol.dat")
         PyPlot.plot(sol_ref[:, 1], sol_ref[:, 2], linestyle="--", color = "black")
         PyPlot.plot(sol_ref[:, 1], sol_ref[:, 3], linestyle="--", color = "black")
         PyPlot.plot(sol_ref[:, 1], sol_ref[:, 4], linestyle="--", color = "black")
@@ -453,9 +468,12 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
             scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i])), clear = false, color=:red)
         end
         ##########################################################
-        scalarplot!(vis[3, 1], biasValues, IV, clear = false, color=:green)
-        IV_ref         = readdlm("data/PSC-stationary-reference-IV.dat")
-        PyPlot.plot(IV_ref[:, 1], IV_ref[:, 2], linestyle="--", color = "black")
+        scalarplot!(vis[3, 1], biasValues, IV.*(cm^2).*1.0e3, clear = false, color=:green)
+        IV_ref         = readdlm("data/PSC-transient-reference-IV.dat")
+        IV_measured    = readdlm("data/IV-measurement-pcbm-forward.dat")
+        PyPlot.plot(IV_ref[:, 1], IV_ref[:, 2].*(cm^2).*1.0e3, linestyle="--", color = "black")
+        PyPlot.plot(IV_measured[:, 1], IV_measured[:, 2], label = "measurement",  linestyle="--", color = "red")
+        PyPlot.ylim(0.0, 0.006*1.0e3)
 
     end
 

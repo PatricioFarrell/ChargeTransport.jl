@@ -411,14 +411,14 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
 
     ##############################################################
     reactn1  = k0n * (Kn^(1/2) * n1/Nc - Kn^(- 1/2) * n_b1/Nc_b)
-    reactn2  = k0n * (Kn^(- 1/2) * n2/Nc - Kn^(1/2) * n_b1/Nc_b)
+    reactn2  = k0n * (Kn^(1/2) * n2/Nc - Kn^(- 1/2) * n_b1/Nc_b)
 
     f[iphin, 1] =   reactn1
     f[iphin, 2] =   reactn2
     f[iphin_b1] = - reactn1 - reactn2
 
     reactp1     = k0p * (Kp^(1/2) * p1/Nv - Kp^(- 1/2) * p_b1/Nv_b)
-    reactp2     = k0p * (Kp^(- 1/2) * p2/Nv - Kp^( 1/2) * p_b1/Nv_b)
+    reactp2     = k0p * (Kp^(1/2) * p2/Nv - Kp^(- 1/2) * p_b1/Nv_b)
 
     f[iphip, 1] =   reactp1
     f[iphip, 2] =   reactp2
@@ -469,8 +469,25 @@ bstorage!(f, u, bnode, data, ::Type{Transient}) = bstorage!(f, u, bnode, data, d
 bstorage!(f, u, bnode, data, ::Type{InterfaceModelNone}) = emptyFunction()
 
 
-# No bstorage! is used, when assuming discontinuous qF.
-bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF}) = emptyFunction()
+function bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
+    params = data.params
+    ipsi   = data.index_psi
+
+    for icc ∈ data.chargeCarrierList
+
+        get_DOS!(icc, bnode, data)
+
+        Ni     = data.tempDOS1[icc]
+        eta    = etaFunction(u, bnode, data, icc) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
+        f[icc] = q * params.chargeNumbers[icc] * Ni * Boltzmann(eta)
+
+    end
+
+    f[ipsi] = 0.0
+
+end
+
+
 bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFNoReaction}) = emptyFunction()
 
 bstorage!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
@@ -860,7 +877,7 @@ function storage!(f, u, node, data, ::Type{Transient})
     params = data.params
     ipsi   = data.index_psi
 
-    for icc ∈ data.chargeCarrierList
+    for icc ∈ data.chargeCarrierList[1:2]
 
         get_DOS!(icc, node, data)
 
