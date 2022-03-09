@@ -369,10 +369,16 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     UT  = params.UT
 
     # take values from intrinsic layer
-    Nc  = params.densityOfStates[iphin, 2]
-    Nv  = params.densityOfStates[iphip, 2]
-    Ec  = params.bandEdgeEnergy[iphin, 2]
-    Ev  = params.bandEdgeEnergy[iphip, 2]
+    Nc_l  = params.densityOfStates[iphin, 1]
+    Nv_l  = params.densityOfStates[iphip, 1]
+    Ec_l  = params.bandEdgeEnergy[iphin, 1]
+    Ev_l  = params.bandEdgeEnergy[iphip, 1]
+
+    Nc_r  = params.densityOfStates[iphin, 2]
+    Nv_r  = params.densityOfStates[iphip, 2]
+    Ec_r  = params.bandEdgeEnergy[iphin, 2]
+    Ev_r  = params.bandEdgeEnergy[iphip, 2]
+
     mun = params.mobility[iphin, 2]
     mup = params.mobility[iphip, 2]
 
@@ -382,15 +388,15 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     Ev_b = params.bBandEdgeEnergy[iphip_b1, bnode.region]
 
     # since k0 is scaled with q*z_i it's consistent with the storage and the bstorage dimensions
-    k0n = q * zn * UT * mun * Nc/data.d
-    k0p = q * zp * UT * mup * Nv/data.d
+    k0n = q * zn * UT * mun * Nc_r/data.d
+    k0p = q * zp * UT * mup * Nv_r/data.d
 
     # left values
-    etan1 = zn / UT * ( (u[iphin, 1] - u[ipsi]) + Ec / q ) # left
-    etap1 = zp / UT * ( (u[iphip, 1] - u[ipsi]) + Ev / q ) # left
+    etan1 = zn / UT * ( (u[iphin, 1] - u[ipsi]) + Ec_l / q ) # left
+    etap1 = zp / UT * ( (u[iphip, 1] - u[ipsi]) + Ev_l / q ) # left
 
-    n1    = Nc * data.F[iphin](etan1)
-    p1    = Nv * data.F[iphip](etap1)
+    n1    = Nc_l * data.F[iphin](etan1)
+    p1    = Nv_l * data.F[iphip](etap1)
 
     # interface values
     etan_b1 = zn / UT * ( (u[iphin_b1] - u[ipsi]) + Ec_b / q ) # interface
@@ -400,25 +406,27 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     p_b1    = Nv_b * data.F[iphip](etap_b1)
 
     # right values
-    etan2 = zn / UT * ( (u[iphin, 2] - u[ipsi]) + Ec / q ) # right
-    etap2 = zp / UT * ( (u[iphip, 2] - u[ipsi]) + Ev / q ) # right
+    etan2 = zn / UT * ( (u[iphin, 2] - u[ipsi]) + Ec_r / q ) # right
+    etap2 = zp / UT * ( (u[iphip, 2] - u[ipsi]) + Ev_r / q ) # right
 
-    n2    = Nc * data.F[iphin](etan2)
-    p2    = Nv * data.F[iphip](etap2)
+    n2    = Nc_r * data.F[iphin](etan2)
+    p2    = Nv_r * data.F[iphip](etap2)
 
-    Kn = exp(- zn/ (kB * data.params.temperature) * (Ec - Ec_b))
-    Kp = exp(- zp/ (kB * data.params.temperature) * (Ev - Ev_b))
+    Knleft  = exp(- zn/ (kB * data.params.temperature) * (Ec_l - Ec_b))
+    Knright = exp(- zn/ (kB * data.params.temperature) * (Ec_r - Ec_b))
+    Kpleft  = exp(- zp/ (kB * data.params.temperature) * (Ev_l - Ev_b))
+    Kpright = exp(- zp/ (kB * data.params.temperature) * (Ev_r - Ev_b))
 
     ##############################################################
-    reactn1  = k0n * (Kn^(1/2) * n1/Nc - Kn^(- 1/2) * n_b1/Nc_b)
-    reactn2  = k0n * (Kn^(1/2) * n2/Nc - Kn^(- 1/2) * n_b1/Nc_b)
+    reactn1  = k0n * (Knleft^(1/2) * n1/Nc_l - Knleft^(- 1/2) * n_b1/Nc_b)
+    reactn2  = k0n * (Knright^(1/2) * n2/Nc_r - Knright^(- 1/2) * n_b1/Nc_b)
 
     f[iphin, 1] =   reactn1
     f[iphin, 2] =   reactn2
     f[iphin_b1] = - reactn1 - reactn2
 
-    reactp1     = k0p * (Kp^(1/2) * p1/Nv - Kp^(- 1/2) * p_b1/Nv_b)
-    reactp2     = k0p * (Kp^(1/2) * p2/Nv - Kp^(- 1/2) * p_b1/Nv_b)
+    reactp1     = k0p * (Kpleft^(1/2) * p1/Nv_l - Kpleft^(- 1/2) * p_b1/Nv_b)
+    reactp2     = k0p * (Kpright^(1/2) * p2/Nv_r - Kpright^(- 1/2) * p_b1/Nv_b)
 
     f[iphip, 1] =   reactp1
     f[iphip, 2] =   reactp2

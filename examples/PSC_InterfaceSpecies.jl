@@ -280,8 +280,9 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     # ##############################################################
 
     ## inner boundary region data
-    delta1                                              = 0.3 * eV
-    delta2                                              = 0.3 * eV
+    # delta with negative sign -> IV shifted to right.
+    delta1                                              = -0.21 * eV
+    delta2                                              = -0.21 * eV
     data.d                                              = 6.28 * 10e-8 * cm # lattice size perovskite
     params.bDensityOfStates[iphin_b1, bregionJunction1] = data.d * params.densityOfStates[iphin, regionIntrinsic]
     params.bDensityOfStates[iphip_b1, bregionJunction1] = data.d * params.densityOfStates[iphip, regionIntrinsic]
