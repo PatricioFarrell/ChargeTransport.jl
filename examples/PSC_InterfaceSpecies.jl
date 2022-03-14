@@ -281,8 +281,8 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ## inner boundary region data
     # delta with negative sign -> IV shifted to right.
-    delta1                                              = -0.21 * eV
-    delta2                                              = -0.21 * eV
+    delta1                                              = -0.1 * eV
+    delta2                                              = -0.1 * eV
     data.d                                              = 6.28 * 10e-8 * cm # lattice size perovskite
     params.bDensityOfStates[iphin_b1, bregionJunction1] = data.d * params.densityOfStates[iphin, regionIntrinsic]
     params.bDensityOfStates[iphip_b1, bregionJunction1] = data.d * params.densityOfStates[iphip, regionIntrinsic]
@@ -302,10 +302,12 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
-    ## print all params stored in ctsys.data.params
-    #if test == false
-    #    show_params(ctsys)
-    #end
+    # # ## set legend for plotting routines. Either you can use the predefined labels or write your own.
+    # label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
+    # plot_energies(Plotter, grid, data, label_BEE)
+    # PyPlot.ylim(-6.5, -2.0)
+    # savefig("case3-acceptor-3.eps")
+    # return
 
     if test == false
         println("*** done\n")
@@ -448,11 +450,19 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         PyPlot.plot(sol_ref[:, 1], sol_ref[:, 4], linestyle="--", color = "black")
         Plotter.legend(fancybox = true, loc = "best", fontsize=11)
         Plotter.title("Solution with Bias")
+        xcoord = [1:icoord_p, icoord_p:icoord_pi, icoord_pi:length(coord)]
 
         for i = 1:length(phin_sol)
             scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphin, subgrids[i][CellRegions][1], phin_sol[i], psi_sol[i])), clear = false, color=:green)
             scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i])), clear = false, color=:red)
         end
+
+        for i = 1:length(phin_sol)
+            ################# densities without bias
+            scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphin, subgrids[i][CellRegions][1], sol_ref[xcoord[i], 2], sol_ref[xcoord[i], 4])), clear = false, linestyle=:dot, color=:black)
+            scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphip, subgrids[i][CellRegions][1], sol_ref[xcoord[i], 3], sol_ref[xcoord[i], 4])), clear = false, linestyle=:dot, color=:black)
+        end
+
         ##########################################################
         scalarplot!(vis[3, 1], biasValues, IV, clear = false, color=:green)
         IV_ref         = readdlm("data/PSC-stationary-reference-IV.dat")
@@ -460,6 +470,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     end
 
+    #savefig("case3-acceptor-sol-3.eps")
     testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
