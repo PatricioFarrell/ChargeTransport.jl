@@ -345,6 +345,14 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
         return emptyFunction()
     end
 
+    if bnode.region == 3
+        il = 1
+        ir = 2
+    elseif bnode.region == 4
+        il = 2
+        ir = 3
+    end
+
     ipsi = data.index_psi
 
     #indices (∈ N) of electron and hole quasi Fermi potentials specified by user (passed through recombination)
@@ -368,17 +376,18 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     zp  = params.chargeNumbers[iphip]
     UT  = params.UT
 
+
+    Nc_l  = params.densityOfStates[iphin, il]
+    Nv_l  = params.densityOfStates[iphip, il]
+    Ec_l  = params.bandEdgeEnergy[iphin, il]
+    Ev_l  = params.bandEdgeEnergy[iphip, il]
+
+    Nc_r  = params.densityOfStates[iphin, ir]
+    Nv_r  = params.densityOfStates[iphip, ir]
+    Ec_r  = params.bandEdgeEnergy[iphin, ir]
+    Ev_r  = params.bandEdgeEnergy[iphip, ir]
+
     # take values from intrinsic layer
-    Nc_l  = params.densityOfStates[iphin, 1]
-    Nv_l  = params.densityOfStates[iphip, 1]
-    Ec_l  = params.bandEdgeEnergy[iphin, 1]
-    Ev_l  = params.bandEdgeEnergy[iphip, 1]
-
-    Nc_r  = params.densityOfStates[iphin, 2]
-    Nv_r  = params.densityOfStates[iphip, 2]
-    Ec_r  = params.bandEdgeEnergy[iphin, 2]
-    Ev_r  = params.bandEdgeEnergy[iphip, 2]
-
     mun = params.mobility[iphin, 2]
     mup = params.mobility[iphip, 2]
 
