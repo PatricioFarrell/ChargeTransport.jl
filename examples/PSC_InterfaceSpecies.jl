@@ -209,8 +209,8 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     data.bulkRecombination              = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = false,
-                                                                  bulk_recomb_radiative = true,
-                                                                  bulk_recomb_SRH = true)
+                                                                  bulk_recomb_radiative = false,
+                                                                  bulk_recomb_SRH = false)
 
     data.boundaryType[bregionAcceptor]  = OhmicContact
     data.boundaryType[bregionJunction1] = InterfaceModelDiscontqF
@@ -281,8 +281,8 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ## inner boundary region data
     # delta with negative sign -> IV shifted to right.
-    delta1                                              = -0.1 * eV
-    delta2                                              = -0.1 * eV
+    delta1                                              = +0.2 * eV
+    delta2                                              = +0.5 * eV
     data.d                                              = 6.28 * 10e-8 * cm # lattice size perovskite
     params.bDensityOfStates[iphin_b1, bregionJunction1] = data.d * params.densityOfStates[iphin, regionIntrinsic]
     params.bDensityOfStates[iphip_b1, bregionJunction1] = data.d * params.densityOfStates[iphip, regionIntrinsic]
@@ -306,8 +306,15 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     # label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
     # plot_energies(Plotter, grid, data, label_BEE)
     # PyPlot.ylim(-6.5, -2.0)
-    # savefig("case3-acceptor-3.eps")
+    # savefig("case2-intr-3.eps")
     # return
+
+    function compute_densities(icc, ireg,  phi, psi)
+        eta = data.params.chargeNumbers[icc]/ data.params.UT .* ( (phi .- psi) .+ data.params.bandEdgeEnergy[icc, ireg]./q )
+
+        return (data.params.densityOfStates[icc, ireg] .* data.F[icc].(eta))
+    end
+
 
     if test == false
         println("*** done\n")
@@ -365,6 +372,8 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     initialGuess             .= solution
 
+    #writedlm("data/PSC-stationary-reference-sol-EQ-no-recombination.dat", [coord solution'])
+
     if test == false
         println("*** done\n")
     end
@@ -409,20 +418,13 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     end # bias loop
 
-    # writedlm("reference-sol.dat", [coord solution'])
+    # writedlm("data/PSC-stationary-reference-sol-end-no-recombination.dat", [coord solution'])
     # res = [biasValues IV]
-    # writedlm("reference-IV.dat", res)
+    # writedlm("data/PSC-stationary-reference-IV-no-recombination.dat", res)
 
     if test == false
         println("*** done\n")
     end
-
-    function compute_densities(icc, ireg, phin, psi)
-        eta = data.params.chargeNumbers[icc] ./ data.params.UT .* ( (phin .- psi) .+ data.params.bandEdgeEnergy[icc, ireg] ./ q )
-
-        return data.params.densityOfStates[icc, ireg] .* data.F[icc].(eta)
-    end
-
 
     if plotting == true
 
@@ -433,44 +435,64 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         phip_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
         psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
 
+        sol_ref = readdlm("data/PSC-stationary-reference-sol-end-no-recombination.dat")
+
+
         for i = 1:length(phin_sol)
             scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
             scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
-            scalarplot!(vis[1, 1], subgrids[i], psi_sol[i],  clear = false, color=:blue)
             if i == 3
                 scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
                 scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$",  color=:red)
-                scalarplot!(vis[1, 1], subgrids[i], psi_sol[i],  clear = false, label = "\$ \\psi \$",color=:blue)
             end
         end
-
-        sol_ref = readdlm("data/PSC-stationary-reference-sol.dat")
         PyPlot.plot(sol_ref[:, 1], sol_ref[:, 2], linestyle="--", color = "black")
         PyPlot.plot(sol_ref[:, 1], sol_ref[:, 3], linestyle="--", color = "black")
-        PyPlot.plot(sol_ref[:, 1], sol_ref[:, 4], linestyle="--", color = "black")
+        Plotter.xlabel("space [m]")
+        Plotter.ylabel("potential [V]")
         Plotter.legend(fancybox = true, loc = "best", fontsize=11)
         Plotter.title("Solution with Bias")
+        PyPlot.tight_layout()
+
+        for i = 1:length(phin_sol)
+            scalarplot!(vis[2, 1], subgrids[i], psi_sol[i],  clear = false, color=:blue)
+            if i == 3
+                scalarplot!(vis[2, 1], subgrids[i], psi_sol[i],  clear = false, label = "\$ \\psi \$",color=:blue)
+            end
+        end
+        PyPlot.plot(sol_ref[:, 1], sol_ref[:, 4], linestyle="--", color = "black")
+
+        Plotter.xlabel("space [m]")
+        Plotter.ylabel("potential [V]")
+        Plotter.legend(fancybox = true, loc = "best", fontsize=11)
+        Plotter.title("Solution with Bias")
+        PyPlot.tight_layout()
         xcoord = [1:icoord_p, icoord_p:icoord_pi, icoord_pi:length(coord)]
 
         for i = 1:length(phin_sol)
-            scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphin, subgrids[i][CellRegions][1], phin_sol[i], psi_sol[i])), clear = false, color=:green)
-            scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i])), clear = false, color=:red)
+            scalarplot!(vis[3, 1], subgrids[i], compute_densities(iphin, subgrids[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, yscale=:log)
+            scalarplot!(vis[3, 1], subgrids[i], compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, color=:red)
         end
 
         for i = 1:length(phin_sol)
             ################# densities without bias
-            scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphin, subgrids[i][CellRegions][1], sol_ref[xcoord[i], 2], sol_ref[xcoord[i], 4])), clear = false, linestyle=:dot, color=:black)
-            scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphip, subgrids[i][CellRegions][1], sol_ref[xcoord[i], 3], sol_ref[xcoord[i], 4])), clear = false, linestyle=:dot, color=:black)
+            scalarplot!(vis[3, 1], subgrids[i], compute_densities(iphin, subgrids[i][CellRegions][1], sol_ref[xcoord[i], 2], sol_ref[xcoord[i], 4]), clear = false, linestyle=:dot, color=:black)
+            scalarplot!(vis[3, 1], subgrids[i], compute_densities(iphip, subgrids[i][CellRegions][1], sol_ref[xcoord[i], 3], sol_ref[xcoord[i], 4]), clear = false, linestyle=:dot, color=:black)
+
         end
 
-        ##########################################################
-        scalarplot!(vis[3, 1], biasValues, IV, clear = false, color=:green)
-        IV_ref         = readdlm("data/PSC-stationary-reference-IV.dat")
-        PyPlot.plot(IV_ref[:, 1], IV_ref[:, 2], linestyle="--", color = "black")
+        Plotter.xlabel("space [\$m\$]")
+        Plotter.ylabel("density [\$\\frac{1}{m^3}\$]")
+        Plotter.tight_layout()
+
+        # ##########################################################
+        # scalarplot!(vis[3, 1], biasValues, IV, clear = false, color=:green)
+        # IV_ref         = readdlm("data/PSC-stationary-reference-IV-no-recombination.dat")
+        # PyPlot.plot(IV_ref[:, 1], IV_ref[:, 2], linestyle="--", color = "black")
 
     end
 
-    #savefig("case3-acceptor-sol-3.eps")
+    #savefig("case2-intr-sol-3.eps")
     testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
