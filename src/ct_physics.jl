@@ -298,7 +298,7 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
 
 end
 
-
+# would it make sense to alternatively just take the qF multiplicated by a large value?
 function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFNoReaction})
 
     if data.calculationType == InEquilibrium
@@ -316,17 +316,18 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFNoReaction}
     iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
 
     params      = data.params
-    paramsnodal = data.paramsnodal
 
+    
     for icc in (iphin, iphip)
 
         xx         =  [1.0e14 1.0e14; 1.0e14 1.0e14]
 
         etan1 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 1] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # left
+        # note that we used bnode.cellregions[1] because otherwise we get a NaN, since there is a zero.
         etan2 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 2] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # right
 
         n1 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan1)
-        n2 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan2)
+        n2 = params.densityOfStates[icc, bnode.cellregions[2]] * data.F[icc](etan2)
 
         react     = q * params.chargeNumbers[icc] * xx[icc, bnode.region-2]  * (n1 - n2)
 
@@ -364,18 +365,16 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
 
     params      = data.params
-    paramsnodal = data.paramsnodal
 
-    iphin_b1 = data.interfaceCarriers.interfaceIndex[iphin]
-    iphip_b1 = data.interfaceCarriers.interfaceIndex[iphip]
+    iphin_b = data.interfaceCarriers.interfaceIndex[iphin]
+    iphip_b = data.interfaceCarriers.interfaceIndex[iphip]
 
-    iphin_b1 = data.chargeCarrierList[iphin_b1]
-    iphip_b1 = data.chargeCarrierList[iphip_b1]
+    iphin_b = data.chargeCarrierList[iphin_b]
+    iphip_b = data.chargeCarrierList[iphip_b]
 
     zn  = params.chargeNumbers[iphin]
     zp  = params.chargeNumbers[iphip]
     UT  = params.UT
-
 
     Nc_l  = params.densityOfStates[iphin, il]
     Nv_l  = params.densityOfStates[iphip, il]
@@ -391,14 +390,19 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     mun = params.mobility[iphin, 2]
     mup = params.mobility[iphip, 2]
 
-    Nc_b = params.bDensityOfStates[iphin_b1, bnode.region]
-    Nv_b = params.bDensityOfStates[iphip_b1, bnode.region]
-    Ec_b = params.bBandEdgeEnergy[iphin_b1, bnode.region]
-    Ev_b = params.bBandEdgeEnergy[iphip_b1, bnode.region]
+    Nc_b = params.bDensityOfStates[iphin_b, bnode.region]
+    Nv_b = params.bDensityOfStates[iphip_b, bnode.region]
+    Ec_b = params.bBandEdgeEnergy[iphin_b, bnode.region]
+    Ev_b = params.bBandEdgeEnergy[iphip_b, bnode.region]
 
     # since k0 is scaled with q*z_i it's consistent with the storage and the bstorage dimensions
-    k0n = q * zn * UT * mun * Nc_r/data.d
-    k0p = q * zp * UT * mup * Nv_r/data.d
+    if bnode.region == 3
+        k0n = q * zn * UT * mun * Nc_r/data.d
+        k0p = q * zp * UT * mup * Nv_r/data.d
+    elseif bnode.region == 4
+        k0n = q * zn * UT * mun * Nc_l/data.d
+        k0p = q * zp * UT * mup * Nv_l/data.d
+    end
 
     # left values
     etan1 = zn / UT * ( (u[iphin, 1] - u[ipsi]) + Ec_l / q ) # left
@@ -408,11 +412,11 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     p1    = Nv_l * data.F[iphip](etap1)
 
     # interface values
-    etan_b1 = zn / UT * ( (u[iphin_b1] - u[ipsi]) + Ec_b / q ) # interface
-    etap_b1 = zp / UT * ( (u[iphip_b1] - u[ipsi]) + Ev_b / q ) # interface
+    etan_b = zn / UT * ( (u[iphin_b] - u[ipsi]) + Ec_b / q ) # interface
+    etap_b = zp / UT * ( (u[iphip_b] - u[ipsi]) + Ev_b / q ) # interface
 
-    n_b1    = Nc_b * data.F[iphin](etan_b1)
-    p_b1    = Nv_b * data.F[iphip](etap_b1)
+    n_b    = Nc_b * data.F[iphin](etan_b)
+    p_b    = Nv_b * data.F[iphip](etap_b)
 
     # right values
     etan2 = zn / UT * ( (u[iphin, 2] - u[ipsi]) + Ec_r / q ) # right
@@ -427,19 +431,19 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     Kpright = exp(- zp/ (kB * data.params.temperature) * (Ev_r - Ev_b))
 
     ##############################################################
-    reactn1  = k0n * (Knleft^(1/2) * n1/Nc_l - Knleft^(- 1/2) * n_b1/Nc_b)
-    reactn2  = k0n * (Knright^(1/2) * n2/Nc_r - Knright^(- 1/2) * n_b1/Nc_b)
+    reactn1  = k0n * (Knleft^(1/2) * n1/Nc_l - Knleft^(- 1/2) * n_b/Nc_b)
+    reactn2  = k0n * (Knright^(1/2) * n2/Nc_r - Knright^(- 1/2) * n_b/Nc_b)
 
     f[iphin, 1] =   reactn1
     f[iphin, 2] =   reactn2
-    f[iphin_b1] = - reactn1 - reactn2
+    f[iphin_b]  = - reactn1 - reactn2
 
-    reactp1     = k0p * (Kpleft^(1/2) * p1/Nv_l - Kpleft^(- 1/2) * p_b1/Nv_b)
-    reactp2     = k0p * (Kpright^(1/2) * p2/Nv_r - Kpright^(- 1/2) * p_b1/Nv_b)
+    reactp1     = k0p * (Kpleft^(1/2) * p1/Nv_l - Kpleft^(- 1/2) * p_b/Nv_b)
+    reactp2     = k0p * (Kpright^(1/2) * p2/Nv_r - Kpright^(- 1/2) * p_b/Nv_b)
 
     f[iphip, 1] =   reactp1
     f[iphip, 2] =   reactp2
-    f[iphip_b1] = - reactp1 - reactp2
+    f[iphip_b]  = - reactp1 - reactp2
 
 end
 

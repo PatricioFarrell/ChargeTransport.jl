@@ -1,5 +1,5 @@
 
-module PSC_InterfaceSpecies
+module PSC_InterfaceSpecies_Reverse
 
 using VoronoiFVM
 using ChargeTransport
@@ -92,8 +92,8 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     iphin               = 1 # electron quasi Fermi potential
     iphip               = 2 # hole quasi Fermi potential
-    iphin_b1            = 3
-    iphip_b1            = 4
+    iphin_b2            = 3
+    iphip_b2            = 4
     numberOfCarriers    = 4
 
     ## temperature
@@ -203,12 +203,12 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
                                                                   bulk_recomb_SRH = true)
 
     data.boundaryType[bregionAcceptor]  = OhmicContact
-    data.boundaryType[bregionJunction1] = InterfaceModelDiscontqF
-    data.boundaryType[bregionJunction2] = InterfaceModelDiscontqFNoReaction
+    data.boundaryType[bregionJunction1] = InterfaceModelDiscontqFNoReaction
+    data.boundaryType[bregionJunction2] = InterfaceModelDiscontqF
     data.boundaryType[bregionDonor]     = OhmicContact
 
-    # wäre schöner, wenn pro iphin_b1 nur iphin
-    enable_interface_carriers!(data, bulkSpecies = [iphin, iphip], interfaceSpecies = [iphin_b1, iphip_b1], boundaryRegion = bregionJunction1)
+    # wäre schöner, wenn pro iphin_b2 nur iphin
+    enable_interface_carriers!(data, bulkSpecies = [iphin, iphip], interfaceSpecies = [iphin_b2, iphip_b2], boundaryRegion = bregionJunction2)
 
     data.isContinuous[iphin]            = false
     data.isContinuous[iphip]            = false
@@ -271,14 +271,14 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ## inner boundary region data
     # delta with negative sign -> IV shifted to right.
-    delta1                                              = -1.1 * eV
-    delta2                                              = -0.3 * eV
+    delta1                                              = +0.3 * eV
+    delta2                                              = -0.0 * eV
     data.d                                              = 6.28 * 10e-8 * cm # lattice size perovskite
-    params.bDensityOfStates[iphin_b1, bregionJunction1] = data.d * params.densityOfStates[iphin, regionAcceptor]
-    params.bDensityOfStates[iphip_b1, bregionJunction1] = data.d * params.densityOfStates[iphip, regionAcceptor]
+    params.bDensityOfStates[iphin_b2, bregionJunction2] = data.d * params.densityOfStates[iphin, regionDonor]
+    params.bDensityOfStates[iphip_b2, bregionJunction2] = data.d * params.densityOfStates[iphip, regionDonor]
 
-    params.bBandEdgeEnergy[iphin_b1, bregionJunction1]  = params.bandEdgeEnergy[iphin, regionAcceptor] + delta1
-    params.bBandEdgeEnergy[iphip_b1, bregionJunction1]  = params.bandEdgeEnergy[iphip, regionAcceptor] + delta2
+    params.bBandEdgeEnergy[iphin_b2, bregionJunction2]  = params.bandEdgeEnergy[iphin, regionDonor] + delta1
+    params.bBandEdgeEnergy[iphip_b2, bregionJunction2]  = params.bandEdgeEnergy[iphip, regionDonor] + delta2
 
     ##############################################################
 
@@ -295,9 +295,9 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     # set legend for plotting routines. Either you can use the predefined labels or write your own.
     label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
     plot_energies(Plotter, grid, data, label_BEE)
-    PyPlot.ylim(-6.5, -2.0)
+    PyPlot.ylim(-7.0, -2.0)
  
-    #savefig("Ec-M1p1-Ev-M0p3.eps")
+    #savefig("rev-Ec-M0p3-Ev-M0p3.eps")
 
     function compute_densities(icc, ireg,  phi, psi)
         eta = data.params.chargeNumbers[icc]/ data.params.UT .* ( (phi .- psi) .+ data.params.bandEdgeEnergy[icc, ireg]./q )
@@ -351,8 +351,6 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         println("Compute solution in thermodynamic equilibrium")
     end
     ################################################################################
-
-
 
     ## initialize solution and starting vectors
     inival  = unknowns(ctsys)
@@ -417,14 +415,14 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         vis = GridVisualizer(Plotter = PyPlot, layout=(2,1))
 
         subgrids    = VoronoiFVM.subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
-        bgrid1      = subgrid(grid,[bregionJunction1], boundary=true)
+        bgrid2      = subgrid(grid, [bregionJunction2], boundary=true)
 
         phin_sol    = VoronoiFVM.views(sol, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
         phip_sol    = VoronoiFVM.views(sol, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
         psi_sol     = VoronoiFVM.views(sol, data.index_psi, subgrids, ctsys.fvmsys)
         
-        phin_b1_sol = view(sol[iphin_b1, :], bgrid1)
-        phip_b1_sol = view(sol[iphip_b1, :], bgrid1)
+        phin_b2_sol = view(sol[iphin_b2, :], bgrid2)
+        phip_b2_sol = view(sol[iphip_b2, :], bgrid2)
 
         sol_ref     = readdlm("data/PSC-stationary-reference-sol.dat")
 
@@ -438,10 +436,10 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         end
         PyPlot.plot(sol_ref[:, 1], sol_ref[:, 2], linestyle="--", color = "black")
         PyPlot.plot(sol_ref[:, 1], sol_ref[:, 3], linestyle="--", color = "black")
-        PyPlot.plot(coord[icoord_p], phin_b1_sol, marker = "x", markersize = 12, color = "darkgreen", label = "\$ \\bar{\\varphi}_n \$")
-        PyPlot.plot(coord[icoord_p], phip_b1_sol, marker = "x", markersize = 12, color = "darkred", label = "\$ \\bar{\\varphi}_p \$")
-        println("value phin_b1 = ", phin_b1_sol)
-        println("value phip_b1 = ", phip_b1_sol)
+        PyPlot.plot(coord[icoord_pi], phin_b2_sol, marker = "x", markersize = 12, color = "darkgreen", label = "\$ \\bar{\\varphi}_n \$")
+        PyPlot.plot(coord[icoord_pi], phip_b2_sol, marker = "x", markersize = 12, color = "darkred", label = "\$ \\bar{\\varphi}_p \$")
+        println("value phin_b2 = ", phin_b2_sol)
+        println("value phip_b2 = ", phip_b2_sol)
 
         Plotter.xlabel("space [m]")
         Plotter.ylabel("potential [V]")
@@ -480,17 +478,17 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
         end
 
-        eta_nb1 = -1/ data.params.UT * ( (phin_b1_sol[1] - psi_sol[1][end]) + data.params.bBandEdgeEnergy[iphin_b1, bregionJunction1]/q )
-        eta_pb1 =  1/ data.params.UT * ( (phip_b1_sol[1] - psi_sol[1][end]) + data.params.bBandEdgeEnergy[iphip_b1, bregionJunction1]/q )
+        eta_nb2 = -1/ data.params.UT * ( (phin_b2_sol[1] - psi_sol[2][end]) + data.params.bBandEdgeEnergy[iphin_b2, bregionJunction2]/q )
+        eta_pb2 =  1/ data.params.UT * ( (phip_b2_sol[1] - psi_sol[2][end]) + data.params.bBandEdgeEnergy[iphip_b2, bregionJunction2]/q )
 
-        nb1 = data.params.bDensityOfStates[iphin_b1, bregionJunction1] * data.F[iphin](eta_nb1)
-        pb1 = data.params.bDensityOfStates[iphip_b1, bregionJunction1] * data.F[iphip](eta_pb1)
+        nb2 = data.params.bDensityOfStates[iphin_b2, bregionJunction2] * data.F[iphin](eta_nb2)
+        pb2 = data.params.bDensityOfStates[iphip_b2, bregionJunction2] * data.F[iphip](eta_pb2)
 
-        println("value n_b1 = ", nb1)
-        println("value p_b1 = ", pb1)
+        println("value n_b2 = ", nb2)
+        println("value p_b2 = ", pb2)
 
-        PyPlot.semilogy(coord[icoord_p], nb1, marker = "x", markersize = 12, color = "darkgreen", label = "\$ \\bar{n} \$")
-        PyPlot.semilogy(coord[icoord_p], pb1, marker = "x", markersize = 12, color = "darkred", label = "\$ \\bar{p} \$")
+        PyPlot.semilogy(coord[icoord_pi], nb2, marker = "x", markersize = 12, color = "darkgreen", label = "\$ \\bar{n} \$")
+        PyPlot.semilogy(coord[icoord_pi], pb2, marker = "x", markersize = 12, color = "darkred", label = "\$ \\bar{p} \$")
 
         Plotter.xlabel("space [\$m\$]")
         Plotter.ylabel("density [\$\\frac{1}{m^3}\$]")
@@ -504,7 +502,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     end
 
-    #savefig("Ec-M1p1-Ev-M0p3-sol.eps")
+    #savefig("rev-Ec-M0p3-Ev-M0p3-sol.eps")
     testval = VoronoiFVM.norm(ctsys.fvmsys, sol, 2)
     return testval
 
