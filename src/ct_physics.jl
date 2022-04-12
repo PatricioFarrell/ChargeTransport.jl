@@ -320,16 +320,16 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFNoReaction}
     
     for icc in (iphin, iphip)
 
-        xx         =  [1.0e14 1.0e14; 1.0e14 1.0e14]
+        xx         =   [1.0e14 1.0e14; 1.0e14 1.0e14]
 
         etan1 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 1] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # left
         # note that we used bnode.cellregions[1] because otherwise we get a NaN, since there is a zero.
         etan2 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 2] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # right
 
         n1 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan1)
-        n2 = params.densityOfStates[icc, bnode.cellregions[2]] * data.F[icc](etan2)
+        n2 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan2)
 
-        react     = q * params.chargeNumbers[icc] * xx[icc, bnode.region-2]  * (n1 - n2)
+        react     = 1.0e-9 * xx[icc, bnode.region-2] * (u[icc, 1] - u[icc, 2])#q * params.chargeNumbers[icc] * xx[icc, bnode.region-2]  * (n1 - n2)
 
         f[icc, 1] =   react
         f[icc, 2] = - react
@@ -434,12 +434,21 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     reactn1  = k0n * (Knleft^(1/2) * n1/Nc_l - Knleft^(- 1/2) * n_b/Nc_b)
     reactn2  = k0n * (Knright^(1/2) * n2/Nc_r - Knright^(- 1/2) * n_b/Nc_b)
 
+    println("reactn")
+    @show reactn1.value
+    @show reactn2.value
+    println(" ")
     f[iphin, 1] =   reactn1
     f[iphin, 2] =   reactn2
     f[iphin_b]  = - reactn1 - reactn2
 
     reactp1     = k0p * (Kpleft^(1/2) * p1/Nv_l - Kpleft^(- 1/2) * p_b/Nv_b)
     reactp2     = k0p * (Kpright^(1/2) * p2/Nv_r - Kpright^(- 1/2) * p_b/Nv_b)
+
+    println("reactp")
+    @show reactp1.value
+    @show reactp2.value
+    println(" ")
 
     f[iphip, 1] =   reactp1
     f[iphip, 2] =   reactp2
