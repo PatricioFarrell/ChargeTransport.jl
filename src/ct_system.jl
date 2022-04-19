@@ -879,11 +879,11 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
 
     if data.bulkRecombination.bulk_recomb_SRH == SRHOff
         data.params.prefactor_SRH                      = 0.0
-        # need to define at least one entry to be non-zero. Otherwise get a NaN expression in reaction.
-        data.params.bRecombinationSRHTrapDensity[1, 1] = 1.0
-        data.params.recombinationSRHvelocity[1, 1]     = 1.0
-        data.params.recombinationSRHTrapDensity[1, 1]  = 1.0
-        data.params.recombinationSRHLifetime[1, 1]     = 1.0
+        # need to define at least one entry within each region to be non-zero. Otherwise get a NaN expression in reaction.
+        for ireg = 1:grid[NumCellRegions]
+            data.params.recombinationSRHTrapDensity[1, ireg]  = 1.0
+            data.params.recombinationSRHLifetime[1, ireg]     = 1.0
+        end
     end
 
     data.index_psi         = num_species_sys
