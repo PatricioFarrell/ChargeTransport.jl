@@ -38,3 +38,11 @@ function set_TeSCA_constants()
     global ε0 = 8.85419e-12
     global eV = q * V
 end
+
+# set unity for constants
+function set_unity_constants()
+    global kB = 1.0
+    global q  = 1.0
+    global ε0 = 1.0
+    global eV = 1.0
+end
