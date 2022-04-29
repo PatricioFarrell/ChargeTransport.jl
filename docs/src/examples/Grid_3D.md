@@ -26,7 +26,6 @@ function main(;Plotter = nothing, plotting = true) # plotting is currently only 
         regionDonor      = 1                           # n doped region
         regionIntrinsic  = 2                           # intrinsic region
         regionAcceptor   = 3                           # p doped region
-        regions          = [regionDonor, regionIntrinsic, regionAcceptor]
 
         # boundary region numbers
         bregionDonor     = 1
@@ -34,7 +33,6 @@ function main(;Plotter = nothing, plotting = true) # plotting is currently only 
         bregionJunction1 = 3
         bregionJunction2 = 4
         bregionNoFlux    = 5
-        bregions         = [bregionDonor, bregionAcceptor, bregionJunction1, bregionJunction2, bregionNoFlux]
 
         # grid
         h_ndoping        = 9.90e-6 * cm

@@ -115,10 +115,10 @@ Corresponding constructor for the present traps and the respective regions.
 """
 function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
 
-    enableTraps                            = Traps()
+    enableTraps                                = Traps()
 
-    enableTraps.traps                      = traps
-    enableTraps.regions                    = regions
+    enableTraps.traps                          = traps
+    enableTraps.regions                        = regions
 
     if data.modelType == Transient
         data.bulkRecombination.bulk_recomb_SRH = SRHTrapsTransient
@@ -166,10 +166,10 @@ Corresponding constructor for the present ionic charge carriers and the respecti
 """
 function enable_ionic_carriers(;ionic_carriers = [3], regions = [2])
 
-    enableIons = IonicChargeCarriers()
+    enableIons                = IonicChargeCarriers()
 
-    enableIons.ionic_carriers   = ionic_carriers
-    enableIons.regions          = regions
+    enableIons.ionic_carriers = ionic_carriers
+    enableIons.regions        = regions
 
     return enableIons
 
@@ -287,6 +287,11 @@ mutable struct Params
     Prefactor for stationary SRH recombination.
     """
     prefactor_SRH                ::  Float64
+
+    """
+    Parameter for the shift of generation peak of the Beer-Lambert generation profile.
+    """
+    generationPeak               ::  Float64
 
     ###############################################################
     ####              number of boundary regions               ####
@@ -529,7 +534,7 @@ mutable struct Data{TFuncs<:Function}
     """
     A struct which contains information on present SRH traps.
     """
-    enableTraps                 ::  Traps
+    enableTraps                  ::  Traps
 
     """
     A struct which contains information on present interface species.
@@ -540,7 +545,7 @@ mutable struct Data{TFuncs<:Function}
     DataType which stores information about which inner interface model is chosen by user.
     This quantity cannot be seen by the user and is needed for the core of the package.
     """
-    innerInterfaceModel        ::  InterfaceModelType
+    innerInterfaceModel          ::  InterfaceModelType
 
     ###############################################################
     ####                 Numerics information                  ####
@@ -548,22 +553,22 @@ mutable struct Data{TFuncs<:Function}
     """
     A DataType for the flux discretization method.
     """
-    fluxApproximation           ::  FluxApproximationType
+    fluxApproximation            ::  FluxApproximationType
 
     """
     A DataType for equilibrium or out of equilibrium calculations.
     """
-    calculationType             ::  CalculationType
+    calculationType              ::  CalculationType
 
     """
     A DataType for transient or stationary calculations.
     """
-    modelType                   ::  ModelType
+    modelType                    ::  ModelType
 
     """
     A DataType for for generation model.
     """
-    generationModel             ::  GenerationModelType
+    generationModel              ::  GenerationModelType
 
     """
     An embedding parameter used to solve the nonlinear Poisson problem, where for
@@ -723,6 +728,7 @@ function Params(grid, numberOfCarriers)
     params.γ                            = 0.27                # parameter for Blakemore statistics
     params.r0                           = 0.0                 # r0 prefactor electro-chemical reaction
     params.prefactor_SRH                = 1.0
+    params.generationPeak               = 0.0                 # parameter which shifts Beer-Lambert generation peak
 
     ###############################################################
     ####              number of boundary regions               ####
@@ -1390,7 +1396,6 @@ For given potentials in vector form, compute corresponding vectorized densities.
 """
 function compute_densities!(grid, data, sol)
     params       = data.params
-    paramsnodal  = data.paramsnodal
 
     ipsi         = params.numberOfCarriers + 1
     densities    = Array{Real,2}(undef, params.numberOfCarriers, size(sol, 2))
