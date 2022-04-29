@@ -54,8 +54,6 @@ function plot_densities(Plotter, grid, data::Data, sol, title, label_density, ;p
     params         = data.params
     colors         = ["green", "red", "gold", "purple", "orange"]
 
-    ipsi           = data.index_psi
-
     cellnodes      = grid[CellNodes]
     cellregions    = grid[CellRegions]
     coordinates    = grid[Coordinates]
@@ -401,7 +399,7 @@ which indicate where the nodes are located.
 function plot_solution(Plotter, grid, data::Data, solution, title, label_solution, ;plotGridpoints=false)
 
     if dim_space(grid) > 1
-        error("plot_densities is so far only tested in 1D")
+        error("plot_solution is so far only tested in 1D")
     end
 
     if plotGridpoints == true

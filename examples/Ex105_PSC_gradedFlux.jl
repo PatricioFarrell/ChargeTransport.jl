@@ -56,62 +56,60 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## region numbers
-    regionDonor             = 1          # n doped region
-    regionJunction1         = 2
-    regionIntrinsic         = 3          # intrinsic region
-    regionJunction2         = 4
-    regionAcceptor          = 5          # p doped region
-    regions                 = [regionDonor, regionJunction1, regionIntrinsic, regionJunction2, regionAcceptor]
-    regionTransportLayers   = [regionDonor, regionIntrinsic, regionAcceptor]
-    regionJunctions         = [regionJunction1, regionJunction2]
-    numberOfRegions         = length(regions)
+    regionDonor           = 1          # n doped region
+    regionJunction1       = 2
+    regionIntrinsic       = 3          # intrinsic region
+    regionJunction2       = 4
+    regionAcceptor        = 5          # p doped region
+    regions               = [regionDonor, regionJunction1, regionIntrinsic, regionJunction2, regionAcceptor]
+    regionTransportLayers = [regionDonor, regionIntrinsic, regionAcceptor]
+    regionJunctions       = [regionJunction1, regionJunction2]
+    numberOfRegions       = length(regions)
 
     ## boundary region numbers
-    bregionDonor            = 1
-    bregionAcceptor         = 2
-    bregions                = [bregionDonor, bregionAcceptor]
-    numberOfBoundaryRegions = length(bregions)
+    bregionDonor          = 1
+    bregionAcceptor       = 2
 
     ## grid
-    h_ndoping               = 9.90e-6 * cm
-    h_junction1             = 1.0e-7  * cm
-    h_intrinsic             = 4.00e-5 * cm
-    h_junction2             = 1.0e-7  * cm
-    h_pdoping               = 1.99e-5 * cm
-    h                       = [h_ndoping, h_junction1, h_intrinsic, h_junction2, h_pdoping]
-    heightLayers            = [h_ndoping,
-                               h_ndoping + h_junction1,
-                               h_ndoping + h_junction1 + h_intrinsic,
-                               h_ndoping + h_junction1 + h_intrinsic + h_junction2,
-                               h_ndoping + h_junction1 + h_intrinsic + h_junction2 + h_pdoping]
-    refinementfactor        = 2^(n-1)
+    h_ndoping             = 9.90e-6 * cm
+    h_junction1           = 1.0e-7  * cm
+    h_intrinsic           = 4.00e-5 * cm
+    h_junction2           = 1.0e-7  * cm
+    h_pdoping             = 1.99e-5 * cm
+    h                     = [h_ndoping, h_junction1, h_intrinsic, h_junction2, h_pdoping]
+    heightLayers          = [h_ndoping,
+                             h_ndoping + h_junction1,
+                             h_ndoping + h_junction1 + h_intrinsic,
+                             h_ndoping + h_junction1 + h_intrinsic + h_junction2,
+                             h_ndoping + h_junction1 + h_intrinsic + h_junction2 + h_pdoping]
+    refinementfactor      = 2^(n-1)
 
-    coord_ndoping           = collect(range(0.0, stop = h_ndoping, length = 4 * refinementfactor))
-    length_n                = length(coord_ndoping)
-    coord_junction1         = collect(range(h_ndoping,
-                                           stop = h_ndoping + h_junction1,
-                                           length = 3 * refinementfactor))
-    coord_intrinsic         = collect(range(h_ndoping + h_junction1,
-                                           stop = (h_ndoping + h_junction1 + h_intrinsic),
-                                           length = 10 * refinementfactor))
-    coord_junction2         = collect(range(h_ndoping + h_junction1 + h_intrinsic,
-                                           stop = (h_ndoping + h_junction1 + h_intrinsic + h_junction2),
-                                           length = 3 * refinementfactor))
-    coord_pdoping           = collect(range((h_ndoping + h_junction1 + h_intrinsic + h_junction2),
-                                            stop = (h_ndoping + h_junction1 + h_intrinsic + h_junction2 + h_pdoping),
-                                            length = 4 * refinementfactor))
+    coord_ndoping         = collect(range(0.0, stop = h_ndoping, length = 4 * refinementfactor))
+    length_n              = length(coord_ndoping)
+    coord_junction1       = collect(range(h_ndoping,
+                                         stop = h_ndoping + h_junction1,
+                                         length = 3 * refinementfactor))
+    coord_intrinsic       = collect(range(h_ndoping + h_junction1,
+                                         stop = (h_ndoping + h_junction1 + h_intrinsic),
+                                         length = 10 * refinementfactor))
+    coord_junction2       = collect(range(h_ndoping + h_junction1 + h_intrinsic,
+                                         stop = (h_ndoping + h_junction1 + h_intrinsic + h_junction2),
+                                         length = 3 * refinementfactor))
+    coord_pdoping         = collect(range((h_ndoping + h_junction1 + h_intrinsic + h_junction2),
+                                          stop = (h_ndoping + h_junction1 + h_intrinsic + h_junction2 + h_pdoping),
+                                          length = 4 * refinementfactor))
 
-    coord                   = glue(coord_ndoping, coord_junction1)
-    length_j1               = length(coord)
-    coord                   = glue(coord, coord_intrinsic)
-    length_i                = length(coord)
-    coord                   = glue(coord, coord_junction2)
-    length_j2               = length(coord)
-    coord                   = glue(coord, coord_pdoping)
+    coord                 = glue(coord_ndoping, coord_junction1)
+    length_j1             = length(coord)
+    coord                 = glue(coord, coord_intrinsic)
+    length_i              = length(coord)
+    coord                 = glue(coord, coord_junction2)
+    length_j2             = length(coord)
+    coord                 = glue(coord, coord_pdoping)
 
-    grid                    = simplexgrid(coord)
-    numberOfNodes           = length(coord)
-    lengthLayers            = [1, length_n, length_j1, length_i, length_j2, numberOfNodes]
+    grid                  = simplexgrid(coord)
+    numberOfNodes         = length(coord)
+    lengthLayers          = [1, length_n, length_j1, length_i, length_j2, numberOfNodes]
 
     ## set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor)      # n-doped region   = 1
@@ -239,12 +237,12 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     Auger            = 0.0
 
     ## doping (doping values are from Driftfusion)
-    Nd               =   1.03e18             / (cm^3)
-    Na               =   1.03e18             / (cm^3)
-    Ni_acceptor      =   8.32e7              / (cm^3)
+    Nd               = 1.03e18             / (cm^3)
+    Na               = 1.03e18             / (cm^3)
+    Ni_acceptor      = 8.32e7              / (cm^3)
 
     ## contact voltage
-    voltageAcceptor  =  1.2                 * V
+    voltageAcceptor  = 1.2                 * V
 
     if test == false
         println("*** done\n")
@@ -386,16 +384,16 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.61 # >= 1
-    control.max_round         = 5
+    control.damp_initial = 0.5
+    control.damp_growth  = 1.61 # >= 1
+    control.max_round    = 5
 
-    initialGuess  = unknowns(ctsys)
-    solution      = unknowns(ctsys)
+    initialGuess         = unknowns(ctsys)
+    solution             = unknowns(ctsys)
 
-    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
+    solution             = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess .= solution
+    initialGuess        .= solution
 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
