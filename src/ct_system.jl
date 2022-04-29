@@ -231,6 +231,11 @@ mutable struct Params
     """
     prefactor_SRH                ::  Float64
 
+    """
+    Parameter for the shift of generation peak of the Beer-Lambert generation profile.
+    """
+    generationPeak               ::  Float64
+
     ###############################################################
     ####              number of boundary regions               ####
     ###############################################################
@@ -653,6 +658,7 @@ function Params(grid, numberOfCarriers)
     params.γ                            = 0.27                # parameter for Blakemore statistics
     params.r0                           = 0.0                 # r0 prefactor electro-chemical reaction
     params.prefactor_SRH                = 1.0
+    params.generationPeak               = 0.0                 # parameter which shifts Beer-Lambert generation peak
 
     ###############################################################
     ####              number of boundary regions               ####

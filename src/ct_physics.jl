@@ -765,12 +765,12 @@ end
 
 # The generation rate ``G``, which occurs in the right-hand side of the
 # continuity equations obeying the Beer-Lambert law.
-#only works in 1D till now; adjust node, when multidimensions
+# only works in 1D till now; adjust node, when multidimensions
 function generation(data, ireg, node, ::Type{GenerationBeerLambert})
 
     params = data.params
 
-    return data.λ2 * params.generationIncidentPhotonFlux[ireg] * params.generationAbsorption[ireg] * exp( - params.generationAbsorption[ireg] * node )
+    return data.λ2 * params.generationIncidentPhotonFlux[ireg] * params.generationAbsorption[ireg] * exp( - params.generationAbsorption[ireg] * (node - params.generationPeak))
 
 end
 
