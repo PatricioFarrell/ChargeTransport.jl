@@ -28,61 +28,58 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## region numbers
-    regionDonor             = 1                           # n doped region
-    regionIntrinsic         = 2                           # intrinsic region
-    regionAcceptor          = 3                           # p doped region
-    regions                 = [regionDonor, regionIntrinsic, regionAcceptor]
-    numberOfRegions         = length(regions)
+    regionDonor      = 1                           # n doped region
+    regionIntrinsic  = 2                           # intrinsic region
+    regionAcceptor   = 3                           # p doped region
+    regions          = [regionDonor, regionIntrinsic, regionAcceptor]
+    numberOfRegions  = length(regions)
 
     ## boundary region numbers
-    bregionDonor            = 1
-    bregionAcceptor         = 2
-    bregions                = [bregionDonor, bregionAcceptor]
-    numberOfBoundaryRegions = length(bregions)
+    bregionDonor     = 1
+    bregionAcceptor  = 2
 
     ## grid
-    h_ndoping               = 9.90e-6 * cm
-    h_intrinsic             = 4.00e-5 * cm + 2.0e-7 * cm
-    h_pdoping               = 1.99e-5 * cm
-    heightLayers            = [h_ndoping,
-                               h_ndoping + h_intrinsic,
-                               h_ndoping + h_intrinsic + h_pdoping]
+    h_ndoping        = 9.90e-6 * cm
+    h_intrinsic      = 4.00e-5 * cm + 2.0e-7 * cm
+    h_pdoping        = 1.99e-5 * cm
+    heightLayers     = [h_ndoping,
+                        h_ndoping + h_intrinsic,
+                        h_ndoping + h_intrinsic + h_pdoping]
 
-    x0                      = 0.0 * cm
-    δ                       = 4*n        # the larger, the finer the mesh
-    t                       = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
-    k                       = 1.5        # the closer to 1, the closer to the boundary geomspace
+    x0               = 0.0 * cm
+    δ                = 4*n        # the larger, the finer the mesh
+    t                = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
+    k                = 1.5        # the closer to 1, the closer to the boundary geomspace
 
-    coord_n_u               = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
-    coord_n_g               = geomspace(h_ndoping/2,
-                                        h_ndoping,
-                                        h_ndoping/(0.7*δ),
-                                        h_ndoping/(1.1*δ),
-                                        tol=t)
-    coord_i_g1              = geomspace(h_ndoping,
-                                        h_ndoping+h_intrinsic/k,
-                                        h_intrinsic/(2.8*δ),
-                                        h_intrinsic/(2.1*δ),
-                                        tol=t)
-    coord_i_g2              = geomspace(h_ndoping+h_intrinsic/k,
-                                        h_ndoping+h_intrinsic,
-                                        h_intrinsic/(2.1*δ),
-                                        h_intrinsic/(2.8*δ),
-                                        tol=t)
-    coord_p_g               = geomspace(h_ndoping+h_intrinsic,
-                                        h_ndoping+h_intrinsic+h_pdoping/2,
-                                        h_pdoping/(1.6*δ),
-                                        h_pdoping/(1.6*δ),
-                                        tol=t)
-    coord_p_u               = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(1.3*δ)))
+    coord_n_u        = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
+    coord_n_g        = geomspace(h_ndoping/2,
+                                 h_ndoping,
+                                 h_ndoping/(0.7*δ),
+                                 h_ndoping/(1.1*δ),
+                                 tol=t)
+    coord_i_g1       = geomspace(h_ndoping,
+                                 h_ndoping+h_intrinsic/k,
+                                 h_intrinsic/(2.8*δ),
+                                 h_intrinsic/(2.1*δ),
+                                 tol=t)
+    coord_i_g2       = geomspace(h_ndoping+h_intrinsic/k,
+                                 h_ndoping+h_intrinsic,
+                                 h_intrinsic/(2.1*δ),
+                                 h_intrinsic/(2.8*δ),
+                                 tol=t)
+    coord_p_g       = geomspace(h_ndoping+h_intrinsic,
+                                h_ndoping+h_intrinsic+h_pdoping/2,
+                                h_pdoping/(1.6*δ),
+                                h_pdoping/(1.6*δ),
+                                tol=t)
+    coord_p_u       = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(1.3*δ)))
 
-    coord                   = glue(coord_n_u, coord_n_g,  tol=10*t)
-    coord                   = glue(coord,     coord_i_g1, tol=10*t)
-    coord                   = glue(coord,     coord_i_g2, tol=10*t)
-    coord                   = glue(coord,     coord_p_g,  tol=10*t)
-    coord                   = glue(coord,     coord_p_u,  tol=10*t)
-    grid                    = ExtendableGrids.simplexgrid(coord)
-    numberOfNodes           = length(coord)
+    coord           = glue(coord_n_u, coord_n_g,  tol=10*t)
+    coord           = glue(coord,     coord_i_g1, tol=10*t)
+    coord           = glue(coord,     coord_i_g2, tol=10*t)
+    coord           = glue(coord,     coord_p_g,  tol=10*t)
+    coord           = glue(coord,     coord_p_u,  tol=10*t)
+    grid            = ExtendableGrids.simplexgrid(coord)
 
     ## set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)     # n-doped region   = 1
@@ -205,12 +202,12 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     Auger            = 0.0
 
     ## doping
-    Nd               =   1.03e18             / (cm^3)
-    Na               =   1.03e18             / (cm^3)
-    C0               =   1.6e19              / (cm^3)
+    Nd               = 1.03e18              / (cm^3)
+    Na               = 1.03e18              / (cm^3)
+    C0               = 1.6e19               / (cm^3)
 
     ## contact voltage
-    voltageAcceptor  =  1.2                  * V
+    voltageAcceptor  = 1.2                  * V
 
     if test == false
         println("*** done\n")
@@ -221,7 +218,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ##Iinitialize Data instance and fill in predefined data
+    ## Initialize Data instance and fill in predefined data
     data                               = Data(grid, numberOfCarriers)
 
     ## Possible choices: Stationary, Transient
@@ -382,12 +379,12 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## initialize solution and starting vectors
-    initialGuess    = unknowns(ctsys)
-    solution        = unknowns(ctsys)
+    initialGuess  = unknowns(ctsys)
+    solution      = unknowns(ctsys)
 
-    solution        = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
+    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess   .= solution
+    initialGuess .= solution
 
     if plotting
         plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)

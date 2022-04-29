@@ -24,7 +24,6 @@ function main(;Plotter = PyPlot, plotting = false)
     regionDonor      = 1                           # n doped region
     regionIntrinsic  = 2                           # intrinsic region
     regionAcceptor   = 3                           # p doped region
-    regions          = [regionDonor, regionIntrinsic, regionAcceptor]
 
     ## boundary region numbers
     bregionDonor     = 1
@@ -32,7 +31,6 @@ function main(;Plotter = PyPlot, plotting = false)
     bregionJunction1 = 3
     bregionJunction2 = 4
     bregionNoFlux    = 5
-    bregions         = [bregionDonor, bregionAcceptor, bregionJunction1, bregionJunction2, bregionNoFlux]
 
     ## grid
     h_ndoping        = 9.90e-6 * cm
@@ -49,21 +47,21 @@ function main(;Plotter = PyPlot, plotting = false)
         area>0.1*max(8.0e-16,qdist)
     end
 
-    b                = SimplexGridBuilder(Generator=Triangulate)
+    b           = SimplexGridBuilder(Generator=Triangulate)
 
     ## specify boundary nodes
-    length_0   = point!(b, 0.0, 0.0)
-    length_n   = point!(b, h_ndoping, 0.0)
-    length_ni  = point!(b, h_ndoping + h_intrinsic, 0.0)
-    length_nip = point!(b, h_ndoping + h_intrinsic + h_pdoping, 0.0)
-    height_0   = point!(b, 0.0, height)
-    height_n   = point!(b, h_ndoping, height)
+    length_0    = point!(b, 0.0, 0.0)
+    length_n    = point!(b, h_ndoping, 0.0)
+    length_ni   = point!(b, h_ndoping + h_intrinsic, 0.0)
+    length_nip  = point!(b, h_ndoping + h_intrinsic + h_pdoping, 0.0)
+    height_0    = point!(b, 0.0, height)
+    height_n    = point!(b, h_ndoping, height)
 
     ## for L shape
-    height_ni12  = point!(b, h_ndoping + h_intrinsic/2, height)
+    height_ni12 = point!(b, h_ndoping + h_intrinsic/2, height)
     height_ni2  = point!(b, h_ndoping + h_intrinsic/2, height/2)
-    height_ni  = point!(b, h_ndoping + h_intrinsic, height/2)
-    height_nip = point!(b, h_ndoping + h_intrinsic + h_pdoping, height/2)
+    height_ni   = point!(b, h_ndoping + h_intrinsic, height/2)
+    height_nip  = point!(b, h_ndoping + h_intrinsic + h_pdoping, height/2)
 
     ## specify boundary regions
     ## metal interface
@@ -105,8 +103,6 @@ function main(;Plotter = PyPlot, plotting = false)
     options!(b,maxvolume=7.0e-16)
 
     grid = simplexgrid(b)
-
-    numberOfNodes   = size(grid[Coordinates])[2]
 
     if plotting
         ## GridVisualize.gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.6)
