@@ -423,8 +423,8 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         phip_sol    = VoronoiFVM.views(sol, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
         psi_sol     = VoronoiFVM.views(sol, data.index_psi, subgrids, ctsys.fvmsys)
         
-        phin_b1_sol = view(sol[iphin_b1, :], bgrid1)
-        phip_b1_sol = view(sol[iphip_b1, :], bgrid1)
+        phin_b1_sol = view(sol[data.chargeCarrierList[iphin_b1].ispec, :], bgrid1)
+        phip_b1_sol = view(sol[data.chargeCarrierList[iphip_b1].ispec, :], bgrid1)
 
         sol_ref     = readdlm("data/PSC-stationary-reference-sol.dat")
 
