@@ -480,7 +480,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 end # main
 
 function test()
-    testval = 50.60818868398909
+    testval = 50.608171445993875
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
