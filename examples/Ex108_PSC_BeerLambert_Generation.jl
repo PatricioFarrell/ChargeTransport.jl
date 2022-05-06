@@ -475,7 +475,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 26.083529957739483
+    testval = 26.08352357348457
     main(test = true) ≈ testval 
 end
 
