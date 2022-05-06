@@ -411,14 +411,33 @@ function plot_solution(Plotter, grid, data::Data, solution, title, label_solutio
     coord        = grid[Coordinates]'
     ipsi         = data.index_psi
 
+    # DA: could be modified by using subgrids from ExtendableGrids.
+    # this is needed to only plot present ionic charge carrier in respective defined regions
+    if isdefined(data.enableIonicCarriers, :regions)
+        regions    = grid[CellRegions]
+        subregions = zeros(Int64, 0)
+        for ix in 1:length(data.enableIonicCarriers.regions)
+            subreg = findall(x -> x == data.enableIonicCarriers.regions[ix], regions)
+            append!(subregions, subreg)
+            if data.enableIonicCarriers.regions[ix] != regions[end]
+                push!(subregions, subregions[end]+1)
+            end
+        end
+        subgrid    = coord[subregions]
+    end
+
     colors       = ["green", "red", "gold", "purple", "orange"]
     linestyles   = ["-", ":", "--", "-.", "-"]
 
     Plotter.clf()
     Plotter.plot(coord, solution[ipsi,:], marker = marker, label = "\$\\psi\$", color="b", linewidth= 3)
 
-    for icc in 1:data.params.numberOfCarriers
-        Plotter.plot(coord./1, solution[icc,:], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
+    for icc ∈ data.chargeCarrierList
+        if icc ∈ data.enableIonicCarriers.ionic_carriers
+            Plotter.plot(subgrid./1, solution[icc, subregions], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
+        else
+            Plotter.plot(coord./1, solution[icc,:], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
+        end
     end
 
     Plotter.grid()
