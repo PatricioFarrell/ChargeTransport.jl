@@ -693,10 +693,6 @@ Function which builds right-hand side of electric charge carriers.
 """
 function RHSContinuityEquations!(f, u, node, data)
 
-    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
-        f[icc] = u[icc]
-    end
-
     # dependent on user information concerncing recombination
     addRecombination!(f, u, node, data, data.bulkRecombination.bulk_recomb_SRH)
     # dependent on user information concerncing generation
@@ -728,9 +724,22 @@ that the electron index is 1 and the hole index is 2.
 """
 function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
 
-    # set RHS to zero for all icc (stability purpose)
+    # set RHS to zero for all icc 
     for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
-        f[icc]  = u[icc]
+        f[icc]  = 0.0
+    end
+
+    # if ionic carriers are present
+    if isdefined(data.enableIonicCarriers, :regions)
+        for icc ∈ data.enableIonicCarriers.ionic_carriers
+            # set for stability purposes the right-hand side for ions in undefined regions to u[icc]
+            # this is needed to have u[icc] = 0 in this regions
+            if node.region ∈ data.enableIonicCarriers.regions
+                f[icc] = 0.0
+            else
+                f[icc] = u[icc]
+            end
+        end
     end
 
     RHSPoisson!(f, u, node, data)             # RHS of Poisson

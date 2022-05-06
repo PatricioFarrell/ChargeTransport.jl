@@ -479,7 +479,7 @@ these values are needed for putting the generation slightly on
 end #  main
 
 function test()
-    testval = 26.083529957739483
+    testval = 26.08352357348457
     main(test = true) ≈ testval
 end
 
