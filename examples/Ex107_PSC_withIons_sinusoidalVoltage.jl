@@ -28,57 +28,55 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## region numbers
-    regionAcceptor          = 1                           # p doped region
-    regionIntrinsic         = 2                           # intrinsic region
-    regionDonor             = 3                           # n doped region
-    regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
-    numberOfRegions         = length(regions)
+    regionAcceptor  = 1                           # p doped region
+    regionIntrinsic = 2                           # intrinsic region
+    regionDonor     = 3                           # n doped region
+    regions         = [regionAcceptor, regionIntrinsic, regionDonor]
+    numberOfRegions = length(regions)
 
     ## boundary region numbers
-    bregionAcceptor         = 1
-    bregionDonor            = 2
-    bregions                = [bregionAcceptor, bregionDonor]
-    numberOfBoundaryRegions = length(bregions)
+    bregionAcceptor = 1
+    bregionDonor    = 2
 
     ## grid
-    h_pdoping               = 3.00e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
-    h_intrinsic             = 3.00e-5 * cm
-    h_ndoping               = 8.50e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_pdoping       = 3.00e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_intrinsic     = 3.00e-5 * cm
+    h_ndoping       = 8.50e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
 
-    x0                      = 0.0 * cm
-    δ                       = 4*n        # the larger, the finer the mesh
-    t                       = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
-    k                       = 1.5        # the closer to 1, the closer to the boundary geomspace works
+    x0              = 0.0 * cm
+    δ               = 4*n        # the larger, the finer the mesh
+    t               = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
+    k               = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    coord_p_u               = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.6*δ)))
-    coord_p_g               = geomspace(h_pdoping/2,
-                                        h_pdoping,
-                                        h_pdoping/(0.8*δ),
-                                        h_pdoping/(0.6*δ),
-                                        tol=t)
-    coord_i_g1              = geomspace(h_pdoping,
-                                        h_pdoping+h_intrinsic/k,
-                                        h_intrinsic/(6.1*δ),
-                                        h_intrinsic/(2.1*δ),
-                                        tol=t)
-    coord_i_g2              = geomspace(h_pdoping+h_intrinsic/k,
-                                        h_pdoping+h_intrinsic,
-                                        h_intrinsic/(2.1*δ),
-                                        h_intrinsic/(6.1*δ),
-                                        tol=t)
-    coord_n_g               = geomspace(h_pdoping+h_intrinsic,
-                                        h_pdoping+h_intrinsic+h_ndoping/2,
-                                        h_ndoping/(1.5*δ),
-                                        h_ndoping/(0.9*δ),
-                                        tol=t)
-    coord_n_u               = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.5*δ)))
+    coord_p_u       = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.6*δ)))
+    coord_p_g       = geomspace(h_pdoping/2,
+                                h_pdoping,
+                                h_pdoping/(0.8*δ),
+                                h_pdoping/(0.6*δ),
+                                tol=t)
+    coord_i_g1      = geomspace(h_pdoping,
+                                h_pdoping+h_intrinsic/k,
+                                h_intrinsic/(6.1*δ),
+                                h_intrinsic/(2.1*δ),
+                                tol=t)
+    coord_i_g2      = geomspace(h_pdoping+h_intrinsic/k,
+                                h_pdoping+h_intrinsic,
+                                h_intrinsic/(2.1*δ),
+                                h_intrinsic/(6.1*δ),
+                                tol=t)
+    coord_n_g       = geomspace(h_pdoping+h_intrinsic,
+                                h_pdoping+h_intrinsic+h_ndoping/2,
+                                h_ndoping/(1.5*δ),
+                                h_ndoping/(0.9*δ),
+                                tol=t)
+    coord_n_u       = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.5*δ)))
 
-    coord                   = glue(coord_p_u, coord_p_g,  tol=10*t)
-    coord                   = glue(coord,     coord_i_g1, tol=10*t)
-    coord                   = glue(coord,     coord_i_g2, tol=10*t)
-    coord                   = glue(coord,     coord_n_g,  tol=10*t)
-    coord                   = glue(coord,     coord_n_u,  tol=10*t)
-    grid                    = simplexgrid(coord)
+    coord           = glue(coord_p_u, coord_p_g,  tol=10*t)
+    coord           = glue(coord,     coord_i_g1, tol=10*t)
+    coord           = glue(coord,     coord_i_g2, tol=10*t)
+    coord           = glue(coord,     coord_n_g,  tol=10*t)
+    coord           = glue(coord,     coord_n_u,  tol=10*t)
+    grid            = simplexgrid(coord)
 
     ## set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor, tol = 1.0e-18)  # n-doped region   = 1
@@ -107,7 +105,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfCarriers = 3 # electrons, holes and anion vacancies
 
     ## temperature
-    T                =  300.0                 *  K
+    T                = 300.0                 *  K
 
     ## band edge energies
     Ec_a             = -3.0                  *  eV
@@ -130,7 +128,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     Nv_i             = 1.0e19                / (cm^3)
 
     ## ############ adjust Na, Ea for anion vacancies here ###########
-    Nanion           = 1.21e22                / (cm^3)
+    Nanion           = 1.21e22               / (cm^3)
     Ea_i             = -5.175                *  eV
     ## for the labels in the figures
     textEa           = Ea_i./eV
@@ -176,11 +174,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     r0               = [r0_a, r0_i, r0_d]
 
     ## life times and trap densities
-    τn_a             = 1.0e-6              * s
-    τp_a             = 1.0e-6              * s
+    τn_a             = 1.0e-6                * s
+    τp_a             = 1.0e-6                * s
 
-    τn_i             = 1.0e-7              * s
-    τp_i             = 1.0e-7              * s
+    τn_i             = 1.0e-7                * s
+    τp_i             = 1.0e-7                * s
     τn_d             = τn_a
     τp_d             = τp_a
 
@@ -188,9 +186,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     τp               = [τp_a, τp_i, τp_d]
 
     ## SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
-    Ei_a             = -4.05              * eV
-    Ei_i             = -4.60              * eV
-    Ei_d             = -5.00              * eV
+    Ei_a             = -4.05                * eV
+    Ei_i             = -4.60                * eV
+    Ei_d             = -5.00                * eV
 
     EI               = [Ei_a, Ei_i, Ei_d]
 
@@ -198,9 +196,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     Auger            = 0.0
 
     ## doping
-    Nd               =   2.089649130192123e17 / (cm^3)
-    Na               =   4.529587947185444e18 / (cm^3)
-    C0               =   1.0e18               / (cm^3)
+    Nd               = 2.089649130192123e17 / (cm^3)
+    Na               = 4.529587947185444e18 / (cm^3)
+    C0               = 1.0e18               / (cm^3)
 
     if test == false
         println("*** done\n")

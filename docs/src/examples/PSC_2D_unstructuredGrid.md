@@ -98,12 +98,10 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
     options!(b,maxvolume=1.0e-16)
 
     grid           = simplexgrid(b)
-    numberOfNodes  = size(grid[Coordinates])[2]
 
     if plotting
         GridVisualize.gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.5, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -122,7 +120,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
     numberOfCarriers = 3 # electrons, holes and anion vacancies
 
     # temperature
-    T                =  300.0                 *  K
+    T                = 300.0                 *  K
 
     # band edge energies
     Ec_a             = -3.0                  *  eV
@@ -190,11 +188,11 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
     r0               = [r0_a, r0_i, r0_d]
 
     # life times and trap densities
-    τn_a             = 1.0e-6              * s
-    τp_a             = 1.0e-6              * s
+    τn_a             = 1.0e-6                * s
+    τp_a             = 1.0e-6                * s
 
-    τn_i             = 1.0e-7              * s
-    τp_i             = 1.0e-7              * s
+    τn_i             = 1.0e-7                * s
+    τp_i             = 1.0e-7                * s
     τn_d             = τn_a
     τp_d             = τp_a
 
@@ -202,19 +200,19 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
     τp               = [τp_a, τp_i, τp_d]
 
     # SRH trap energies (needed for calculation of recombinationSRHTrapDensity)
-    Ei_a             = -4.05              * eV
-    Ei_i             = -4.60              * eV
-    Ei_d             = -5.00              * eV
+    Ei_a             = -4.05                * eV
+    Ei_i             = -4.60                * eV
+    Ei_d             = -5.00                * eV
 
     EI               = [Ei_a, Ei_i, Ei_d]
 
     # doping (doping values are from Phils paper, not stated in the parameter list online)
-    Nd               =   2.089649130192123e17 / (cm^3)
-    Na               =   4.529587947185444e18 / (cm^3)
-    C0               =   1.0e18               / (cm^3)
+    Nd               = 2.089649130192123e17 / (cm^3)
+    Na               = 4.529587947185444e18 / (cm^3)
+    C0               = 1.0e18               / (cm^3)
 
     # contact voltage
-    voltageAcceptor  =  1.0                  * V
+    voltageAcceptor  = 1.0                  * V
 
     if test == false
         println("*** done\n")
@@ -376,8 +374,8 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
 
     if plotting # currently, plotting the solution was only tested with PyPlot.
         ipsi = data.index_psi
-        X = grid[Coordinates][1,:]
-        Y = grid[Coordinates][2,:]
+        X    = grid[Coordinates][1,:]
+        Y    = grid[Coordinates][2,:]
 
         Plotter.figure()
         Plotter.surf(X[:], Y[:], solution[ipsi, :])
@@ -406,20 +404,20 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
     end
     ################################################################################
 
-    ctsys.data.calculationType = OutOfEquilibrium
+    data.calculationType = OutOfEquilibrium
 
     # primary data for I-V scan protocol
-    scanrate      = 0.04 * V/s
-    number_tsteps = 41
-    endVoltage    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend          = endVoltage/scanrate
+    scanrate             = 0.04 * V/s
+    number_tsteps        = 41
+    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                 = endVoltage/scanrate
 
     # with fixed timestep sizes we can calculate the times a priori
-    tvalues       = range(0, stop = tend, length = number_tsteps)
+    tvalues              = range(0, stop = tend, length = number_tsteps)
 
     # for saving I-V data
-    IV            = zeros(0) # for IV values
-    biasValues    = zeros(0) # for bias values
+    IV                   = zeros(0) # for IV values
+    biasValues           = zeros(0) # for bias values
 
     for istep = 2:length(tvalues)
 
@@ -477,7 +475,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
 end #  main
 
 function test()
-    testval = -4.068873400363849
+    testval = -4.068687295374785
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

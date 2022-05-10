@@ -218,13 +218,12 @@ where ``v_{\\alpha}`` can be treated as a surface recombination mechanism and is
 ``n_{\\alpha, 0}`` is a given value, calculated by the statistical relation, when assuming
 no electrical field and a quasi Fermi level equal to the Schottky barrier ``\\phi_S``, i.e.
 
-``n_{\\alpha, 0}= z_\\alpha/ U_T (E_\\alpha - \\phi_S) / q. ``
+``n_{\\alpha, 0}= N_\\alpha \\mathcal{F}_\\alpha \\Bigl( z_\\alpha/ U_T (E_\\alpha - \\phi_S) / q \\Bigr). ``
 
 """
 function breaction!(f, u, bnode, data,  ::Type{SchottkyContact})
 
     params        = data.params
-    paramsnodal   = data.paramsnodal
 
     # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
     iphin       = data.bulkRecombination.iphin
@@ -275,7 +274,6 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
     ipsi        = data.index_psi
 
     params      = data.params
-    paramsnodal = data.paramsnodal
 
     get_DOS!(iphin, bnode, data); get_DOS!(iphip, bnode, data)
     Nc   = data.tempDOS1[iphin]
@@ -414,7 +412,6 @@ bstorage!(f, u, bnode, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux})
 function bstorage!(f, u, bnode, data, ::Type{InterfaceModelTangentialFlux})
 
     params      = data.params
-    paramsnodal = data.paramsnodal
 
     #indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
     iphin       = data.bulkRecombination.iphin # integer index of φ_n
@@ -696,10 +693,6 @@ Function which builds right-hand side of electric charge carriers.
 """
 function RHSContinuityEquations!(f, u, node, data)
 
-    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
-        f[icc] = u[icc]
-    end
-
     # dependent on user information concerncing recombination
     addRecombination!(f, u, node, data, data.bulkRecombination.bulk_recomb_SRH)
     # dependent on user information concerncing generation
@@ -731,9 +724,22 @@ that the electron index is 1 and the hole index is 2.
 """
 function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
 
-    # set RHS to zero for all icc (stability purpose)
+    # set RHS to zero for all icc 
     for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
-        f[icc]  = u[icc]
+        f[icc]  = 0.0
+    end
+
+    # if ionic carriers are present
+    if isdefined(data.enableIonicCarriers, :regions)
+        for icc ∈ data.enableIonicCarriers.ionic_carriers
+            # set for stability purposes the right-hand side for ions in undefined regions to u[icc]
+            # this is needed to have u[icc] = 0 in this regions
+            if node.region ∈ data.enableIonicCarriers.regions
+                f[icc] = 0.0
+            else
+                f[icc] = u[icc]
+            end
+        end
     end
 
     RHSPoisson!(f, u, node, data)             # RHS of Poisson
@@ -816,12 +822,12 @@ end
 
 # The generation rate ``G``, which occurs in the right-hand side of the
 # continuity equations obeying the Beer-Lambert law.
-#only works in 1D till now; adjust node, when multidimensions
+# only works in 1D till now; adjust node, when multidimensions
 function generation(data, ireg, node, ::Type{GenerationBeerLambert})
 
     params = data.params
 
-    return data.λ2 * params.generationIncidentPhotonFlux[ireg] * params.generationAbsorption[ireg] * exp( - params.generationAbsorption[ireg] * node )
+    return data.λ2 * params.generationIncidentPhotonFlux[ireg] * params.generationAbsorption[ireg] * exp( - params.generationAbsorption[ireg] * (node - params.generationPeak))
 
 end
 
@@ -959,7 +965,7 @@ function flux!(f, u, edge, data, ::Type{ScharfetterGummelGraded})
     # k = 1 refers to left side, where as l = 2 refers to right side.
     for icc ∈ data.chargeCarrierList
 
-        j0                 =  params.chargeNumbers[icc] * q * params.UT
+        j0           = params.chargeNumbers[icc] * q * params.UT
 
         get_DOS!(icc, edge, data)
 

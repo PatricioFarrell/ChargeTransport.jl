@@ -176,16 +176,16 @@ Define the Params and ParamsNodal struct.
     end
 
     # initialize the space dependent doping (see FarrellPeschka2019, Computers & Mathematics with Applications, 2019).
-    NDoping  =   1.0e17  / cm^3
+    NDoping  = 1.0e17  / cm^3
     κ        = 500.0
     for icoord = 1:numberOfNodes
         paramsnodal.doping[icoord] = NDoping * 0.5 * ( 1.0  +  tanh( (0.1 - coord[icoord]/μm) *κ )  - ( 1.0 + tanh( (coord[icoord]/μm - 0.2) * κ )) )
     end
 
-    data.params                                         = params
-    data.paramsnodal                                    = paramsnodal
+    data.params      = params
+    data.paramsnodal = paramsnodal
 
-    ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
+    ctsys            = System(grid, data, unknown_storage=unknown_storage)
 
     if test == false
         println("*** done\n")
@@ -244,12 +244,12 @@ Define the Params and ParamsNodal struct.
     ################################################################################
 
     # initialize solution and starting vectors
-    initialGuess          = unknowns(ctsys)
-    solution              = unknowns(ctsys)
+    initialGuess  = unknowns(ctsys)
+    solution      = unknowns(ctsys)
 
-    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
+    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
 
-    initialGuess         .= solution
+    initialGuess .= solution
 
     if plotting
         # set legend for plotting routines. Either you can use the predefined labels or write your own.

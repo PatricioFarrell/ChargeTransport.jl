@@ -118,8 +118,19 @@ for ireg in 1:numberOfRegions
     params.generationUniform[ireg] = generationUniform[ireg]
 end
 ```
-for given data stored in `generationUniform`. Note that also Beer-Lambert generation is implemented but yet not well tested.
-Furthermore, we recommend to perform a time loop while increasing the generation rate and afterwards applying the scan protocol with a full generation due to numerical stability, see this [example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex108_PSC_uniform_Generation.jl).
+for given data stored in `generationUniform`. 
+If one wishes to use the Beer-Lambert generation, then the corresponding code would be
+```julia
+data.generationModel                          = GenerationBeerLambert
+
+for ireg in 1:numberOfRegions
+    params.generationIncidentPhotonFlux[ireg] = incidentPhotonFlux[ireg]
+    params.generationAbsorption[ireg]         = absorption[ireg]
+end
+
+params.generationPeak                         = generationPeak
+```
+Furthermore, we recommend performing a time loop while increasing the generation rate and afterwards applying the scan protocol with a full generation due to numerical stability, see this [example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex108_PSC_uniform_Generation.jl) or [this one](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex108_PSC_BeerLambert_Generation.jl).
 
 ## Example 4: Multi-dimensional problems
 It is also possible to perform multi-dimensional simulations.
