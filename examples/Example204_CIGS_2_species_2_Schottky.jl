@@ -16,7 +16,7 @@ using DelimitedFiles
 
 ## function to initialize the grid for a possble extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_pdoping_left, h_pdoping_right)
-    coord_pdoping_left    = collect(range(0.0, stop = h_pdoping_left, length = 2 * refinementfactor))
+    coord_pdoping_left    = collect(range(0.0, stop = h_pdoping_left, length = 3 * refinementfactor))
     coord_pdoping_right  = collect(range(h_pdoping_left, stop = (h_pdoping_left + h_pdoping_right), length = 3 * refinementfactor))
                                  
     coord            = glue(coord_pdoping_left, coord_pdoping_right)
@@ -98,7 +98,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     vn                = An * T^2 / (q*Nc)
     vp                = Ap * T^2 / (q*Nv)
     barrier_right     = Ev_CIGS + 0.4 * eV
-    barrier_left      = Ev_CIGS + 1.0 * eV
+    barrier_left      = Ev_CIGS + 0.6 * eV
 
     ## recombination parameters
     #=
@@ -122,7 +122,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     Na                = 1.0e15 / (cm^3)   
 
     ## we will impose this applied voltage on one boundary
-    voltageAcceptor   = -2.0 * V
+    voltageAcceptor   = -0.3 * V
 
     println("*** done\n")
     ################################################################################
@@ -139,9 +139,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.F                             .= [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA]
 
     data.bulkRecombination              = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                 bulk_recomb_Auger = true,
-                                                                 bulk_recomb_radiative = true,
-                                                                 bulk_recomb_SRH = true)
+                                                                 bulk_recomb_Auger = false,
+                                                                 bulk_recomb_radiative = false,
+                                                                 bulk_recomb_SRH = false)
 
     #enable_traps!(data)
     
@@ -303,19 +303,25 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     println("*** done\n")
 
+
     if plotting 
         ## ##### set legend for plotting routines #####
-        label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
-        label_density  = Array{String, 1}(undef, numberOfCarriers)
-        label_solution = Array{String, 1}(undef, numberOfCarriers)
+        #label_energy   = Array{String, 2}(undef, 2, numberOfCarriers) # band-edge energies and potential 
+        #label_density  = Array{String, 1}(undef, numberOfCarriers)
+        #label_solution = Array{String, 1}(undef, numberOfCarriers)
+        label_solution, label_density, label_energy = set_plotting_labels(data)
 
         ## for electrons 
-        label_energy[1, iphin] = "\$E_c-q\\psi\$";       label_energy[2, iphin] = "\$ - q \\varphi_n\$"
-        label_density[iphin]   = "n";                    label_solution[iphin]  = "\$ \\varphi_n\$"
+        label_energy[1, iphin] = "\$E_c-q\\psi\$"       
+        label_energy[2, iphin] = "\$ - q \\varphi_n\$"
+        label_density[iphin]   = "n";                    
+        label_solution[iphin]  = "\$ \\varphi_n\$"
 
         ## for holes 
-        label_energy[1, iphip] = "\$E_v-q\\psi\$";       label_energy[2, iphip] = "\$ - q \\varphi_p\$"
-        label_density[iphip]   = "p";                    label_solution[iphip]  = "\$ \\varphi_p\$"
+        label_energy[1, iphip] = "\$E_v-q\\psi\$"       
+        label_energy[2, iphip] = "\$ - q \\varphi_p\$"
+        label_density[iphip]   = "p";                    
+        label_solution[iphip]  = "\$ \\varphi_p\$"
 
         ## for traps 
         # label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
@@ -325,8 +331,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution,"Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Equilibrium", label_solution)
-        Plotter.figure()
+#        plot_solution(Plotter, grid, data, solution, "Equilibrium", label_solution)
+#        Plotter.figure()
     end
 
     ################################################################################
@@ -343,8 +349,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     biasValues = collect(range(0, stop = maxBias, length = biasSteps))
     chargeDensities = zeros(0)
 
-    w_device = 0.5    * cm  # width of device
-    z_device = 0.5    * cm  # depth of device
+    w_device = 1.0    * cm  # width of device
+    z_device = 1.0    * cm  # depth of device
 
     ## adjust Newton parameters
     control.tol_absolute      = 1.0e-10
@@ -377,7 +383,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         ## store CHARGE DENSITY in donor region (ZnO) --> SHOULD BE: CHARGE?
         #push!(chargeDensities,chargeDensity(ctsys,solution)[regionAcceptorLeft])
-        push!(chargeDensities,charge_density(ctsys,solution)[regionAcceptorLeft]+charge_density(ctsys,solution)[regionAcceptorRight])
+        push!(chargeDensities,w_device * z_device *(charge_density(ctsys,solution)[regionAcceptorLeft]+charge_density(ctsys,solution)[regionAcceptorRight]))
 
         initialGuess .= solution
 
@@ -388,6 +394,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## compute static capacitance: check this is correctly computed
     staticCapacitance = diff(chargeDensities) ./ diff(biasValues)
     writedlm( "staticCapacitance.csv",  staticCapacitance, ',')
+    writedlm( "chargeDensities.csv"  ,  chargeDensities  , ',')
     writedlm( "biasValues.csv"       ,  biasValues       , ',')
 
     ## plot solution and IV curve
@@ -396,8 +403,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.figure()
         plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_solution)
-        Plotter.figure()
+#        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(0)\$", label_solution)
+#        Plotter.figure()
         plot_IV(Plotter, biasValues,IV, biasValues[end], plotGridpoints = true)
         Plotter.figure()
         plot_IV(Plotter, biasValues,chargeDensities, biasValues[end], plotGridpoints = true)
