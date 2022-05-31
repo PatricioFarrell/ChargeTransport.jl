@@ -1032,8 +1032,6 @@ function flux!(f, u, edge, data, ::Type{DiffusionEnhanced})
     params      =   data.params
     paramsnodal =   data.paramsnodal
 
-    tolReg      =   1.0e-13
-
     ipsi        =   data.index_psi
     nodel       =   edge.node[2]
     nodek       =   edge.node[1]
@@ -1053,13 +1051,13 @@ function flux!(f, u, edge, data, ::Type{DiffusionEnhanced})
 
         etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
 
-        if abs( (etal - etak)/(etak + etal) ) > tolReg
-            g  = (etal - etak ) / ( log(data.F[icc](etal)) - log(data.F[icc](etak)) )
-        else
+        if ( log(data.F[icc](etal)) - log(data.F[icc](etak)) ) ≈ 0.0
             # regularization idea coming from Pietra-Jüngel scheme
             gk = exp(etak) / data.F[icc](etak)
             gl = exp(etal) / data.F[icc](etal)
-            g  = 0.5 * ( gk + gl )
+            g  = 0.5 * ( gk + gl )            
+        else
+            g  = (etal - etak ) / ( log(data.F[icc](etal)) - log(data.F[icc](etak)) )
         end
 
         bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
