@@ -445,10 +445,15 @@ function plot_solution(Plotter, grid, data::Data, solution, title, label_solutio
     Plotter.plot(coord, solution[ipsi,:], marker = marker, label = "\$\\psi\$", color="b", linewidth= 3)
 
     for icc ∈ data.chargeCarrierList
-        if icc ∈ data.enableIonicCarriers.ionic_carriers
-            Plotter.plot(subgrid./1, solution[icc, subregions], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
+        if isdefined(data.enableIonicCarriers, :regions)
+            if icc ∈ data.enableIonicCarriers.ionic_carriers
+                Plotter.plot(subgrid./1, solution[icc, subregions], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
+            else
+                Plotter.plot(coord./1, solution[icc,:], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
+            end
         else
             Plotter.plot(coord./1, solution[icc,:], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
+
         end
     end
 
