@@ -29,6 +29,9 @@ Abstract type for schottky contacts as boundary model.
 """
 abstract type SchottkyContact end
 
+
+abstract type SchottkyBarrierLowering end
+
 ############    inner boundary conditions     ############
 """
 $(TYPEDEF)
@@ -67,7 +70,7 @@ abstract type InterfaceModelIonCharge end
 Possible types of outer boundary model.
 
 """
-const OuterBoundaryModelType = Union{Type{OhmicContact}, Type{SchottkyContact}}
+const OuterBoundaryModelType = Union{Type{OhmicContact}, Type{SchottkyContact}, Type{SchottkyBarrierLowering}}
 
 
 """

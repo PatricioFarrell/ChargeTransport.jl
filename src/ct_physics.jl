@@ -249,6 +249,48 @@ function breaction!(f, u, bnode, data,  ::Type{SchottkyContact})
 
 end
 
+"""
+$(TYPEDSIGNATURES)
+Creates Schottky boundary conditions with additional lowering.
+Note that this code is still experimental and can only be used for an electric potential which is bend downwards.
+
+"""
+function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
+
+    params        = data.params
+    ibreg         = bnode.region
+
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
+    iphin       = data.bulkRecombination.iphin
+    iphip       = data.bulkRecombination.iphip
+
+    # based on user index and regularity of solution quantities or integers are used
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+    looplist    = (iphin, iphip)
+    ipsi        = data.index_psi
+
+    for icc in 1:length(looplist)
+
+        get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
+        Ni     = data.tempDOS1[icc]
+        Ei     = data.tempBEE1[icc]
+        eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
+
+        f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - data.params.bDensitiesEQ[icc, bnode.region]  )
+
+    end
+
+    barrier       = -  (u[ipsi]  - params.SchottkyBarrier[ibreg]/q - params.contactVoltage[ibreg])
+    
+    if data.λ1 == 0.0
+        f[ipsi] =  (2.0)^50 *   (4.0 * pi * ε0^2 *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
+    else
+        f[ipsi] = 1/data.λ1 *   (4.0 * pi * ε0^2 *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
+    end
+
+end
+
 
 # This breaction! function is chosen when no interface model is chosen.
 breaction!(f, u, bnode, data, ::Type{InterfaceModelNone}) = emptyFunction()
@@ -458,6 +500,8 @@ bflux!(f, u, bedge, data, ::Type{InterfaceModelNone})        = emptyFunction()
 
 bflux!(f, u, bedge, data, ::Type{OhmicContact})              = emptyFunction()
 bflux!(f, u, bedge, data, ::Type{SchottkyContact})           = emptyFunction()
+
+bflux!(f, u, bedge, data, ::Type{SchottkyBarrierLowering})   = emptyFunction()
 bflux!(f, u, bedge, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
 
 
@@ -796,6 +840,9 @@ storage!(f, u, node, data) = storage!(f, u, node, data, data.modelType)
 storage!(f, u, node, data, ::Type{Stationary})  = emptyFunction()
 
 
+storage!(f, u, node, data, ::Type{Transient}) = storage!(f, u, node, data, data.calculationType) 
+
+storage!(f, u, node, data, ::Type{InEquilibrium}) = emptyFunction()
 """
 $(TYPEDSIGNATURES)
 
@@ -809,7 +856,7 @@ and for the electrostatic potential
 ``f[ψ] = 0``.
 
 """
-function storage!(f, u, node, data, ::Type{Transient})
+function storage!(f, u, node, data, ::Type{OutOfEquilibrium})
 
     params = data.params
     ipsi   = data.index_psi

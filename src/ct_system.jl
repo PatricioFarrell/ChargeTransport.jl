@@ -245,6 +245,11 @@ mutable struct Params
     """
     SchottkyBarrier              ::  Array{Float64,1}
 
+
+    """
+    An array containing information on the applied bias at each outer boundary.
+    """
+    contactVoltage               ::  Array{Float64, 1}
     ###############################################################
     ####                  number of carriers                   ####
     ###############################################################
@@ -287,6 +292,12 @@ mutable struct Params
     when assuming Schottky contacts.
     """
     bVelocity                    ::  Array{Float64,2}
+
+    """
+    An array for the given equilibrium densities for Schottky contact Barrier Lowering.
+
+    """
+    bDensitiesEQ                 ::  Array{Float64,2}
 
 
     ###############################################################
@@ -359,6 +370,11 @@ mutable struct Params
     A region dependent dielectric constant.
     """
     dielectricConstant           ::  Array{Float64,1}
+
+    """
+    A region dependent image force dielectric constant.
+    """
+    dielectricConstantImageForce ::  Array{Float64,1}
 
     """
     A region dependent array for the prefactor in the generation process which is the
@@ -664,6 +680,7 @@ function Params(grid, numberOfCarriers)
     ####              number of boundary regions               ####
     ###############################################################
     params.SchottkyBarrier              = spzeros(Float64, numberOfBoundaryRegions)
+    params.contactVoltage               = spzeros(Float64, numberOfBoundaryRegions)
 
     ###############################################################
     ####                  number of carriers                   ####
@@ -678,6 +695,7 @@ function Params(grid, numberOfCarriers)
     params.bMobility                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDoping                      = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    params.bDensitiesEQ                 = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
 
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
@@ -704,6 +722,7 @@ function Params(grid, numberOfCarriers)
     ####                   number of regions                   ####
     ###############################################################
     params.dielectricConstant           = spzeros(Float64, numberOfRegions)
+    params.dielectricConstantImageForce = spzeros(Float64, numberOfRegions)
     params.generationUniform            = spzeros(Float64, numberOfRegions)
     params.generationIncidentPhotonFlux = spzeros(Float64, numberOfRegions)
     params.generationAbsorption         = spzeros(Float64, numberOfRegions)
@@ -734,7 +753,6 @@ function ParamsNodal(grid, numberOfCarriers)
     ###############################################################
     paramsnodal.dielectricConstant      = spzeros(Float64, numberOfNodes)
     paramsnodal.doping                  = spzeros(Float64, numberOfNodes)
-
 
     ###############################################################
     ####          number of nodes x number of carriers         ####
@@ -1125,6 +1143,14 @@ function __set_contact!(ctsys, ibreg, Δu, ::Type{SchottkyContact})
     # set Schottky barrier and applied voltage
     ctsys.fvmsys.boundary_values[ipsi,  ibreg] = (ctsys.data.params.SchottkyBarrier[ibreg]/q ) + Δu
     ctsys.fvmsys.boundary_factors[ipsi, ibreg] = VoronoiFVM.Dirichlet
+
+end
+
+# For schottky contacts with barrier lowering
+function __set_contact!(ctsys, ibreg, Δu, ::Type{SchottkyBarrierLowering})
+
+    # set Schottky barrier and applied voltage
+    ctsys.data.params.contactVoltage[ibreg] = Δu
 
 end
 
