@@ -337,10 +337,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     control                   = NewtonControl()
     control.verbose           = verbose
     control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-5
-    control.tol_relative      = 1.0e-5
+    control.tol_absolute      = 1.0e-10
+    control.tol_relative      = 1.0e-10
     control.handle_exceptions = true
-    control.tol_round         = 1.0e-5
+    control.tol_round         = 1.0e-10
     control.max_round         = 5
     control.damp_initial      = 0.5
     control.damp_growth       = 1.21 # >= 1
@@ -383,53 +383,26 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ################################################################################
     if test == false
-        println("Loop for generation")
+        println("Upward scan with increasing bias and generation")
     end
     ################################################################################
 
     data.calculationType = OutOfEquilibrium
-
-    # these values are needed for putting the generation slightly on
-    I      = collect(27:-1:0.0)
-    LAMBDA = 10 .^ (-I)
-
-    for istep = 1:length(I)-1
-
-        ## turn slowly generation on
-        data.λ2   = LAMBDA[istep + 1]
-
-        if test == false
-            println("increase generation with λ2 = $(data.λ2)")
-        end
-
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
-
-        initialGuess .= solution
-
-    end # generation loop
-
-    if test == false
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
-        println("IV Measurement loop")
-    end
-    ################################################################################
-
     ## primary data for I-V scan protocol
     scanrate      = 1.0 * V/s
-    number_tsteps = 41
+    number_tsteps = 21
     endVoltage    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     tend          = endVoltage/scanrate
     tvalues       = range(0, stop = tend, length = number_tsteps)
 
-    ## for saving I-V data
-    IV            = zeros(0) # for IV values
-    biasValues    = zeros(0) # for bias values
+    # these values are needed for putting the generation slightly on
+    I      = collect(length(tvalues):-1:0.0)
+    LAMBDA = 10 .^ (-I)
 
     for istep = 2:number_tsteps
+
+        ## turn slowly generation on
+        data.λ2   = LAMBDA[istep + 1]
 
         t  = tvalues[istep]       # Actual time
         Δu = t * scanrate         # Applied voltage
@@ -438,7 +411,47 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
+            println("increase generation with λ2 = $(data.λ2)")
             println("time value: t = $(t)")
+        end
+
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+
+        initialGuess .= solution
+
+    end # time loop
+
+    if plotting
+        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(voltageAcceptor)", label_energy)
+        Plotter.figure()
+        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(voltageAcceptor)", label_density)
+        Plotter.figure()
+        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(voltageAcceptor)", label_solution)
+    end
+
+    if test == false
+        println("*** done\n")
+    end
+
+    ################################################################################
+    if test == false
+        println("Reverse scan protocol")
+    end
+    ################################################################################
+    ## for saving I-V data
+    IV            = zeros(0) # for IV values
+    biasValues    = zeros(0) # for bias values
+
+    for istep = number_tsteps:-1:2
+
+        t  = tvalues[istep]       # Actual time
+        Δu = t * scanrate         # Applied voltage
+        Δt = t - tvalues[istep-1] # Time step size
+
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
+
+        if test == false
+            println("applied voltage: Δu = $(Δu)")
         end
 
         solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
@@ -453,12 +466,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     end # time loop
 
+
     if plotting
-        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(biasValues[end])", label_energy)
-        Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(biasValues[end])", label_density)
-        Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(biasValues[end])", label_solution)
         Plotter.figure()
         plot_IV(Plotter, biasValues, -IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
     end
@@ -475,7 +484,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 26.090852303911262
+    testval = 28.85201675757966
     main(test = true) ≈ testval 
 end
 
