@@ -250,8 +250,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.tol_relative   = 1.0e-10
     control.tol_round      = 1.0e-4
     control.damp_initial   = 0.5
-    control.damp_growth    = 1.2
-    control.max_iterations = 30
+    control.damp_growth    = 1.61
+    control.max_iterations = 100
     control.max_round      = 3
 
     if test == false
@@ -310,24 +310,23 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # with fixed timestep sizes we can calculate the times
     # a priori
     tvalues              = range(0.0, stop = tend, length = number_tsteps)
+    Δt                   = tvalues[2] - tvalues[1]</code></pre><p>these values are needed for putting the generation slightly on</p><pre><code class="language-julia hljs">    I      = collect(20:-1:0.0)
+    LAMBDA = 10 .^ (-I)
 
-    steps                = 20
-    I                    = collect(steps:-1:0.0)
-    LAMBDA               = 10 .^ (I)
-    Δt                   = tvalues[2] - tvalues[1]
+    for istep = 1:length(I)-1
 
-    for i in 1:length(LAMBDA)
-
-        data.λ2 = 1 / (LAMBDA[i] )
+        # turn slowly generation on
+        data.λ2   = LAMBDA[istep + 1]
 
         if test == false
             println(&quot;increase generation with λ2 = $(data.λ2)&quot;)
         end
 
-        VoronoiFVM.solve!(solution, initialGuess, ctsys, control = control, tstep=Δt)
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 
-        initialGuess = solution
-    end
+        initialGuess .= solution
+
+    end # generation loop
 
     if test == false
         println(&quot;*** done\n&quot;)
@@ -378,7 +377,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         plot_IV(Plotter, biasValues,IV, &quot;bias \$\\Delta u\$ = $(biasValues[end])&quot;, plotGridpoints = true)
     end
 
-    testval = solution[iphit, 17]
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
     if test == false
@@ -388,7 +387,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.0245795906936774
+    testval = 12.643615416630238
     main(test = true, unknown_storage=:dense) ≈ testval &amp;&amp; main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
@@ -396,4 +395,4 @@ if test == false
     println(&quot;This message should show when the PIN module has successfully recompiled.&quot;)
 end
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex108_PSC_uniform_Generation/">« PSC device with uniform generation rate (1D).</a><a class="docs-footer-nextpage" href="../Ex110_PSC_surface_recombination/">PSC device with surface recombination (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.19 on <span class="colophon-date" title="Monday 13 June 2022 17:05">Monday 13 June 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex108_PSC_uniform_Generation/">« PSC device with uniform generation rate (1D).</a><a class="docs-footer-nextpage" href="../Ex110_PSC_surface_recombination/">PSC device with surface recombination (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.19 on <span class="colophon-date" title="Friday 8 July 2022 12:49">Friday 8 July 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
