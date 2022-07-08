@@ -31,7 +31,7 @@ include("ct_datatypes.jl")
 export StandardFuncSet, QType
 
 export OuterBoundaryModelType, OuterBoundaryModelType, InterfaceModelType
-export OhmicContact, SchottkyContact
+export OhmicContact, SchottkyContact, SchottkyBarrierLowering
 export InterfaceModelNone, InterfaceModelSurfaceReco, InterfaceModelTangentialFlux, InterfaceModelDiscontqF
 export InterfaceModelIonCharge, InterfaceModelSurfaceRecoAndTangentialFlux
 

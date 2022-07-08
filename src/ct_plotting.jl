@@ -427,13 +427,12 @@ function plot_solution(Plotter, grid, data::Data, solution, title, label_solutio
     # this is needed to only plot present ionic charge carrier in respective defined regions
     if isdefined(data.enableIonicCarriers, :regions)
         regions    = grid[CellRegions]
+
         subregions = zeros(Int64, 0)
         for ix in 1:length(data.enableIonicCarriers.regions)
             subreg = findall(x -> x == data.enableIonicCarriers.regions[ix], regions)
             append!(subregions, subreg)
-            if data.enableIonicCarriers.regions[ix] != regions[end]
-                push!(subregions, subregions[end]+1)
-            end
+            push!(subregions, subregions[end]+1)
         end
         subgrid    = coord[subregions]
     end

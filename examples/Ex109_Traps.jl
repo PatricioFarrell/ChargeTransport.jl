@@ -256,8 +256,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.tol_relative   = 1.0e-10
     control.tol_round      = 1.0e-4
     control.damp_initial   = 0.5
-    control.damp_growth    = 1.2
-    control.max_iterations = 30
+    control.damp_growth    = 1.61
+    control.max_iterations = 100
     control.max_round      = 3
 
     if test == false
@@ -316,24 +316,27 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## with fixed timestep sizes we can calculate the times
     ## a priori
     tvalues              = range(0.0, stop = tend, length = number_tsteps)
-
-    steps                = 20
-    I                    = collect(steps:-1:0.0)
-    LAMBDA               = 10 .^ (I)
     Δt                   = tvalues[2] - tvalues[1]
 
-    for i in 1:length(LAMBDA)
 
-        data.λ2 = 1 / (LAMBDA[i] )
+    # these values are needed for putting the generation slightly on
+    I      = collect(20:-1:0.0)
+    LAMBDA = 10 .^ (-I)
+
+    for istep = 1:length(I)-1
+
+        ## turn slowly generation on
+        data.λ2   = LAMBDA[istep + 1]
 
         if test == false
             println("increase generation with λ2 = $(data.λ2)")
         end
 
-        VoronoiFVM.solve!(solution, initialGuess, ctsys, control = control, tstep=Δt)
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 
-        initialGuess = solution
-    end
+        initialGuess .= solution
+
+    end # generation loop
 
     if test == false
         println("*** done\n")
@@ -384,7 +387,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         plot_IV(Plotter, biasValues,IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
     end
 
-    testval = solution[iphit, 17]
+    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
 
     if test == false
@@ -394,7 +397,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.0245795906936774
+    testval = 12.643615416630238
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

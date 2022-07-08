@@ -192,10 +192,24 @@ function breaction!(f, u, bnode, data, ::Type{OhmicContact})
         # add charge carrier
         f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)
 
-        # boundary conditions for charge carriers are set in main program
-        f[icc]  = 0.0
-
     end
+
+    # add ionic carriers only in defined regions (otherwise get NaN error)
+    if isdefined(data.enableIonicCarriers, :regions)
+        for icc ∈ data.enableIonicCarriers.ionic_carriers
+            if bnode.cellregions[1] ∈ data.enableIonicCarriers.regions
+                get_DOS!(icc, bnode, data)
+                Ni      = data.tempDOS1[icc]
+                eta     = etaFunction(u, bnode, data, icc) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
+
+                # subtract doping
+                f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )
+                # add charge carrier
+                f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)
+            end
+        end
+    end
+
     f[ipsi] = f[ipsi] - paramsnodal.doping[bnode.index]
 
     f[ipsi] = - data.λ1 * 1 / tiny_penalty_value *  q * f[ipsi]
@@ -249,6 +263,48 @@ function breaction!(f, u, bnode, data,  ::Type{SchottkyContact})
 
 end
 
+"""
+$(TYPEDSIGNATURES)
+Creates Schottky boundary conditions with additional lowering.
+Note that this code is still experimental and can only be used for an electric potential which is bend downwards.
+
+"""
+function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
+
+    params        = data.params
+    ibreg         = bnode.region
+
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
+    iphin       = data.bulkRecombination.iphin
+    iphip       = data.bulkRecombination.iphip
+
+    # based on user index and regularity of solution quantities or integers are used
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+    looplist    = (iphin, iphip)
+    ipsi        = data.index_psi
+
+    for icc in 1:length(looplist)
+
+        get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
+        Ni     = data.tempDOS1[icc]
+        Ei     = data.tempBEE1[icc]
+        eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
+
+        f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - data.params.bDensitiesEQ[icc, bnode.region]  )
+
+    end
+
+    barrier       = -  (u[ipsi]  - params.SchottkyBarrier[ibreg]/q - params.contactVoltage[ibreg])
+    
+    if data.λ1 == 0.0
+        f[ipsi] =  (2.0)^50 *   (4.0 * pi * ε0^2 *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
+    else
+        f[ipsi] = 1/data.λ1 *   (4.0 * pi * ε0^2 *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
+    end
+
+end
+
 
 # This breaction! function is chosen when no interface model is chosen.
 breaction!(f, u, bnode, data, ::Type{InterfaceModelNone}) = emptyFunction()
@@ -270,8 +326,6 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
     iphin       = data.bulkRecombination.iphin # integer index of φ_n
     iphip       = data.bulkRecombination.iphip # integer index of φ_p
     looplist    = (iphin, iphip)
-
-    ipsi        = data.index_psi
 
     params      = data.params
 
@@ -565,6 +619,8 @@ bflux!(f, u, bedge, data, ::Type{InterfaceModelNone})        = emptyFunction()
 
 bflux!(f, u, bedge, data, ::Type{OhmicContact})              = emptyFunction()
 bflux!(f, u, bedge, data, ::Type{SchottkyContact})           = emptyFunction()
+
+bflux!(f, u, bedge, data, ::Type{SchottkyBarrierLowering})   = emptyFunction()
 bflux!(f, u, bedge, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
 
 
@@ -785,6 +841,21 @@ function RHSPoisson!(f, u, node, data)
 
     end
 
+    # add ionic carriers only in defined regions (otherwise get NaN error)
+    if isdefined(data.enableIonicCarriers, :regions)
+        for icc ∈ data.enableIonicCarriers.ionic_carriers
+            if node.region ∈ data.enableIonicCarriers.regions
+                get_DOS!(icc, node, data)
+
+                Ni      = data.tempDOS1[icc]
+                eta     = etaFunction(u, node, data, icc)
+
+                f[ipsi] = f[ipsi] - data.params.chargeNumbers[icc] * ( data.params.doping[icc, node.region] )  # subtract doping
+                f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * Ni * data.F[icc](eta)   # add charge carrier
+            end
+        end
+    end
+
     f[ipsi]     = f[ipsi] - data.paramsnodal.doping[node.index]
 
     f[ipsi]     = - q * data.λ1 * f[ipsi]
@@ -824,19 +895,6 @@ function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
     # set RHS to zero for all icc 
     for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
         f[icc]  = 0.0
-    end
-
-    # if ionic carriers are present
-    if isdefined(data.enableIonicCarriers, :regions)
-        for icc ∈ data.enableIonicCarriers.ionic_carriers
-            # set for stability purposes the right-hand side for ions in undefined regions to u[icc]
-            # this is needed to have u[icc] = 0 in this regions
-            if node.region ∈ data.enableIonicCarriers.regions
-                f[icc] = 0.0
-            else
-                f[icc] = u[icc]
-            end
-        end
     end
 
     RHSPoisson!(f, u, node, data)             # RHS of Poisson
@@ -890,6 +948,9 @@ storage!(f, u, node, data) = storage!(f, u, node, data, data.modelType)
 storage!(f, u, node, data, ::Type{Stationary})  = emptyFunction()
 
 
+storage!(f, u, node, data, ::Type{Transient}) = storage!(f, u, node, data, data.calculationType) 
+
+storage!(f, u, node, data, ::Type{InEquilibrium}) = emptyFunction()
 """
 $(TYPEDSIGNATURES)
 The storage term for time-dependent problems.
@@ -899,7 +960,7 @@ Hence, we have
 and for the electrostatic potential
 ``f[ψ] = 0``.
 """
-function storage!(f, u, node, data, ::Type{Transient})
+function storage!(f, u, node, data, ::Type{OutOfEquilibrium})
 
     params = data.params
     ipsi   = data.index_psi

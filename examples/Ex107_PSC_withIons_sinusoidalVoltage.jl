@@ -19,7 +19,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -455,7 +455,7 @@ end #  main
 
 function test()
     testval = 31.906313312098675
-    main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
+    main(test = true, unknown_storage=:sparse) ≈ testval 
 end
 
 if test == false

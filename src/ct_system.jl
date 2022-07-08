@@ -302,6 +302,11 @@ mutable struct Params
     """
     SchottkyBarrier              ::  Array{Float64,1}
 
+
+    """
+    An array containing information on the applied bias at each outer boundary.
+    """
+    contactVoltage               ::  Array{Float64, 1}
     ###############################################################
     ####                  number of carriers                   ####
     ###############################################################
@@ -344,6 +349,12 @@ mutable struct Params
     when assuming Schottky contacts.
     """
     bVelocity                    ::  Array{Float64,2}
+
+    """
+    An array for the given equilibrium densities for Schottky contact Barrier Lowering.
+
+    """
+    bDensitiesEQ                 ::  Array{Float64,2}
 
 
     ###############################################################
@@ -416,6 +427,11 @@ mutable struct Params
     A region dependent dielectric constant.
     """
     dielectricConstant           ::  Array{Float64,1}
+
+    """
+    A region dependent image force dielectric constant.
+    """
+    dielectricConstantImageForce ::  Array{Float64,1}
 
     """
     A region dependent array for the prefactor in the generation process which is the
@@ -734,6 +750,7 @@ function Params(grid, numberOfCarriers)
     ####              number of boundary regions               ####
     ###############################################################
     params.SchottkyBarrier              = spzeros(Float64, numberOfBoundaryRegions)
+    params.contactVoltage               = spzeros(Float64, numberOfBoundaryRegions)
 
     ###############################################################
     ####                  number of carriers                   ####
@@ -748,6 +765,7 @@ function Params(grid, numberOfCarriers)
     params.bMobility                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDoping                      = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    params.bDensitiesEQ                 = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
 
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
@@ -774,6 +792,7 @@ function Params(grid, numberOfCarriers)
     ####                   number of regions                   ####
     ###############################################################
     params.dielectricConstant           = spzeros(Float64, numberOfRegions)
+    params.dielectricConstantImageForce = spzeros(Float64, numberOfRegions)
     params.generationUniform            = spzeros(Float64, numberOfRegions)
     params.generationIncidentPhotonFlux = spzeros(Float64, numberOfRegions)
     params.generationAbsorption         = spzeros(Float64, numberOfRegions)
@@ -804,7 +823,6 @@ function ParamsNodal(grid, numberOfCarriers)
     ###############################################################
     paramsnodal.dielectricConstant      = spzeros(Float64, numberOfNodes)
     paramsnodal.doping                  = spzeros(Float64, numberOfNodes)
-
 
     ###############################################################
     ####          number of nodes x number of carriers         ####
@@ -956,15 +974,24 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
     physics      = VoronoiFVM.Physics(data        = data,
                                       flux        = flux!,
                                       reaction    = reaction!,
-                                      breaction   = breaction!,
                                       storage     = storage!,
+                                      breaction   = breaction!,
                                       bstorage    = bstorage!,
                                       bflux       = bflux!
                                       )
 
     ctsys.fvmsys = VoronoiFVM.System(grid, physics, unknown_storage = unknown_storage)
 
-    for icc ∈ data.chargeCarrierList # first simply define all charge carriers on whole domain
+    ################### enabling species ########################
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
+    iphin       = data.bulkRecombination.iphin
+    iphip       = data.bulkRecombination.iphip
+
+    # based on user index and regularity of solution quantities or integers are used and depicted here
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+
+    for icc ∈ (iphin, iphip) # electrons and holes defined on whole domain
         enable_species!(ctsys.fvmsys, icc, 1:data.params.numberOfRegions)
     end
 
@@ -990,6 +1017,8 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
     end
 
     enable_species!(ctsys.fvmsys, data.index_psi, 1:data.params.numberOfRegions) # ipsi defined on whole domain
+
+    ################### enabling species ########################
 
     # for detection of number of species
     VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species_sys)
@@ -1190,6 +1219,14 @@ function __set_contact!(ctsys, ibreg, Δu, ::Type{SchottkyContact})
 
 end
 
+# For schottky contacts with barrier lowering
+function __set_contact!(ctsys, ibreg, Δu, ::Type{SchottkyBarrierLowering})
+
+    # set Schottky barrier and applied voltage
+    ctsys.data.params.contactVoltage[ibreg] = Δu
+
+end
+
 
 function __set_contact!(ctsys, ibreg, Δu, ::Type{OhmicContact})
 
@@ -1242,14 +1279,14 @@ function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{InterfaceModelDiscontqF})
 
     if ibreg == 1
 
-        for icc ∈ [iphin, iphip]
+        for icc ∈ (iphin, iphip)
             ctsys.fvmsys.boundary_factors[icc.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
             ctsys.fvmsys.boundary_values[icc.regionspec[ibreg], ibreg]  = Δu
         end
 
     else
 
-        for icc ∈ [iphin, iphip]
+        for icc ∈ (iphin, iphip)
             ctsys.fvmsys.boundary_factors[icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] = VoronoiFVM.Dirichlet
             ctsys.fvmsys.boundary_values[ icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] =  Δu
         end
@@ -1287,7 +1324,7 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
     # initialize solution and starting vectors
     initialGuess               = unknowns(ctsys)
     solution                   = unknowns(ctsys)
-    @views initialGuess       .= 0.0
+    initialGuess              .= 0.0
 
     # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
     I      = collect(nonlinear_steps:-1:0.0)
