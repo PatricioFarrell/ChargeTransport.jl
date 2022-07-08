@@ -332,7 +332,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
             println("increase generation with λ2 = $(data.λ2)")
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 
         initialGuess .= solution
 
@@ -397,7 +397,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 12.643615416630247
+    testval = 12.643615416630238
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
