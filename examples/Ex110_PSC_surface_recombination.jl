@@ -19,7 +19,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -463,7 +463,9 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
             label_solution = Array{String, 1}(undef, numberOfCarriers)
             label_solution[iphin]  = "\$ \\varphi_n\$"; label_solution[iphip]  = "\$ \\varphi_p\$"; label_solution[iphia]  = "\$ \\varphi_a\$"
 
+            PyPlot.clf()
             plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+            PyPlot.pause(0.5)
         end
 
     end # time loop
@@ -482,7 +484,7 @@ end # main
 
 function test()
     testval = 50.608171445993875
-    main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
+    main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 if test == false

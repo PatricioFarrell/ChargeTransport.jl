@@ -28,7 +28,7 @@ using GridVisualize
 ## It seems that this problem is common: https://discourse.julialang.org/t/could-not-load-library-librsvg-very-strange-error/21276
 using PyPlot
 
-function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true, unknown_storage=:dense)
+function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -477,7 +477,7 @@ end #  main
 
 function test()
     testval = -4.068687295374785
-    main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
+    main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 if test == false

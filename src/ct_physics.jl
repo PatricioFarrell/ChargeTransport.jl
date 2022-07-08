@@ -181,7 +181,16 @@ function breaction!(f, u, bnode, data, ::Type{OhmicContact})
     # parameters
     ipsi        = data.index_psi  # final index for electrostatic potential
 
-    for icc ∈ data.chargeCarrierList # quantities or integer indices
+    iphin       = data.bulkRecombination.iphin
+    iphip       = data.bulkRecombination.iphip
+
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+
+    looplist    = (iphin, iphip)
+
+    # electrons and holes entering right hand-side for BC of ipsi
+    for icc ∈ 1:length(looplist) # quantities or integer indices
 
         get_DOS!(icc, bnode, data)
         Ni      = data.tempDOS1[icc]
@@ -192,10 +201,24 @@ function breaction!(f, u, bnode, data, ::Type{OhmicContact})
         # add charge carrier
         f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)
 
-        # boundary conditions for charge carriers are set in main program
-        f[icc]  = 0.0
-
     end
+
+    # add ionic carriers only in defined regions (otherwise get NaN error)
+    if isdefined(data.enableIonicCarriers, :regions)
+        for icc ∈ data.enableIonicCarriers.ionic_carriers
+            if bnode.cellregions[1] ∈ data.enableIonicCarriers.regions
+                get_DOS!(icc, bnode, data)
+                Ni      = data.tempDOS1[icc]
+                eta     = etaFunction(u, bnode, data, icc) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
+
+                # subtract doping
+                f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )
+                # add charge carrier
+                f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)
+            end
+        end
+    end
+
     f[ipsi] = f[ipsi] - paramsnodal.doping[bnode.index]
 
     f[ipsi] = - data.λ1 * 1 / tiny_penalty_value *  q * f[ipsi]
@@ -312,8 +335,6 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
     iphin       = data.bulkRecombination.iphin # integer index of φ_n
     iphip       = data.bulkRecombination.iphip # integer index of φ_p
     looplist    = (iphin, iphip)
-
-    ipsi        = data.index_psi
 
     params      = data.params
 
@@ -712,7 +733,15 @@ function RHSPoisson!(f, u, node, data)
     ####         right-hand side of nonlinear Poisson      ####
     ####         equation (space charge density)           ####
     ###########################################################
-    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+    iphin    = data.bulkRecombination.iphin
+    iphip    = data.bulkRecombination.iphip
+
+    iphin    = data.chargeCarrierList[iphin]
+    iphip    = data.chargeCarrierList[iphip]
+    looplist = (iphin, iphip)
+
+    # electrons and holes entering right hand-side of Poisson in each layer
+    for icc ∈ 1:length(looplist) # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
 
         get_DOS!(icc, node, data)
 
@@ -722,6 +751,21 @@ function RHSPoisson!(f, u, node, data)
         f[ipsi] = f[ipsi] - data.params.chargeNumbers[icc] * ( data.params.doping[icc, node.region] )  # subtract doping
         f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * Ni * data.F[icc](eta)   # add charge carrier
 
+    end
+
+    # add ionic carriers only in defined regions (otherwise get NaN error)
+    if isdefined(data.enableIonicCarriers, :regions)
+        for icc ∈ data.enableIonicCarriers.ionic_carriers
+            if node.region ∈ data.enableIonicCarriers.regions
+                get_DOS!(icc, node, data)
+
+                Ni      = data.tempDOS1[icc]
+                eta     = etaFunction(u, node, data, icc)
+
+                f[ipsi] = f[ipsi] - data.params.chargeNumbers[icc] * ( data.params.doping[icc, node.region] )  # subtract doping
+                f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * Ni * data.F[icc](eta)   # add charge carrier
+            end
+        end
     end
 
     f[ipsi]     = f[ipsi] - data.paramsnodal.doping[node.index]
@@ -771,19 +815,6 @@ function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
     # set RHS to zero for all icc 
     for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
         f[icc]  = 0.0
-    end
-
-    # if ionic carriers are present
-    if isdefined(data.enableIonicCarriers, :regions)
-        for icc ∈ data.enableIonicCarriers.ionic_carriers
-            # set for stability purposes the right-hand side for ions in undefined regions to u[icc]
-            # this is needed to have u[icc] = 0 in this regions
-            if node.region ∈ data.enableIonicCarriers.regions
-                f[icc] = 0.0
-            else
-                f[icc] = u[icc]
-            end
-        end
     end
 
     RHSPoisson!(f, u, node, data)             # RHS of Poisson

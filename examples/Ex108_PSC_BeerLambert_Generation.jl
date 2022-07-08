@@ -309,7 +309,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bDoping[iphin, bregionDonor]                 = Nd
 
     data.params                                         = params
-    ctsys                                               = System(grid, data, unknown_storage=:dense)
+    ctsys                                               = System(grid, data, unknown_storage=:sparse)
 
     if test == false
         println("*** done\n")
@@ -337,13 +337,13 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     control                   = NewtonControl()
     control.verbose           = verbose
     control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-10
-    control.tol_relative      = 1.0e-10
+    control.tol_absolute      = 1.0e-5
+    control.tol_relative      = 1.0e-5
     control.handle_exceptions = true
-    control.tol_round         = 1.0e-10
+    control.tol_round         = 1.0e-5
     control.max_round         = 5
     control.damp_initial      = 0.5
-    control.damp_growth       = 1.61 # >= 1
+    control.damp_growth       = 1.21 # >= 1
 
     if test == false
         println("*** done\n")
@@ -390,7 +390,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.calculationType = OutOfEquilibrium
 
     # these values are needed for putting the generation slightly on
-    I      = collect(20:-1:0.0)
+    I      = collect(27:-1:0.0)
     LAMBDA = 10 .^ (-I)
 
     for istep = 1:length(I)-1
@@ -475,7 +475,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 26.08352357348457
+    testval = 26.090852303911262
     main(test = true) ≈ testval 
 end
 

@@ -903,15 +903,24 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
     physics      = VoronoiFVM.Physics(data        = data,
                                       flux        = flux!,
                                       reaction    = reaction!,
-                                      breaction   = breaction!,
                                       storage     = storage!,
+                                      breaction   = breaction!,
                                       bstorage    = bstorage!,
                                       bflux       = bflux!
                                       )
 
     ctsys.fvmsys = VoronoiFVM.System(grid, physics, unknown_storage = unknown_storage)
 
-    for icc ∈ data.chargeCarrierList # first simply define all charge carriers on whole domain
+    ################### enabling species ########################
+    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
+    iphin       = data.bulkRecombination.iphin
+    iphip       = data.bulkRecombination.iphip
+
+    # based on user index and regularity of solution quantities or integers are used and depicted here
+    iphin       = data.chargeCarrierList[iphin]
+    iphip       = data.chargeCarrierList[iphip]
+
+    for icc ∈ (iphin, iphip) # electrons and holes defined on whole domain
         enable_species!(ctsys.fvmsys, icc, 1:data.params.numberOfRegions)
     end
 
@@ -930,6 +939,8 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelNone})
     end
 
     enable_species!(ctsys.fvmsys, data.index_psi, 1:data.params.numberOfRegions) # ipsi defined on whole domain
+
+    ################### enabling species ########################
 
     # for detection of number of species
     VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species_sys)
@@ -1206,14 +1217,14 @@ function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{InterfaceModelDiscontqF})
 
     if ibreg == 1
 
-        for icc ∈ [iphin, iphip]
+        for icc ∈ (iphin, iphip)
             ctsys.fvmsys.boundary_factors[icc.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
             ctsys.fvmsys.boundary_values[icc.regionspec[ibreg], ibreg]  = Δu
         end
 
     else
 
-        for icc ∈ [iphin, iphip]
+        for icc ∈ (iphin, iphip)
             ctsys.fvmsys.boundary_factors[icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] = VoronoiFVM.Dirichlet
             ctsys.fvmsys.boundary_values[ icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] =  Δu
         end
@@ -1251,7 +1262,7 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
     # initialize solution and starting vectors
     initialGuess               = unknowns(ctsys)
     solution                   = unknowns(ctsys)
-    @views initialGuess       .= 0.0
+    initialGuess              .= 0.0
 
     # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
     I      = collect(nonlinear_steps:-1:0.0)
