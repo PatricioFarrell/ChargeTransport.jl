@@ -284,7 +284,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
 
     for ireg in 1:numberOfRegions # interior region data
 
-        params.dielectricConstant[ireg]                 = ε[ireg]
+        params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
         ## effective DOS, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = NC[ireg]

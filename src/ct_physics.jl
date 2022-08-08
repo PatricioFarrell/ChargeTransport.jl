@@ -307,9 +307,9 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
     barrier       = -  (u[ipsi]  - params.SchottkyBarrier[ibreg]/q - params.contactVoltage[ibreg])
     
     if data.λ1 == 0.0
-        f[ipsi] =  (2.0)^50 *   (4.0 * pi * ε0^2 *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
+        f[ipsi] =  (2.0)^50 *   (4.0 * pi *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
     else
-        f[ipsi] = 1/data.λ1 *   (4.0 * pi * ε0^2 *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
+        f[ipsi] = 1/data.λ1 *   (4.0 * pi *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
     end
 
 end
@@ -931,8 +931,8 @@ function displacementFlux!(f, u, edge, data)
     ireg        =   edge.region
 
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
-    relPermitt  =   params.dielectricConstant[ireg]  + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2
-    f[ipsi]     = - ε0 * relPermitt * dpsi
+    dielConst   =   params.dielectricConstant[ireg]  + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2
+    f[ipsi]     = - dielConst * dpsi
 
 end
 

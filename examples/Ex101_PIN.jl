@@ -187,7 +187,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for ireg in 1:numberOfRegions           # interior region data
 
-        params.dielectricConstant[ireg]                 = εr
+        params.dielectricConstant[ireg]                 = εr * ε0
 
         ## effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
