@@ -121,7 +121,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ScharfetterGummel
+    data.fluxApproximation            .= ScharfetterGummel
 
     if test == false
         println("*** done\n")

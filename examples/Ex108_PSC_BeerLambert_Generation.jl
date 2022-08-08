@@ -232,7 +232,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundaryType[bregionDonor]    = OhmicContact
     data.generationModel               = GenerationBeerLambert
     data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
-    data.fluxApproximation             = ExcessChemicalPotential
+    data.fluxApproximation            .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")

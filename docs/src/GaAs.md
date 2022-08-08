@@ -95,7 +95,7 @@ data.boundaryType[bregionDonor]    = OhmicContact
 
 # choose flux discretization scheme: ScharfetterGummel ScharfetterGummelGraded,
 # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-data.fluxApproximation             = ExcessChemicalPotential
+data.fluxApproximation            .= ExcessChemicalPotential
 ```
 
 Next, we fill in pre-defined or externally read in parameter values.

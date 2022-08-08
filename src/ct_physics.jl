@@ -244,7 +244,7 @@ no electrical field and a quasi Fermi level equal to the Schottky barrier ``\\ph
 ``n_{\\alpha, 0}= N_\\alpha \\mathcal{F}_\\alpha \\Bigl( z_\\alpha/ U_T (E_\\alpha - \\phi_S) / q \\Bigr). ``
 
 """
-function breaction!(f, u, bnode, data,  ::Type{SchottkyContact})
+function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
 
     params        = data.params
 
@@ -913,311 +913,320 @@ $(TYPEDSIGNATURES)
 Master flux functions which enters VoronoiFVM. Flux discretization scheme is chosen in two steps. First, we need
 to see, if we are in or out of equilibrium. If, InEquilibrium, then
 no flux is passed. If outOfEquilibrium, we choose the flux approximation
-which the user chose.
+which the user chose for each charge carrier. For the displacement flux we use a finite difference approach.
 
 """
 flux!(f, u, edge, data) = flux!(f, u, edge, data, data.calculationType)
 
-function flux!(f, u, edge, data, ::Type{InEquilibrium})
 
-    params      = data.params
-    paramsnodal = data.paramsnodal
-
-    ipsi        = data.index_psi # integer index or Quantity
-    ireg        = edge.region
-    nodel       = edge.node[2]
-    nodek       = edge.node[1]
-
-    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
-    f[ipsi]     = - (params.dielectricConstant[ireg] + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2) * ε0 * dpsi
-
-end
-
-flux!(f, u, edge, data, ::Type{OutOfEquilibrium}) = flux!(f, u, edge, data, data.fluxApproximation)
-
-
-# The classical Scharfetter-Gummel flux scheme. This also works for space-dependent
-# band-edge energy, but not for space-dependent effective DOS.
-function flux!(f, u, edge, data, ::Type{ScharfetterGummel})
+# Finite difference discretization of the displacement flux.
+function displacementFlux!(f, u, edge, data)
 
     params      =   data.params
     paramsnodal =   data.paramsnodal
 
     ipsi        =   data.index_psi
-    nodel       =   edge.node[2]
-    nodek       =   edge.node[1]
+    nodel       =   edge.node[2]   # left node
+    nodek       =   edge.node[1]   # right node
     ireg        =   edge.region
 
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
-    f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
+    relPermitt  =   params.dielectricConstant[ireg]  + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2
+    f[ipsi]     = - ε0 * relPermitt * dpsi
 
-    # k = 1 refers to left side, where as l = 2 refers to right side.
-    for icc ∈ data.chargeCarrierList
+end
 
-        get_DOS!(icc, edge, data)
 
-        Nik          = data.tempDOS1[icc]
-        Nil          = data.tempDOS2[icc]
+function flux!(f, u, edge, data, ::Type{InEquilibrium})
+    ## discretization of the displacement flux (LHS of Poisson equation)
+    displacementFlux!(f, u, edge, data)
+end
 
-        j0           =  params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT
+function flux!(f, u, edge, data, ::Type{OutOfEquilibrium}) 
 
-        etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
-
-        bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
-
-        bp, bm       = fbernoulli_pm(params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT)
-        f[icc]       = - j0 * ( bm * Nil * data.F[icc](etal) - bp * Nik * data.F[icc](etak) )
-
+    ## discretization of the displacement flux (LHS of Poisson equation)
+    displacementFlux!(f, u, edge, data)
+    
+    ## add within this loop the chosen flux discretization scheme for
+    ## each charge carrier
+    ## Note that we are passing here with icc an Integer which we
+    ## need to detect within the chosen flux discretization the type (AbstractQuantity or Integer) 
+    ## of charge carrier
+    for icc = 1:data.params.numberOfCarriers
+        chargeCarrierFlux!(f, u, edge, data, icc, data.fluxApproximation[icc])
     end
+    
+end
+
+
+# The classical Scharfetter-Gummel flux scheme. This also works for space-dependent
+# band-edge energy, but not for space-dependent effective DOS.
+function chargeCarrierFlux!(f, u, edge, data, icc, ::Type{ScharfetterGummel})
+
+    params       = data.params
+    paramsnodal  = data.paramsnodal
+
+    icc          = data.chargeCarrierList[icc]
+    ipsi         = data.index_psi
+    nodel        = edge.node[2]   # left node
+    nodek        = edge.node[1]   # right node
+    ireg         = edge.region
+
+    dpsi         = u[ipsi, 2] - u[ipsi, 1]
+    j0           = params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT
+
+    bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
+    etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
+    bp, bm       = fbernoulli_pm(params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT)
+
+    get_DOS!(icc, edge, data)
+    Nik          = data.tempDOS1[icc]
+    Nil          = data.tempDOS2[icc]
+
+    f[icc]       = - j0 * ( bm * Nil * data.F[icc](etal) - bp * Nik * data.F[icc](etak) )
 
 end
 
 # The classical Scharfetter-Gummel flux scheme for
 # possible space-dependent DOS and band-edge energies. For these parameters the
 # discretization scheme is modified.
-function flux!(f, u, edge, data, ::Type{ScharfetterGummelGraded})
+function chargeCarrierFlux!(f, u, edge, data, icc, ::Type{ScharfetterGummelGraded})
 
-    params      =   data.params
-    paramsnodal =   data.paramsnodal
+    params       = data.params
+    paramsnodal  = data.paramsnodal
 
-    ipsi        =   data.index_psi
-    nodel       =   edge.node[2]
-    nodek       =   edge.node[1]
-    ireg        =   edge.region
+    icc          = data.chargeCarrierList[icc]
+    ipsi         = data.index_psi
+    nodel        = edge.node[2]   # left node
+    nodek        = edge.node[1]   # right node
+    ireg         = edge.region
 
-    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
-    dpsiEps     =   (params.dielectricConstant[ireg]  + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2) * dpsi
-    f[ipsi]     = - ε0 * dpsiEps
+    dpsi         = u[ipsi, 2] - u[ipsi, 1]
+    j0           = params.chargeNumbers[icc] * q * params.UT
+    
+    bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
+    mobility     = params.mobility[icc, ireg] + (paramsnodal.mobility[icc, nodel] + paramsnodal.mobility[icc, nodek])/2
+    etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
 
-    # k = 1 refers to left side, where as l = 2 refers to right side.
-    for icc ∈ data.chargeCarrierList
+    get_DOS!(icc, edge, data)
+    Nik          = data.tempDOS1[icc]
+    Nil          = data.tempDOS2[icc]
 
-        j0           = params.chargeNumbers[icc] * q * params.UT
-
-        get_DOS!(icc, edge, data)
-
-        Nik          = data.tempDOS1[icc]
-        Nil          = data.tempDOS2[icc]
-
-        etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
-
-        bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
-        mobility     = params.mobility[icc, ireg] + (paramsnodal.mobility[icc, nodel] + paramsnodal.mobility[icc, nodek])/2
-
-        if paramsnodal.densityOfStates[icc, nodel] ≈ 0.0 || paramsnodal.densityOfStates[icc, nodek] ≈ 0.0
-            bp, bm   = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT )
-        else
-            bp, bm   = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT - (log(paramsnodal.densityOfStates[icc, nodel]) -log(paramsnodal.densityOfStates[icc, nodek])) )
-        end
-
-        f[icc]       = - j0  * mobility * ( bm  * Nil * data.F[icc](etal) - bp *  Nik * data.F[icc](etak) )
-
+    if paramsnodal.densityOfStates[icc, nodel] ≈ 0.0 || paramsnodal.densityOfStates[icc, nodek] ≈ 0.0
+        bp, bm   = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT )
+    else
+        bp, bm   = fbernoulli_pm( params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / params.UT - (log(paramsnodal.densityOfStates[icc, nodel]) -log(paramsnodal.densityOfStates[icc, nodek])) )
     end
+
+    f[icc]       = - j0 * mobility * ( bm  * Nil * data.F[icc](etal) - bp *  Nik * data.F[icc](etak) )
 
 end
 
 # The excess chemical potential flux discretization scheme. This also works for space-dependent band-edge energy, but
 # not for space-dependent effective DOS.
-function flux!(f, u, edge, data, ::Type{ExcessChemicalPotential})
+function chargeCarrierFlux!(f, u, edge, data, icc, ::Type{ExcessChemicalPotential})
 
-    params      =   data.params
-    paramsnodal =   data.paramsnodal
+    params       = data.params
+    paramsnodal  = data.paramsnodal
 
-    ipsi        =   data.index_psi
-    nodel       =   edge.node[2]
-    nodek       =   edge.node[1]
-    ireg        =   edge.region
+    icc          = data.chargeCarrierList[icc]
+    ipsi         = data.index_psi
+    nodel        = edge.node[2]   # left node
+    nodek        = edge.node[1]   # right node
+    ireg         = edge.region
 
-    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
-    f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
+    dpsi         = u[ipsi, 2] - u[ipsi, 1]
+    j0           = params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT
 
+    bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
+    etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
 
-    # k = 1 refers to left side, where as l = 2 refers to right side.
-    for icc ∈ data.chargeCarrierList
+    Q            = params.chargeNumbers[icc]*( (dpsi - bandEdgeDiff /q) /params.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
+    bp, bm       = fbernoulli_pm(Q)
 
-        j0           = params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT
+    get_DOS!(icc, edge, data)
+    Nik          = data.tempDOS1[icc]
+    Nil          = data.tempDOS2[icc]
 
-        get_DOS!(icc, edge, data)
-
-        Nik          = data.tempDOS1[icc]
-        Nil          = data.tempDOS2[icc]
-        etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
-
-        bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
-
-        Q            = params.chargeNumbers[icc]*( (dpsi - bandEdgeDiff /q) /params.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
-        bp, bm       = fbernoulli_pm(Q)
-
-        f[icc]       = - j0 * ( bm * Nil * data.F[icc](etal) - bp * Nik * data.F[icc](etak) )
-
-    end
+    f[icc]       = - j0 * ( bm * Nil * data.F[icc](etal) - bp * Nik * data.F[icc](etak) )
 
 end
 
 # The excess chemical potential flux scheme for
 # possible space-dependent DOS and band-edge energies. For these parameters the discretization scheme is modified.
-function flux!(f, u, edge, data, ::Type{ExcessChemicalPotentialGraded})
+function chargeCarrierFlux!(f, u, edge, data, icc, ::Type{ExcessChemicalPotentialGraded})
 
-    params      =   data.params
-    paramsnodal =   data.paramsnodal
+    params       = data.params
+    paramsnodal  = data.paramsnodal
 
-    ipsi        =   data.index_psi
-    nodel       =   edge.node[2]
-    nodek       =   edge.node[1]
-    ireg        =   edge.region
+    icc          = data.chargeCarrierList[icc]
+    ipsi         = data.index_psi
+    nodel        = edge.node[2]   # left node
+    nodek        = edge.node[1]   # right node
+    ireg         = edge.region
 
-    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
-    dpsiEps     =   (params.dielectricConstant[ireg]  + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2) * dpsi
-    f[ipsi]     = - ε0 * dpsiEps
+    dpsi         = u[ipsi, 2] - u[ipsi, 1]
+    j0           = params.chargeNumbers[icc] * q * params.UT
 
+    bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
+    mobility     = params.mobility[icc, ireg] + (paramsnodal.mobility[icc, nodel] + paramsnodal.mobility[icc, nodek])/2
+    etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
 
-    # k = 1 refers to left side, where as l = 2 refers to right side.
-    for icc ∈ data.chargeCarrierList
+    get_DOS!(icc, edge, data)
+    Nik          = data.tempDOS1[icc]
+    Nil          = data.tempDOS2[icc]
 
-        j0           = params.chargeNumbers[icc] * q * params.UT
-
-        get_DOS!(icc, edge, data)
-
-        Nik          = data.tempDOS1[icc]
-        Nil          = data.tempDOS2[icc]
-
-        etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
-
-        bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
-        mobilityl    = (params.mobility[icc, ireg] + paramsnodal.mobility[icc, nodel])
-        mobilityk    = (params.mobility[icc, ireg] + paramsnodal.mobility[icc, nodek])
-
-        if paramsnodal.densityOfStates[icc, nodel] ≈ 0.0 || paramsnodal.densityOfStates[icc, nodek] ≈ 0.0
-            Q        = params.chargeNumbers[icc]*( (dpsi - bandEdgeDiff/q) /params.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
-
-        else
-            Q        = params.chargeNumbers[icc]*( (dpsi - bandEdgeDiff/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) - (log(paramsnodal.densityOfStates[icc, nodel]) -log(paramsnodal.densityOfStates[icc,nodek])) )
-
-        end
-
-        bp, bm       = fbernoulli_pm(Q)
-        f[icc]       = - j0  * ( bm  * mobilityl * Nil * data.F[icc](etal) - bp * mobilityk * Nik * data.F[icc](etak) )
-
+    if paramsnodal.densityOfStates[icc, nodel] ≈ 0.0 || paramsnodal.densityOfStates[icc, nodek] ≈ 0.0
+        Q        = params.chargeNumbers[icc]*( (dpsi - bandEdgeDiff/q) /params.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
+    else
+        Q        = params.chargeNumbers[icc]*( (dpsi - bandEdgeDiff/q) /data.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) - (log(paramsnodal.densityOfStates[icc, nodel]) -log(paramsnodal.densityOfStates[icc,nodek])) )
     end
+
+    bp, bm       = fbernoulli_pm(Q)
+    f[icc]       = - j0  * mobility * ( bm  * Nil * data.F[icc](etal) - bp * Nik * data.F[icc](etak) )
 
 end
 
 # The diffusion enhanced scheme by Bessemoulin-Chatard. Currently, the Pietra-Jüngel scheme
 # is used for the regularization of the removable singularity. This also works for
 # space-dependent band-edge energy, but not for space-dependent effective DOS.
-function flux!(f, u, edge, data, ::Type{DiffusionEnhanced})
+function chargeCarrierFlux!(f, u, edge, data, icc, ::Type{DiffusionEnhanced})
 
-    params      =   data.params
-    paramsnodal =   data.paramsnodal
+    params       = data.params
+    paramsnodal  = data.paramsnodal
 
-    ipsi        =   data.index_psi
-    nodel       =   edge.node[2]
-    nodek       =   edge.node[1]
-    ireg        =   edge.region
+    icc          = data.chargeCarrierList[icc]
+    ipsi         = data.index_psi
+    nodel        = edge.node[2]   # left node
+    nodek        = edge.node[1]   # right node
+    ireg         = edge.region
 
-    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
-    f[ipsi]     = - params.dielectricConstant[ireg] * ε0 * dpsi
+    dpsi         = u[ipsi, 2] - u[ipsi, 1]
+    j0           = params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT
 
-    # k = 1 refers to left side, where as l = 2 refers to right side.
-    for icc ∈ data.chargeCarrierList
+    etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
 
-        j0           = params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT
-        get_DOS!(icc, edge, data)
-
-        Nik          = data.tempDOS1[icc]
-        Nil          = data.tempDOS2[icc]
-
-        etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
-
-        if ( log(data.F[icc](etal)) - log(data.F[icc](etak)) ) ≈ 0.0
-            # regularization idea coming from Pietra-Jüngel scheme
-            gk = exp(etak) / data.F[icc](etak)
-            gl = exp(etal) / data.F[icc](etal)
-            g  = 0.5 * ( gk + gl )            
-        else
-            g  = (etal - etak ) / ( log(data.F[icc](etal)) - log(data.F[icc](etak)) )
-        end
-
-        bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
-
-        bp, bm       = fbernoulli_pm(params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / (params.UT * g))
-        f[icc]       = - j0 * g * (  bm * Nil * data.F[icc](etal) - bp * Nik * data.F[icc](etak))
+    if ( log(data.F[icc](etal)) - log(data.F[icc](etak)) ) ≈ 0.0 # regularization idea coming from Pietra-Jüngel scheme
+        gk = exp(etak) / data.F[icc](etak)
+        gl = exp(etal) / data.F[icc](etal)
+        g  = 0.5 * ( gk + gl )
+    else
+        g  = (etal - etak ) / ( log(data.F[icc](etal)) - log(data.F[icc](etak)) )
     end
+
+    bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
+
+    get_DOS!(icc, edge, data)
+    Nik          = data.tempDOS1[icc]
+    Nil          = data.tempDOS2[icc]
+
+    bp, bm       = fbernoulli_pm(params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / (params.UT * g))
+    f[icc]       = - j0 * g * (  bm * Nil * data.F[icc](etal) - bp * Nik * data.F[icc](etak))
 
 end
 
-# The Koprucki-Gärtner scheme. This scheme is calculated by solving a fixed point equation
-# which arise when considering the generalized Scharfetter-Gummel scheme in case of Blakemore
-# statistics. Hence, it should be exclusively worked with, when considering the Blakemore
-# distribution. This also works for space-dependent band-edge energy, but not for
-# space-dependent effective DOS.
-function flux!(f, u, edge, data, ::Type{GeneralizedSG})
+# The diffusion enhanced scheme by Bessemoulin-Chatard for fluxes not based on a nonlinear diffusion
+# but on a modified drift.
+function chargeCarrierFlux!(f, u, edge, data, icc, ::Type{DiffusionEnhancedModifiedDrift})
 
-    params        =   data.params
-    paramsnodal   =   data.paramsnodal
+    params       = data.params
+    paramsnodal  = data.paramsnodal
 
-    max_iteration =   200          # for Newton solver
-    it            =   0            # number of iterations (newton)
-    damp          =   0.1          # damping factor
+    icc          = data.chargeCarrierList[icc]
+    ipsi         = data.index_psi
+    nodel        = edge.node[2]   # left node
+    nodek        = edge.node[1]   # right node
+    ireg         = edge.region
 
-    ipsi          =   data.index_psi
-    nodel         =   edge.node[2]
-    nodek         =   edge.node[1]
-    ireg          =   edge.region
+    dpsi         = u[ipsi, 2] - u[ipsi, 1]
+    j0           = params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT
 
-    dpsi          =   u[ipsi, 2] - u[ipsi, 1]
-    f[ipsi]       =  - params.dielectricConstant[ireg] * ε0 * dpsi
+    etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
 
-
-    # k = 1 refers to left side, where as l = 2 refers to right side.
-    for icc ∈ data.chargeCarrierList
-
-        j0           = params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT
-
-        get_DOS!(icc, edge, data)
-
-        Nik          = data.tempDOS1[icc]
-        Nil          = data.tempDOS2[icc]
-
-        etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
-
-        bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
-
-        # use Sedan flux as starting guess
-        Q            = params.chargeNumbers[icc]*( (dpsi - bandEdgeDiff/q) /params.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
-        bp, bm       = fbernoulli_pm(Q)
-        jInitial     = ( bm * Nik * data.F[icc](etal)  - bp * Nil * data.F[icc](etak))
-
-        implicitEq(j::Real) = (fbernoulli_pm(params.chargeNumbers[icc] * ((dpsi - bandEdgeDiff/q)) /params.UT + params.γ * j )[2] * exp(etal) - fbernoulli_pm(params.chargeNumbers[icc] * ((dpsi - bandEdgeDiff/q) /params.UT) - params.γ * j)[1] * exp(etak)) - j
-
-        delta        = 1.0e-18 + 1.0e-14 * abs(value(jInitial))
-        oldup        = 1.0
-        while (it < max_iteration)
-            Fval     = implicitEq(jInitial)
-            dFval    = ForwardDiff.derivative(implicitEq, jInitial)
-
-            if isnan(value(dFval)) || value(abs(dFval)) < delta
-                @show value(jInitial), value(Fval), value(dFval)
-                error("singular derivative in exact SG scheme")
-            end
-
-            update   = Fval / dFval
-            jInitial = jInitial - damp * update
-
-            if abs(update) < delta
-                break
-            end
-            #@show abs(value(update)/oldup)
-            oldup = value(update)
-
-            it       = it + 1
-            damp     = min(damp * 1.2, 1.0)
-        end
-        #@show  it
-        f[icc]       = - j0 * jInitial
+    if ( log(data.F[icc](etal)) - log(data.F[icc](etak)) ) ≈ 0.0 # regularization idea coming from Pietra-Jüngel scheme
+        gk = exp(etak) / data.F[icc](etak)
+        gl = exp(etal) / data.F[icc](etal)
+        g  = 0.5 * ( gk + gl )            
+    else
+        g  = (etal - etak ) / ( log(data.F[icc](etal)) - log(data.F[icc](etak)) )
     end
+
+    bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
+
+    get_DOS!(icc, edge, data)
+    Nik          = data.tempDOS1[icc]
+    Nil          = data.tempDOS2[icc]
+
+    bp, bm       = fbernoulli_pm(params.chargeNumbers[icc] * (dpsi - bandEdgeDiff / q) / (params.UT * g))
+    f[icc]       = - j0 * (  bm * Nil * data.F[icc](etal) - bp * Nik * data.F[icc](etak))
 
 end
 
-##########################################################
-##########################################################
+
+# # The Koprucki-Gärtner scheme. This scheme is calculated by solving a fixed point equation
+# # which arise when considering the generalized Scharfetter-Gummel scheme in case of Blakemore
+# # statistics. Hence, it should be exclusively worked with, when considering the Blakemore
+# # distribution. This also works for space-dependent band-edge energy, but not for
+# # space-dependent effective DOS.
+function chargeCarrierFlux!(f, u, edge, data, icc, ::Type{GeneralizedSG})
+
+    max_iter     = 300          # for Newton solver
+    it           = 0            # number of iterations (newton)
+    damp         = 0.1          # damping factor
+
+    params       = data.params
+    paramsnodal  = data.paramsnodal
+
+    # DA: we get issues with allocations, when allowing non Integer icc.
+    #icc          = data.chargeCarrierList[icc]
+    ipsi         = data.index_psi
+    nodel        = edge.node[2]   # left node
+    nodek        = edge.node[1]   # right node
+    ireg         = edge.region
+
+    dpsi         = u[ipsi, 2] - u[ipsi, 1]
+    j0           = params.chargeNumbers[icc] * q * params.mobility[icc, ireg] * params.UT
+
+    bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
+    etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
+ 
+    get_DOS!(icc, edge, data)
+    Nik          = data.tempDOS1[icc]
+    Nil          = data.tempDOS2[icc]
+
+    # use Sedan flux as starting guess
+    Q            = params.chargeNumbers[icc]*( (dpsi - bandEdgeDiff/q) /params.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
+    bp, bm       = fbernoulli_pm(Q)
+    jInitial     = ( bm * Nik * data.F[icc](etal)  - bp * Nil * data.F[icc](etak))
+
+    implicitEq(j::Real) = (fbernoulli_pm(params.chargeNumbers[icc] * ((dpsi - bandEdgeDiff/q)) /params.UT + params.γ * j )[2] * exp(etal) - fbernoulli_pm(params.chargeNumbers[icc] * ((dpsi - bandEdgeDiff/q) /params.UT) - params.γ * j)[1] * exp(etak)) - j
+
+    delta        = 1.0e-18 + 1.0e-14 * abs(value(jInitial))
+    oldup        = 1.0
+    while (it < max_iter)
+        Fval     = implicitEq(jInitial)
+        dFval    = ForwardDiff.derivative(implicitEq, jInitial)
+
+        if isnan(value(dFval)) || value(abs(dFval)) < delta
+            @show value(jInitial), value(Fval), value(dFval)
+            error("singular derivative in exact SG scheme")
+        end
+
+        update   = Fval / dFval
+        jInitial = jInitial - damp * update
+
+        if abs(update) < delta
+            break
+        end
+        oldup = value(update)
+
+        it       = it + 1
+        damp     = min(damp * 1.2, 1.0)
+    end
+
+    f[icc]       = - j0 * jInitial
+
+end
+
+# ##########################################################
+# ##########################################################
