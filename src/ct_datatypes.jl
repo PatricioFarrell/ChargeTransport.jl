@@ -148,6 +148,10 @@ vol. 121, pp. 637–670, 2012.
 """
 abstract type DiffusionEnhanced end
 
+
+abstract type DiffusionEnhancedModifiedDrift end
+
+
 """
 $(TYPEDEF)
 Abstract type for generalized Scharfetter-Gummel flux discretization. This flux approximation
@@ -163,7 +167,7 @@ abstract type GeneralizedSG end
 Possible types of flux discretization schemes.
 """
 const FluxApproximationType = Union{Type{ScharfetterGummel}, Type{ExcessChemicalPotential},
-                                 Type{DiffusionEnhanced}, Type{GeneralizedSG},
+                                 Type{DiffusionEnhanced}, Type{DiffusionEnhancedModifiedDrift}, Type{GeneralizedSG},
                                  Type{ScharfetterGummelGraded}, Type{ExcessChemicalPotentialGraded}}
 
 ##########################################################

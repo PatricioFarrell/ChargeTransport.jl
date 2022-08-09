@@ -40,7 +40,7 @@ export InterfaceModelDiscontqFNoReaction
 export ModelType, Transient, Stationary
 
 export FluxApproximationType
-export ScharfetterGummel, ExcessChemicalPotential, DiffusionEnhanced, GeneralizedSG
+export ScharfetterGummel, ExcessChemicalPotential, DiffusionEnhanced, DiffusionEnhancedModifiedDrift, GeneralizedSG
 export ScharfetterGummelGraded, ExcessChemicalPotentialGraded
 
 export InEquilibrium, OutOfEquilibrium

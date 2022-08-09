@@ -95,7 +95,7 @@ data.boundaryType[bregionDonor]    = OhmicContact
 
 # choose flux discretization scheme: ScharfetterGummel ScharfetterGummelGraded,
 # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-data.fluxApproximation             = ExcessChemicalPotential
+data.fluxApproximation            .= ExcessChemicalPotential
 ```
 
 Next, we fill in pre-defined or externally read in parameter values.
@@ -118,7 +118,7 @@ end
 
 for ireg in 1:numberOfRegions           # interior region data
 
-    params.dielectricConstant[ireg]                 = εr
+    params.dielectricConstant[ireg]                 = εr  * ε0
 
     # effective DOS, band-edge energy and mobilities
     params.densityOfStates[iphin, ireg]             = Nc

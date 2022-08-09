@@ -569,7 +569,7 @@ mutable struct Data{TFuncs<:Function}
     """
     A DataType for the flux discretization method.
     """
-    fluxApproximation            ::  FluxApproximationType
+    fluxApproximation            ::  Array{FluxApproximationType, 1}
 
     """
     A DataType for equilibrium or out of equilibrium calculations.
@@ -874,7 +874,7 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
-    data.fluxApproximation   = ScharfetterGummel
+    data.fluxApproximation   = FluxApproximationType[ScharfetterGummel for i = 1:numberOfCarriers]
     data.calculationType     = InEquilibrium     # do performances InEquilibrium or OutOfEquilibrium
     data.modelType           = Stationary        # indicates if we need additional time dependent part
     data.generationModel     = GenerationNone    # generation model

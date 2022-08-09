@@ -244,7 +244,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation              = ExcessChemicalPotential
+    data.fluxApproximation             .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -266,7 +266,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for ireg in 1:numberOfRegions ## interior region data
 
-        params.dielectricConstant[ireg]                          = ε[ireg]
+        params.dielectricConstant[ireg]                          = ε[ireg] * ε0
 
         ## effective dos, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]                      = NC[ireg]
