@@ -213,7 +213,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     data.isContinuous[iphin]            = false
     data.isContinuous[iphip]            = false
 
-    data.fluxApproximation              = ScharfetterGummel
+    data.fluxApproximation             .= ScharfetterGummel
 
     if test == false
         println("*** done\n")
@@ -234,7 +234,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     for ireg in 1:numberOfRegions ## interior region data
 
-        params.dielectricConstant[ireg]                 = ε[ireg]
+        params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
         ## effective dos, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = NC[ireg]
@@ -271,14 +271,17 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     ## inner boundary region data
     # delta with negative sign -> IV shifted to right.
-    delta1                                              = -1.1 * eV
-    delta2                                              = -0.3 * eV
+    delta1                                              = 0.3 * eV
+    delta2                                              = -0.6 * eV
     data.d                                              = 6.28 * 10e-8 * cm # lattice size perovskite
     params.bDensityOfStates[iphin_b1, bregionJunction1] = data.d * params.densityOfStates[iphin, regionAcceptor]
     params.bDensityOfStates[iphip_b1, bregionJunction1] = data.d * params.densityOfStates[iphip, regionAcceptor]
 
     params.bBandEdgeEnergy[iphin_b1, bregionJunction1]  = params.bandEdgeEnergy[iphin, regionAcceptor] + delta1
     params.bBandEdgeEnergy[iphip_b1, bregionJunction1]  = params.bandEdgeEnergy[iphip, regionAcceptor] + delta2
+
+    params.bReactDiscont[iphin, bregionJunction2]       = 1.0e15
+    params.bReactDiscont[iphip, bregionJunction2]       = 1.0e15
 
     ##############################################################
 
@@ -291,13 +294,6 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
-
-    # set legend for plotting routines. Either you can use the predefined labels or write your own.
-    label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
-    plot_energies(Plotter, grid, data, label_BEE)
-    PyPlot.ylim(-6.5, -2.0)
- 
-    #savefig("Ec-M1p1-Ev-M0p3.eps")
 
     function compute_densities(icc, ireg,  phi, psi)
         eta = data.params.chargeNumbers[icc]/ data.params.UT .* ( (phi .- psi) .+ data.params.bandEdgeEnergy[icc, ireg]./q )
@@ -361,8 +357,6 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     sol     = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
     inival .= sol
 
-    #writedlm("data/PSC-stationary-reference-sol-EQ.dat", [coord sol'])
-
     if test == false
         println("*** done\n")
     end
@@ -377,7 +371,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
     data.calculationType = OutOfEquilibrium
 
     maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 51)
+    biasValues = range(0, stop = maxBias, length = 61)
     IV         = zeros(0)
 
     for Δu in biasValues
@@ -414,7 +408,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 
     if plotting == true
 
-        vis = GridVisualizer(Plotter = PyPlot, layout=(2,1))
+        vis = GridVisualizer(Plotter = PyPlot, layout=(3,1))
 
         subgrids    = VoronoiFVM.subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
         bgrid1      = subgrid(grid,[bregionJunction1], boundary=true)
@@ -449,19 +443,6 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         Plotter.title("Solution with Bias")
         PyPlot.tight_layout()
 
-        # for i = 1:length(phin_sol)
-        #     scalarplot!(vis[2, 1], subgrids[i], psi_sol[i],  clear = false, color=:blue)
-        #     if i == 3
-        #         scalarplot!(vis[2, 1], subgrids[i], psi_sol[i],  clear = false, label = "\$ \\psi \$",color=:blue)
-        #     end
-        # end
-        # PyPlot.plot(sol_ref[:, 1], sol_ref[:, 4], linestyle="--", color = "black")
-
-        # Plotter.xlabel("space [m]")
-        # Plotter.ylabel("potential [V]")
-        # Plotter.legend(fancybox = true, loc = "best", fontsize=11)
-        # Plotter.title("Solution with Bias")
-        # PyPlot.tight_layout()
         xcoord = [1:icoord_p, icoord_p:icoord_pi, icoord_pi:length(coord)]
 
         for i = 1:length(phin_sol)
@@ -498,9 +479,9 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         Plotter.tight_layout()
 
         # ##########################################################
-        # scalarplot!(vis[3, 1], biasValues, IV, clear = false, color=:green)
-        # IV_ref         = readdlm("data/PSC-stationary-reference-IV.dat")
-        # PyPlot.plot(IV_ref[:, 1], IV_ref[:, 2], linestyle="--", color = "black")
+        scalarplot!(vis[3, 1], biasValues, IV, clear = false, color=:green)
+        IV_ref         = readdlm("data/PSC-stationary-reference-IV.dat")
+        PyPlot.plot(IV_ref[:, 1], IV_ref[:, 2], linestyle="--", color = "black")
 
     end
 
@@ -512,7 +493,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
 end #  main
 
 function test()
-    #testval = 49.92777921026983
+    #testval = 55.970859534018985
     main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

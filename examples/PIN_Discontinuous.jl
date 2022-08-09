@@ -1,5 +1,5 @@
 
-module PIN_InterfaceSpecies
+module PIN_Discontinuous
 
 using VoronoiFVM       # PDE solver with a FVM spatial discretization
 using ChargeTransport  # drift-diffusion solver
@@ -40,8 +40,6 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     bregionDonor            = 2
     bregionJunction1        = 3
     bregionJunction2        = 4
-    bregions                = [bregionAcceptor, bregionDonor, bregionJunction1, bregionJunction2]
-    numberOfBoundaryRegions = length(bregions)
 
     ## grid
     h_pdoping               = 2.0 * μm
@@ -49,15 +47,15 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     h_ndoping               = 2.0 * μm
     refinementfactor        = 2^(n-1)
     h_pdoping               = 2.0    * μm
-    coord                   = initialize_pin_grid(refinementfactor, h_ndoping,
-                                                  h_intrinsic, h_pdoping)
+    coord                   = initialize_pin_grid(refinementfactor, h_pdoping,
+                                                  h_intrinsic, h_ndoping)
 
     grid                    = simplexgrid(coord)
 
     ## cellmask! for defining the subregions and assigning region number
-    cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor)  # p-doped region = 1
-    cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
-    cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
+    cellmask!(grid, [0.0 * μm],                 [h_pdoping],                           regionAcceptor)  # p-doped region = 1
+    cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
+    cellmask!(grid, [h_pdoping + h_intrinsic],  [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
 
     bfacemask!(grid, [h_pdoping],               [h_pdoping],                           bregionJunction1)  # first  inner interface
     bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)  # second inner interface
@@ -80,9 +78,7 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## set indices of the quasi Fermi potentials
     iphin              = 1 # electron quasi Fermi potential
     iphip              = 2 # hole quasi Fermi potential
-    iphin_b1           = 3
-    iphip_b1           = 4
-    numberOfCarriers   = 4
+    numberOfCarriers   = 2
 
     # We define the physical data.
     Ec                 = 1.424                *  eV
@@ -138,12 +134,9 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.isContinuous[iphip]            = false
 
     data.boundaryType[bregionAcceptor]  = OhmicContact
-    data.boundaryType[bregionJunction1] = InterfaceModelDiscontqF
+    data.boundaryType[bregionJunction1] = InterfaceModelDiscontqFNoReaction
     data.boundaryType[bregionJunction2] = InterfaceModelDiscontqFNoReaction
     data.boundaryType[bregionDonor]     = OhmicContact
-
-    # wäre schöner, wenn pro iphin_b1 nur iphin, das wäre toll.
-    enable_interface_carriers!(data, bulkSpecies = [iphin, iphip], interfaceSpecies = [iphin_b1, iphip_b1], boundaryRegion = bregionJunction1)
 
     data.fluxApproximation             .= ScharfetterGummel
 
@@ -194,17 +187,6 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     end
 
-    ## inner boundary region data
-    data.d                                              = 6.28 * 10e-7 * cm  # lattice size of perovskite (from Eames et al.):6.28 * 10e-8 * cm
-    params.bDensityOfStates[iphin_b1, bregionJunction1] = data.d * params.densityOfStates[iphin, regionIntrinsic]
-    params.bDensityOfStates[iphip_b1, bregionJunction1] = data.d * params.densityOfStates[iphip, regionIntrinsic]
-
-    params.bBandEdgeEnergy[iphin_b1, bregionJunction1]  = params.bandEdgeEnergy[iphin, regionIntrinsic]
-    params.bBandEdgeEnergy[iphip_b1, bregionJunction1]  = params.bandEdgeEnergy[iphip, regionIntrinsic]
-
-    params.bReactDiscont[iphin, bregionJunction2]       = 1.0e15
-    params.bReactDiscont[iphip, bregionJunction2]       = 1.0e15
-
     ## interior doping
     params.doping[iphin, regionDonor]                   = Nd
     params.doping[iphin, regionIntrinsic]               = ni
@@ -214,6 +196,11 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## boundary doping
     params.bDoping[iphin, bregionDonor]                 = Nd
     params.bDoping[iphip, bregionAcceptor]              = Na
+
+    params.bReactDiscont[iphin, bregionJunction1]       = 1.0e15
+    params.bReactDiscont[iphip, bregionJunction1]       = 1.0e15
+    params.bReactDiscont[iphin, bregionJunction2]       = 1.0e15
+    params.bReactDiscont[iphip, bregionJunction2]       = 1.0e15
 
     # Region dependent params is now a substruct of data which is again a substruct of the system and will be parsed
     # in next step.
@@ -266,15 +253,12 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    control.damp_initial  = 0.5
-    control.damp_growth   = 1.2 # >= 1
-    control.max_round     = 3
-
     ## initialize solution and starting vectors
     initialGuess          = unknowns(ctsys)
     solution              = unknowns(ctsys)
 
     solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
+
     initialGuess         .= solution
 
     if test == false
@@ -288,9 +272,7 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     data.calculationType      = OutOfEquilibrium
 
-
-    maxBias    = voltageAcceptor # bias goes until the given contactVoltage at acceptor boundary
-    biasValues = range(0, stop = voltageAcceptor, length = 21)
+    biasValues = range(0, stop = voltageAcceptor, length = 32)
 
     IV         = zeros(0)
 
@@ -321,8 +303,6 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         push!(IV,  val)
 
-
-
     end # bias loop
 
     function compute_densities(icc, ireg, phin, psi)
@@ -330,43 +310,44 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         return data.params.densityOfStates[icc, ireg] .* data.F[icc].(eta)
     end
-    # writedlm("reference-sol-PIN.dat", [coord solution'])
-    # res = [biasValues IV]
-    # writedlm("reference-IV-PIN.dat", res)
 
     vis = GridVisualizer(Plotter = PyPlot, layout=(3,1))
-
     subgrids = VoronoiFVM.subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
     phin_sol = VoronoiFVM.views(initialGuess, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
     phip_sol = VoronoiFVM.views(initialGuess, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
     psi_sol  = VoronoiFVM.views(initialGuess, data.index_psi, subgrids, ctsys.fvmsys)
 
+    sol_ref = readdlm("data/reference-sol-PIN.dat")
+
     for i = 1:length(phin_sol)
-        scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
-        scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
         scalarplot!(vis[1, 1], subgrids[i], psi_sol[i],  clear = false, color=:blue)
         if i == 3
-            scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
-            scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$",  color=:red)
             scalarplot!(vis[1, 1], subgrids[i], psi_sol[i],  clear = false, label = "\$ \\psi \$",color=:blue)
         end
     end
+    PyPlot.plot(sol_ref[:, 1], sol_ref[:, 4], linestyle="--", color = "black")
 
-    sol_ref = readdlm("data/reference-sol-PIN.dat")
+    for i = 1:length(phin_sol)
+        scalarplot!(vis[2, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
+        scalarplot!(vis[2, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
+        
+        if i == 3
+            scalarplot!(vis[2, 1], subgrids[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
+            scalarplot!(vis[2, 1], subgrids[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$",  color=:red)
+        end
+    end
+
+    
     PyPlot.plot(sol_ref[:, 1], sol_ref[:, 2], linestyle="--", color = "black")
     PyPlot.plot(sol_ref[:, 1], sol_ref[:, 3], linestyle="--", color = "black")
-    PyPlot.plot(sol_ref[:, 1], sol_ref[:, 4], linestyle="--", color = "black")
+    
     Plotter.legend(fancybox = true, loc = "best", fontsize=11)
     Plotter.title("Solution with Bias")
 
-    for i = 1:length(phin_sol)
-        scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphin, subgrids[i][CellRegions][1], phin_sol[i], psi_sol[i])), clear = false, color=:green)
-        scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i])), clear = false, color=:red)
-    end
     ##########################################################
-    scalarplot!(vis[3, 1], biasValues, log.(IV), clear = false, color=:green)
+    scalarplot!(vis[3, 1], biasValues, IV, clear = false, color=:green)
     IV_ref         = readdlm("data/reference-IV-PIN.dat")
-    PyPlot.plot(IV_ref[:, 1], log.(IV_ref[:, 2]), linestyle="--", color = "black")
+    PyPlot.plot(IV_ref[:, 1], IV_ref[:, 2], linestyle="--", color = "black")
 
     testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
     return testval
@@ -377,7 +358,7 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 24.984716235891845
+    testval = 24.948405935382937
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

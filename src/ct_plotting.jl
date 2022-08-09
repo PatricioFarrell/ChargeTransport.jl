@@ -8,10 +8,10 @@ e.g. mobile ionic carriers or traps, this can be done within the main file.
 """
 function set_plotting_labels(data)
 
-    label_energy   = Array{String, 2}(undef, 2, 2) # band-edge energies and potential
-    label_BEE      = Array{String, 1}(undef, 4)    # band-edge energie parameters
-    label_density  = Array{String, 1}(undef, 2)
-    label_solution = Array{String, 1}(undef, 2)
+    label_energy   = Array{String, 2}(undef, 2, data.params.numberOfCarriers) # band-edge energies and potential
+    label_BEE      = Array{String, 1}(undef, data.params.numberOfCarriers)    # band-edge energie parameters
+    label_density  = Array{String, 1}(undef, data.params.numberOfCarriers)
+    label_solution = Array{String, 1}(undef, data.params.numberOfCarriers)
 
     # indices (∈ IN) of electron and hole quasi Fermi potentials specified by user
     iphin       = data.bulkRecombination.iphin # integer index of φ_n
@@ -25,7 +25,6 @@ function set_plotting_labels(data)
     label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"; label_BEE[iphip] = "\$E_v\$"
     label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
 
-    label_BEE[3] = "\$ \\bar{E}_c\$"; label_BEE[4] = "\$ \\bar{E}_v\$"
 
     return label_solution, label_density, label_energy, label_BEE
 end
@@ -224,7 +223,7 @@ function plot_energies(Plotter, grid::ExtendableGrid, data::Data, label_BEE)
     linestyles  = ["-", ":", "--", "-.", "-"]
 
     # plot different band-edge energies values in interior
-    for icc = 1:2
+    for icc = 1:params.numberOfCarriers
         for i in 1:length(cellregions)
             # determine band-edge energy value in cell and number of cell nodes
             cellValue            = ( params.bandEdgeEnergy[icc, cellregions[i]] + paramsnodal.bandEdgeEnergy[icc, i] )/q
@@ -245,19 +244,9 @@ function plot_energies(Plotter, grid::ExtendableGrid, data::Data, label_BEE)
     bfaceregions = grid[BFaceRegions]
     bfacenodes   = grid[BFaceNodes]
 
-    for icc = 3:4
+    for icc = 1: params.numberOfCarriers
 
-        cellValue            = (params.bBandEdgeEnergy[icc, bfaceregions[1]] + paramsnodal.bandEdgeEnergy[icc, bfacenodes[1]])/q
-        numberLocalCellNodes = length(bfacenodes[:,1])
-
-        # patch together cells
-        Plotter.plot(coord[bfacenodes[:,1]],
-                    repeat(cellValue:cellValue,numberLocalCellNodes),
-                    marker="x",
-                    markersize=10,
-                    color=colors[icc], label = label_BEE[icc]);
-
-        for i in 2:length(bfaceregions)
+        for i in 1:length(bfaceregions)
             # determine band-edge energy value in cell and number of cell nodes
             cellValue            = (params.bBandEdgeEnergy[icc, bfaceregions[i]] + paramsnodal.bandEdgeEnergy[icc, bfacenodes[i]])/q
             numberLocalCellNodes = length(bfacenodes[:,i])
@@ -266,7 +255,7 @@ function plot_energies(Plotter, grid::ExtendableGrid, data::Data, label_BEE)
             Plotter.plot(coord[bfacenodes[:,i]],
                         repeat(cellValue:cellValue,numberLocalCellNodes),
                         marker="x",
-                        markersize=20,
+                        markersize=10,
                         color=colors[icc]);
         end
 

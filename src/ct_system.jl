@@ -356,6 +356,13 @@ mutable struct Params
     """
     bDensitiesEQ                 ::  Array{Float64,2}
 
+    """
+    An array to define the prefactor before the difference of densities from left and right
+    at an interior interface.
+
+    """
+    bReactDiscont                ::  Array{Float64,2}
+
 
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
@@ -766,7 +773,8 @@ function Params(grid, numberOfCarriers)
     params.bDoping                      = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDensitiesEQ                 = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
-
+    params.bReactDiscont                = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
     ###############################################################
@@ -1054,23 +1062,35 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontq
     # if interface carriers are present
     if isdefined(data.interfaceCarriers, :interfaceIndex)
         numberOfInterfaceCarriers = length(data.interfaceCarriers.interfaceIndex)
-    end
+        # get the correct indices out of chargeCarrierList 
+        # DA: what we could also do is just read in the numbers and mention the convention?
+        bulkCarriers      = data.chargeCarrierList[1:end-numberOfInterfaceCarriers]
+        InterfaceCarriers = data.chargeCarrierList[end-numberOfInterfaceCarriers+1:end]
 
-    bulkCarriers      = data.chargeCarrierList[1:end-numberOfInterfaceCarriers]
-    InterfaceCarriers = data.chargeCarrierList[numberOfInterfaceCarriers+1:end]
-
-    for icc in bulkCarriers
-        if data.isContinuous[icc] == false
-            data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
-        elseif data.isContinuous[icc] == true
-            data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+        for icc in bulkCarriers
+            if data.isContinuous[icc] == false
+                data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+            elseif data.isContinuous[icc] == true
+                data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+            end
         end
+
+
+        # DA: caution: only one boundary layer allowed up to now.
+        for icc in InterfaceCarriers
+            data.chargeCarrierList[icc] = InterfaceQuantity(fvmsys, data.interfaceCarriers.boundaryRegion, id = icc)
+        end
+    else
+        for icc in data.chargeCarrierList
+            if data.isContinuous[icc] == false
+                data.chargeCarrierList[icc] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+            elseif data.isContinuous[icc] == true
+                data.chargeCarrierList[icc] = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = icc)
+            end
+        end
+
     end
 
-    # DA: caution: only one boundary layer allowed up to now.
-    for icc in InterfaceCarriers
-        data.chargeCarrierList[icc] = InterfaceQuantity(fvmsys, data.interfaceCarriers.boundaryRegion, id = icc)
-    end
 
     data.index_psi = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)
 
@@ -1124,7 +1144,7 @@ function inner_interface_model(data::Data)
     # detect which interface model the user chooses by counting
     for ireg in 1:data.params.numberOfBoundaryRegions
 
-        if     data.boundaryType[ireg] == InterfaceModelDiscontqF
+        if     data.boundaryType[ireg] == InterfaceModelDiscontqF || data.boundaryType[ireg] == InterfaceModelDiscontqFNoReaction
 
             countDiscontqF = countDiscontqF + 1
 
@@ -1164,7 +1184,7 @@ function inner_interface_model(ctsys::System)
     # detect which interface model the user chooses by counting
     for ireg in 1:ctsys.data.params.numberOfBoundaryRegions
 
-        if     ctsys.data.boundaryType[ireg] ==  InterfaceModelDiscontqF
+        if     ctsys.data.boundaryType[ireg] ==  InterfaceModelDiscontqF || data.boundaryType[ireg] == InterfaceModelDiscontqFNoReaction
 
             countDiscontqF = countDiscontqF + 1
 
@@ -1230,68 +1250,14 @@ end
 
 function __set_contact!(ctsys, ibreg, Δu, ::Type{OhmicContact})
 
-    interfaceModel = ctsys.data.innerInterfaceModel
-
-    set_ohmic_contact!(ctsys, ibreg, Δu, interfaceModel)
-
-end
-
-# DA: need to check, if the distinction here is necessary in future version
-# (correlates with question of DiscontinuousQuantities)
-function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{InterfaceModelNone})
-
     iphin = ctsys.data.bulkRecombination.iphin
     iphip = ctsys.data.bulkRecombination.iphip
 
     iphin = ctsys.data.chargeCarrierList[iphin]
     iphip = ctsys.data.chargeCarrierList[iphip]
 
-    ctsys.fvmsys.boundary_factors[iphin, ibreg] = VoronoiFVM.Dirichlet
-    ctsys.fvmsys.boundary_values[iphin, ibreg]  = Δu
-    ctsys.fvmsys.boundary_factors[iphip, ibreg] = VoronoiFVM.Dirichlet
-    ctsys.fvmsys.boundary_values[iphip, ibreg]  = Δu
-
-end
-
-function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{InterfaceModelSurfaceReco})
-
-    iphin = ctsys.data.bulkRecombination.iphin
-    iphip = ctsys.data.bulkRecombination.iphip
-
-    iphin = ctsys.data.chargeCarrierList[iphin]
-    iphip = ctsys.data.chargeCarrierList[iphip]
-
-    ctsys.fvmsys.boundary_factors[iphin, ibreg] = VoronoiFVM.Dirichlet
-    ctsys.fvmsys.boundary_values[iphin, ibreg]  = Δu
-    ctsys.fvmsys.boundary_factors[iphip, ibreg] = VoronoiFVM.Dirichlet
-    ctsys.fvmsys.boundary_values[iphip, ibreg]  = Δu
-
-end
-
-
-function set_ohmic_contact!(ctsys, ibreg, Δu, ::Type{InterfaceModelDiscontqF})
-
-    iphin = ctsys.data.bulkRecombination.iphin
-    iphip = ctsys.data.bulkRecombination.iphip
-
-    iphin = ctsys.data.chargeCarrierList[iphin]
-    iphip = ctsys.data.chargeCarrierList[iphip]
-
-    if ibreg == 1
-
-        for icc ∈ (iphin, iphip)
-            ctsys.fvmsys.boundary_factors[icc.regionspec[ibreg], ibreg] = VoronoiFVM.Dirichlet
-            ctsys.fvmsys.boundary_values[icc.regionspec[ibreg], ibreg]  = Δu
-        end
-
-    else
-
-        for icc ∈ (iphin, iphip)
-            ctsys.fvmsys.boundary_factors[icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] = VoronoiFVM.Dirichlet
-            ctsys.fvmsys.boundary_values[ icc.regionspec[ctsys.data.params.numberOfRegions], ibreg] =  Δu
-        end
-
-    end
+    boundary_dirichlet!(ctsys.fvmsys, iphin, ibreg, Δu)
+    boundary_dirichlet!(ctsys.fvmsys, iphip, ibreg, Δu)
 
 end
 
