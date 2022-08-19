@@ -851,7 +851,7 @@ function generation(data, ireg, node, ::Type{GenerationBeerLambert})
 
     params = data.params
 
-    return data.λ2 * params.generationIncidentPhotonFlux[ireg] * params.generationAbsorption[ireg] * exp( - params.generationAbsorption[ireg] * (node - params.generationPeak))
+    return data.λ2 * params.generationIncidentPhotonFlux[ireg] * params.generationAbsorption[ireg] * exp( - params.invertedIllumination * params.generationAbsorption[ireg] * (node - params.generationPeak))
 
 end
 

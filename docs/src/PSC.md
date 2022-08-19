@@ -130,6 +130,11 @@ end
 
 params.generationPeak                         = generationPeak
 ```
+If one wishes to invert the illumination, one needs to define 
+```julia
+params.invertedIllumination                   = -1
+```
+where this value is by default set to one (for light entering from the left).
 Furthermore, we recommend performing a time loop while increasing the generation rate and afterwards applying the scan protocol with a full generation due to numerical stability, see this [example](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex108_PSC_uniform_Generation.jl) or [this one](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/examples/Ex108_PSC_BeerLambert_Generation.jl).
 
 ## Example 4: Multi-dimensional problems

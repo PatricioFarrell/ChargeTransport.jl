@@ -203,6 +203,13 @@ mutable struct Params
     """
     numberOfCarriers             ::  Int64
 
+    """
+    Parameter for the direction of illumination. If illumination is coming from the left,
+    then set this value to 1. Otherwise, if the illumination comes from the right,
+    set this value to -1.
+    """
+    invertedIllumination         ::  Int64
+
     ###############################################################
     ####                     real numbers                      ####
     ###############################################################
@@ -665,6 +672,7 @@ function Params(grid, numberOfCarriers)
     params.numberOfRegions              = numberOfRegions
     params.numberOfBoundaryRegions      = numberOfBoundaryRegions
     params.numberOfCarriers             = numberOfCarriers
+    params.invertedIllumination         = 1                       # we assume that light enters from the left.
 
     ###############################################################
     ####                     real numbers                      ####
