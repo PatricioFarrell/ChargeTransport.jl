@@ -35,7 +35,7 @@ export OhmicContact, SchottkyContact, SchottkyBarrierLowering
 export InterfaceModelNone, InterfaceModelSurfaceReco, InterfaceModelTangentialFlux, InterfaceModelDiscontqF
 export InterfaceModelIonCharge, InterfaceModelSurfaceRecoAndTangentialFlux
 
-export InterfaceModelDiscontqFNoReaction
+export InterfaceModelDiscontqFInterfaceSpecies
 
 export ModelType, Transient, Stationary
 

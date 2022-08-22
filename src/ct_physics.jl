@@ -359,7 +359,7 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
 end
 
 
-function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFNoReaction})
+function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
 
     if isdefined(data.interfaceCarriers, :interfaceIndex) # check, if interface carriers are present.
 
@@ -409,7 +409,7 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFNoReaction}
 end
 
 # breaction term for case where qF are discontinuous.
-function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
+function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFInterfaceSpecies})
 
     if data.calculationType == InEquilibrium
         if isdefined(data.interfaceCarriers, :interfaceIndex) # check, if interface carriers are present.
@@ -563,9 +563,8 @@ bstorage!(f, u, bnode, data, ::Type{Transient}) = bstorage!(f, u, bnode, data, d
 bstorage!(f, u, bnode, data, ::Type{InterfaceModelNone}) = emptyFunction()
 
 
-function bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
-    println("hiiiiiii")
-    println("hiiiiiii--------------------------------------------------------------------------")
+function bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFInterfaceSpecies})
+
     params = data.params
     ipsi   = data.index_psi
 
@@ -584,7 +583,7 @@ function bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
 end
 
 
-bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFNoReaction}) = emptyFunction()
+bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF}) = emptyFunction()
 
 bstorage!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
 

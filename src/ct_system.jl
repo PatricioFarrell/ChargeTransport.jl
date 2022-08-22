@@ -1152,7 +1152,7 @@ function inner_interface_model(data::Data)
     # detect which interface model the user chooses by counting
     for ireg in 1:data.params.numberOfBoundaryRegions
 
-        if     data.boundaryType[ireg] == InterfaceModelDiscontqF || data.boundaryType[ireg] == InterfaceModelDiscontqFNoReaction
+        if     data.boundaryType[ireg] == InterfaceModelDiscontqF || data.boundaryType[ireg] == InterfaceModelDiscontqFInterfaceSpecies
 
             countDiscontqF = countDiscontqF + 1
 
@@ -1192,7 +1192,7 @@ function inner_interface_model(ctsys::System)
     # detect which interface model the user chooses by counting
     for ireg in 1:ctsys.data.params.numberOfBoundaryRegions
 
-        if     ctsys.data.boundaryType[ireg] ==  InterfaceModelDiscontqF || data.boundaryType[ireg] == InterfaceModelDiscontqFNoReaction
+        if     ctsys.data.boundaryType[ireg] ==  InterfaceModelDiscontqF || data.boundaryType[ireg] == InterfaceModelDiscontqFInterfaceSpecies
 
             countDiscontqF = countDiscontqF + 1
 
@@ -1342,8 +1342,8 @@ function get_current_val(ctsys, U, Uold, Δt) # DA: But caution, still need some
     I      = integrate(ctsys.fvmsys, tf, U, Uold, Δt)
 
     current = 0.0
-    for icc in 1:ctsys.data.params.numberOfCarriers+1
-        current = current + I[icc]
+    for ii in eachindex(I)
+        current = current + I[ii]
     end
 
     # DA: caution I[ipsi] not completly correct. In our examples, this does not effect something,
@@ -1365,8 +1365,8 @@ function get_current_val(ctsys, U)
     I      = integrate(ctsys.fvmsys, tf, U)
 
     current = 0.0
-    for icc in 1:ctsys.data.params.numberOfCarriers
-        current = current + I[icc]
+    for ii in eachindex(I)
+        current = current + I[ii]
     end
 
     return current

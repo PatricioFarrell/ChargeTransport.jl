@@ -45,7 +45,7 @@ abstract type InterfaceModelNone end
 #
 abstract type InterfaceModelDiscontqF end
 
-abstract type InterfaceModelDiscontqFNoReaction end
+abstract type InterfaceModelDiscontqFInterfaceSpecies end
 
 """
 $(TYPEDEF)
@@ -76,7 +76,7 @@ Possible Types of interface model (interior boundary conditions).
 """
 const InterfaceModelType = Union{Type{InterfaceModelNone}, Type{InterfaceModelSurfaceReco},
                              Type{InterfaceModelDiscontqF}, Type{InterfaceModelTangentialFlux},
-                             Type{InterfaceModelSurfaceRecoAndTangentialFlux}, Type{InterfaceModelIonCharge}, Type{InterfaceModelDiscontqFNoReaction}}
+                             Type{InterfaceModelSurfaceRecoAndTangentialFlux}, Type{InterfaceModelIonCharge}, Type{InterfaceModelDiscontqFInterfaceSpecies}}
 
 """
 Possible types of boundary models.

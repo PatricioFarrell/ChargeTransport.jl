@@ -213,8 +213,8 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
                                                                   bulk_recomb_SRH = true)
 
     data.boundaryType[bregionAcceptor]  = OhmicContact
-    data.boundaryType[bregionJunction1] = InterfaceModelDiscontqF
-    data.boundaryType[bregionJunction2] = InterfaceModelDiscontqFNoReaction
+    data.boundaryType[bregionJunction1] = InterfaceModelDiscontqFInterfaceSpecies
+    data.boundaryType[bregionJunction2] = InterfaceModelDiscontqF
     data.boundaryType[bregionDonor]     = OhmicContact
 
     # wäre schöner, wenn pro iphin_b1 nur iphin, das wäre toll.
@@ -445,7 +445,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         phip_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
         psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
 
-        for i = 1:length(phin_sol)
+        for i in eachindex(phin_sol)
             scalarplot!(vis[1, 1], subgrids[i], phin_sol[i], clear = false, color=:green)
             scalarplot!(vis[1, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
             scalarplot!(vis[1, 1], subgrids[i], psi_sol[i],  clear = false, color=:blue)
@@ -463,7 +463,7 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
         Plotter.legend(fancybox = true, loc = "best", fontsize=11)
         Plotter.title("Solution with Bias")
 
-        for i = 1:length(phin_sol)
+        for i in eachindex(phin_sol)
             scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphin, subgrids[i][CellRegions][1], phin_sol[i], psi_sol[i])), clear = false, color=:green)
             scalarplot!(vis[2, 1], subgrids[i], log.(compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i])), clear = false, color=:red)
         end
