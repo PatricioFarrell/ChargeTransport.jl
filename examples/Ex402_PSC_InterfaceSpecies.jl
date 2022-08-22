@@ -1,5 +1,5 @@
 
-module PSC_InterfaceSpecies
+module Ex402_PSC_InterfaceSpecies
 
 using VoronoiFVM
 using ChargeTransport

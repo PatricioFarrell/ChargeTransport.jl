@@ -1,5 +1,5 @@
 
-module PIN_InterfaceSpecies
+module Ex401_PIN_InterfaceSpecies
 
 using VoronoiFVM       # PDE solver with a FVM spatial discretization
 using ChargeTransport  # drift-diffusion solver

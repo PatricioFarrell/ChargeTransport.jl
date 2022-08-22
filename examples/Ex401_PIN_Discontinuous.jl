@@ -1,5 +1,5 @@
 
-module PIN_Discontinuous
+module Ex401_PIN_Discontinuous
 
 using VoronoiFVM       # PDE solver with a FVM spatial discretization
 using ChargeTransport  # drift-diffusion solver
