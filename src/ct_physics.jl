@@ -305,7 +305,7 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
     end
 
     barrier       = -  (u[ipsi]  - params.SchottkyBarrier[ibreg]/q - params.contactVoltage[ibreg])
-    
+
     if data.λ1 == 0.0
         f[ipsi] =  (2.0)^50 *   (4.0 * pi *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
     else
@@ -372,7 +372,7 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     end
 
     if data.calculationType == InEquilibrium
-        
+
         return
     end
 
@@ -387,7 +387,7 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
 
     params      = data.params
-    
+
     # note that we use bnode.cellregions[1], i.e.\ we do not distinguish betweeen left and right parameter.
     # This is because we want agreement in the quasi Fermi potentials and not the densities.
     # Further, we need to infer here a conditions with respect to the densities to get the same order
@@ -914,7 +914,7 @@ that the electron index is 1 and the hole index is 2.
 """
 function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
 
-    # set RHS to zero for all icc 
+    # set RHS to zero for all icc
     for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
         f[icc]  = 0.0
     end
@@ -970,7 +970,7 @@ storage!(f, u, node, data) = storage!(f, u, node, data, data.modelType)
 storage!(f, u, node, data, ::Type{Stationary})  = emptyFunction()
 
 
-storage!(f, u, node, data, ::Type{Transient}) = storage!(f, u, node, data, data.calculationType) 
+storage!(f, u, node, data, ::Type{Transient}) = storage!(f, u, node, data, data.calculationType)
 
 storage!(f, u, node, data, ::Type{InEquilibrium}) = emptyFunction()
 """
@@ -987,7 +987,7 @@ function storage!(f, u, node, data, ::Type{OutOfEquilibrium})
     params = data.params
     ipsi   = data.index_psi
 
-    for icc ∈ data.chargeCarrierList[1:2]
+    for icc ∈ data.chargeCarrierList
 
         get_DOS!(icc, node, data)
 
@@ -1037,32 +1037,32 @@ function flux!(f, u, edge, data, ::Type{InEquilibrium})
     displacementFlux!(f, u, edge, data)
 end
 
-function flux!(f, u, edge, data, ::Type{OutOfEquilibrium}) 
+function flux!(f, u, edge, data, ::Type{OutOfEquilibrium})
 
     ## discretization of the displacement flux (LHS of Poisson equation)
     displacementFlux!(f, u, edge, data)
-    
+
     ## add within this loop the chosen flux discretization scheme for
     ## each charge carrier
     ## Note that we are passing here with icc an Integer which we
-    ## need to detect within the chosen flux discretization the type (AbstractQuantity or Integer) 
+    ## need to detect within the chosen flux discretization the type (AbstractQuantity or Integer)
     ## of charge carrier
     # if interface carriers are present
     if isdefined(data.interfaceCarriers, :interfaceIndex)
         numberOfInterfaceCarriers = length(data.interfaceCarriers.interfaceIndex)
-        # get the correct indices out of chargeCarrierList 
+        # get the correct indices out of chargeCarrierList
         # DA: what we could also do is just read in the numbers and mention the convention?
         bulkCarriers      = data.chargeCarrierList[1:end-numberOfInterfaceCarriers]
-    else 
+    else
         bulkCarriers = data.chargeCarrierList
     end
 
-    
+
 
     for icc ∈ bulkCarriers
         chargeCarrierFlux!(f, u, edge, data, icc, data.fluxApproximation[icc])
     end
-    
+
 end
 
 
@@ -1110,7 +1110,7 @@ function chargeCarrierFlux!(f, u, edge, data, icc, ::Type{ScharfetterGummelGrade
 
     dpsi         = u[ipsi, 2] - u[ipsi, 1]
     j0           = params.chargeNumbers[icc] * q * params.UT
-    
+
     bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
     mobility     = params.mobility[icc, ireg] + (paramsnodal.mobility[icc, nodel] + paramsnodal.mobility[icc, nodek])/2
     etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
@@ -1253,7 +1253,7 @@ function chargeCarrierFlux!(f, u, edge, data, icc, ::Type{DiffusionEnhancedModif
     if ( log(data.F[icc](etal)) - log(data.F[icc](etak)) ) ≈ 0.0 # regularization idea coming from Pietra-Jüngel scheme
         gk = exp(etak) / data.F[icc](etak)
         gl = exp(etal) / data.F[icc](etal)
-        g  = 0.5 * ( gk + gl )            
+        g  = 0.5 * ( gk + gl )
     else
         g  = (etal - etak ) / ( log(data.F[icc](etal)) - log(data.F[icc](etak)) )
     end
@@ -1296,7 +1296,7 @@ function chargeCarrierFlux!(f, u, edge, data, icc, ::Type{GeneralizedSG})
 
     bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
     etak, etal   = etaFunction(u, edge, data, icc) # calls etaFunction(u, edge::VoronoiFVM.Edge, data, icc)
- 
+
     get_DOS!(icc, edge, data)
     Nik          = data.tempDOS1[icc]
     Nil          = data.tempDOS2[icc]
