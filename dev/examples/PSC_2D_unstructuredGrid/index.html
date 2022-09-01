@@ -10,8 +10,8 @@ using GridVisualize
 
 # For using this example one additionally needs to add Triangulate.
 # SimplexGridFactory is a wrapper for using this meshgenerator.
-# using SimplexGridFactory
-# using Triangulate
+using SimplexGridFactory
+using Triangulate
 
 # problem with linux, when including PyPlot not until the end: &quot;ERROR: LoadError: InitError: could not load library &quot;/home/abdel/.julia/artifacts/8cc532f6a1ace8d1b756fc413f4ab340195ec3c3/lib/libgio-2.0.so&quot;/home/abdel/.julia/artifacts/8cc532f6a1ace8d1b756fc413f4ab340195ec3c3/lib/libgobject-2.0.so.0: undefined symbol: g_uri_ref&quot;
 # It seems that this problem is common: https://discourse.julialang.org/t/could-not-load-library-librsvg-very-strange-error/21276
@@ -404,12 +404,13 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
 
     # with fixed timestep sizes we can calculate the times a priori
     tvalues              = range(0, stop = tend, length = number_tsteps)
+    numbertsteps         = length(tvalues)
 
     # for saving I-V data
     IV                   = zeros(0) # for IV values
     biasValues           = zeros(0) # for bias values
 
-    for istep = 2:length(tvalues)
+    for istep = 2:numbertsteps
 
         t  = tvalues[istep]       # Actual time
         Δu = t * scanrate         # Applied voltage
@@ -459,13 +460,13 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
         Plotter.xlabel(&quot;Applied Voltage [V]&quot;)
     end
 
-    testval = solution[data.index_psi, 42]
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
 end #  main
 
 function test()
-    testval = -4.068687295374785
+    testval = -0.6729879350578447
     main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
@@ -473,4 +474,4 @@ if test == false
     println(&quot;This message should show when this module is successfully recompiled.&quot;)
 end
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Non_RectangularGrid_2D/">« Example code for a 2D non rectangular grid.</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.22 on <span class="colophon-date" title="Friday 19 August 2022 15:05">Friday 19 August 2022</span>. Using Julia version 1.8.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Non_RectangularGrid_2D/">« Example code for a 2D non rectangular grid.</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Thursday 1 September 2022 12:32">Thursday 1 September 2022</span>. Using Julia version 1.8.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
