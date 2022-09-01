@@ -1305,7 +1305,7 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
     LAMBDA = 10 .^ (-I)
     prepend!(LAMBDA, 0.0)
 
-    for i in 1:length(LAMBDA)
+    for i in eachindex(LAMBDA)
 
         if control.verbose
             println("λ1 = $(LAMBDA[i])")
@@ -1433,7 +1433,7 @@ function compute_densities!(grid, data, sol)
                 region    = bfaceregions[indexNode]                      # since the corresponding region number is at the same index
             end
 
-            densities[icc, node] = compute_densities!(u, data, node, region, icc, ipsi, in_region)
+            densities[icc, node] = compute_densities!(u, data, node, region, icc, in_region)
         end
 
     end

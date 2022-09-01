@@ -224,7 +224,7 @@ function plot_energies(Plotter, grid::ExtendableGrid, data::Data, label_BEE)
 
     # plot different band-edge energies values in interior
     for icc = 1:params.numberOfCarriers
-        for i in 1:length(cellregions)
+        for i in eachindex(cellregions)
             # determine band-edge energy value in cell and number of cell nodes
             cellValue            = ( params.bandEdgeEnergy[icc, cellregions[i]] + paramsnodal.bandEdgeEnergy[icc, i] )/q
             numberLocalCellNodes = length(cellnodes[:,i])
@@ -246,7 +246,7 @@ function plot_energies(Plotter, grid::ExtendableGrid, data::Data, label_BEE)
 
     for icc = 1: params.numberOfCarriers
 
-        for i in 1:length(bfaceregions)
+        for i in eachindex(bfaceregions)
             # determine band-edge energy value in cell and number of cell nodes
             cellValue            = (params.bBandEdgeEnergy[icc, bfaceregions[i]] + paramsnodal.bandEdgeEnergy[icc, bfacenodes[i]])/q
             numberLocalCellNodes = length(bfacenodes[:,i])
@@ -296,7 +296,7 @@ function plot_doping(Plotter, g::ExtendableGrid, data::Data, label_density)
     # plot different doping values in interior
     for icc = 1:params.numberOfCarriers
 
-        for i in 1:length(cellregions)
+        for i in eachindex(cellregions)
             # determine doping value in cell and number of cell nodes
             cellValue            = params.doping[icc, cellregions[i]]
             numberLocalCellNodes = length(cellnodes[:,i])
@@ -319,7 +319,7 @@ function plot_doping(Plotter, g::ExtendableGrid, data::Data, label_density)
 
     for icc = 1: params.numberOfCarriers
 
-        for i in 1:length(bfaceregions)
+        for i in eachindex(bfaceregions)
             # determine doping value in cell and number of cell nodes
             cellValue            = params.bDoping[icc, bfaceregions[i]]
             numberLocalCellNodes = length(bfacenodes[:,i])

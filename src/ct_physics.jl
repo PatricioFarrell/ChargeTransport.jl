@@ -183,15 +183,13 @@ function breaction!(f, u, bnode, data, ::Type{OhmicContact})
     iphin       = data.bulkRecombination.iphin
     iphip       = data.bulkRecombination.iphip
 
-    # based on user index and regularity of solution quantities or integers are used
-    iphin       = data.chargeCarrierList[iphin]
-    iphip       = data.chargeCarrierList[iphip]
     looplist    = (iphin, iphip)
     ipsi        = data.index_psi
 
-    ## DA: so ist das eigtl auch nicht korrekt ... streng genommen. unterscheide einfach nur zwischen bulk & interface species ....
-    for icc ∈ looplist # quantities or integer indices
+    # electrons and holes entering right hand-side for BC of ipsi
+    for icc ∈ eachindex(looplist) # quantities or integer indices
 
+        icc     = data.chargeCarrierList[icc]
         get_DOS!(icc, bnode, data)
         Ni      = data.tempDOS1[icc]
         eta     = etaFunction(u, bnode, data, icc) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
@@ -252,13 +250,12 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
     iphin       = data.bulkRecombination.iphin
     iphip       = data.bulkRecombination.iphip
 
-    # based on user index and regularity of solution quantities or integers are used
-    iphin       = data.chargeCarrierList[iphin]
-    iphip       = data.chargeCarrierList[iphip]
     looplist    = (iphin, iphip)
     ipsi        = data.index_psi
 
-    for icc in 1:length(looplist)
+    for icc in eachindex(looplist)
+
+        icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used
 
         get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
         Ni     = data.tempDOS1[icc]
@@ -284,17 +281,15 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
     ibreg         = bnode.region
 
     # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
-    iphin       = data.bulkRecombination.iphin
-    iphip       = data.bulkRecombination.iphip
+    iphin         = data.bulkRecombination.iphin
+    iphip         = data.bulkRecombination.iphip
 
-    # based on user index and regularity of solution quantities or integers are used
-    iphin       = data.chargeCarrierList[iphin]
-    iphip       = data.chargeCarrierList[iphip]
-    looplist    = (iphin, iphip)
-    ipsi        = data.index_psi
+    looplist      = (iphin, iphip)
+    ipsi          = data.index_psi
 
-    for icc in 1:length(looplist)
+    for icc in eachindex(looplist)
 
+        icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used
         get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
         Ni     = data.tempDOS1[icc]
         Ei     = data.tempBEE1[icc]
@@ -351,7 +346,7 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
 
     kernelSRH = 1.0 / ( 1.0/params.recombinationSRHvelocity[iphip, bnode.region] * (n + params.bRecombinationSRHTrapDensity[iphin, bnode.region]) + 1.0/params.recombinationSRHvelocity[iphin, bnode.region] * (p + params.bRecombinationSRHTrapDensity[iphip, bnode.region] ) )
 
-    for icc in 1:length(looplist)
+    for icc in eachindex(looplist)
         f[icc] =  q * params.chargeNumbers[icc] * kernelSRH *  excessDensTerm
     end
 
@@ -599,16 +594,13 @@ function bstorage!(f, u, bnode, data, ::Type{InterfaceModelTangentialFlux})
     #indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
     iphin       = data.bulkRecombination.iphin # integer index of φ_n
     iphip       = data.bulkRecombination.iphip # integer index of φ_p
-
-    # based on user index and regularity of solution quantities or integers are used and depicted here
-    iphin       = data.chargeCarrierList[iphin] # = Quantity or integer
-    iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
     looplist    = (iphin, iphip)
 
     ipsi        = data.index_psi
 
-    for icc = 1:length(looplist)
+    for icc in eachindex(looplist)
 
+        icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used and depicted here
         get_DOS!(icc, bnode, data)
         Ni     = data.tempDOS[icc]
         eta    = etaFunction(u, bnode, data, icc) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc)
@@ -667,10 +659,6 @@ function bflux!(f, u, bedge, data, ::Type{ExcessChemicalPotential})
     # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
     iphin       = data.bulkRecombination.iphin
     iphip       = data.bulkRecombination.iphip
-
-    # based on user index and regularity of solution quantities or integers are used and depicted here
-    iphin       = data.chargeCarrierList[iphin]
-    iphip       = data.chargeCarrierList[iphip]
     ipsi        = data.index_psi                  # final index for electrostatic potential
     looplist    = (iphin, iphip)
 
@@ -678,7 +666,9 @@ function bflux!(f, u, bedge, data, ::Type{ExcessChemicalPotential})
     dpsi        =   u[ipsi, 2] - u[ipsi, 1]
 
     # k = 1 refers to left side, where as l = 2 refers to right side.
-    for icc = 1:length(looplist)
+    for icc in eachindex(looplist)
+
+        icc          = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used and depicted here
 
         j0           = params.chargeNumbers[icc] * q * params.bMobility[icc, ireg] * params.UT * params.bDensityOfStates[icc, ireg]
 
@@ -720,7 +710,8 @@ function reaction!(f, u, node, data, ::Type{InEquilibrium})
     RHSPoisson!(f, u, node, data)
 
     # zero reaction term for all icc (stability purpose)
-    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+    for icc ∈ eachindex(data.chargeCarrierList) # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+        icc = data.chargeCarrierList[icc]
         f[icc] = u[icc]
     end
 
@@ -824,15 +815,12 @@ function addGeneration!(f, u, node, data)
     # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
     iphin       = data.bulkRecombination.iphin
     iphip       = data.bulkRecombination.iphip
-
-    # based on user index and regularity of solution quantities or integers are used and depicted here
-    iphin       = data.chargeCarrierList[iphin]
-    iphip       = data.chargeCarrierList[iphip]
     looplist    = (iphin, iphip)
 
     generationTerm = generation(data, node.region, node.coord[node.index], data.generationModel)
 
-    for icc = 1:length(looplist)
+    for icc in eachindex(looplist)
+        icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used and depicted here
         f[icc] = f[icc] - q * data.params.chargeNumbers[icc] * generationTerm
     end
 
@@ -851,8 +839,14 @@ function RHSPoisson!(f, u, node, data)
     ####         right-hand side of nonlinear Poisson      ####
     ####         equation (space charge density)           ####
     ###########################################################
-    for icc ∈ data.chargeCarrierList[1:2] # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+    iphin    = data.bulkRecombination.iphin
+    iphip    = data.bulkRecombination.iphip
+    looplist = (iphin, iphip)
 
+    # electrons and holes entering right hand-side of Poisson in each layer
+    for icc ∈ eachindex(looplist) # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+
+        icc     = data.chargeCarrierList[icc]
         get_DOS!(icc, node, data)
 
         Ni      = data.tempDOS1[icc]
@@ -915,7 +909,8 @@ that the electron index is 1 and the hole index is 2.
 function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
 
     # set RHS to zero for all icc
-    for icc ∈ data.chargeCarrierList # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+    for icc ∈ eachindex(data.chargeCarrierList) # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+        icc     = data.chargeCarrierList[icc]
         f[icc]  = 0.0
     end
 
@@ -987,8 +982,9 @@ function storage!(f, u, node, data, ::Type{OutOfEquilibrium})
     params = data.params
     ipsi   = data.index_psi
 
-    for icc ∈ data.chargeCarrierList
+    for icc ∈ eachindex(data.chargeCarrierList)
 
+        icc    = data.chargeCarrierList[icc]
         get_DOS!(icc, node, data)
 
         Ni     = data.tempDOS1[icc]
@@ -1057,9 +1053,7 @@ function flux!(f, u, edge, data, ::Type{OutOfEquilibrium})
         bulkCarriers = data.chargeCarrierList
     end
 
-
-
-    for icc ∈ bulkCarriers
+    for icc ∈ eachindex(bulkCarriers)
         chargeCarrierFlux!(f, u, edge, data, icc, data.fluxApproximation[icc])
     end
 

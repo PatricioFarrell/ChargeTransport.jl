@@ -459,7 +459,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
-    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
     println("*** done\n")
@@ -467,7 +467,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 26.046758059567235
+    testval = -0.6305710078001743
     main(test = true, unknown_storage=:dense) ≈ testval  && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

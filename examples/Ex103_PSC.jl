@@ -409,13 +409,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("*** done\n")
     end
 
-    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
 end #  main
 
 function test()
-    testval = 22.166685901417342
+    testval = -0.9114885947340186
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
