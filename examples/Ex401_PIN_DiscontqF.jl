@@ -15,8 +15,6 @@ was noch offen ist:
      mit den sachen, die ich benutze, funktioniert visualisierung nicht.
 [ ]: exportiere alle sachen die ich brauche aus VoronoiFVM wie norm, subgrids und views
 
-[ ]: Vielleicht mit manuskript auch direkt weiter machen ... was sind die spannenden Fälle?
-     Was sind die Spezialfälle (auch bzgl der Vorfaktoren ...)
 =#
 
 module Ex401_PIN_DiscontqF
@@ -354,25 +352,28 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
         vis1     = GridVisualizer(Plotter = PyPlot, layout=(2,1), size = (600,670), xlabel = "space [m]", ylabel = "potential [V]", fignumber=2)
         vis2     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "space [m]", ylabel = "density [m\$^{-3}\$]", fignumber=3)
         vis3     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "voltage [V]", ylabel = "current density [Am\$^{-2}\$]",fignumber=4)
-        # subgrids und views auch für InterfaceQuantities definieren ..............
-        subgrids = VoronoiFVM.subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
-        bgrid    = subgrid(grid,[bregionJunction1], boundary=true)
-        phin_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
-        phip_sol = VoronoiFVM.views(solution, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
-        psi_sol  = VoronoiFVM.views(solution, data.index_psi, subgrids, ctsys.fvmsys)
+
+        subgridB = subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
+        phin_sol = views(solution, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
+        phip_sol = views(solution, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
+        psi_sol  = views(solution, data.index_psi, subgridB, ctsys.fvmsys)
 
         if interfaceSpecies
-            phinb_sol = view(solution[data.chargeCarrierList[iphinb].ispec, :], bgrid)
-            phipb_sol = view(solution[data.chargeCarrierList[iphipb].ispec, :], bgrid)
+
+            # this is unfortunately not working soooo good ...
+            bgrid    = subgrids(data.chargeCarrierList[iphinb], ctsys.fvmsys)
+
+            phinb_sol = views(solution, data.chargeCarrierList[iphinb], bgrid, ctsys.fvmsys)
+            phipb_sol = views(solution, data.chargeCarrierList[iphipb], bgrid, ctsys.fvmsys)
         end
 
         ###############################################################################
         ##########                         Potentials                        ##########
         ###############################################################################
         for i in eachindex(phin_sol)
-            scalarplot!(    vis1[1, 1], subgrids[i], psi_sol[i], clear = false, color=:blue, linewidth = 5)
+            scalarplot!(    vis1[1, 1], subgridB[i], psi_sol[i], clear = false, color=:blue, linewidth = 5)
             if i == 3
-                scalarplot!(vis1[1, 1], subgrids[i], psi_sol[i], clear = false, color=:blue, linewidth = 5, label = "\$ \\psi \$")
+                scalarplot!(vis1[1, 1], subgridB[i], psi_sol[i], clear = false, color=:blue, linewidth = 5, label = "\$ \\psi \$")
             end
         end
         scalarplot!(vis1[1, 1], sol_ref[:, 1], sol_ref[:, 4], clear = false, color =:black, linestyle=:dot, label = "ref sol",
@@ -380,20 +381,26 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
         ##########################
         for i in eachindex(phin_sol)
-            scalarplot!(vis1[2, 1], subgrids[i], phin_sol[i], clear = false, color=:green, linestyle=:solid, linewidth = 5)
-            scalarplot!(vis1[2, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
+            scalarplot!(vis1[2, 1], subgridB[i], phin_sol[i], clear = false, color=:green, linestyle=:solid, linewidth = 5)
+            scalarplot!(vis1[2, 1], subgridB[i], phip_sol[i], clear = false, color=:red)
 
             if i == 3
-                scalarplot!(vis1[2, 1], subgrids[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
-                scalarplot!(vis1[2, 1], subgrids[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$", color=:red)
+                scalarplot!(vis1[2, 1], subgridB[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
+                scalarplot!(vis1[2, 1], subgridB[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$", color=:red)
             end
         end
+
+        # DA: current way out, when waiting for changes within ExtendableGrids and GridVisualize
         if interfaceSpecies
-            #scalarplot!(coord[3*refinementfactor], phinb_sol, clear = false, marker = "x", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
-            #scalarplot!(coord[3*refinementfactor], phipb_sol, clear = false, marker = "x", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
+            PyPlot.figure(2)
+            #scalarplot!(vis1[2, 1], bgrid, phinb_sol, clear = false, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
+            #scalarplot!(vis1[2, 1], bgrid, phipb_sol, clear = false, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
+            PyPlot.plot(coord[3*refinementfactor], phinb_sol, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
+            PyPlot.plot(coord[3*refinementfactor], phipb_sol, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
             println("value phin_b = ", phinb_sol)
             println("value phip_b = ", phipb_sol)
         end
+
 
         scalarplot!(vis1[2, 1], sol_ref[:, 1], sol_ref[:, 3], marker ="", clear = false, color=:black, linestyle=:dot, label = "")
         scalarplot!(vis1[2, 1], sol_ref[:, 1], sol_ref[:, 2], clear = false, color =:black, linestyle=:dot, label = "ref sol",
@@ -404,24 +411,29 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
         ###############################################################################
 
         for i in eachindex(phin_sol)
-            scalarplot!(vis2, subgrids[i], compute_densities(iphin, subgrids[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, linewidth = 5, yscale=:log)
-            scalarplot!(vis2, subgrids[i], compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, color=:red)
+            scalarplot!(vis2, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, linewidth = 5, yscale=:log)
+            scalarplot!(vis2, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, color=:red)
             if i == 3
-            scalarplot!(vis2, subgrids[i], compute_densities(iphin, subgrids[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, label ="\$ n_n \$", yscale=:log)
-            scalarplot!(vis2, subgrids[i], compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, label ="\$ n_p \$", color=:red)
+            scalarplot!(vis2, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, label ="\$ n_n \$", yscale=:log)
+            scalarplot!(vis2, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, label ="\$ n_p \$", color=:red)
             end
 
         end
 
         if interfaceSpecies
+            PyPlot.figure(3)
             eta_nb = -1/ data.params.UT * ( (phinb_sol[1] - psi_sol[1][end]) + data.params.bBandEdgeEnergy[iphinb, bregionJunction1]/q )
             eta_pb =  1/ data.params.UT * ( (phipb_sol[1] - psi_sol[1][end]) + data.params.bBandEdgeEnergy[iphipb, bregionJunction1]/q )
 
-            nb     = data.params.bDensityOfStates[iphinb, bregionJunction1] * data.F[iphin](eta_nb)
-            pb     = data.params.bDensityOfStates[iphipb, bregionJunction1] * data.F[iphip](eta_pb)
+            # DA: divide by d such that it is three dimensional again?
+            nb     = data.params.bDensityOfStates[iphinb, bregionJunction1] * data.F[iphin](eta_nb)#./data.d
+            pb     = data.params.bDensityOfStates[iphipb, bregionJunction1] * data.F[iphip](eta_pb)#./data.d
 
             println("value n_b = ", nb)
             println("value p_b = ", pb)
+
+            PyPlot.semilogy(coord[3*refinementfactor], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
+            PyPlot.semilogy(coord[3*refinementfactor], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
 
             #scalarplot!(vis2, coord[3*refinementfactor], nb, clear = false, marker = "x", markersize = 12,  color =:darkgreen, label = "\$ n_\\bar{n} \$")
             #scalarplot!(vis2, coord[3*refinementfactor], pb, clear = false, marker = "x", markersize = 12,  color =:darkred, label = "\$ n_\\bar{p} \$")
@@ -447,7 +459,7 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
         println("*** done\n")
     end
 
-    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
     if test == false
@@ -456,7 +468,7 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 end #  main
 
 function test()
-    testvalinterfaceSpecies = 34.94728302630788; testvalDiscont = 34.500884975921906
+    testvalinterfaceSpecies = 0.32708816536853264; testvalDiscont = 0.4256408342166736
     main(test = true, interfaceSpecies = true) ≈ testvalinterfaceSpecies && main(test = true, interfaceSpecies = false) ≈ testvalDiscont
 end
 

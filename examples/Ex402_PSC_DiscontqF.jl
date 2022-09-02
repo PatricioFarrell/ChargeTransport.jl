@@ -217,9 +217,11 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         if leftInterface == true
             bregActive = bregionJunction1
             bregDeact  = bregionJunction2
+            icoordJ    = icoord_p
         else
             bregActive = bregionJunction2
             bregDeact  = bregionJunction1
+            icoordJ    = icoord_pi
         end
 
         if interfaceSpecies == false
@@ -443,25 +445,28 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         vis1     = GridVisualizer(Plotter = PyPlot, layout=(2,1), size = (600,670), xlabel = "space [m]", ylabel = "potential [V]", fignumber=2)
         vis2     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "space [m]", ylabel = "density [m\$^{-3}\$]", fignumber=3)
         vis3     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "voltage [V]", ylabel = "current density [Am\$^{-2}\$]",fignumber=4)
-        # subgrids und views auch für InterfaceQuantities definieren ..............
-        subgrids = VoronoiFVM.subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
-        bgrid    = subgrid(grid,[bregActive], boundary=true)
-        phin_sol = VoronoiFVM.views(sol, data.chargeCarrierList[iphin], subgrids, ctsys.fvmsys)
-        phip_sol = VoronoiFVM.views(sol, data.chargeCarrierList[iphip], subgrids, ctsys.fvmsys)
-        psi_sol  = VoronoiFVM.views(sol, data.index_psi, subgrids, ctsys.fvmsys)
+
+
+        subgridB = subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
+        phin_sol = views(sol, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
+        phip_sol = views(sol, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
+        psi_sol  = views(sol, data.index_psi, subgridB, ctsys.fvmsys)
 
         if interfaceSpecies
-            phinb_sol = view(sol[data.chargeCarrierList[iphinb].ispec, :], bgrid)
-            phipb_sol = view(sol[data.chargeCarrierList[iphipb].ispec, :], bgrid)
+            # this is unfortunately not working soooo good ...
+            bgrid    = subgrids(data.chargeCarrierList[iphinb], ctsys.fvmsys)
+
+            phinb_sol = views(sol, data.chargeCarrierList[iphinb], bgrid, ctsys.fvmsys)
+            phipb_sol = views(sol, data.chargeCarrierList[iphipb], bgrid, ctsys.fvmsys)
         end
 
         ###############################################################################
         ##########                         Potentials                        ##########
         ###############################################################################
         for i in eachindex(phin_sol)
-            scalarplot!(    vis1[1, 1], subgrids[i], psi_sol[i], clear = false, color=:blue, linewidth = 5)
+            scalarplot!(    vis1[1, 1], subgridB[i], psi_sol[i], clear = false, color=:blue, linewidth = 5)
             if i == 3
-                scalarplot!(vis1[1, 1], subgrids[i], psi_sol[i], clear = false, color=:blue, linewidth = 5, label = "\$ \\psi \$")
+                scalarplot!(vis1[1, 1], subgridB[i], psi_sol[i], clear = false, color=:blue, linewidth = 5, label = "\$ \\psi \$")
             end
         end
         scalarplot!(vis1[1, 1], sol_ref[:, 1], sol_ref[:, 4], clear = false, color =:black, linestyle=:dot, label = "ref sol",
@@ -469,16 +474,20 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
         ##########################
         for i in eachindex(phin_sol)
-            scalarplot!(vis1[2, 1], subgrids[i], phin_sol[i], clear = false, color=:green, linestyle=:solid, linewidth = 5)
-            scalarplot!(vis1[2, 1], subgrids[i], phip_sol[i], clear = false, color=:red)
+            scalarplot!(vis1[2, 1], subgridB[i], phin_sol[i], clear = false, color=:green, linestyle=:solid, linewidth = 5)
+            scalarplot!(vis1[2, 1], subgridB[i], phip_sol[i], clear = false, color=:red)
 
             if i == 3
-                scalarplot!(vis1[2, 1], subgrids[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
-                scalarplot!(vis1[2, 1], subgrids[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$", color=:red)
+                scalarplot!(vis1[2, 1], subgridB[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
+                scalarplot!(vis1[2, 1], subgridB[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$", color=:red)
             end
         end
 
         if interfaceSpecies
+            PyPlot.figure(2)
+            PyPlot.plot(coord[icoordJ], phinb_sol, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
+            PyPlot.plot(coord[icoordJ], phipb_sol, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
+
             #scalarplot!(coord[3*refinementfactor], phinb_sol, clear = false, marker = "x", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
             #scalarplot!(coord[3*refinementfactor], phipb_sol, clear = false, marker = "x", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
             println("value phin_b = ", phinb_sol)
@@ -496,18 +505,18 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         xcoord = [1:icoord_p, icoord_p:icoord_pi, icoord_pi:length(coord)]
 
         for i in eachindex(phin_sol)
-            scalarplot!(vis2, subgrids[i], compute_densities(iphin, subgrids[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, linewidth = 5, linestyle=:solid, yscale=:log)
-            scalarplot!(vis2, subgrids[i], compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, color=:red)
+            scalarplot!(vis2, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, linewidth = 5, linestyle=:solid, yscale=:log)
+            scalarplot!(vis2, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, color=:red)
             if i == 3
-            scalarplot!(vis2, subgrids[i], compute_densities(iphin, subgrids[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, label ="\$n_n\$")
-            scalarplot!(vis2, subgrids[i], compute_densities(iphip, subgrids[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, label ="\$ n_p \$", color=:red)
+            scalarplot!(vis2, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, label ="\$n_n\$")
+            scalarplot!(vis2, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, label ="\$ n_p \$", color=:red)
             end
 
         end
 
         for i in eachindex(phin_sol)
-            scalarplot!(vis2, subgrids[i], compute_densities(iphin, subgrids[i][CellRegions][1], sol_ref[xcoord[i], 2], sol_ref[xcoord[i], 4]), clear = false, label="", linestyle=:dot, color=:black)
-            scalarplot!(vis2, subgrids[i], compute_densities(iphip, subgrids[i][CellRegions][1], sol_ref[xcoord[i], 3], sol_ref[xcoord[i], 4]), clear = false, linestyle=:dot, color=:black, show = true, legend =:best)
+            scalarplot!(vis2, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], sol_ref[xcoord[i], 2], sol_ref[xcoord[i], 4]), clear = false, label="", linestyle=:dot, color=:black)
+            scalarplot!(vis2, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], sol_ref[xcoord[i], 3], sol_ref[xcoord[i], 4]), clear = false, linestyle=:dot, color=:black, show = true, legend =:best)
         end
 
         if interfaceSpecies
@@ -532,6 +541,10 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             println("value nb = ", nb)
             println("value pb = ", pb)
 
+            PyPlot.figure(3)
+            PyPlot.semilogy(coord[icoordJ], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
+            PyPlot.semilogy(coord[icoordJ], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
+
             #PyPlot.semilogy(coord[icoordbReact], nb, marker = "x", markersize = 12, color = "darkgreen", label = "\$ \\bar{n} \$")
             #PyPlot.semilogy(coord[icoordbReact], pb, marker = "x", markersize = 12, color = "darkred", label = "\$ \\bar{p} \$")
 
@@ -540,7 +553,6 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         ###############################################################################
         ##########                            IV                             ##########
         ###############################################################################
-        # DA: In this example I do not need the abs???
         scalarplot!(vis3, biasValues,   IV,           clear = false, color=:green, linewidth = 5)
         scalarplot!(vis3, IV_ref[:, 1], IV_ref[:, 2], clear = false, color=:black, linestyle=:dot)
 
@@ -550,7 +562,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         println("*** done\n")
     end
 
-    testval = VoronoiFVM.norm(ctsys.fvmsys, sol, 2)
+    testval = sum(filter(!isnan, sol))/length(sol) # when using sparse storage, we get NaN values in solution
     return testval
 
 
@@ -559,7 +571,7 @@ end #  main
 
 
 function test()
-    testvalDiscont = 56.07890011962622; testvalinterfaceSpecies = 55.97085953398684
+    testvalDiscont = -0.3861540918777643; testvalinterfaceSpecies = -0.3066809721684242
     main(test = true, discontqF = true, leftInterface = true, interfaceSpecies = false) ≈ testvalDiscont && main(test = true, leftInterface = true, discontqF = true, interfaceSpecies = true) ≈ testvalinterfaceSpecies
 end
 

@@ -179,22 +179,25 @@ end
 ###########################################################
 ###########################################################
 
-# DA:
-# 1. get here array of indices of all interface carriers with respective boundary regions.
-#  -> needed to build repective InterfaceQuantities and to enable them
-#
-# 2. get for interface reaction the index of the respective bulk species.
-#
-# 3. they need to be parsed in correct order.
-#
-# CAUTION!!! only one boundary layer allowed ....
+"""
+$(TYPEDEF)
+
+A struct holding all information necessary on the interface carriers.
+With help of this constructor we can read out the indices the user chooses for
+interface charge carrier quasi Fermi potentials with respect to the corresponding bulk
+carrier.
+CAUTION: Currently, only one boundary layer allowed!
+
+$(TYPEDFIELDS)
+
+"""
 mutable struct InterfaceCarriers
 
-    bulkIndex           ::  Array{QType, 1}
+    bulkIndex           ::  Array{Int64, 1}
     """
     index for data construction of Interface species
     """
-	interfaceIndex      ::  Array{Union{VoronoiFVM.InterfaceQuantity{Int32}, Int64}, 1}
+	interfaceIndex      ::  Array{Int64, 1}
     """
     boundary region number
     """
@@ -782,7 +785,7 @@ function Params(grid, numberOfCarriers)
     params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDensitiesEQ                 = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bReactDiscont                = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
-    
+
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
     ###############################################################
@@ -1070,7 +1073,7 @@ function build_system(grid, data, unknown_storage, ::Type{InterfaceModelDiscontq
     # if interface carriers are present
     if isdefined(data.interfaceCarriers, :interfaceIndex)
         numberOfInterfaceCarriers = length(data.interfaceCarriers.interfaceIndex)
-        # get the correct indices out of chargeCarrierList 
+        # get the correct indices out of chargeCarrierList
         # DA: what we could also do is just read in the numbers and mention the convention?
         bulkCarriers      = data.chargeCarrierList[1:end-numberOfInterfaceCarriers]
         InterfaceCarriers = data.chargeCarrierList[end-numberOfInterfaceCarriers+1:end]

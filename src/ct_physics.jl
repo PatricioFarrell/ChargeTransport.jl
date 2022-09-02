@@ -358,10 +358,11 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
 
     if isdefined(data.interfaceCarriers, :interfaceIndex) # check, if interface carriers are present.
 
-        numberOfInterfaceCarriers = length(data.interfaceCarriers.interfaceIndex)
-        InterfaceCarriers         = data.chargeCarrierList[end-numberOfInterfaceCarriers+1:end]
+        # read out the indices of interface carriers
+        InterfaceCarriers  = data.interfaceCarriers.interfaceIndex
 
         for icc in InterfaceCarriers
+            icc    = data.chargeCarrierList[icc]
             f[icc] = u[icc]
         end
     end
@@ -377,10 +378,6 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     iphin       = data.bulkRecombination.iphin # integer index of φ_n
     iphip       = data.bulkRecombination.iphip # integer index of φ_p
 
-    # based on user index and regularity of solution quantities or integers are used and depicted here
-    iphin       = data.chargeCarrierList[iphin] # = Quantity or integer
-    iphip       = data.chargeCarrierList[iphip] # = Quantity or integer
-
     params      = data.params
 
     # note that we use bnode.cellregions[1], i.e.\ we do not distinguish betweeen left and right parameter.
@@ -388,6 +385,9 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqF})
     # Further, we need to infer here a conditions with respect to the densities to get the same order
     # of magnitude as in the other discrete equations. Otherwise, we get convergence issues.
     for icc in (iphin, iphip)
+
+        # based on user index and regularity of solution quantities or integers are used and depicted here
+        icc   = data.chargeCarrierList[icc] # = Quantity or integer
 
         etan1 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 1] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # left
         etan2 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 2] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # right
@@ -409,10 +409,11 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFInterfaceSp
     if data.calculationType == InEquilibrium
         if isdefined(data.interfaceCarriers, :interfaceIndex) # check, if interface carriers are present.
 
-            numberOfInterfaceCarriers = length(data.interfaceCarriers.interfaceIndex)
-            InterfaceCarriers         = data.chargeCarrierList[end-numberOfInterfaceCarriers+1:end]
+            # read out the indices of interface carriers
+            InterfaceCarriers  = data.interfaceCarriers.interfaceIndex
 
             for icc in InterfaceCarriers
+                icc    = data.chargeCarrierList[icc]
                 f[icc] = u[icc]
             end
         end
@@ -428,17 +429,17 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFInterfaceSp
     iphin   = data.bulkRecombination.iphin # integer index of φ_n
     iphip   = data.bulkRecombination.iphip # integer index of φ_p
 
+    iphin_b = data.interfaceCarriers.interfaceIndex[iphin]
+    iphip_b = data.interfaceCarriers.interfaceIndex[iphip]
+
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin   = data.chargeCarrierList[iphin] # = Quantity or integer
     iphip   = data.chargeCarrierList[iphip] # = Quantity or integer
 
-    params  = data.params
-
-    iphin_b = data.interfaceCarriers.interfaceIndex[iphin]
-    iphip_b = data.interfaceCarriers.interfaceIndex[iphip]
-
     iphin_b = data.chargeCarrierList[iphin_b]
     iphip_b = data.chargeCarrierList[iphip_b]
+
+    params  = data.params
 
     zn      = params.chargeNumbers[iphin]
     zp      = params.chargeNumbers[iphip]
@@ -563,8 +564,9 @@ function bstorage!(f, u, bnode, data, ::Type{InterfaceModelDiscontqFInterfaceSpe
     params = data.params
     ipsi   = data.index_psi
 
-    for icc ∈ data.chargeCarrierList
+    for icc ∈ eachindex(data.chargeCarrierList)
 
+        icc    = data.chargeCarrierList[icc]
         get_DOS!(icc, bnode, data)
 
         Ni     = data.tempDOS1[icc]
@@ -1042,18 +1044,14 @@ function flux!(f, u, edge, data, ::Type{OutOfEquilibrium})
     ## each charge carrier
     ## Note that we are passing here with icc an Integer which we
     ## need to detect within the chosen flux discretization the type (AbstractQuantity or Integer)
-    ## of charge carrier
-    # if interface carriers are present
+    ## of charge carrier if interface carriers are present
     if isdefined(data.interfaceCarriers, :interfaceIndex)
         numberOfInterfaceCarriers = length(data.interfaceCarriers.interfaceIndex)
-        # get the correct indices out of chargeCarrierList
-        # DA: what we could also do is just read in the numbers and mention the convention?
-        bulkCarriers      = data.chargeCarrierList[1:end-numberOfInterfaceCarriers]
     else
-        bulkCarriers = data.chargeCarrierList
+        numberOfInterfaceCarriers = 0
     end
 
-    for icc ∈ eachindex(bulkCarriers)
+    for icc ∈ 1:data.params.numberOfCarriers-numberOfInterfaceCarriers
         chargeCarrierFlux!(f, u, edge, data, icc, data.fluxApproximation[icc])
     end
 
