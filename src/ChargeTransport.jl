@@ -28,7 +28,9 @@ export FermiDiracOneHalfTeSCA, FermiDiracZero
 
 include("ct_datatypes.jl")
 
-export StandardFuncSet, QType
+export StandardFuncSet
+export QType
+export QFModelType, DiscontQF, ContQF
 
 export OuterBoundaryModelType, OuterBoundaryModelType, InterfaceModelType
 export OhmicContact, SchottkyContact, SchottkyBarrierLowering
@@ -68,7 +70,7 @@ export show_params, trap_density!
 export get_current_val, charge_density
 export enable_traps!
 
-export enable_interface_carriers!
+export enable_interface_carrier!, CarrierType
 ##################################################################
 
 include("ct_plotting.jl")

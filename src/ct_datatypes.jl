@@ -6,12 +6,29 @@ const StandardFuncSet = Union{typeof(Boltzmann), typeof(Blakemore), typeof(Fermi
                               typeof(FermiDiracOneHalfBednarczyk), typeof(FermiDiracOneHalfTeSCA)}
 
 ##########################################################
+
 """
-Type of charge carriers and the electric potential.
+Type of charge carriers and the electric potential (corresponding to VoronoiFVM.jl).
 
 """
 const QType = Union{VoronoiFVM.ContinuousQuantity{Int32}, VoronoiFVM.DiscontinuousQuantity{Int32},
 VoronoiFVM.InterfaceQuantity{Int32}, Int64}
+
+
+##########################################################
+##########################################################
+############      Quasi Fermi potentials      ############
+
+
+abstract type ContQF end
+
+abstract type DiscontQF end
+
+QFModelType = Union{Type{ContQF}, Type{DiscontQF}}
+
+abstract type InterfaceModelDiscontqF end
+
+abstract type InterfaceModelDiscontqFInterfaceSpecies end
 
 ##########################################################
 ##########################################################
@@ -38,14 +55,6 @@ Abstract type for no interface model.
 """
 abstract type InterfaceModelNone end
 
-#
-#$(TYPEDEF)
-#Abstract type for an interface model where discontinuous
-#quasi Fermi potentials are needed.
-#
-abstract type InterfaceModelDiscontqF end
-
-abstract type InterfaceModelDiscontqFInterfaceSpecies end
 
 """
 $(TYPEDEF)
@@ -75,8 +84,8 @@ const OuterBoundaryModelType = Union{Type{OhmicContact}, Type{SchottkyContact}, 
 Possible Types of interface model (interior boundary conditions).
 """
 const InterfaceModelType = Union{Type{InterfaceModelNone}, Type{InterfaceModelSurfaceReco},
-                             Type{InterfaceModelDiscontqF}, Type{InterfaceModelTangentialFlux},
-                             Type{InterfaceModelSurfaceRecoAndTangentialFlux}, Type{InterfaceModelIonCharge}, Type{InterfaceModelDiscontqFInterfaceSpecies}}
+                                 Type{InterfaceModelTangentialFlux}, Type{InterfaceModelSurfaceRecoAndTangentialFlux},
+                                 Type{InterfaceModelIonCharge}}
 
 """
 Possible types of boundary models.

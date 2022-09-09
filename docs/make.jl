@@ -79,7 +79,8 @@ makedocs(sitename = "ChargeTransport.jl",
         "Mathematical drift-diffusion models"=>"backgroundinfo.md",
         "How to get started"=>["GeneralInformation.md",
             "GaAs.md",
-            "PSC.md"],
+            "PSC.md",
+            "DiscontinuousqF.md"],
         "Types, Constructors and Methods"=>"allindex.md",
         "Examples"=>generated_examples]
 )

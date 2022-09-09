@@ -13,7 +13,6 @@ We may infer the existence of interface species at the interior boundaries.
 was noch offen ist:
 [ ]: für visualisierung von Interface species aus voronoifvm sachen exportieren.
      mit den sachen, die ich benutze, funktioniert visualisierung nicht.
-[ ]: exportiere alle sachen die ich brauche aus VoronoiFVM wie norm, subgrids und views
 
 =#
 
@@ -148,26 +147,17 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
                                                                   bulk_recomb_Auger = true,
                                                                   bulk_recomb_radiative = true,
                                                                   bulk_recomb_SRH = true)
-    # These are the crucial lines where we impose the discontinuity!!!
-    data.isContinuous[iphin]            = false
-    data.isContinuous[iphip]            = false
     data.boundaryType[bregionAcceptor]  = OhmicContact
-    # DA: hä warte mal, wieso verschiebe ich das nicht alles einfach nach intern? Mindmap für mich selbst erstellen.
-    # Ich such mir einfach mein InterfaceModel aus
-    # Weil das logischste ist doch, dass User hier InterfaceModelNone schreibt. Wir intern wissen aber, dass wegen isContinuous = false, wir andere breaction nehmen ....
-    # other possibility: InterfaceModelDiscontqFInterfaceSpecies
-    data.boundaryType[bregionJunction2] = InterfaceModelDiscontqF
     data.boundaryType[bregionDonor]     = OhmicContact
     data.fluxApproximation             .= ScharfetterGummel
 
     if interfaceSpecies == false
-        data.boundaryType[bregionJunction1] = InterfaceModelDiscontqF
+        # for the case of still being curious to see, if something happens here!
+        data.isContinuous[iphin]        = false
+        data.isContinuous[iphip]        = false
     else
-        data.boundaryType[bregionJunction1] = InterfaceModelDiscontqFInterfaceSpecies
-        # wäre schöner, wenn pro iphinb nur iphin, das wäre toll.
-        # DA: wir müssen auf jeden fall iphin und iphinb in einer methode gemeinsam haben, damit
-        # wir intern wissen welche interface species zu welcher bulk species gehört ...
-        enable_interface_carriers!(data, bulkSpecies = [iphin, iphip], interfaceSpecies = [iphinb, iphipb], boundaryRegion = bregionJunction1)
+        enable_interface_carrier!(data, bulkCarrier = iphin, interfaceCarrier = iphinb, bregions = [bregionJunction1])
+        enable_interface_carrier!(data, bulkCarrier = iphip, interfaceCarrier = iphipb, bregions = [bregionJunction1])
     end
 
     if test == false
@@ -186,8 +176,11 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
     params.UT                                             = (kB * params.temperature) / q
     params.chargeNumbers[iphin]                           = -1
     params.chargeNumbers[iphip]                           =  1
-    # DA: sollen wir interface carriers eigene chargeNumbers geben? Ja eigtl schon oder ...
-    # weil dann können wir auch dieses enable_Interface_carriers umschreiben (glaube ich)
+    if interfaceSpecies
+        params.chargeNumbers[iphinb]                      = -1
+        params.chargeNumbers[iphipb]                      =  1
+    end
+
 
     for ibreg in 1:2   # boundary region data
         params.bDensityOfStates[iphin, ibreg]             = Nc
@@ -251,6 +244,10 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
     data.params                                           = params
     ctsys                                                 = System(grid, data, unknown_storage=:sparse)
+
+    if test == false
+        println("*** done\n")
+    end
 
     ################################################################################
     if test == false

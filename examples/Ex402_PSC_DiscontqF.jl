@@ -10,7 +10,7 @@ using PyPlot
 using DelimitedFiles
 
 function main(;n = 19, plotting = false, verbose = false, test = false,
-              discontqF = true, interfaceSpecies = true, leftInterface = true)
+              discontqF = true, interfaceSpecies = false, leftInterface = true)
 
     PyPlot.close("all")
     ################################################################################
@@ -211,8 +211,6 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     data.fluxApproximation             .= ScharfetterGummel
 
     if discontqF == true
-        data.isContinuous[iphin]        = false
-        data.isContinuous[iphip]        = false
 
         if leftInterface == true
             bregActive = bregionJunction1
@@ -225,15 +223,12 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         end
 
         if interfaceSpecies == false
-            data.boundaryType[bregActive] = InterfaceModelDiscontqF
-            data.boundaryType[bregDeact]  = InterfaceModelDiscontqF
+            # for the case of still being curious to see, if something happens here!
+            data.isContinuous[iphin]      = false
+            data.isContinuous[iphip]      = false
         else
-            data.boundaryType[bregActive] = InterfaceModelDiscontqFInterfaceSpecies
-            data.boundaryType[bregDeact]  = InterfaceModelDiscontqF
-            # wäre schöner, wenn pro iphinb nur iphin, das wäre toll.
-            # DA: wir müssen auf jeden fall iphin und iphinb in einer methode gemeinsam haben, damit
-            # wir intern wissen welche interface species zu welcher bulk species gehört ...
-            enable_interface_carriers!(data, bulkSpecies = [iphin, iphip], interfaceSpecies = [iphinb, iphipb], boundaryRegion = bregActive)
+            enable_interface_carrier!(data, bulkCarrier = iphin, interfaceCarrier = iphinb, bregions = [bregActive])
+            enable_interface_carrier!(data, bulkCarrier = iphip, interfaceCarrier = iphipb, bregions = [bregActive])
         end
 
     else
