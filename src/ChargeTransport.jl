@@ -34,10 +34,8 @@ export QFModelType, DiscontQF, ContQF
 
 export OuterBoundaryModelType, OuterBoundaryModelType, InterfaceModelType
 export OhmicContact, SchottkyContact, SchottkyBarrierLowering
-export InterfaceModelNone, InterfaceModelSurfaceReco, InterfaceModelTangentialFlux, InterfaceModelDiscontqF
-export InterfaceModelIonCharge, InterfaceModelSurfaceRecoAndTangentialFlux
-
-export InterfaceModelDiscontqFInterfaceSpecies
+export InterfaceModelNone, InterfaceModelSurfaceReco, InterfaceModelTangentialFlux
+export InterfaceModelSurfaceRecoAndTangentialFlux
 
 export ModelType, Transient, Stationary
 
@@ -62,15 +60,16 @@ export breaction!, bstorage!, reaction!, storage!, flux!
 include("ct_system.jl")
 
 export Params, ParamsNodal, Data, System
-export BulkRecombination, set_bulk_recombination, IonicChargeCarriers, enable_ionic_carriers
+export BulkRecombination, set_bulk_recombination
+
+export enable_ionic_carrier!, enable_trap_carrier!, enable_interface_carrier!
+
 export equilibrium_solve!
 export set_contact!
 export compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
 export show_params, trap_density!
 export get_current_val, charge_density
-export enable_traps!
 
-export enable_interface_carrier!, CarrierType
 ##################################################################
 
 include("ct_plotting.jl")

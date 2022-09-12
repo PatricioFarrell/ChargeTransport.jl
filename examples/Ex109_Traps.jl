@@ -144,7 +144,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_SRH = true)
 
     ## Here, we enable the traps and parse the respective index and the regions where the trap is defined.
-    enable_traps!(data = data, traps = iphit, regions = regions)
+    enable_trap_carrier!(;data = data, trapCarrier = iphit, regions = regions)
 
     ## Possible choices: GenerationNone, GenerationUniform
     data.generationModel               = GenerationUniform
@@ -318,7 +318,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     tvalues              = range(0.0, stop = tend, length = number_tsteps)
     Δt                   = tvalues[2] - tvalues[1]
 
-
     # these values are needed for putting the generation slightly on
     I      = collect(20:-1:0.0)
     LAMBDA = 10 .^ (-I)
@@ -397,7 +396,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 0.9390846288839085
+    testval = 0.9390854837133422
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

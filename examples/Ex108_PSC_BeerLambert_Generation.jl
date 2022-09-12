@@ -231,8 +231,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
     data.generationModel               = GenerationBeerLambert
-    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
     data.fluxApproximation            .= ExcessChemicalPotential
+
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     if test == false
         println("*** done\n")

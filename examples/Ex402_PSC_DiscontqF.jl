@@ -7,7 +7,7 @@ using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot
-using DelimitedFiles
+#using DelimitedFiles
 
 function main(;n = 19, plotting = false, verbose = false, test = false,
               discontqF = true, interfaceSpecies = false, leftInterface = true)

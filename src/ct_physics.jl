@@ -187,9 +187,9 @@ function breaction!(f, u, bnode, data, ::Type{OhmicContact})
     ipsi        = data.index_psi
 
     # electrons and holes entering right hand-side for BC of ipsi
-    for icc ∈ eachindex(data.electricCarrierList) # quantities or integer indices
+    for icc ∈ data.electricCarrierList         # Array{Int64, 1}
 
-        icc     = data.chargeCarrierList[icc]
+        icc     = data.chargeCarrierList[icc]  # Array{QType, 1}
         get_DOS!(icc, bnode, data)
         Ni      = data.tempDOS1[icc]
         eta     = etaFunction(u, bnode, data, icc) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
@@ -201,21 +201,45 @@ function breaction!(f, u, bnode, data, ::Type{OhmicContact})
 
     end
 
-    # add ionic carriers only in defined regions (otherwise get NaN error)
-    if isdefined(data.enableIonicCarriers, :regions)
-        for icc ∈ data.enableIonicCarriers.ionic_carriers
-            if bnode.cellregions[1] ∈ data.enableIonicCarriers.regions
-                get_DOS!(icc, bnode, data)
-                Ni      = data.tempDOS1[icc]
-                eta     = etaFunction(u, bnode, data, icc) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
+    # if ionic carriers are present
+    for iicc ∈ data.ionicCarrierList # ∈ Array{IonicCarrier, 1}
+        # add ionic carriers only in defined regions (otherwise get NaN error)
+        if bnode.cellregions[1] ∈ iicc.regions    # bnode.cellregions = [bnode.region, 0] for outer boundary.
+            icc     = iicc.ionicCarrier           # species number chosen by user
+            icc     = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
 
-                # subtract doping
-                f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )
-                # add charge carrier
-                f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)
-            end
+            get_DOS!(icc, bnode, data)
+            Ni      = data.tempDOS1[icc]
+            eta     = etaFunction(u, bnode, data, icc)
+
+            # subtract doping
+            f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )
+            # add charge carrier
+            f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)
+
         end
+
     end
+
+    # # if trap carriers are present
+    # for iicc ∈ data.trapCarrierList # ∈ Array{TrapCarrier, 1}
+    #     # add trap carriers only in defined regions (otherwise get NaN error)
+    #     if bnode.cellregions[1] ∈ iicc.regions
+    #         icc     = iicc.trapCarrier           # species number chosen by user
+    #         icc     = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+
+    #         get_DOS!(icc, bnode, data)
+    #         Ni      = data.tempDOS1[icc]
+    #         eta     = etaFunction(u, bnode, data, icc)
+
+    #         # subtract doping
+    #         f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * ( params.bDoping[icc, bnode.region] )
+    #         # add charge carrier
+    #         f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * Ni * data.F[icc](eta)
+
+    #     end
+
+    # end
 
     f[ipsi] = f[ipsi] - paramsnodal.doping[bnode.index]
 
@@ -244,13 +268,12 @@ no electrical field and a quasi Fermi level equal to the Schottky barrier ``\\ph
 """
 function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
 
-    params        = data.params
-
+    params      = data.params
     ipsi        = data.index_psi
 
-    for icc in eachindex(data.electricCarrierList)
+    for icc ∈ data.electricCarrierList       # Array{Int64, 1}
 
-        icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used
+        icc    = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
 
         get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
         Ni     = data.tempDOS1[icc]
@@ -272,19 +295,14 @@ Note that this code is still experimental and can only be used for an electric p
 """
 function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
 
-    params        = data.params
-    ibreg         = bnode.region
+    params     = data.params
+    ibreg      = bnode.region
+    ipsi       = data.index_psi
 
-    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
-    iphin         = data.bulkRecombination.iphin
-    iphip         = data.bulkRecombination.iphip
+    for icc ∈ data.electricCarrierList       # Array{Int64, 1}
 
-    looplist      = (iphin, iphip)
-    ipsi          = data.index_psi
+        icc    = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
 
-    for icc in eachindex(looplist)
-
-        icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used
         get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
         Ni     = data.tempDOS1[icc]
         Ei     = data.tempBEE1[icc]
@@ -294,12 +312,12 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
 
     end
 
-    barrier       = -  (u[ipsi]  - params.SchottkyBarrier[ibreg]/q - params.contactVoltage[ibreg])
+    barrier    = -  (u[ipsi]  - params.SchottkyBarrier[ibreg]/q - params.contactVoltage[ibreg])
 
     if data.λ1 == 0.0
-        f[ipsi] =  (2.0)^50 *   (4.0 * pi *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
+        f[ipsi] =  (2.0)^50 * (4.0 * pi * params.dielectricConstant[bnode.cellregions[1]] * params.dielectricConstantImageForce[bnode.cellregions[1]])/q * (barrier)^2
     else
-        f[ipsi] = 1/data.λ1 *   (4.0 * pi *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
+        f[ipsi] = 1/data.λ1 * (4.0 * pi * params.dielectricConstant[bnode.cellregions[1]] * params.dielectricConstantImageForce[bnode.cellregions[1]])/q * (barrier)^2
     end
 
 end
@@ -323,7 +341,6 @@ function breactionInterface!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco
     # indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (passed through recombination)
     iphin    = data.bulkRecombination.iphin # integer index of φ_n
     iphip    = data.bulkRecombination.iphip # integer index of φ_p
-    looplist = (iphin, iphip)
 
     params   = data.params
 
@@ -341,7 +358,8 @@ function breactionInterface!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco
 
     kernelSRH = 1.0 / ( 1.0/params.recombinationSRHvelocity[iphip, bnode.region] * (n + params.bRecombinationSRHTrapDensity[iphin, bnode.region]) + 1.0/params.recombinationSRHvelocity[iphin, bnode.region] * (p + params.bRecombinationSRHTrapDensity[iphip, bnode.region] ) )
 
-    for icc in eachindex(looplist)
+    for icc ∈ data.electricCarrierList
+        icc = data.chargeCarrierList[icc]
         f[icc] =  q * params.chargeNumbers[icc] * kernelSRH *  excessDensTerm
     end
 
@@ -628,12 +646,30 @@ function reaction!(f, u, node, data, ::Type{InEquilibrium})
     RHSPoisson!(f, u, node, data)
 
     # zero reaction term for all icc (stability purpose)
-    for icc ∈ eachindex(data.electricCarrierList) # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
-        icc = data.electricCarrierList[icc]
+    for icc ∈ data.electricCarrierList # Array{Int64, 1}
+        icc = data.chargeCarrierList[icc] # Array{QType 1}
         f[icc] = u[icc]
     end
 
-    # DA: NEED TO ADD IONIC CARRIERS AND TRAPS!!!!!
+    for iicc ∈ data.ionicCarrierList # ∈ Array{IonicCarrier, 1}
+        # add ionic carriers only in defined regions (otherwise get NaN error)
+        if node.region ∈ iicc.regions
+            icc     = iicc.ionicCarrier           # species number chosen by user
+            icc     = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+
+            f[icc] = u[icc]
+        end
+    end
+
+    for iicc ∈ data.trapCarrierList # ∈ Array{TrapCarrier, 1}
+        # add trap carriers only in defined regions (otherwise get NaN error)
+        if node.region ∈ iicc.regions
+            icc     = iicc.trapCarrier            # species number chosen by user
+            icc     = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+
+            f[icc] = u[icc]
+        end
+    end
 
 end
 
@@ -688,58 +724,59 @@ function addRecombination!(f, u, node, data, ::SRHWithTrapsType)
     params      = data.params
     ireg        = node.region
 
-    # indices (∈ IN) used by user
+    # indices (∈IN) used by user
     iphin       = data.bulkRecombination.iphin
     iphip       = data.bulkRecombination.iphip
-    itrap       = data.enableTraps.traps
 
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin       = data.chargeCarrierList[iphin]
     iphip       = data.chargeCarrierList[iphip]
-    itrap       = data.chargeCarrierList[itrap]
 
     get_DOS!(iphin, node, data); get_DOS!(iphip, node, data)
 
     Nc = data.tempDOS1[iphin];      Nv = data.tempDOS1[iphip]
-    Nt = params.densityOfStates[itrap, ireg]
 
-    n     = Nc * data.F[iphin](etaFunction(u, node, data, iphin))
-    p     = Nv * data.F[iphip](etaFunction(u, node, data, iphip))
-    t     = Nt * data.F[itrap](etaFunction(u, node, data, itrap))
+    n    = Nc * data.F[iphin](etaFunction(u, node, data, iphin))
+    p    = Nv * data.F[iphip](etaFunction(u, node, data, iphip))
+    taun = params.recombinationSRHLifetime[iphin, ireg]
+    n0   = params.recombinationSRHTrapDensity[iphin, ireg]
+    taup = params.recombinationSRHLifetime[iphip, ireg]
+    p0   = params.recombinationSRHTrapDensity[iphip, ireg]
 
-    taun  = params.recombinationSRHLifetime[iphin, ireg]
-    n0    = params.recombinationSRHTrapDensity[iphin, ireg]
-    taup  = params.recombinationSRHLifetime[iphip, ireg]
-    p0    = params.recombinationSRHTrapDensity[iphip, ireg]
+    for iicc ∈ data.trapCarrierList
+        icc   = iicc.trapCarrier
+        itrap = data.chargeCarrierList[icc]
 
-    # Rn, Rp agree up to sign with *On the Shockley-Read-Hall Model: Generation-Recombination
-    # in Semiconductors* in SIAM Journal on Applied Mathematics, Vol. 67, No. 4 (2007), pp. 1183-1201.
-    # The sign is chosen according to *Supporting Information: Consistent Device Simulation Model
-    # Describing Perovskite Solar Cells in Steady-State, Transient and Frequency Domain* in ACS (2018)
-    if params.chargeNumbers[itrap] == -1
-        Rn =  1 / taun * (n * (1-t/Nt) - n0 * t/Nt)
-        Rp =  1 / taup * (p * t/Nt     - p0 * (1-t/Nt))
-    elseif params.chargeNumbers[itrap] == 1
-        Rn =  1 / taun * (n * t/Nt     - n0 * (1-t/Nt))
-        Rp =  1 / taup * (p * (1-t/Nt) - p0 * t/Nt)
+        Nt    = params.densityOfStates[itrap, ireg]
+        t     = Nt * data.F[itrap](etaFunction(u, node, data, itrap))
+
+        # Rn, Rp agree up to sign with *On the Shockley-Read-Hall Model: Generation-Recombination
+        # in Semiconductors* in SIAM Journal on Applied Mathematics, Vol. 67, No. 4 (2007), pp. 1183-1201.
+        # The sign is chosen according to *Supporting Information: Consistent Device Simulation Model
+        # Describing Perovskite Solar Cells in Steady-State, Transient and Frequency Domain* in ACS (2018)
+        if params.chargeNumbers[itrap] == -1
+            Rn =  1 / taun * (n * (1-t/Nt) - n0 * t/Nt)
+            Rp =  1 / taup * (p * t/Nt     - p0 * (1-t/Nt))
+        elseif params.chargeNumbers[itrap] == 1
+            Rn =  1 / taun * (n * t/Nt     - n0 * (1-t/Nt))
+            Rp =  1 / taup * (p * (1-t/Nt) - p0 * t/Nt)
+        end
+
+        f[itrap] = q * params.chargeNumbers[itrap] * (Rp-Rn)
+        f[iphin] = q * params.chargeNumbers[iphin] * Rn
+        f[iphip] = q * params.chargeNumbers[iphip] * Rp
     end
 
-    f[iphin] = q * params.chargeNumbers[iphin] * Rn
-    f[iphip] = q * params.chargeNumbers[iphip] * Rp
-    f[itrap] = q * params.chargeNumbers[itrap] * (Rp-Rn)
+
+
 
 end
 
 function addGeneration!(f, u, node, data)
 
-    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
-    iphin       = data.bulkRecombination.iphin
-    iphip       = data.bulkRecombination.iphip
-    looplist    = (iphin, iphip)
-
     generationTerm = generation(data, node.region, node.coord[node.index], data.generationModel)
 
-    for icc in eachindex(looplist)
+    for icc ∈ data.electricCarrierList
         icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used and depicted here
         f[icc] = f[icc] - q * data.params.chargeNumbers[icc] * generationTerm
     end
@@ -761,9 +798,9 @@ function RHSPoisson!(f, u, node, data)
     ###########################################################
 
     # electrons and holes entering right hand-side of Poisson in each layer
-    for icc ∈ eachindex(data.electricCarrierList) # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
+    for icc ∈ data.electricCarrierList          # Array{Int64, 1}
 
-        icc     = data.chargeCarrierList[icc]
+        icc     = data.chargeCarrierList[icc]   # Array{QType, 1}
         get_DOS!(icc, node, data)
 
         Ni      = data.tempDOS1[icc]
@@ -774,24 +811,41 @@ function RHSPoisson!(f, u, node, data)
 
     end
 
-    # add ionic carriers only in defined regions (otherwise get NaN error)
-    if isdefined(data.enableIonicCarriers, :regions)
-        for icc ∈ data.enableIonicCarriers.ionic_carriers
-            if node.region ∈ data.enableIonicCarriers.regions
-                get_DOS!(icc, node, data)
+    for iicc ∈ data.ionicCarrierList # ∈ Array{IonicCarrier, 1}
+        # add ionic carriers only in defined regions (otherwise get NaN error)
+        if node.region ∈ iicc.regions
+            icc     = iicc.ionicCarrier           # species number chosen by user
+            icc     = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
 
-                Ni      = data.tempDOS1[icc]
-                eta     = etaFunction(u, node, data, icc)
+            get_DOS!(icc, node, data)
 
-                f[ipsi] = f[ipsi] - data.params.chargeNumbers[icc] * ( data.params.doping[icc, node.region] )  # subtract doping
-                f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * Ni * data.F[icc](eta)   # add charge carrier
-            end
+            Ni      = data.tempDOS1[icc]
+            eta     = etaFunction(u, node, data, icc)
+
+            f[ipsi] = f[ipsi] - data.params.chargeNumbers[icc] * ( data.params.doping[icc, node.region] )  # subtract doping
+            f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * Ni * data.F[icc](eta)   # add charge carrier
         end
     end
 
-    f[ipsi]     = f[ipsi] - data.paramsnodal.doping[node.index]
+    # for iicc ∈ data.trapCarrierList # ∈ Array{TrapCarrier, 1}
+    #     # add trap carriers only in defined regions (otherwise get NaN error)
+    #     if node.region ∈ iicc.regions
+    #         icc     = iicc.trapCarrier            # species number chosen by user
+    #         icc     = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
 
-    f[ipsi]     = - q * data.λ1 * f[ipsi]
+    #         get_DOS!(icc, node, data)
+
+    #         Ni      = data.tempDOS1[icc]
+    #         eta     = etaFunction(u, node, data, icc)
+
+    #         f[ipsi] = f[ipsi] - data.params.chargeNumbers[icc] * ( data.params.doping[icc, node.region] )  # subtract doping
+    #         f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * Ni * data.F[icc](eta)   # add charge carrier
+    #     end
+    # end
+
+    f[ipsi] = f[ipsi] - data.paramsnodal.doping[node.index]
+
+    f[ipsi] = - q * data.λ1 * f[ipsi]
 
 end
 
@@ -825,15 +879,15 @@ that the electron index is 1 and the hole index is 2.
 """
 function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
 
-    # set RHS to zero for all icc
-    for icc ∈ eachindex(data.electricCarrierList) # chargeCarrierList[icc] ∈ {IN} ∪ {AbstractQuantity}
-        icc     = data.electricCarrierList[icc]
+    RHSPoisson!(f, u, node, data)               # RHS of Poisson
+
+    # First, set RHS to zero for all icc
+    for icc ∈ eachindex(data.chargeCarrierList) # Array{Int61, 1}
+        icc     = data.chargeCarrierList[icc]   # Array{QType, 1}
         f[icc]  = 0.0
     end
 
-    ## DA: ADD LOOP OVER IONS AND TRAPSSSS!
-
-    RHSPoisson!(f, u, node, data)             # RHS of Poisson
+    # Then, add RHS of continuity equations based on user information
     RHSContinuityEquations!(f, u, node, data) # RHS of Charge Carriers with special treatment of recombination
 
 end
@@ -901,9 +955,9 @@ function storage!(f, u, node, data, ::Type{OutOfEquilibrium})
     params = data.params
     ipsi   = data.index_psi
 
-    for icc ∈ eachindex(data.electricCarrierList)
+    for icc ∈ data.electricCarrierList       # Array{Int64, 1}
 
-        icc    = data.electricCarrierList[icc]
+        icc    = data.chargeCarrierList[icc] # get correct index in chargeCarrierList
         get_DOS!(icc, node, data)
 
         Ni     = data.tempDOS1[icc]
@@ -912,7 +966,32 @@ function storage!(f, u, node, data, ::Type{OutOfEquilibrium})
 
     end
 
-    ## DA: ADD LOOP OVER IONS AND TRAPPPPS!!!!
+    for iicc ∈ data.ionicCarrierList # ∈ Array{IonicCarrier, 1}
+        # Here we do not need to check, if carrier is present in a specific region.
+        # This is directly handled by VoronoiFVM.
+        icc     = iicc.ionicCarrier           # species number chosen by user
+        icc     = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+
+        get_DOS!(icc, node, data)
+
+        Ni     = data.tempDOS1[icc]
+        eta    = etaFunction(u, node, data, icc) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc)
+        f[icc] = q * params.chargeNumbers[icc] * Ni * data.F[icc](eta)
+    end
+
+    for iicc ∈ data.trapCarrierList # ∈ Array{TrapCarrier, 1}
+        # Here we do not need to check, if carrier is present in a specific region.
+        # This is directly handled by VoronoiFVM.
+        icc     = iicc.trapCarrier            # species number chosen by user
+        icc     = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+
+        get_DOS!(icc, node, data)
+
+        Ni     = data.tempDOS1[icc]
+        eta    = etaFunction(u, node, data, icc) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc)
+        f[icc] = q * params.chargeNumbers[icc] * Ni * data.F[icc](eta)
+    end
+
 
     f[ipsi] = 0.0
 
@@ -959,11 +1038,19 @@ function flux!(f, u, edge, data, ::Type{OutOfEquilibrium})
     ## discretization of the displacement flux (LHS of Poisson equation)
     displacementFlux!(f, u, edge, data)
 
-    for icc ∈ eachindex(data.electricCarrierList)
+    for icc ∈ data.electricCarrierList   # correct index of electric carriers of Type Int64
         chargeCarrierFlux!(f, u, edge, data, icc, data.fluxApproximation[icc])
     end
 
-    #### DA: Add here also trap list and ionic charges list!!!!
+    for icc ∈ data.ionicCarrierList
+        icc     = icc.ionicCarrier       # correct index number chosen by user of Type Int64
+        chargeCarrierFlux!(f, u, edge, data, icc, data.fluxApproximation[icc])
+    end
+
+    for icc ∈ data.trapCarrierList
+        icc     = icc.trapCarrier       # correct index number chosen by user of Type Int64
+        chargeCarrierFlux!(f, u, edge, data, icc, data.fluxApproximation[icc])
+    end
 
 end
 

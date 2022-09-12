@@ -245,7 +245,7 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundaryType[bregionDonor]    = OhmicContact
 
     ## Present ionic vacancies in perovskite layer
-    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG

@@ -213,8 +213,8 @@ function main(;n = 19, Plotter = PyPlot, plotting = false, verbose = false, test
                                                                   bulk_recomb_SRH = true)
 
     data.boundaryType[bregionAcceptor]  = OhmicContact
-    data.boundaryType[bregionJunction1] = InterfaceModelDiscontqFInterfaceSpecies
-    data.boundaryType[bregionJunction2] = InterfaceModelDiscontqF
+    data.boundaryType[bregionJunction1] = InterfaceModelNone
+    data.boundaryType[bregionJunction2] = InterfaceModelNone
     data.boundaryType[bregionDonor]     = OhmicContact
 
     # wäre schöner, wenn pro iphin_b1 nur iphin, das wäre toll.

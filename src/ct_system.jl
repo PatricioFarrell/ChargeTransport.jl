@@ -82,6 +82,9 @@ function set_bulk_recombination(;iphin = 1, iphip = 2,
 
 end
 
+###########################################################
+###########################################################
+
 """
 $(TYPEDEF)
 
@@ -92,32 +95,32 @@ potentials and the respective regions in which they are defined.
 $(TYPEDFIELDS)
 
 """
-mutable struct Traps
+mutable struct TrapCarrier
 
     """
-    Array with the index of traps.
+    Index of trap carrier user defines.
     """
-    traps       ::  Int64
+    trapCarrier ::  Int64
 
     """
-    Corresponding regions where traps are assumed to be present.
+    Corresponding regions where trap carrier is assumed to be present.
     """
     regions     ::  Array{Int64, 1}
 
-    Traps() = new()
+    TrapCarrier() = new()
 
 end
 
 """
-$(TYPEDEF)
-
-Corresponding constructor for the present traps and the respective regions.
+$(SIGNATURES)
+This method takes the user information concerning present trap charge carriers,
+builds a struct of Type TrapCarrier and add this struct to the trapCarrierList.
 """
-function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
+function enable_trap_carrier!(;data = data, trapCarrier::Int64, regions::Array{Int64, 1})
 
-    enableTraps                                = Traps()
+    enableTraps                                = TrapCarrier()
 
-    enableTraps.traps                          = traps
+    enableTraps.trapCarrier                    = trapCarrier
     enableTraps.regions                        = regions
 
     if data.modelType == Transient
@@ -126,7 +129,7 @@ function enable_traps!(;data = data, traps = 3, regions = [1, 2, 3])
         data.bulkRecombination.bulk_recomb_SRH = SRHStationary
     end
 
-    data.enableTraps = enableTraps
+    push!(data.trapCarrierList, enableTraps)
 
 end
 
@@ -136,42 +139,46 @@ end
 """
 $(TYPEDEF)
 
-A struct holding all information necessary on the ionic charge carriers.
-With help of this constructor we can read out the indices the user chooses for
-ionic charge carrier quasi Fermi potentials and the respective regions in which they are
-defined. Note that it is possible to use ions as well as ion vacancies.
+A struct holding all information necessary on the ionic charge carriers which are
+the index of the charge carrier and the respective region in which they are defined.
+This struct along with all information necessary will be stored in an Array ionicCarrierList.
+Note that it is possible to use ions as well as ion vacancies.
 
 $(TYPEDFIELDS)
 
 """
-mutable struct IonicChargeCarriers
+
+mutable struct IonicCarrier
 
     """
-    Array with the indices of ionic charge carriers.
+    Index for data construction of ionic charge carrier
     """
-    ionic_carriers       ::  Array{Int64, 1}
+    ionicCarrier       ::  Int64
 
     """
-    Corresponding regions where ionic charge carriers are assumed to be present.
+    Corresponding regions where the ionic charge carrier is assumed to be present.
     """
     regions              ::  Array{Int64, 1}
 
-    IonicChargeCarriers() = new()
+    IonicCarrier() = new()
 
 end
 
 
 """
-Corresponding constructor for the present ionic charge carriers and the respective regions.
+$(SIGNATURES)
+
+This method takes the user information concerning present ionic charge carriers,
+builds a struct of Type IonicCarrier and add this struct to the ionicCarrierList.
 """
-function enable_ionic_carriers(;ionic_carriers = [3], regions = [2])
+function enable_ionic_carrier!(data; ionicCarrier::Int64, regions::Array{Int64, 1})
 
-    enableIons                = IonicChargeCarriers()
+    enableIons              = IonicCarrier()
 
-    enableIons.ionic_carriers = ionic_carriers
-    enableIons.regions        = regions
+    enableIons.ionicCarrier = ionicCarrier
+    enableIons.regions      = regions
 
-    return enableIons
+    push!(data.ionicCarrierList, enableIons)
 
 end
 
@@ -195,13 +202,13 @@ mutable struct InterfaceCarrier
     bulkCarrier      ::  Int64
 
     """
-    index for data construction of Interface species
+    Index for data construction of Interface species
     """
 
 	interfaceCarrier ::  Int64
 
     """
-    boundary region numbers
+    Boundary region numbers
     """
     bregions         ::  Array{Int64, 1}
 
@@ -213,7 +220,7 @@ end
 $(SIGNATURES)
 
 This method takes the user information concerning present interface charge carriers,
-builds a struct of Type interfaceCarrier and add this struct to the interfaceCarrierList
+builds a struct of Type InterfaceCarrier and add this struct to the interfaceCarrierList
 
 """
 function enable_interface_carrier!(data;bulkCarrier::Int64, interfaceCarrier::Int64, bregions::Array{Int64, 1})
@@ -237,12 +244,6 @@ function enable_interface_carrier!(data;bulkCarrier::Int64, interfaceCarrier::In
 
 end
 
-"""
-Type of all charge carriers and the electric potential (corresponding to ChargeTransport.jl), i.e.
-we have the VoronoiFVM types but also the types of interface carriers, ionic carriers and traps.
-
-"""
-const CarrierType     = Union{QType, InterfaceCarrier, IonicChargeCarriers, Traps}
 ###########################################################
 ###########################################################
 
@@ -583,16 +584,51 @@ mutable struct Data{TFuncs<:Function}
     """
     bulkRecombination            ::  BulkRecombination
 
-    """
-    A struct which contains information on the regions, where ionic charge carriers
-    (ions and/or ion vacancies) are present.
-    """
-    enableIonicCarriers          ::  IonicChargeCarriers
+    ###############################################################
+    ####        Information on present charge carriers         ####
+    ###############################################################
 
     """
-    A struct which contains information on present SRH traps.
+    An array containing information on whether charge carriers are continuous or
+    discontinuous. This is needed for building the AbstractQuantities which handle the
+    indices of charge carriers on different regions.
     """
-    enableTraps                  ::  Traps
+    isContinuous                 :: Array{Bool, 1}
+
+    """
+    This list stores all charge carriers with the correct type needed for VoronoiFVM.
+    """
+    chargeCarrierList            :: Array{QType, 1}
+
+
+    """
+    This list stores all electric carrier indices, i.e. the one of electrons and holes.
+    """
+    electricCarrierList          :: Array{Int64, 1}
+
+    """
+    This list contains all defined ionic carriers as a struct of Type IonicCarrier with
+    all needed information on the ionic carriers (can be either ions or ion vacancies).
+    """
+    ionicCarrierList             :: Array{IonicCarrier, 1}
+
+    """
+    This list contains all defined trap carriers for the SRH recombination
+    as a struct of Type TrapCarrier with all needed information on the trap carriers.
+    """
+    trapCarrierList              :: Array{TrapCarrier, 1}
+
+    """
+    This list stores all interface charge carriers of type InterfaceCarriers containing
+    all necessary information we need to build the discretization model.
+    """
+    interfaceCarrierList         :: Array{InterfaceCarrier, 1}
+
+    """
+    This variable stores the index of the electric potential. Based on the user choice we have
+    with this new type the opportunity to simulate discontinuous unknowns.
+    """
+    index_psi                    :: QType
 
     ###############################################################
     ####                 Numerics information                  ####
@@ -661,50 +697,6 @@ mutable struct Data{TFuncs<:Function}
     See the desciption of tempDOS2.
     """
     tempDOS2                     ::  Array{Float64, 1}
-
-    ###############################################################
-    ####        Quantities (for discontinuous solving)         ####
-    ###############################################################
-
-    """
-    An array containing information on whether charge carriers are continuous or
-    discontinuous. This is needed for building the AbstractQuantities which handle the
-    indices of charge carriers on different regions.
-    """
-    isContinuous                 :: Array{Bool, 1}
-
-    #####
-    ## DA: Have here sth like
-    # chargeCarrierList    = Array{CarrierType, 1}
-    # electricCarrierList  = Array{QType, 1}
-    # ionicCarrierList     = Array{IonicCarrier, 1}
-    # trapCarrierList      = Array{TrapCarrier, 1}
-    # interfaceCarrierList = Array{InterfaceCarrier, 1}
-
-    """
-    This list stores all charge carriers with the correct type needed for VoronoiFVM.
-    """
-    chargeCarrierList            :: Array{QType, 1}
-
-
-    """
-    This list stores all electric carriers, i.e. electrons and holes.
-    """
-    electricCarrierList          :: Array{QType, 1}
-
-    """
-    This list stores all interface charge carriers of type InterfaceCarriers containing
-    all necessary information we need to build the discretization model. This type is different
-    of the type of chargeCarrierList, since here also information will be stored, which is
-    not needed for VoronoiFVM.
-    """
-    interfaceCarrierList         :: Array{InterfaceCarrier, 1}
-
-    """
-    This variable stores the index of the electric potential. Based on the user choice we have
-    with this new type the opportunity to simulate discontinuous unknowns.
-    """
-    index_psi                    :: QType
 
     ###############################################################
     ####          Physical parameters as own structs           ####
@@ -912,8 +904,17 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
                                                       bulk_recomb_radiative = true,
                                                       bulk_recomb_SRH = true)
 
-    data.enableIonicCarriers  = IonicChargeCarriers()
-    data.enableTraps          = Traps()
+    ###############################################################
+    ####        Information on present charge carriers         ####
+    ###############################################################
+    # default values for most simple case
+    data.isContinuous         = Bool[true for ii = 1:numberOfCarriers]
+    data.chargeCarrierList    = QType[ii  for ii = 1:numberOfCarriers]
+    data.electricCarrierList  = Int64[ii for ii = 1:2]                       # electrons and holes
+    data.ionicCarrierList     = IonicCarrier[]
+    data.trapCarrierList      = TrapCarrier[]
+    data.interfaceCarrierList = InterfaceCarrier[]
+    data.index_psi            = numberOfCarriers + 1
 
     ###############################################################
     ####                 Numerics information                  ####
@@ -934,16 +935,6 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
     data.tempBEE2             = spzeros(Float64, numberOfCarriers)
     data.tempDOS1             = spzeros(Float64, numberOfCarriers)
     data.tempDOS2             = spzeros(Float64, numberOfCarriers)
-
-    ###############################################################
-    ####        Quantities (for discontinuous solving)         ####
-    ###############################################################
-    # default values for most simple case
-    data.isContinuous         = Bool[true for ii = 1:numberOfCarriers]
-    data.chargeCarrierList    = CarrierType[ii  for ii = 1:numberOfCarriers]
-    data.electricCarrierList  = QType[ii for ii = 1:2]                       # electrons and holes
-    data.interfaceCarrierList = InterfaceCarrier[]
-    data.index_psi            = numberOfCarriers + 1
 
     ###############################################################
     ####          Physical parameters as own structs           ####
@@ -1046,20 +1037,14 @@ function build_system(grid, data, unknown_storage, ::Type{ContQF})
         enable_species!(ctsys.fvmsys, icc, 1:data.params.numberOfRegions)
     end
 
-    # DA: change this also to loops!!!!!
-
     # if ionic carriers are present
-    if isdefined(data.enableIonicCarriers, :regions)
-        for icc ∈ data.enableIonicCarriers.ionic_carriers
-            enable_species!(ctsys.fvmsys, icc, data.enableIonicCarriers.regions)
-        end
+    for icc ∈ data.ionicCarrierList
+        enable_species!(ctsys.fvmsys, icc.ionicCarrier, icc.regions)
     end
 
-    # if traps are present
-    if isdefined(data.enableTraps, :regions)
-        for icc ∈ data.enableTraps.traps
-            enable_species!(ctsys.fvmsys, icc, data.enableTraps.regions)
-        end
+    # if trap carriers are present
+    for icc ∈ data.trapCarrierList
+        enable_species!(ctsys.fvmsys, icc.trapCarrier, icc.regions)
     end
 
     # we need no loop for interface carriers, since in this case there are not present.
@@ -1108,23 +1093,32 @@ function build_system(grid, data, unknown_storage, ::Type{DiscontQF})
 
     fvmsys                        = VoronoiFVM.System(grid, unknown_storage=unknown_storage)
 
+    #########################################
     # electrons and holes
     iphin                         = data.bulkRecombination.iphin # integer index of φ_n
     iphip                         = data.bulkRecombination.iphip # integer index of φ_p
 
     data.chargeCarrierList[iphin] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = iphin)
     data.chargeCarrierList[iphip] = DiscontinuousQuantity(fvmsys, 1:data.params.numberOfRegions, id = iphip)
-    data.electricCarrierList      = [data.chargeCarrierList[iphin], data.chargeCarrierList[iphip]]
+    data.electricCarrierList      = [iphin, iphip]
 
+    #########################################
+    # if ionic carriers are present
+    for icc ∈ data.ionicCarrierList
+        enable_species!(ctsys.fvmsys, icc.ionicCarrier, icc.regions)
+    end
+
+    #########################################
+    # if trap carriers are present
+    for icc ∈ data.trapCarrierList
+        enable_species!(ctsys.fvmsys, icc.trapCarrier, icc.regions)
+    end
+
+    #########################################
     # define interface carriers
     for icc ∈ data.interfaceCarrierList
         data.chargeCarrierList[icc.interfaceCarrier] = InterfaceQuantity(fvmsys, icc.bregions, id = icc.interfaceCarrier)
     end
-
-    # ionic carriers
-    # DA: after adjusting .....
-
-    # trap carriers
 
     data.index_psi = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)
     #################################################################################

@@ -238,10 +238,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
-    ## Here, the user gives information on which indices belong to ionic charge carriers and
-    ## in which regions these charge carriers are present. In this application ion vacancies
-    ## only live in active perovskite layer.
-    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    ## With this method, the user enable the ionic carrier parsed to ionicCarrier and gives
+    ## gives the information on which regions this ionic carrier is defined.
+    ## In this application ion vacancies only live in active perovskite layer.
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG

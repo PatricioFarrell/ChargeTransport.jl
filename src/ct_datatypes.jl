@@ -26,10 +26,6 @@ abstract type DiscontQF end
 
 QFModelType = Union{Type{ContQF}, Type{DiscontQF}}
 
-abstract type InterfaceModelDiscontqF end
-
-abstract type InterfaceModelDiscontqFInterfaceSpecies end
-
 ##########################################################
 ##########################################################
 
@@ -66,13 +62,6 @@ abstract type InterfaceModelTangentialFlux end
 
 abstract type InterfaceModelSurfaceRecoAndTangentialFlux end
 
-# """
-# $(TYPEDEF)
-# Abstract type for present ion charges at interfaces.
-
-# """
-abstract type InterfaceModelIonCharge end
-
 ##########################################################
 """
 Possible types of outer boundary model.
@@ -84,8 +73,7 @@ const OuterBoundaryModelType = Union{Type{OhmicContact}, Type{SchottkyContact}, 
 Possible Types of interface model (interior boundary conditions).
 """
 const InterfaceModelType = Union{Type{InterfaceModelNone}, Type{InterfaceModelSurfaceReco},
-                                 Type{InterfaceModelTangentialFlux}, Type{InterfaceModelSurfaceRecoAndTangentialFlux},
-                                 Type{InterfaceModelIonCharge}}
+                                 Type{InterfaceModelTangentialFlux}, Type{InterfaceModelSurfaceRecoAndTangentialFlux}}
 
 """
 Possible types of boundary models.
