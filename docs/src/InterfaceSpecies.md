@@ -1,11 +1,11 @@
-Interface models
+Interface Species (@id interfaceSpecies)
 ================================
 
-With help of `ChargeTransport.jl` you have the possibility to likewise simulate meaningful
-interface models. For this, the quasi Fermi potentials do not necessarily need to be continuous.
+With help of `ChargeTransport.jl` you have the possibility to likewise simulate present electric
+interface charge carriers at the internal boundaries.
 
-In the following, we introduce briefly the main code snippets. We will illustrate this feature on the basis of the standard van Roosbroeck system.
-
+In the following, we introduce briefly the main code snippets along with the underlying continuous
+charge transport model. We will illustrate this feature on the basis of the standard van Roosbroeck system.
 
 Let $\mathbf{\Omega} \subseteq \mathbb{R}^d$,
 $d \leq 3$, be an open, connected and bounded spatial domain with
@@ -44,15 +44,6 @@ bfacemask!(grid, [h_ndoping], [h_ndoping + h_pdoping], bregionJunction)
 ```
 Otherwise, you will run into issues.
 
-Discontinuous quasi Fermi potentials
-================================
-
-To allow discontinuities you need to add the following lines.
-
-```julia
-data.isContinuous[iphin] = false
-data.isContinuous[iphip] = false
-```
 
 **Do we likewise allow surface recombination for this case? If yes, how is it defined?
 Current implementation:**

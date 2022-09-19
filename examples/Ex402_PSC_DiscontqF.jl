@@ -7,10 +7,10 @@ using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot
-#using DelimitedFiles
+using DelimitedFiles
 
 function main(;n = 19, plotting = false, verbose = false, test = false,
-              discontqF = true, interfaceSpecies = false, leftInterface = true)
+              discontqF = true, interfaceSpecies = true, leftInterface = false)
 
     PyPlot.close("all")
     ################################################################################
@@ -216,10 +216,16 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             bregActive = bregionJunction1
             bregDeact  = bregionJunction2
             icoordJ    = icoord_p
+
+            regl       = regionAcceptor
+            regr       = regionIntrinsic
         else
             bregActive = bregionJunction2
             bregDeact  = bregionJunction1
             icoordJ    = icoord_pi
+
+            regl       = regionIntrinsic
+            regr       = regionDonor
         end
 
         if interfaceSpecies == false
@@ -297,11 +303,38 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             δn                                          =  0.3 * eV
             δp                                          = -0.6 * eV
             data.d                                      = 6.28 * 10e-8 * cm # lattice size perovskite
-            params.bDensityOfStates[iphinb, bregActive] = data.d * params.densityOfStates[iphin, regionAcceptor]
-            params.bDensityOfStates[iphipb, bregActive] = data.d * params.densityOfStates[iphip, regionAcceptor]
+            params.bDensityOfStates[iphinb, bregActive] = data.d * params.densityOfStates[iphin, regl]
+            params.bDensityOfStates[iphipb, bregActive] = data.d * params.densityOfStates[iphip, regl]
 
-            params.bBandEdgeEnergy[iphinb, bregActive]  = params.bandEdgeEnergy[iphin, regionAcceptor] + δn
-            params.bBandEdgeEnergy[iphipb, bregActive]  = params.bandEdgeEnergy[iphip, regionAcceptor] + δp
+            params.bBandEdgeEnergy[iphinb, bregActive]  = params.bandEdgeEnergy[iphin, regl] + δn
+            params.bBandEdgeEnergy[iphipb, bregActive]  = params.bandEdgeEnergy[iphip, regl] + δp
+
+            zn  = params.chargeNumbers[iphin]
+            zp  = params.chargeNumbers[iphip]
+            UT  = params.UT
+
+            Nc_l  = params.densityOfStates[iphin, regl]
+            Nv_l  = params.densityOfStates[iphip, regl]
+            Ec_l  = params.bandEdgeEnergy[iphin,  regl]
+            Ev_l  = params.bandEdgeEnergy[iphip,  regl]
+
+            Nc_r  = params.densityOfStates[iphin, regr]
+            Nv_r  = params.densityOfStates[iphip, regr]
+            Ec_r  = params.bandEdgeEnergy[iphin,  regr]
+            Ev_r  = params.bandEdgeEnergy[iphip,  regr]
+
+            # take values from intrinsic layer
+            mun = params.mobility[iphin, regionIntrinsic]
+            mup = params.mobility[iphip, regionIntrinsic]
+
+            Nc_b = params.bDensityOfStates[iphinb, bregActive]
+            Nv_b = params.bDensityOfStates[iphipb, bregActive]
+            Ec_b = params.bBandEdgeEnergy[iphinb,  bregActive]
+            Ev_b = params.bBandEdgeEnergy[iphipb,  bregActive]
+
+            k0n = q * zn * UT * mun * Nc_r/data.d
+            k0p = q * zp * UT * mup * Nv_r/data.d
+
 
         else
             params.bReactDiscont[iphin, bregActive]     = 1.0e13
@@ -408,6 +441,56 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
         push!(IV, val)
 
+        if interfaceSpecies
+            subgridB = subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
+            bgrid    = subgrids(data.chargeCarrierList[iphinb], ctsys.fvmsys)
+
+            phin_sol = views(sol, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
+            phip_sol = views(sol, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
+            psi_sol  = views(sol, data.index_psi,                subgridB, ctsys.fvmsys)
+
+            phinb_sol = views(sol, data.chargeCarrierList[iphinb], bgrid, ctsys.fvmsys)
+            phipb_sol = views(sol, data.chargeCarrierList[iphipb], bgrid, ctsys.fvmsys)
+
+            # left values
+            etanl = zn / UT * ( (phin_sol[regl][end] - psi_sol[regl][end]) + Ec_l / q ) # left
+            etapl = zp / UT * ( (phip_sol[regr][end] - psi_sol[regr][end]) + Ev_l / q )  # left
+
+            nl    = Nc_l * data.F[iphin](etanl)
+            pl    = Nv_l * data.F[iphip](etapl)
+
+            # interface values
+            etan_b = zn / UT * ( (phinb_sol[1] - psi_sol[regl][end]) + Ec_b / q ) # interface
+            etap_b = zp / UT * ( (phipb_sol[1] - psi_sol[regl][end]) + Ev_b / q ) # interface
+
+            n_b    = Nc_b * data.F[iphin](etan_b)
+            p_b    = Nv_b * data.F[iphip](etap_b)
+
+            # right values
+            etanr = zn / UT * ( (phin_sol[regr][1] - psi_sol[regr][1]) + Ec_r / q ) # left
+            etapr = zp / UT * ( (phip_sol[regr][1] - psi_sol[regr][1]) + Ev_r / q )  # left
+
+            nr    = Nc_r * data.F[iphin](etanr)
+            pr    = Nv_r * data.F[iphip](etapr)
+
+            Knleft  = exp(- zn/ (kB * data.params.temperature) * (Ec_l - Ec_b))
+            Knright = exp(- zn/ (kB * data.params.temperature) * (Ec_r - Ec_b))
+            Kpleft  = exp(- zp/ (kB * data.params.temperature) * (Ev_l - Ev_b))
+            Kpright = exp(- zp/ (kB * data.params.temperature) * (Ev_r - Ev_b))
+
+            #@show Knleft, Knright, Kpleft, Kpright
+
+            reactnl  = - k0n * (Knleft^(1/2)  * nl/Nc_l - Knleft^( - 1/2) * n_b/Nc_b)
+            reactnr  = - k0n * (Knright^(1/2) * nr/Nc_r - Knright^(- 1/2) * n_b/Nc_b)
+
+            reactpl  = - k0p * (Kpleft^(1/2)  * pl/Nv_l - Kpleft^( - 1/2) * p_b/Nv_b)
+            reactpr  = - k0p * (Kpright^(1/2) * pr/Nv_r - Kpright^(- 1/2) * p_b/Nv_b)
+
+            #println("main file: ")
+            @show reactnl, reactnr
+            @show reactpl, reactpr
+        end
+
     end # bias loop
 
     # writedlm("data/PSC-stationary-reference-sol.dat", [coord sol'])
@@ -441,14 +524,12 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         vis2     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "space [m]", ylabel = "density [m\$^{-3}\$]", fignumber=3)
         vis3     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "voltage [V]", ylabel = "current density [Am\$^{-2}\$]",fignumber=4)
 
-
         subgridB = subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
         phin_sol = views(sol, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
         phip_sol = views(sol, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
-        psi_sol  = views(sol, data.index_psi, subgridB, ctsys.fvmsys)
+        psi_sol  = views(sol, data.index_psi,                subgridB, ctsys.fvmsys)
 
         if interfaceSpecies
-            # this is unfortunately not working soooo good ...
             bgrid    = subgrids(data.chargeCarrierList[iphinb], ctsys.fvmsys)
 
             phinb_sol = views(sol, data.chargeCarrierList[iphinb], bgrid, ctsys.fvmsys)

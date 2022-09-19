@@ -80,7 +80,8 @@ makedocs(sitename = "ChargeTransport.jl",
         "How to get started"=>["GeneralInformation.md",
             "GaAs.md",
             "PSC.md",
-            "DiscontinuousqF.md"],
+            "InterfaceSpecies.md",
+            "DeveloperSide.md"],
         "Types, Constructors and Methods"=>"allindex.md",
         "Examples"=>generated_examples]
 )
