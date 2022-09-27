@@ -275,7 +275,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ScharfetterGummelGraded
+    data.fluxApproximation            .= ScharfetterGummelGraded
 
     ################################################################################
     if test == false
@@ -315,7 +315,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.mobility[iphin, ireg]                    = μn[ireg]
         params.mobility[iphip, ireg]                    = μp[ireg]
 
-        params.dielectricConstant[ireg]                 = ε[ireg]
+        params.dielectricConstant[ireg]                 = ε[ireg] * ε0
         # recombination parameters
         params.recombinationRadiative[ireg]             = r0[ireg]
         params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]

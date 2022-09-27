@@ -123,7 +123,7 @@ We initialize the Data instance and fill in predefined data.
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ScharfetterGummel
+    data.fluxApproximation            .= ScharfetterGummel
 
     if test == false
         println("*** done\n")
@@ -157,7 +157,7 @@ Define the Params and ParamsNodal struct.
 
     for ireg in 1:numberOfRegions           # interior region data
 
-        params.dielectricConstant[ireg]                 = εr
+        params.dielectricConstant[ireg]                 = εr * ε0
 
         # effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
