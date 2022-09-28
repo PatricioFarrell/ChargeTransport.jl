@@ -234,8 +234,8 @@ reaction rate such that we observe continuity. If you still observe discontinuit
 at the other interface without interface species, probably increase this value.
 
 ````julia
-        params.bReactDiscont[iphin, bregionJunction2]     = 1.0e15
-        params.bReactDiscont[iphip, bregionJunction2]     = 1.0e15
+        params.bReactionRate[iphin, bregionJunction2]     = 1.0e15  / (s * m^2)
+        params.bReactionRate[iphip, bregionJunction2]     = 1.0e15  / (s * m^2)
     end
 
     data.params                                           = params

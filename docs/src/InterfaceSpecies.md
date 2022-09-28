@@ -66,8 +66,8 @@ User likewise needs to add reaction rate
 Further, we introduce the reactions rates for the discontinuity.
 
 ```julia
-params.bReactDiscont[iphin, bregionJunction]     = 1.0e15 / s
-params.bReactDiscont[iphip, bregionJunction]     = 1.0e15 / s
+params.bReactionRate[iphin, bregionJunction]     = 1.0e15 / (m^2 * s)
+params.bReactionRate[iphip, bregionJunction]     = 1.0e15 / (m^2 * s)
 ```
 
 The larger these values, the more continuity can be observed.

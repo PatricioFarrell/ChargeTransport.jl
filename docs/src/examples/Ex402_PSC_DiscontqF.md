@@ -353,16 +353,16 @@ take values from intrinsic layer
 
 
         else
-            params.bReactDiscont[iphin, bregActive]     = 1.0e13
-            params.bReactDiscont[iphip, bregActive]     = 1.0e13
+            params.bReactionRate[iphin, bregActive]     = 1.0e13
+            params.bReactionRate[iphip, bregActive]     = 1.0e13
         end
 ````
 
 If you decrease these values you will observe discontinuity in the qFs.
 
 ````julia
-        params.bReactDiscont[iphin, bregDeact]          = 1.0e13
-        params.bReactDiscont[iphip, bregDeact]          = 1.0e13
+        params.bReactionRate[iphin, bregDeact]          = 1.0e13
+        params.bReactionRate[iphip, bregDeact]          = 1.0e13
 
     else
 ````
