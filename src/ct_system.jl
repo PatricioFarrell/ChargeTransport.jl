@@ -386,11 +386,10 @@ mutable struct Params
     bDensitiesEQ                 ::  Array{Float64,2}
 
     """
-    An array to define the prefactor before the difference of densities from left and right
-    at an interior interface.
+    An array to define the reaction rate at internal boundaries.
 
     """
-    bReactDiscont                ::  Array{Float64,2}
+    bReactionRate                ::  Array{Float64,2}
 
 
     ###############################################################
@@ -803,7 +802,7 @@ function Params(grid, numberOfCarriers)
     params.bDoping                      = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDensitiesEQ                 = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
-    params.bReactDiscont                = 1.0e15/s * ones(numberOfCarriers, numberOfBoundaryRegions)
+    params.bReactionRate                = 1.0e15/s * ones(numberOfCarriers, numberOfBoundaryRegions)
 
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####

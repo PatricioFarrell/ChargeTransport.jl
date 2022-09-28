@@ -434,7 +434,7 @@ function breactionqFNoInterfaceCarrier!(f, u, bnode, data)
         n1 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan1)
         n2 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan2)
 
-        react     = q * params.chargeNumbers[icc] * params.bReactDiscont[icc, bnode.region]  * (n1 - n2)
+        react     = q * params.chargeNumbers[icc] * params.bReactionRate[icc, bnode.region]  * (n1 - n2)
 
         f[icc, 1] =   react
         f[icc, 2] = - react

@@ -229,8 +229,8 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
         # For the other interface, where do not have interface species, we infer a high
         # reaction rate such that we observe continuity. If you still observe discontinuity
         # at the other interface without interface species, probably increase this value.
-        params.bReactDiscont[iphin, bregionJunction2]     = 1.0e15
-        params.bReactDiscont[iphip, bregionJunction2]     = 1.0e15
+        params.bReactionRate[iphin, bregionJunction2]     = 1.0e15
+        params.bReactionRate[iphip, bregionJunction2]     = 1.0e15
     end
 
     data.params                                           = params

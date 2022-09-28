@@ -337,13 +337,13 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
 
         else
-            params.bReactDiscont[iphin, bregActive]     = 1.0e13
-            params.bReactDiscont[iphip, bregActive]     = 1.0e13
+            params.bReactionRate[iphin, bregActive]     = 1.0e13
+            params.bReactionRate[iphip, bregActive]     = 1.0e13
         end
 
         # If you decrease these values you will observe discontinuity in the qFs.
-        params.bReactDiscont[iphin, bregDeact]          = 1.0e13
-        params.bReactDiscont[iphip, bregDeact]          = 1.0e13
+        params.bReactionRate[iphin, bregDeact]          = 1.0e13
+        params.bReactionRate[iphip, bregDeact]          = 1.0e13
 
     else
         # do nothing
