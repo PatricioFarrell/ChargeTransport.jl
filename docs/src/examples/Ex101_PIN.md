@@ -145,7 +145,7 @@ We initialize the Data instance and fill in predefined data.
     # Here, we need to specify which numbers are associated with electron and hole quasi
     # Fermi potential. Further, the desired recombination processes can be chosen here.
     # Note that, if you choose a SRH recombination you can further specify a transient SRH
-    # recombination by the method enable_traps! and adjusting the modelType. Otherwise, by
+    # recombination by the method enable_trap_carrier! and adjusting the modelType. Otherwise, by
     # default we use the stationary model for this type of recombination.
     data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                  bulk_recomb_Auger = true,
@@ -161,7 +161,7 @@ We initialize the Data instance and fill in predefined data.
     # Following choices are possible for the flux discretization scheme: ScharfetterGummel,
     # ScharfetterGummelGraded, ExcessChemicalPotential, ExcessChemicalPotentialGraded,
     # DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ExcessChemicalPotential
+    data.fluxApproximation            .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -195,7 +195,7 @@ ParamsNodal struct, see Ex102.
 
     for ireg in 1:numberOfRegions           # interior region data
 
-        params.dielectricConstant[ireg]                 = εr
+        params.dielectricConstant[ireg]                 = εr * ε0
 
         # effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc

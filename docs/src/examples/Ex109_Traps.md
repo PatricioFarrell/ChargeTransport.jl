@@ -143,7 +143,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_SRH = true)
 
     # Here, we enable the traps and parse the respective index and the regions where the trap is defined.
-    enable_traps!(data = data, traps = iphit, regions = regions)
+    enable_trap_carrier!(;data = data, trapCarrier = iphit, regions = regions)
 
     # Possible choices: GenerationNone, GenerationUniform
     data.generationModel               = GenerationUniform
@@ -155,7 +155,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ExcessChemicalPotential
+    data.fluxApproximation            .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -187,7 +187,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for ireg in 1:numberOfRegions           # interior region data
 
-        params.dielectricConstant[ireg]                 = εr
+        params.dielectricConstant[ireg]                 = εr * ε0
 
         # effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
@@ -255,8 +255,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.tol_relative   = 1.0e-10
     control.tol_round      = 1.0e-4
     control.damp_initial   = 0.5
-    control.damp_growth    = 1.2
-    control.max_iterations = 30
+    control.damp_growth    = 1.61
+    control.max_iterations = 100
     control.max_round      = 3
 
     if test == false
@@ -315,24 +315,29 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # with fixed timestep sizes we can calculate the times
     # a priori
     tvalues              = range(0.0, stop = tend, length = number_tsteps)
-
-    steps                = 20
-    I                    = collect(steps:-1:0.0)
-    LAMBDA               = 10 .^ (I)
     Δt                   = tvalues[2] - tvalues[1]
+````
 
-    for i in 1:length(LAMBDA)
+these values are needed for putting the generation slightly on
 
-        data.λ2 = 1 / (LAMBDA[i] )
+````julia
+    I      = collect(20:-1:0.0)
+    LAMBDA = 10 .^ (-I)
+
+    for istep = 1:length(I)-1
+
+        # turn slowly generation on
+        data.λ2   = LAMBDA[istep + 1]
 
         if test == false
             println("increase generation with λ2 = $(data.λ2)")
         end
 
-        VoronoiFVM.solve!(solution, initialGuess, ctsys, control = control, tstep=Δt)
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
 
-        initialGuess = solution
-    end
+        initialGuess .= solution
+
+    end # generation loop
 
     if test == false
         println("*** done\n")
@@ -383,7 +388,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         plot_IV(Plotter, biasValues,IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
     end
 
-    testval = solution[iphit, 17]
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
     if test == false
@@ -393,7 +398,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.0245795906936774
+    testval = 0.9390854837133422
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

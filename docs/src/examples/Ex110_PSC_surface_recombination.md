@@ -18,7 +18,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -239,11 +239,11 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundaryType[bregionDonor]     = OhmicContact
 
     # Present ionic vacancies in perovskite layer
-    data.enableIonicCarriers            = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation              = ExcessChemicalPotential
+    data.fluxApproximation             .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -265,7 +265,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for ireg in 1:numberOfRegions ## interior region data
 
-        params.dielectricConstant[ireg]                          = ε[ireg]
+        params.dielectricConstant[ireg]                          = ε[ireg] * ε0
 
         # effective dos, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]                      = NC[ireg]
@@ -462,7 +462,9 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
             label_solution = Array{String, 1}(undef, numberOfCarriers)
             label_solution[iphin]  = "\$ \\varphi_n\$"; label_solution[iphip]  = "\$ \\varphi_p\$"; label_solution[iphia]  = "\$ \\varphi_a\$"
 
+            PyPlot.clf()
             plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+            PyPlot.pause(0.5)
         end
 
     end # time loop
@@ -473,15 +475,15 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("*** done\n")
     end
 
-    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
 
 end # main
 
 function test()
-    testval = 50.608171445993875
-    main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
+    testval = -0.4949123763967983
+    main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 if test == false

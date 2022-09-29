@@ -1,5 +1,4 @@
-
-
+````julia
 module Ex402_PSC_DiscontqF
 
 using VoronoiFVM
@@ -19,21 +18,21 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     end
     ################################################################################
 
-    ## region numbers
+    # region numbers
     regionAcceptor          = 1                           # p doped region
     regionIntrinsic         = 2                           # intrinsic region
     regionDonor             = 3                           # n doped region
     regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
     numberOfRegions         = length(regions)
 
-    ## boundary region numbers
+    # boundary region numbers
     bregionAcceptor         = 1
     bregionDonor            = 2
     bregionJunction1        = 3
     bregionJunction2        = 4
     bregions                = [bregionAcceptor, bregionDonor, bregionJunction1, bregionJunction2]
 
-    ## grid (the nearer to interface, the finer)
+    # grid (the nearer to interface, the finer)
     h_pdoping               = 3.00e-6 * cm + 1.0e-7 * cm
     h_intrinsic             = 3.00e-5 * cm
     h_ndoping               = 8.50e-6 * cm + 1.0e-7 * cm
@@ -74,7 +73,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     coord                   = glue(coord,    coord_n_u,  tol=10*t)
     grid                    = simplexgrid(coord)
 
-    ## cellmask! for defining the subregions and assigning region number
+    # cellmask! for defining the subregions and assigning region number
     cellmask!(grid, [0.0 * μm],                 [h_pdoping],                           regionAcceptor, tol = 1.0e-18)   # p-doped region   = 1
     cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic],             regionIntrinsic, tol = 1.0e-18)  # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic],  [h_pdoping + h_intrinsic + h_ndoping], regionDonor, tol = 1.0e-18)      # n-doped region   = 3
@@ -106,10 +105,10 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         numberOfCarriers = 2
     end
 
-    ## temperature
+    # temperature
     T                    =  300.0                *  K
 
-    ## band edge energies
+    # band edge energies
     Ec_a                 = -3.0                  *  eV
     Ev_a                 = -5.1                  *  eV
 
@@ -122,7 +121,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     EC                   = [Ec_a, Ec_i, Ec_d]
     EV                   = [Ev_a, Ev_i, Ev_d]
 
-    ## effective densities of state
+    # effective densities of state
     Nc_a                 = 1.0e20                / (cm^3)
     Nv_a                 = 1.0e20                / (cm^3)
 
@@ -135,7 +134,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     NC                   = [Nc_a, Nc_i, Nc_d]
     NV                   = [Nv_a, Nv_i, Nv_d]
 
-    ## mobilities
+    # mobilities
     μn_a                 = 0.1                   * (cm^2) / (V * s)
     μp_a                 = 0.1                   * (cm^2) / (V * s)
 
@@ -148,21 +147,21 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     μn                   = [μn_a, μn_i, μn_d]
     μp                   = [μp_a, μp_i, μp_d]
 
-    ## relative dielectric permittivity
+    # relative dielectric permittivity
     ε_a                  = 4.0                   *  1.0
     ε_i                  = 23.0                  *  1.0
     ε_d                  = 3.0                   *  1.0
 
     ε                    = [ε_a, ε_i, ε_d]
 
-    ## radiative recombination
+    # radiative recombination
     r0_a                 = 6.3e-11               * cm^3 / s
     r0_i                 = 3.6e-12               * cm^3 / s
     r0_d                 = 6.8e-11               * cm^3 / s
 
     r0                   = [r0_a, r0_i, r0_d]
 
-    ## life times and trap densities
+    # life times and trap densities
     τn_a                 = 1.0e-6                * s
     τp_a                 = 1.0e-6                * s
 
@@ -174,18 +173,18 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     τn                   = [τn_a, τn_i, τn_d]
     τp                   = [τp_a, τp_i, τp_d]
 
-    ## SRH trap energies
+    # SRH trap energies
     Ei_a                 = -4.05                 * eV
     Ei_i                 = -4.60                 * eV
     Ei_d                 = -5.00                 * eV
 
     EI                   = [Ei_a, Ei_i, Ei_d]
 
-    ## doping
+    # doping
     Nd                   = 2.089649130192123e17  / (cm^3)
     Na                   = 4.529587947185444e18  / (cm^3)
 
-    ## contact voltages
+    # contact voltages
     voltageAcceptor      =  1.2                  * V
 
     if test == false
@@ -198,7 +197,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     end
     ################################################################################
 
-    ## initialize Data instance and fill in data
+    # initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
     data.modelType                      = Stationary
     data.F                              = [Boltzmann, Boltzmann]
@@ -229,7 +228,11 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         end
 
         if interfaceSpecies == false
-            # for the case of still being curious to see, if something happens here!
+````
+
+for the case of still being curious to see, if something happens here!
+
+````julia
             data.isContinuous[iphin]      = false
             data.isContinuous[iphip]      = false
         else
@@ -238,7 +241,11 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         end
 
     else
-        # do nothing
+````
+
+do nothing
+
+````julia
     end
 
     if test == false
@@ -262,7 +269,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
         params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
-        ## effective dos, band edge energy and mobilities
+        # effective dos, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = NC[ireg]
         params.densityOfStates[iphip, ireg]             = NV[ireg]
 
@@ -272,7 +279,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         params.mobility[iphin, ireg]                    = μn[ireg]
         params.mobility[iphip, ireg]                    = μp[ireg]
 
-        ## recombination parameters
+        # recombination parameters
         params.recombinationRadiative[ireg]             = r0[ireg]
         params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
         params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
@@ -280,7 +287,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, data, EI[ireg])
     end
 
-    ## outer boundary region data
+    # outer boundary region data
     params.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
     params.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
 
@@ -292,14 +299,20 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
     params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
     params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
+````
 
-    # ##############################################################
+##############################################################
 
+````julia
     if discontqF
 
-        ## inner boundary region data
+        # inner boundary region data
         if interfaceSpecies
-            # delta with negative sign -> IV shifted to right.
+````
+
+delta with negative sign -> IV shifted to right.
+
+````julia
             δn                                          =  0.3 * eV
             δp                                          = -0.6 * eV
             data.d                                      = 6.28 * 10e-8 * cm # lattice size perovskite
@@ -322,8 +335,11 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             Nv_r  = params.densityOfStates[iphip, regr]
             Ec_r  = params.bandEdgeEnergy[iphin,  regr]
             Ev_r  = params.bandEdgeEnergy[iphip,  regr]
+````
 
-            # take values from intrinsic layer
+take values from intrinsic layer
+
+````julia
             mun = params.mobility[iphin, regionIntrinsic]
             mup = params.mobility[iphip, regionIntrinsic]
 
@@ -340,21 +356,28 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             params.bReactionRate[iphin, bregActive]     = 1.0e13
             params.bReactionRate[iphip, bregActive]     = 1.0e13
         end
+````
 
-        # If you decrease these values you will observe discontinuity in the qFs.
+If you decrease these values you will observe discontinuity in the qFs.
+
+````julia
         params.bReactionRate[iphin, bregDeact]          = 1.0e13
         params.bReactionRate[iphip, bregDeact]          = 1.0e13
 
     else
-        # do nothing
+````
+
+do nothing
+
+````julia
     end
 
     ##############################################################
 
-    ## interior doping
+    # interior doping
     params.doping[iphin,  regionDonor]                  = Nd
     params.doping[iphip,  regionAcceptor]               = Na
-    ## boundary doping
+    # boundary doping
     params.bDoping[iphin, bregionDonor]                 = Nd
     params.bDoping[iphip, bregionAcceptor]              = Na
 
@@ -371,8 +394,8 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     end
     ################################################################################
 
-    ## We set zero voltage ohmic contacts for each charge carrier at all outerior boundaries
-    ## for the equilibrium calculations.
+    # We set zero voltage ohmic contacts for each charge carrier at all outerior boundaries
+    # for the equilibrium calculations.
     set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
     set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
@@ -402,7 +425,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     end
     ################################################################################
 
-    ## initialize solution and starting vectors
+    # initialize solution and starting vectors
     inival  = unknowns(ctsys)
     sol     = unknowns(ctsys)
 
@@ -418,8 +441,11 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         println("Bias loop")
     end
     ################################################################################
+````
 
-    # Set calculation type to outOfEquilibrium for starting with respective simulation.
+Set calculation type to outOfEquilibrium for starting with respective simulation.
+
+````julia
     data.calculationType = OutOfEquilibrium
     biasValues           = range(0, stop = voltageAcceptor, length = 41)
     IV                   = zeros(0)
@@ -430,13 +456,13 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             println("Δu  = ", Δu )
         end
 
-        ## set non equilibrium boundary conditions
+        # set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         solve!(sol, inival, ctsys, control = control, tstep = Inf)
         inival .= sol
 
-        ## get I-V data
+        # get I-V data
         val = get_current_val(ctsys, sol)
 
         push!(IV, val)
@@ -451,22 +477,31 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
             phinb_sol = views(sol, data.chargeCarrierList[iphinb], bgrid, ctsys.fvmsys)
             phipb_sol = views(sol, data.chargeCarrierList[iphipb], bgrid, ctsys.fvmsys)
+````
 
-            # left values
+left values
+
+````julia
             etanl = zn / UT * ( (phin_sol[regl][end] - psi_sol[regl][end]) + Ec_l / q ) # left
             etapl = zp / UT * ( (phip_sol[regr][end] - psi_sol[regr][end]) + Ev_l / q )  # left
 
             nl    = Nc_l * data.F[iphin](etanl)
             pl    = Nv_l * data.F[iphip](etapl)
+````
 
-            # interface values
+interface values
+
+````julia
             etan_b = zn / UT * ( (phinb_sol[1] - psi_sol[regl][end]) + Ec_b / q ) # interface
             etap_b = zp / UT * ( (phipb_sol[1] - psi_sol[regl][end]) + Ev_b / q ) # interface
 
             n_b    = Nc_b * data.F[iphin](etan_b)
             p_b    = Nv_b * data.F[iphip](etap_b)
+````
 
-            # right values
+right values
+
+````julia
             etanr = zn / UT * ( (phin_sol[regr][1] - psi_sol[regr][1]) + Ec_r / q ) # left
             etapr = zp / UT * ( (phip_sol[regr][1] - psi_sol[regr][1]) + Ev_r / q )  # left
 
@@ -492,13 +527,15 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         end
 
     end # bias loop
+````
 
-    # writedlm("data/PSC-stationary-reference-sol.dat", [coord sol'])
-    # res = [biasValues IV]
-    # writedlm("data/PSC-stationary-reference-IV.dat", res)
+writedlm("data/PSC-stationary-reference-sol.dat", [coord sol'])
+res = [biasValues IV]
+writedlm("data/PSC-stationary-reference-IV.dat", res)
 
-    # return
+return
 
+````julia
     if test == false
         println("*** done\n")
     end
@@ -656,3 +693,9 @@ if test == false
 end
 
 end # module
+````
+
+---
+
+*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
+

@@ -19,7 +19,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -244,11 +244,11 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundaryType[bregionDonor]    = OhmicContact
 
     # Present ionic vacancies in perovskite layer
-    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ExcessChemicalPotential
+    data.fluxApproximation            .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -284,7 +284,7 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for ireg in 1:numberOfRegions # interior region data
 
-        params.dielectricConstant[ireg]                 = ε[ireg]
+        params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
         # effective DOS, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = NC[ireg]
@@ -542,14 +542,14 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.tight_layout()
     end
 
-    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
 end #  main
 
 function test()
-    testval = 39.067907030939914
-    main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
+    testval = -0.5580791486006006
+    main(test = true, unknown_storage=:sparse) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 if test == false

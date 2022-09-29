@@ -1,16 +1,12 @@
-
-#=
 # GaAs diode (1D) (but with Discontinuous Quantities)
-([source code](SOURCE_URL))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx401_PIN_DiscontqF.jl))
 
 We simulate charge transport in a GaAs pin diode, where we we assume that the electric
 charge carriers may not be necessarily continuous.
 
 We may infer the existence of interface species at one of the interior boundaries.
 
-
-=#
-
+````julia
 module Ex401_PIN_DiscontqF
 
 using VoronoiFVM
@@ -20,7 +16,7 @@ using GridVisualize
 using PyPlot
 using DelimitedFiles
 
-## This function is used to initialize the grid for a possible extension to other p-i-n devices.
+# This function is used to initialize the grid for a possible extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
     coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 3 * refinementfactor))
     coord_intrinsic  = collect(range(h_ndoping, stop = (h_ndoping + h_intrinsic), length = 3 * refinementfactor))
@@ -40,20 +36,20 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
     end
     ################################################################################
 
-    ## region numbers
+    # region numbers
     regionAcceptor          = 1          # p doped region
     regionIntrinsic         = 2          # intrinsic region
     regionDonor             = 3          # n doped region
     regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
     numberOfRegions         = length(regions)
 
-    ## boundary region numbers
+    # boundary region numbers
     bregionAcceptor         = 1
     bregionDonor            = 2
     bregionJunction1        = 3
     bregionJunction2        = 4
 
-    ## grid
+    # grid
     h_pdoping               = 2.0 * μm
     h_intrinsic             = 2.0 * μm
     h_ndoping               = 2.0 * μm
@@ -64,7 +60,7 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
     grid                    = simplexgrid(coord)
 
-    ## cellmask! for defining the subregions and assigning region number
+    # cellmask! for defining the subregions and assigning region number
     cellmask!(grid, [0.0 * μm],                 [h_pdoping],                           regionAcceptor)   # p-doped   region = 1
     cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic],             regionIntrinsic)  # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic],  [h_pdoping + h_intrinsic + h_ndoping], regionDonor)      # n-doped   region = 3
@@ -87,7 +83,7 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
     end
     ################################################################################
 
-    ## set indices of the quasi Fermi potentials
+    # set indices of the quasi Fermi potentials
     iphin                = 1 # electron quasi Fermi potential
     iphip                = 2 # hole quasi Fermi potential
 
@@ -100,8 +96,11 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
         numberOfCarriers = 2
         ipsi             = 3
     end
+````
 
-    # We define the physical data.
+We define the physical data.
+
+````julia
     Ec                   = 1.424                *  eV
     Ev                   = 0.0                  *  eV
     Nc                   = 4.351959895879690e17 / (cm^3)
@@ -111,13 +110,13 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
     εr                   = 12.9                 *  1.0    # relative dielectric permittivity of GAs
     T                    = 300.0                *  K
 
-    ## recombination parameters
+    # recombination parameters
     Auger                = 1.0e-29              * cm^6 / s
     SRH_TrapDensity      = 1.0e10               / cm^3
     SRH_LifeTime         = 1.0                  * ns
     Radiative            = 1.0e-10              * cm^3 / s
 
-    ## doping
+    # doping
     dopingFactorNd       = 1.0
     dopingFactorNa       = 0.46
     Nd                   = dopingFactorNd * Nc
@@ -135,8 +134,11 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
         println("Define System and fill in information about model")
     end
     ################################################################################
+````
 
-    # We initialize the Data instance and fill in predefined data.
+We initialize the Data instance and fill in predefined data.
+
+````julia
     data                                = Data(grid, numberOfCarriers)
     data.modelType                      = Stationary
     data.F                             .= Boltzmann
@@ -186,7 +188,7 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
         params.dielectricConstant[ireg]                   = εr * ε0
 
-        ## effective DOS, band-edge energy and mobilities
+        # effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]               = Nc
         params.densityOfStates[iphip, ireg]               = Nv
         params.bandEdgeEnergy[iphin, ireg]                = Ec
@@ -194,7 +196,7 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
         params.mobility[iphin, ireg]                      = mun
         params.mobility[iphip, ireg]                      = mup
 
-        ## recombination parameters
+        # recombination parameters
         params.recombinationRadiative[ireg]               = Radiative
         params.recombinationSRHLifetime[iphin, ireg]      = SRH_LifeTime
         params.recombinationSRHLifetime[iphip, ireg]      = SRH_LifeTime
@@ -205,13 +207,13 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
     end
 
-    ## interior doping
+    # interior doping
     params.doping[iphin, regionDonor]                     = Nd
     params.doping[iphin, regionIntrinsic]                 = ni
     params.doping[iphip, regionIntrinsic]                 = 0.0
     params.doping[iphip, regionAcceptor]                  = Na
 
-    ## boundary doping
+    # boundary doping
     params.bDoping[iphin, bregionDonor]                   = Nd
     params.bDoping[iphip, bregionAcceptor]                = Na
 
@@ -225,12 +227,15 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
         params.bBandEdgeEnergy[iphinb, bregionJunction1]  = params.bandEdgeEnergy[iphin, regionIntrinsic] + δn
         params.bBandEdgeEnergy[iphipb, bregionJunction1]  = params.bandEdgeEnergy[iphip, regionIntrinsic] + δp
+````
 
-        # For the other interface, where do not have interface species, we infer a high
-        # reaction rate such that we observe continuity. If you still observe discontinuity
-        # at the other interface without interface species, probably increase this value.
-        params.bReactionRate[iphin, bregionJunction2]     = 1.0e15
-        params.bReactionRate[iphip, bregionJunction2]     = 1.0e15
+For the other interface, where do not have interface species, we infer a high
+reaction rate such that we observe continuity. If you still observe discontinuity
+at the other interface without interface species, probably increase this value.
+
+````julia
+        params.bReactionRate[iphin, bregionJunction2]     = 1.0e15  / (s * m^2)
+        params.bReactionRate[iphip, bregionJunction2]     = 1.0e15  / (s * m^2)
     end
 
     data.params                                           = params
@@ -246,8 +251,8 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
     end
     ################################################################################
 
-    ## We set zero voltage ohmic contacts for each charge carrier at all outerior boundaries
-    ## for the equilibrium calculations.
+    # We set zero voltage ohmic contacts for each charge carrier at all outerior boundaries
+    # for the equilibrium calculations.
     set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
     set_contact!(ctsys, bregionDonor,    Δu = 0.0)
 
@@ -274,7 +279,7 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
     end
     ################################################################################
 
-    ## initialize solution and starting vectors
+    # initialize solution and starting vectors
     initialGuess  = unknowns(ctsys)
     solution      = unknowns(ctsys)
     solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
@@ -301,7 +306,7 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
             println("Δu  = ", Δu )
         end
 
-        ## set non equilibrium boundary conditions
+        # set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
@@ -309,7 +314,7 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
         initialGuess .= solution
 
-        ## get I-V data
+        # get I-V data
         val = get_current_val(ctsys, solution)
 
         push!(IV,  val)
@@ -346,8 +351,11 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
             phin_sol = views(solution, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
             phip_sol = views(solution, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
             psi_sol  = views(solution, data.index_psi, subgridB, ctsys.fvmsys)
+````
 
-            # this is unfortunately not working soooo good ...
+this is unfortunately not working soooo good ...
+
+````julia
             bgrid    = subgrids(data.chargeCarrierList[iphinb], ctsys.fvmsys)
 
             phinb_sol = views(solution, data.chargeCarrierList[iphinb], bgrid, ctsys.fvmsys)
@@ -356,9 +364,13 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
             subgridp  = subgrid(grid, [1])
             subgridi  = subgrid(grid, [2])
             subgridn  = subgrid(grid, [3])
-            # actually, we do not need this cases, since for this set-up we have continuity
-            # in the densities with no effects on interfaces, but still for demonstrational
-            # purpose.
+````
+
+actually, we do not need this cases, since for this set-up we have continuity
+in the densities with no effects on interfaces, but still for demonstrational
+purpose.
+
+````julia
             psi_solp  = view(solution[ipsi, :],  subgridp)
             psi_soli  = view(solution[ipsi, :],  subgridi)
             psi_soln  = view(solution[ipsi, :],  subgridn)
@@ -397,8 +409,11 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
                     scalarplot!(vis1[2, 1], subgridB[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$", color=:red)
                 end
             end
+````
 
-            # DA: current way out, when waiting for changes within ExtendableGrids and GridVisualize
+DA: current way out, when waiting for changes within ExtendableGrids and GridVisualize
+
+````julia
             PyPlot.figure(2)
             PyPlot.plot(coord[3*refinementfactor], phinb_sol, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
             PyPlot.plot(coord[3*refinementfactor], phipb_sol, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
@@ -443,8 +458,11 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
             PyPlot.figure(3)
             eta_nb = -1/ data.params.UT * ( (phinb_sol[1] - psi_sol[1][end]) + data.params.bBandEdgeEnergy[iphinb, bregionJunction1]/q )
             eta_pb =  1/ data.params.UT * ( (phipb_sol[1] - psi_sol[1][end]) + data.params.bBandEdgeEnergy[iphipb, bregionJunction1]/q )
+````
 
-            # DA: divide by d such that it is three dimensional again?
+DA: divide by d such that it is three dimensional again?
+
+````julia
             nb     = data.params.bDensityOfStates[iphinb, bregionJunction1] * data.F[iphin](eta_nb)#./data.d
             pb     = data.params.bDensityOfStates[iphipb, bregionJunction1] * data.F[iphip](eta_pb)#./data.d
 
@@ -453,8 +471,11 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
             PyPlot.semilogy(coord[3*refinementfactor], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
             PyPlot.semilogy(coord[3*refinementfactor], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
+````
 
-            # since we have a homogeneous set of parameters, region does not matter
+since we have a homogeneous set of parameters, region does not matter
+
+````julia
             n = compute_densities(iphin, 1, sol_ref[:, 2], sol_ref[:, 4])
             p = compute_densities(iphip, 1, sol_ref[:, 3], sol_ref[:, 4])
 
@@ -468,8 +489,11 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
             scalarplot!(vis2, subgridi, compute_densities(iphip, regionIntrinsic, phip_soli, psi_soli), clear = false, color=:red)
             scalarplot!(vis2, subgridn, compute_densities(iphin, regionDonor,     phin_soln, psi_soln), clear = false, color=:green, label ="\$ n_n \$", yscale=:log)
             scalarplot!(vis2, subgridn, compute_densities(iphip, regionDonor,     phip_soln, psi_soln), clear = false, label ="\$ n_p \$", color=:red)
+````
 
-            # since we have a homogeneous set of parameters, region does not matter
+since we have a homogeneous set of parameters, region does not matter
+
+````julia
             n = compute_densities(iphin, 1, sol_ref[:, 2], sol_ref[:, 4])
             p = compute_densities(iphip, 1, sol_ref[:, 3], sol_ref[:, 4])
 
@@ -508,3 +532,9 @@ if test == false
 end
 
 end # module
+````
+
+---
+
+*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
+
