@@ -1157,11 +1157,12 @@ set_contact!(ctsys, ibreg, ;Δu) = __set_contact!(ctsys, ibreg, Δu, ctsys.data.
 # For schottky contacts
 function __set_contact!(ctsys, ibreg, Δu, ::Type{SchottkyContact})
 
-    ipsi = ctsys.data.index_psi
+    ipsi  = ctsys.data.index_psi
+    iphin = ctsys.data.bulkRecombination.iphin
 
-    # set Schottky barrier and applied voltage
-    ctsys.fvmsys.boundary_values[ipsi,  ibreg] = (ctsys.data.params.SchottkyBarrier[ibreg]/q ) + Δu
-    ctsys.fvmsys.boundary_factors[ipsi, ibreg] = VoronoiFVM.Dirichlet
+    # set Schottky barrier and applied voltage. Note that the barrier is applied with respect to the choice of conduction band-edge energy.
+    ctsys.fvmsys.boundary_values[ipsi,  ibreg] = - (ctsys.data.params.SchottkyBarrier[ibreg] - ctsys.data.params.bBandEdgeEnergy[iphin, ibreg])/q + Δu
+    ctsys.fvmsys.boundary_factors[ipsi, ibreg] =   VoronoiFVM.Dirichlet
 
 end
 

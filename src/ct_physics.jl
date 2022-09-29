@@ -225,12 +225,11 @@ end
 
 """
 $(TYPEDSIGNATURES)
-Creates Schottky boundary conditions in a first attempt. For the electrostatic potential we assume
+Creates Schottky boundary conditions. For the electrostatic potential we assume
 
-``\\psi = \\phi_S/q + U, ``
+``\\psi = - \\phi_S/q + U, ``
 
-where  ``\\phi_S`` corresponds to a given value (Schottky barrier) and ``U`` to the applied voltage. For now,
-the quantitity ``\\phi_S`` needs to be specified in the main file.
+where  ``\\phi_S`` corresponds to a given value (non-negative Schottky barrier) and ``U`` to the applied voltage. The quantitity ``\\phi_S`` needs to be specified in the main file.
 For the charge carriers we assume the following
 
 ``f[n_\\alpha]  =  z_\\alpha q v_\\alpha (n_\\alpha - n_{\\alpha, 0})``,
@@ -239,7 +238,7 @@ where ``v_{\\alpha}`` can be treated as a surface recombination mechanism and is
 ``n_{\\alpha, 0}`` is a given value, calculated by the statistical relation, when assuming
 no electrical field and a quasi Fermi level equal to the Schottky barrier ``\\phi_S``, i.e.
 
-``n_{\\alpha, 0}= N_\\alpha \\mathcal{F}_\\alpha \\Bigl( z_\\alpha/ U_T (E_\\alpha - \\phi_S) / q \\Bigr). ``
+``n_{\\alpha, 0}= N_\\alpha \\mathcal{F}_\\alpha \\Bigl( - z_\\alpha/ U_T (E_c - E_\\alpha) - \\phi_S) / q \\Bigr). ``
 
 """
 function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
@@ -258,12 +257,13 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
         icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used
 
         get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
-        Ni     = data.tempDOS1[icc]
-        Ei     = data.tempBEE1[icc]
-        etaFix = params.chargeNumbers[icc] / params.UT * (  (- params.SchottkyBarrier[bnode.region] + Ei ) / q  )
-        eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
+        Ni     =   data.tempDOS1[icc]
+        Ei     =   data.tempBEE1[icc]
+        Ec     =   params.bBandEdgeEnergy[iphin, bnode.region]
+        etaFix = - params.chargeNumbers[icc] / params.UT * (  ( (Ec - Ei) - params.SchottkyBarrier[bnode.region] ) / q  )
+        eta    =   params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
 
-        f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+        f[icc] = - data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
 
     end
 
@@ -287,24 +287,32 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
     looplist      = (iphin, iphip)
     ipsi          = data.index_psi
 
-    for icc in eachindex(looplist)
+    if data.calculationType == InEquilibrium
+        for icc in eachindex(looplist)
+            # this condition brings quasi Fermi potentials equal to zero in EQ.
+            f[icc] = u[icc]
+        end
+    elseif data.calculationType == OutOfEquilibrium
+        for icc in eachindex(looplist)
 
-        icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used
-        get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
-        Ni     = data.tempDOS1[icc]
-        Ei     = data.tempBEE1[icc]
-        eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
+            icc    =   data.chargeCarrierList[icc]                    # based on user index and regularity of solution quantities or integers are used
+            get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
+            Ni     =   data.tempDOS1[icc]
+            Ei     =   data.tempBEE1[icc]
+            eta    =   params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
 
-        f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - data.params.bDensitiesEQ[icc, bnode.region]  )
+            f[icc] = - params.chargeNumbers[icc] * q * params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - data.params.bDensitiesEQ[icc, bnode.region]  )
 
+        end
     end
 
-    barrier       = -  (u[ipsi]  - params.SchottkyBarrier[ibreg]/q - params.contactVoltage[ibreg])
+    Ec      = params.bBandEdgeEnergy[iphin, ibreg]
+    barrier = (u[ipsi] - Ec/q + params.SchottkyBarrier[ibreg]/q - params.contactVoltage[ibreg])
 
     if data.λ1 == 0.0
-        f[ipsi] =  (2.0)^50 *   (4.0 * pi *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
+        f[ipsi] = - ( 2.0)^50 * (4.0 * pi * params.dielectricConstant[bnode.cellregions[1]] * params.dielectricConstantImageForce[bnode.cellregions[1]])/q * (barrier)^2
     else
-        f[ipsi] = 1/data.λ1 *   (4.0 * pi *  params.dielectricConstant[bnode.cellregions[1]] *  params.dielectricConstantImageForce[bnode.cellregions[1]])/q  *  ( barrier )^2
+        f[ipsi] = - 1/data.λ1 * (4.0 * pi * params.dielectricConstant[bnode.cellregions[1]] * params.dielectricConstantImageForce[bnode.cellregions[1]])/q * (barrier)^2
     end
 
 end
