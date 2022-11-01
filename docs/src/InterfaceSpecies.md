@@ -8,7 +8,7 @@ In the following, we introduce briefly the main code snippets along with the und
 charge transport model. We will illustrate this feature on the basis of the standard van Roosbroeck system.
 
 Let $\mathbf{\Omega} \subseteq \mathbb{R}^d$,
-$d \leq 3$, be an open, connected and bounded spatial domain divided into to approriate subspaces $\mathbf{\Omega}_{-}, \mathbf{\Omega}_{+} $, corresponding to the layers of a p-n device.
+$d \leq 3$, be an open, connected and bounded spatial domain divided into to appropriate subspaces $\mathbf{\Omega}_{-}, \mathbf{\Omega}_{+} $, corresponding to the layers of a p-n device.
 We denote the non-empty interface with codimension $1$ between both subdomains by
 $\mathbf{\Gamma} = \partial \mathbf{\Omega}_{-} \cap \partial \mathbf{\Omega}_{+}$.
 The model with $(\psi, \varphi_n, \varphi_p)$ as unknowns is given by
@@ -29,7 +29,9 @@ In most applications following interface conditions for $\mathbf{x} \in \mathbf{
     1. electric current densities
     2. electric displacement flux
 
-Now, we discuss the case, the case of present interface charge carriers. Thus, some (DA: which??) of the previously mentioned conditions are not satisfied anymore.
+Now, we discuss the case, the case of present interface charge carriers. Thus, all the previously mentioned conditions do not necessarily need to be true anymore.
+For simplicity, we assume only a continuous electric potential.
+The following figure illustrates the change in the set of unknowns.
 
 ![Interface Model code structure](images/interface-model-schematics.png)
 
@@ -49,7 +51,7 @@ bfacemask!(grid, [h_ndoping], [h_ndoping + h_pdoping], bregActive)
 Otherwise, you will run into issues.
 
 
-Enable the interface carrier. For this, we need information on the index of interface carrier, corresponding bulk carrier and active interface region
+Next, you need to enable the interface carrier. For this, we need information on the index of interface carrier, the corresponding bulk carrier and the active interface region
 
 ```julia
 enable_interface_carrier!(data, bulkCarrier = iphin,
@@ -60,35 +62,21 @@ enable_interface_carrier!(data, bulkCarrier = iphip,
                           bregions = [bregActive])
 ```
 
-User likewise needs to add reaction rate
-**TO DO: change the name to bReactionRate and add the reaction rate for interface species likewise to main file**
-
-Further, we introduce the reactions rates for the discontinuity.
+Further, we introduce the reaction coefficient (see paper)
 
 ```julia
-params.bReactionRate[iphin, bregionJunction]     = 1.0e15 / (m^2 * s)
-params.bReactionRate[iphip, bregionJunction]     = 1.0e15 / (m^2 * s)
+params.bReactionCoefficient[iphin, bregionJunction]     = UT * mun * Nc/d
+params.bReactionCoefficient[iphip, bregionJunction]     = UT * mup * Nv/d
 ```
 
-The larger these values, the more continuity can be observed.
-
-
-
-
-
-INTERNALLY:
-discontqF type is chosen.
-
-
-
 Additional Information:
-We can likewise use surface reco for this case
+We can likewise use surface recombination. For this, adjust:
 
 ```julia
 data.boundaryType[bregionJunction] = InterfaceModelSurfaceReco # InterfaceModelNone
 ```
 
-How to infer other possible surface effects is explaines in DeveloperSide.md ...
+How to infer other possible surface effects and how to incorporate them into the code is explained [here](@ DeveloperSide).
 
 
 

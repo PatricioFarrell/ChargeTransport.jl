@@ -1,4 +1,6 @@
-Got curious? -- Short indroduction into the developer side
+
+
+Got curious? -- Short introduction into the developer side (@id Developerside)
 ================================
 
 ## Test environment

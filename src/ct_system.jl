@@ -386,10 +386,10 @@ mutable struct Params
     bDensitiesEQ                 ::  Array{Float64,2}
 
     """
-    An array to define the reaction rate at internal boundaries.
+    An array to define the reaction coefficient at internal boundaries.
 
     """
-    bReactionRate                ::  Array{Float64,2}
+    bReactionCoefficient         ::  Array{Float64,2}
 
 
     ###############################################################
@@ -802,7 +802,7 @@ function Params(grid, numberOfCarriers)
     params.bDoping                      = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDensitiesEQ                 = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
-    params.bReactionRate                = 1.0e15/s * ones(numberOfCarriers, numberOfBoundaryRegions)
+    params.bReactionCoefficient         = 1.0e15/s * ones(numberOfCarriers,  numberOfBoundaryRegions)
 
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####

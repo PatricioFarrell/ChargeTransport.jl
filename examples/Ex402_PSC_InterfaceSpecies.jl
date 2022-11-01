@@ -1,6 +1,6 @@
 
 
-module Ex402_PSC_DiscontqF
+module Ex402_PSC_InterfaceSpecies
 
 using VoronoiFVM
 using ChargeTransport
@@ -10,7 +10,7 @@ using PyPlot
 using DelimitedFiles
 
 function main(;n = 19, plotting = false, verbose = false, test = false,
-              discontqF = true, interfaceSpecies = true, leftInterface = false)
+              interfaceSpecies = true, leftInterface = false)
 
     PyPlot.close("all")
     ################################################################################
@@ -94,14 +94,10 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     iphin                = 1 # electron quasi Fermi potential
     iphip                = 2 # hole quasi Fermi potential
 
-    if discontqF
-        if interfaceSpecies
-            iphinb           = 3
-            iphipb           = 4
-            numberOfCarriers = 4
-        else
-            numberOfCarriers = 2
-        end
+    if interfaceSpecies
+        iphinb           = 3
+        iphipb           = 4
+        numberOfCarriers = 4
     else
         numberOfCarriers = 2
     end
@@ -210,36 +206,27 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     data.boundaryType[bregionDonor]     = OhmicContact
     data.fluxApproximation             .= ScharfetterGummel
 
-    if discontqF == true
+    if leftInterface == true
+        bregActive = bregionJunction1
+        bregDeact  = bregionJunction2
+        icoordJ    = icoord_p
 
-        if leftInterface == true
-            bregActive = bregionJunction1
-            bregDeact  = bregionJunction2
-            icoordJ    = icoord_p
-
-            regl       = regionAcceptor
-            regr       = regionIntrinsic
-        else
-            bregActive = bregionJunction2
-            bregDeact  = bregionJunction1
-            icoordJ    = icoord_pi
-
-            regl       = regionIntrinsic
-            regr       = regionDonor
-        end
-
-        if interfaceSpecies == false
-            # for the case of still being curious to see, if something happens here!
-            data.isContinuous[iphin]      = false
-            data.isContinuous[iphip]      = false
-        else
-            enable_interface_carrier!(data, bulkCarrier = iphin, interfaceCarrier = iphinb, bregions = [bregActive])
-            enable_interface_carrier!(data, bulkCarrier = iphip, interfaceCarrier = iphipb, bregions = [bregActive])
-        end
-
+        regl       = regionAcceptor
+        regr       = regionIntrinsic
     else
-        # do nothing
+        bregActive = bregionJunction2
+        bregDeact  = bregionJunction1
+        icoordJ    = icoord_pi
+
+        regl       = regionIntrinsic
+        regr       = regionDonor
     end
+
+    if interfaceSpecies
+        enable_interface_carrier!(data, bulkCarrier = iphin, interfaceCarrier = iphinb, bregions = [bregActive])
+        enable_interface_carrier!(data, bulkCarrier = iphip, interfaceCarrier = iphipb, bregions = [bregActive])
+    end
+
 
     if test == false
         println("*** done\n")
@@ -295,58 +282,64 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
     # ##############################################################
 
-    if discontqF
+    ## inner boundary region data
+    if interfaceSpecies
 
-        ## inner boundary region data
-        if interfaceSpecies
-            # delta with negative sign -> IV shifted to right.
-            δn                                          =  0.3 * eV
-            δp                                          = -0.6 * eV
-            data.d                                      = 6.28 * 10e-8 * cm # lattice size perovskite
-            params.bDensityOfStates[iphinb, bregActive] = data.d * params.densityOfStates[iphin, regl]
-            params.bDensityOfStates[iphipb, bregActive] = data.d * params.densityOfStates[iphip, regl]
+        data.d                                      = 6.28 * 10e-8 * cm # lattice size perovskite
 
-            params.bBandEdgeEnergy[iphinb, bregActive]  = params.bandEdgeEnergy[iphin, regl] + δn
-            params.bBandEdgeEnergy[iphipb, bregActive]  = params.bandEdgeEnergy[iphip, regl] + δp
-
-            zn  = params.chargeNumbers[iphin]
-            zp  = params.chargeNumbers[iphip]
-            UT  = params.UT
-
-            Nc_l  = params.densityOfStates[iphin, regl]
-            Nv_l  = params.densityOfStates[iphip, regl]
-            Ec_l  = params.bandEdgeEnergy[iphin,  regl]
-            Ev_l  = params.bandEdgeEnergy[iphip,  regl]
-
-            Nc_r  = params.densityOfStates[iphin, regr]
-            Nv_r  = params.densityOfStates[iphip, regr]
-            Ec_r  = params.bandEdgeEnergy[iphin,  regr]
-            Ev_r  = params.bandEdgeEnergy[iphip,  regr]
-
-            # take values from intrinsic layer
-            mun = params.mobility[iphin, regionIntrinsic]
-            mup = params.mobility[iphip, regionIntrinsic]
-
-            Nc_b = params.bDensityOfStates[iphinb, bregActive]
-            Nv_b = params.bDensityOfStates[iphipb, bregActive]
-            Ec_b = params.bBandEdgeEnergy[iphinb,  bregActive]
-            Ev_b = params.bBandEdgeEnergy[iphipb,  bregActive]
-
-            k0n = q * zn * UT * mun * Nc_r/data.d
-            k0p = q * zp * UT * mup * Nv_r/data.d
-
-
+        if leftInterface
+            dopingN                                 = 0.0
+            dopingP                                 = data.d * Na
         else
-            params.bReactionRate[iphin, bregActive]     = 1.0e13
-            params.bReactionRate[iphip, bregActive]     = 1.0e13
+            dopingN                                 = data.d * Nd
+            dopingP                                 = 0.0
         end
 
-        # If you decrease these values you will observe discontinuity in the qFs.
-        params.bReactionRate[iphin, bregDeact]          = 1.0e13
-        params.bReactionRate[iphip, bregDeact]          = 1.0e13
+        δn                                          =  0.0 * eV
+        δp                                          =  1.5 * eV
 
-    else
-        # do nothing
+        params.bDoping[iphinb, bregActive]          = dopingN
+        params.bDoping[iphipb, bregActive]          = dopingP
+
+        params.bDensityOfStates[iphinb, bregActive] = data.d * params.densityOfStates[iphin, regl]
+        params.bDensityOfStates[iphipb, bregActive] = data.d * params.densityOfStates[iphip, regl]
+
+        params.bBandEdgeEnergy[iphinb, bregActive]  = params.bandEdgeEnergy[iphin, regl] + δn
+        params.bBandEdgeEnergy[iphipb, bregActive]  = params.bandEdgeEnergy[iphip, regl] + δp
+
+        zn  = params.chargeNumbers[iphin]
+        zp  = params.chargeNumbers[iphip]
+        UT  = params.UT
+
+        Nc_l  = params.densityOfStates[iphin, regl]
+        Nv_l  = params.densityOfStates[iphip, regl]
+        Ec_l  = params.bandEdgeEnergy[iphin,  regl]
+        Ev_l  = params.bandEdgeEnergy[iphip,  regl]
+
+        Nc_r  = params.densityOfStates[iphin, regr]
+        Nv_r  = params.densityOfStates[iphip, regr]
+        Ec_r  = params.bandEdgeEnergy[iphin,  regr]
+        Ev_r  = params.bandEdgeEnergy[iphip,  regr]
+
+        # take values from intrinsic layer
+        mun = params.mobility[iphin, regionIntrinsic]
+        mup = params.mobility[iphip, regionIntrinsic]
+
+        Nc_b = params.bDensityOfStates[iphinb, bregActive]
+        Nv_b = params.bDensityOfStates[iphipb, bregActive]
+        Ec_b = params.bBandEdgeEnergy[iphinb,  bregActive]
+        Ev_b = params.bBandEdgeEnergy[iphipb,  bregActive]
+
+        k0n = UT * mun * Nc_r/data.d
+        k0p = UT * mup * Nv_r/data.d
+
+        params.bReactionCoefficient[iphin, bregionJunction1] = k0n
+        params.bReactionCoefficient[iphip, bregionJunction1] = k0p
+
+        # If you decrease these values you will observe discontinuity in the qFs.
+        params.bReactionCoefficient[iphin, bregDeact]        = 1.0e13
+        params.bReactionCoefficient[iphip, bregDeact]        = 1.0e13
+
     end
 
     ##############################################################
@@ -391,6 +384,8 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     control.tol_absolute      = 1.0e-8
     control.tol_relative      = 1.0e-8
     control.tol_round         = 1.0e-8
+    control.damp_initial      = 0.9
+    control.damp_growth       = 1.61 # >= 1
 
     if test == false
         println("*** done\n")
@@ -409,120 +404,19 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     sol     = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
     inival .= sol
 
-    if test == false
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
-        println("Bias loop")
-    end
-    ################################################################################
-
-    # Set calculation type to outOfEquilibrium for starting with respective simulation.
-    data.calculationType = OutOfEquilibrium
-    biasValues           = range(0, stop = voltageAcceptor, length = 41)
-    IV                   = zeros(0)
-
-    for Δu in biasValues
-
-        if test == false
-            println("Δu  = ", Δu )
-        end
-
-        ## set non equilibrium boundary conditions
-        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
-
-        solve!(sol, inival, ctsys, control = control, tstep = Inf)
-        inival .= sol
-
-        ## get I-V data
-        val = get_current_val(ctsys, sol)
-
-        push!(IV, val)
-
-        if interfaceSpecies
-            subgridB = subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
-            bgrid    = subgrids(data.chargeCarrierList[iphinb], ctsys.fvmsys)
-
-            phin_sol = views(sol, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
-            phip_sol = views(sol, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
-            psi_sol  = views(sol, data.index_psi,                subgridB, ctsys.fvmsys)
-
-            phinb_sol = views(sol, data.chargeCarrierList[iphinb], bgrid, ctsys.fvmsys)
-            phipb_sol = views(sol, data.chargeCarrierList[iphipb], bgrid, ctsys.fvmsys)
-
-            # left values
-            etanl = zn / UT * ( (phin_sol[regl][end] - psi_sol[regl][end]) + Ec_l / q ) # left
-            etapl = zp / UT * ( (phip_sol[regr][end] - psi_sol[regr][end]) + Ev_l / q )  # left
-
-            nl    = Nc_l * data.F[iphin](etanl)
-            pl    = Nv_l * data.F[iphip](etapl)
-
-            # interface values
-            etan_b = zn / UT * ( (phinb_sol[1] - psi_sol[regl][end]) + Ec_b / q ) # interface
-            etap_b = zp / UT * ( (phipb_sol[1] - psi_sol[regl][end]) + Ev_b / q ) # interface
-
-            n_b    = Nc_b * data.F[iphin](etan_b)
-            p_b    = Nv_b * data.F[iphip](etap_b)
-
-            # right values
-            etanr = zn / UT * ( (phin_sol[regr][1] - psi_sol[regr][1]) + Ec_r / q ) # left
-            etapr = zp / UT * ( (phip_sol[regr][1] - psi_sol[regr][1]) + Ev_r / q )  # left
-
-            nr    = Nc_r * data.F[iphin](etanr)
-            pr    = Nv_r * data.F[iphip](etapr)
-
-            Knleft  = exp(- zn/ (kB * data.params.temperature) * (Ec_l - Ec_b))
-            Knright = exp(- zn/ (kB * data.params.temperature) * (Ec_r - Ec_b))
-            Kpleft  = exp(- zp/ (kB * data.params.temperature) * (Ev_l - Ev_b))
-            Kpright = exp(- zp/ (kB * data.params.temperature) * (Ev_r - Ev_b))
-
-            #@show Knleft, Knright, Kpleft, Kpright
-
-            reactnl  = - k0n * (Knleft^(1/2)  * nl/Nc_l - Knleft^( - 1/2) * n_b/Nc_b)
-            reactnr  = - k0n * (Knright^(1/2) * nr/Nc_r - Knright^(- 1/2) * n_b/Nc_b)
-
-            reactpl  = - k0p * (Kpleft^(1/2)  * pl/Nv_l - Kpleft^( - 1/2) * p_b/Nv_b)
-            reactpr  = - k0p * (Kpright^(1/2) * pr/Nv_r - Kpright^(- 1/2) * p_b/Nv_b)
-
-            #println("main file: ")
-            @show reactnl, reactnr
-            @show reactpl, reactpr
-        end
-
-    end # bias loop
-
-    # writedlm("data/PSC-stationary-reference-sol.dat", [coord sol'])
-    # res = [biasValues IV]
-    # writedlm("data/PSC-stationary-reference-IV.dat", res)
-
-    # return
-
-    if test == false
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
-        println("Some plotting")
-    end
-    ################################################################################
-
-    function compute_densities(icc, ireg,  phi, psi)
-        eta = data.params.chargeNumbers[icc]/ data.params.UT .* ( (phi .- psi) .+ data.params.bandEdgeEnergy[icc, ireg]./q )
-
-        return (data.params.densityOfStates[icc, ireg] .* data.F[icc].(eta))
-    end
-
+    #writedlm("data/PSC-stationary-reference-sol-EQ.dat", [coord sol'])
 
     if plotting
 
-        sol_ref  = readdlm("data/PSC-stationary-reference-sol.dat") # [coord sol_iphin sol_iphip sol_ipsi]
-        IV_ref   = readdlm("data/PSC-stationary-reference-IV.dat")
+        function compute_densities(icc, ireg,  phi, psi)
+            eta = data.params.chargeNumbers[icc]/ data.params.UT .* ( (phi .- psi) .+ data.params.bandEdgeEnergy[icc, ireg]./q )
+
+            return (data.params.densityOfStates[icc, ireg] .* data.F[icc].(eta))
+        end
+
+        sol_ref  = readdlm("data/PSC-stationary-reference-sol-EQ.dat") # [coord sol_iphin sol_iphip sol_ipsi]
         vis1     = GridVisualizer(Plotter = PyPlot, layout=(2,1), size = (600,670), xlabel = "space [m]", ylabel = "potential [V]", fignumber=2)
         vis2     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "space [m]", ylabel = "density [m\$^{-3}\$]", fignumber=3)
-        vis3     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "voltage [V]", ylabel = "current density [Am\$^{-2}\$]",fignumber=4)
 
         subgridB = subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
         phin_sol = views(sol, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
@@ -626,11 +520,223 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
         end
 
+    end
+
+    if test == false
+        println("*** done\n")
+    end
+
+    ################################################################################
+    if test == false
+        println("Bias loop")
+    end
+    ################################################################################
+
+    # Set calculation type to outOfEquilibrium for starting with respective simulation.
+    data.calculationType = OutOfEquilibrium
+    biasValues           = range(0, stop = voltageAcceptor, length = 41)
+    IV                   = zeros(0)
+
+    for Δu in biasValues
+
+        if test == false
+            println("Δu  = ", Δu )
+        end
+
+        ## set non equilibrium boundary conditions
+        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
+
+        solve!(sol, inival, ctsys, control = control, tstep = Inf)
+        inival .= sol
+
+        ## get I-V data
+        val = get_current_val(ctsys, sol)
+
+        push!(IV, val)
+
+        if interfaceSpecies
+            subgridB = subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
+            bgrid    = subgrids(data.chargeCarrierList[iphinb], ctsys.fvmsys)
+
+            phin_sol = views(sol, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
+            phip_sol = views(sol, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
+            psi_sol  = views(sol, data.index_psi,                subgridB, ctsys.fvmsys)
+
+            phinb_sol = views(sol, data.chargeCarrierList[iphinb], bgrid, ctsys.fvmsys)
+            phipb_sol = views(sol, data.chargeCarrierList[iphipb], bgrid, ctsys.fvmsys)
+
+            # left values
+            etanl = zn / UT * ( (phin_sol[regl][end] - psi_sol[regl][end]) + Ec_l / q ) # left
+            etapl = zp / UT * ( (phip_sol[regr][end] - psi_sol[regr][end]) + Ev_l / q )  # left
+
+            nl    = Nc_l * data.F[iphin](etanl)
+            pl    = Nv_l * data.F[iphip](etapl)
+
+            # interface values
+            etan_b = zn / UT * ( (phinb_sol[1] - psi_sol[regl][end]) + Ec_b / q ) # interface
+            etap_b = zp / UT * ( (phipb_sol[1] - psi_sol[regl][end]) + Ev_b / q ) # interface
+
+            n_b    = Nc_b * data.F[iphin](etan_b)
+            p_b    = Nv_b * data.F[iphip](etap_b)
+
+            # right values
+            etanr = zn / UT * ( (phin_sol[regr][1] - psi_sol[regr][1]) + Ec_r / q ) # left
+            etapr = zp / UT * ( (phip_sol[regr][1] - psi_sol[regr][1]) + Ev_r / q )  # left
+
+            nr    = Nc_r * data.F[iphin](etanr)
+            pr    = Nv_r * data.F[iphip](etapr)
+
+            Knleft  = exp(- zn/ (kB * data.params.temperature) * (Ec_l - Ec_b))
+            Knright = exp(- zn/ (kB * data.params.temperature) * (Ec_r - Ec_b))
+            Kpleft  = exp(- zp/ (kB * data.params.temperature) * (Ev_l - Ev_b))
+            Kpright = exp(- zp/ (kB * data.params.temperature) * (Ev_r - Ev_b))
+
+            #@show Knleft, Knright, Kpleft, Kpright
+
+            reactnl  = - q * zn * (Knleft^(1/2)  * nl/Nc_l - Knleft^( - 1/2) * n_b/Nc_b)
+            reactnr  = - q * zn * (Knright^(1/2) * nr/Nc_r - Knright^(- 1/2) * n_b/Nc_b)
+
+            reactpl  = - q * zp * (Kpleft^(1/2)  * pl/Nv_l - Kpleft^( - 1/2) * p_b/Nv_b)
+            reactpr  = - q * zp * (Kpright^(1/2) * pr/Nv_r - Kpright^(- 1/2) * p_b/Nv_b)
+
+            # #println("main file: ")
+            # @show reactnl, reactnr
+            # @show reactpl, reactpr
+        end
+
+    end # bias loop
+
+    # writedlm("data/PSC-stationary-reference-sol.dat", [coord sol'])
+    # res = [biasValues IV]
+    # writedlm("data/PSC-stationary-reference-IV.dat", res)
+
+    # return
+
+    if test == false
+        println("*** done\n")
+    end
+
+    ################################################################################
+    if test == false
+        println("Some plotting")
+    end
+    ################################################################################
+
+    if plotting
+
+        sol_ref  = readdlm("data/PSC-stationary-reference-sol.dat") # [coord sol_iphin sol_iphip sol_ipsi]
+        IV_ref   = readdlm("data/PSC-stationary-reference-IV.dat")
+        vis3     = GridVisualizer(Plotter = PyPlot, layout=(2,1), size = (600,670), xlabel = "space [m]", ylabel = "potential [V]", fignumber=4)
+        vis4     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "space [m]", ylabel = "density [m\$^{-3}\$]", fignumber=5)
+        vis5     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "voltage [V]", ylabel = "current density [Am\$^{-2}\$]",fignumber=6)
+
+        subgridB = subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
+        phin_sol = views(sol, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
+        phip_sol = views(sol, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
+        psi_sol  = views(sol, data.index_psi,                subgridB, ctsys.fvmsys)
+
+        if interfaceSpecies
+            bgrid    = subgrids(data.chargeCarrierList[iphinb], ctsys.fvmsys)
+
+            phinb_sol = views(sol, data.chargeCarrierList[iphinb], bgrid, ctsys.fvmsys)
+            phipb_sol = views(sol, data.chargeCarrierList[iphipb], bgrid, ctsys.fvmsys)
+        end
+
+        ###############################################################################
+        ##########                         Potentials                        ##########
+        ###############################################################################
+        for i in eachindex(phin_sol)
+            scalarplot!(    vis3[1, 1], subgridB[i], psi_sol[i], clear = false, color=:blue, linewidth = 5)
+            if i == 3
+                scalarplot!(vis3[1, 1], subgridB[i], psi_sol[i], clear = false, color=:blue, linewidth = 5, label = "\$ \\psi \$")
+            end
+        end
+        scalarplot!(vis3[1, 1], sol_ref[:, 1], sol_ref[:, 4], clear = false, color =:black, linestyle=:dot, label = "ref sol",
+                    legend =:best)
+
+        ##########################
+        for i in eachindex(phin_sol)
+            scalarplot!(vis3[2, 1], subgridB[i], phin_sol[i], clear = false, color=:green, linestyle=:solid, linewidth = 5)
+            scalarplot!(vis3[2, 1], subgridB[i], phip_sol[i], clear = false, color=:red)
+
+            if i == 3
+                scalarplot!(vis3[2, 1], subgridB[i], phin_sol[i], clear = false, label = "\$ \\varphi_n \$", color=:green)
+                scalarplot!(vis3[2, 1], subgridB[i], phip_sol[i], clear = false, label = "\$ \\varphi_p \$", color=:red)
+            end
+        end
+
+        if interfaceSpecies
+            PyPlot.figure(4)
+            PyPlot.plot(coord[icoordJ], phinb_sol, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
+            PyPlot.plot(coord[icoordJ], phipb_sol, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
+
+            #scalarplot!(coord[3*refinementfactor], phinb_sol, clear = false, marker = "x", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
+            #scalarplot!(coord[3*refinementfactor], phipb_sol, clear = false, marker = "x", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
+            println("value phin_b = ", phinb_sol)
+            println("value phip_b = ", phipb_sol)
+        end
+
+        scalarplot!(vis3[2, 1], sol_ref[:, 1], sol_ref[:, 3], marker ="", clear = false, color=:black, linestyle=:dot, label = "")
+        scalarplot!(vis3[2, 1], sol_ref[:, 1], sol_ref[:, 2], clear = false, color =:black, linestyle=:dot, label = "ref sol",
+                    legend =:best, show = true)
+
+        ###############################################################################
+        ##########                         Densities                         ##########
+        ###############################################################################
+
+        xcoord = [1:icoord_p, icoord_p:icoord_pi, icoord_pi:length(coord)]
+
+        for i in eachindex(phin_sol)
+            scalarplot!(vis4, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, linewidth = 5, linestyle=:solid, yscale=:log)
+            scalarplot!(vis4, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, color=:red)
+            if i == 3
+            scalarplot!(vis4, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, label ="\$n_n\$")
+            scalarplot!(vis4, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, label ="\$ n_p \$", color=:red)
+            end
+
+        end
+
+        for i in eachindex(phin_sol)
+            scalarplot!(vis4, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], sol_ref[xcoord[i], 2], sol_ref[xcoord[i], 4]), clear = false, label="", linestyle=:dot, color=:black)
+            scalarplot!(vis4, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], sol_ref[xcoord[i], 3], sol_ref[xcoord[i], 4]), clear = false, linestyle=:dot, color=:black, show = true, legend =:best)
+        end
+
+        if interfaceSpecies
+
+            phinb        = phinb_sol[1]
+            phipb        = phipb_sol[1]
+
+            if leftInterface
+                icoordbReact = icoord_p
+                psib         = psi_sol[1][end]
+            else
+                icoordbReact = icoord_pi
+                psib         = psi_sol[2][end]
+            end
+
+            etanb = -1/ data.params.UT * ( (phinb - psib) + data.params.bBandEdgeEnergy[iphinb, bregActive]/q )
+            etapb =  1/ data.params.UT * ( (phipb - psib) + data.params.bBandEdgeEnergy[iphipb, bregActive]/q )
+
+            nb = data.params.bDensityOfStates[iphinb, bregActive] * data.F[iphin](etanb)
+            pb = data.params.bDensityOfStates[iphipb, bregActive] * data.F[iphip](etapb)
+
+            println("value nb = ", nb)
+            println("value pb = ", pb)
+
+            PyPlot.figure(5)
+            PyPlot.semilogy(coord[icoordJ], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
+            PyPlot.semilogy(coord[icoordJ], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
+
+            #PyPlot.semilogy(coord[icoordbReact], nb, marker = "x", markersize = 12, color = "darkgreen", label = "\$ \\bar{n} \$")
+            #PyPlot.semilogy(coord[icoordbReact], pb, marker = "x", markersize = 12, color = "darkred", label = "\$ \\bar{p} \$")
+
+        end
+
         ###############################################################################
         ##########                            IV                             ##########
         ###############################################################################
-        scalarplot!(vis3, biasValues,   IV,           clear = false, color=:green, linewidth = 5)
-        scalarplot!(vis3, IV_ref[:, 1], IV_ref[:, 2], clear = false, color=:black, linestyle=:dot)
+        scalarplot!(vis5, biasValues,   IV,           clear = false, color=:green, linewidth = 5)
+        scalarplot!(vis5, IV_ref[:, 1], IV_ref[:, 2], clear = false, color=:black, linestyle=:dot)
 
     end
 
@@ -648,7 +754,7 @@ end #  main
 
 function test()
     testvalDiscont = -0.3861540918777643; testvalinterfaceSpecies = -0.3066809721684242
-    main(test = true, discontqF = true, leftInterface = true, interfaceSpecies = false) ≈ testvalDiscont && main(test = true, leftInterface = true, discontqF = true, interfaceSpecies = true) ≈ testvalinterfaceSpecies
+    main(test = true, leftInterface = true, interfaceSpecies = false) ≈ testvalDiscont && main(test = true, leftInterface = true, interfaceSpecies = true) ≈ testvalinterfaceSpecies
 end
 
 if test == false

@@ -383,6 +383,9 @@ end
 
 breactionInterface!(f, u, bnode, data, ::Type{InterfaceModelNone})  = breactionqF!(f, u, bnode, data, data.qFModel)
 
+
+# In case of continuous quasi Fermi potentials no interface reaction will be parsed, hence
+# continuity is directly assumed for charge carriers and for the respective current densities.
 breactionqF!(f, u, bnode, data, ::Type{ContQF}) = emptyFunction()
 
 function breactionqF!(f, u, bnode, data, ::Type{DiscontQF})
@@ -392,13 +395,37 @@ function breactionqF!(f, u, bnode, data, ::Type{DiscontQF})
         if data.calculationType == InEquilibrium
 
             for iicc in data.interfaceCarrierList
-                icc    = iicc.interfaceCarrier
-                icc    = data.chargeCarrierList[icc]
-                f[icc] = u[icc]
+                if bnode.region in iicc.bregions
+
+                    icc_b      = data.chargeCarrierList[iicc.interfaceCarrier] # iicc.interfaceCarrier as the index of interface carrier
+
+                    # check for index of bulk carrier and read it out of chargeCarrierList
+                    icc        = iicc.bulkCarrier
+                    icc        = data.chargeCarrierList[icc]
+
+                    # zero quasi Fermi potential in equilibrium
+                    f[icc_b]     = u[icc_b]
+
+                    ipsi       = data.index_psi
+                    params     = data.params
+                    UT         = params.UT
+                    zalpha     = params.chargeNumbers[icc]
+                    Nalpha_b   = params.bDensityOfStates[icc_b, bnode.region]
+                    Ealpha_b   = params.bBandEdgeEnergy[ icc_b, bnode.region]
+
+                    etaalpha_b = zalpha / UT * ( (u[icc_b] - u[ipsi]) + Ealpha_b / q )
+                    nalpha_b   = Nalpha_b * data.F[icc](etaalpha_b)
+
+                    # add condition on interface charge density
+                    f[ipsi] = f[ipsi] + q * ( zalpha * (nalpha_b - params.bDoping[icc_b, bnode.region]))
+                end
             end
+
             return
         end
 
+        # if interface carriers are present, then the interface model with present interface
+        # carriers is applied
         for icc ∈ data.interfaceCarrierList
 
             if bnode.region ∈ icc.bregions
@@ -408,12 +435,15 @@ function breactionqF!(f, u, bnode, data, ::Type{DiscontQF})
             end
 
         end
-    else
+    else # no interface carriers
 
         if data.calculationType == InEquilibrium
             return emptyFunction()
         end
 
+        # if no interface carriers are present at this interface, a simple reaction
+        # rate is applied
+        # DA: To Do, add more notes ...
         breactionqFNoInterfaceCarrier!(f, u, bnode, data)
     end
 
@@ -445,7 +475,7 @@ function breactionqFNoInterfaceCarrier!(f, u, bnode, data)
         n1 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan1)
         n2 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan2)
 
-        react     = q * params.chargeNumbers[icc] * params.bReactionRate[icc, bnode.region]  * (n1 - n2)
+        react     = q * params.chargeNumbers[icc] * params.bReactionCoefficient[icc, bnode.region]  * (n1 - n2)
 
         f[icc, 1] =   react
         f[icc, 2] = - react
@@ -460,64 +490,61 @@ function breactionqFInterfaceCarrier!(f, u, bnode, data)
     # which are assumed to be continuous are neglected)
     for iicc in data.interfaceCarrierList
 
-        icc_b    = data.chargeCarrierList[iicc.interfaceCarrier]
+        if bnode.region in iicc.bregions
 
-        # check for index of bulk carrier and read it out of chargeCarrierList
-        icc      = iicc.bulkCarrier
-        icc      = data.chargeCarrierList[icc]
+            icc_b    = data.chargeCarrierList[iicc.interfaceCarrier]
 
-        il       = bnode.cellregions[1] # bnode.region == 3 -> il = 1
-        ir       = bnode.cellregions[2] # bnode.region == 3 -> ir = 2
+            # check for index of bulk carrier and read it out of chargeCarrierList
+            icc      = iicc.bulkCarrier
+            icc      = data.chargeCarrierList[icc]
 
-        ipsi     = data.index_psi
+            il       = bnode.cellregions[1] # bnode.region == 3 -> il = 1
+            ir       = bnode.cellregions[2] # bnode.region == 3 -> ir = 2
 
-        params   = data.params
-        UT       = params.UT
-        zalpha   = params.chargeNumbers[icc]
+            ipsi     = data.index_psi
 
-        Nalpha_l = params.densityOfStates[icc, il]
-        Ealpha_l = params.bandEdgeEnergy[icc, il]
+            params   = data.params
+            UT       = params.UT
+            zalpha   = params.chargeNumbers[icc]
 
-        Nalpha_r = params.densityOfStates[icc, ir]
-        Ealpha_r = params.bandEdgeEnergy[icc, ir]
+            Nalpha_l = params.densityOfStates[icc, il]
+            Ealpha_l = params.bandEdgeEnergy[icc, il]
 
-        # take values from intrinsic layer
-        # DA: Just have the reaction rate as input parameter instead of the layer thickness ....
-        mualpha  = params.mobility[icc, 2]
+            Nalpha_r = params.densityOfStates[icc, ir]
+            Ealpha_r = params.bandEdgeEnergy[icc, ir]
 
-        Nalpha_b = params.bDensityOfStates[icc_b, bnode.region]
-        Ealpha_b = params.bBandEdgeEnergy[ icc_b, bnode.region]
+            Nalpha_b = params.bDensityOfStates[icc_b, bnode.region]
+            Ealpha_b = params.bBandEdgeEnergy[ icc_b, bnode.region]
 
-        # DA: If the reaction rate is input parameter, then we also do not need this distinction ....
-        # since k0 is scaled with q*z_i it's consistent with the storage and the bstorage dimensions
-        if bnode.region == 3
-            k0alpha = q * zalpha * UT * mualpha * Nalpha_r/data.d
-        elseif bnode.region == 4
-            k0alpha = q * zalpha * UT * mualpha * Nalpha_l/data.d
+            # left value
+            etaalpha_l   = zalpha / UT * ( (u[icc, 1] - u[ipsi]) + Ealpha_l / q )
+            nalpha_l     = Nalpha_l * data.F[icc](etaalpha_l)
+
+            # interface value
+            etaalpha_b  = zalpha / UT * ( (u[icc_b] - u[ipsi]) + Ealpha_b / q )
+            nalpha_b    = Nalpha_b * data.F[icc](etaalpha_b)
+
+            # right value
+            etaalpha_r   = zalpha / UT * ( (u[icc, 2] - u[ipsi]) + Ealpha_r / q )
+            nalpha_r     = Nalpha_r * data.F[icc](etaalpha_r)
+
+            Kalphaleft  = exp(- zalpha/ (kB * data.params.temperature) * (Ealpha_l - Ealpha_b))
+            Kalpharight = exp(- zalpha/ (kB * data.params.temperature) * (Ealpha_r - Ealpha_b))
+
+            ##############################################################
+            k0alpha     = params.bReactionCoefficient[icc, bnode.region]
+
+            reactalpha_l = q * zalpha * k0alpha * (Kalphaleft^(1/2)  * nalpha_l/Nalpha_l - Kalphaleft^(- 1/2)  * nalpha_b/Nalpha_b)
+            reactalpha_r = q * zalpha * k0alpha * (Kalpharight^(1/2) * nalpha_r/Nalpha_r - Kalpharight^(- 1/2) * nalpha_b/Nalpha_b)
+
+            f[icc, 1]   =   reactalpha_l
+            f[icc, 2]   =   reactalpha_r
+            f[icc_b]    = - reactalpha_l - reactalpha_r
+
+            # add condition on interface charge density
+            f[ipsi] = f[ipsi] + q * ( zalpha * (nalpha_b - params.bDoping[icc_b, bnode.region]))
+
         end
-
-        # left value
-        etaalpha_l   = zalpha / UT * ( (u[icc, 1] - u[ipsi]) + Ealpha_l / q )
-        nalpha_l     = Nalpha_l * data.F[icc](etaalpha_l)
-
-        # interface value
-        etaalpha_b  = zalpha / UT * ( (u[icc_b] - u[ipsi]) + Ealpha_b / q )
-        nalpha_b    = Nalpha_b * data.F[icc](etaalpha_b)
-
-        # right value
-        etaalpha_r   = zalpha / UT * ( (u[icc, 2] - u[ipsi]) + Ealpha_r / q )
-        nalpha_r     = Nalpha_r * data.F[icc](etaalpha_r)
-
-        Kalphaleft  = exp(- zalpha/ (kB * data.params.temperature) * (Ealpha_l - Ealpha_b))
-        Kalpharight = exp(- zalpha/ (kB * data.params.temperature) * (Ealpha_r - Ealpha_b))
-
-        ##############################################################
-        reactalpha_l = k0alpha * (Kalphaleft^(1/2)  * nalpha_l/Nalpha_l - Kalphaleft^(- 1/2)  * nalpha_b/Nalpha_b)
-        reactalpha_r = k0alpha * (Kalpharight^(1/2) * nalpha_r/Nalpha_r - Kalpharight^(- 1/2) * nalpha_b/Nalpha_b)
-
-        f[icc, 1]   =   reactalpha_l
-        f[icc, 2]   =   reactalpha_r
-        f[icc_b]    = - reactalpha_l - reactalpha_r
 
     end
 
