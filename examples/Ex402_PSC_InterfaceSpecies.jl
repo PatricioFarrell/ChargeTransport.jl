@@ -295,8 +295,8 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             dopingP                                 = 0.0
         end
 
-        δn                                          =  0.0 * eV
-        δp                                          =  1.5 * eV
+        δn                                          =    0.1 * eV
+        δp                                          =  - 0.2 * eV
 
         params.bDoping[iphinb, bregActive]          = dopingN
         params.bDoping[iphipb, bregActive]          = dopingP
@@ -333,8 +333,8 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         k0n = UT * mun * Nc_r/data.d
         k0p = UT * mup * Nv_r/data.d
 
-        params.bReactionCoefficient[iphin, bregionJunction1] = k0n
-        params.bReactionCoefficient[iphip, bregionJunction1] = k0p
+        params.bReactionCoefficient[iphin, bregActive] = k0n
+        params.bReactionCoefficient[iphip, bregActive] = k0p
 
         # If you decrease these values you will observe discontinuity in the qFs.
         params.bReactionCoefficient[iphin, bregDeact]        = 1.0e13
@@ -534,8 +534,11 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
     # Set calculation type to outOfEquilibrium for starting with respective simulation.
     data.calculationType = OutOfEquilibrium
-    biasValues           = range(0, stop = voltageAcceptor, length = 41)
+    biasValues           = range(0, stop = voltageAcceptor, length = 51)
     IV                   = zeros(0)
+
+    control.damp_initial      = 0.5
+    control.damp_growth       = 1.21 # >= 1
 
     for Δu in biasValues
 
