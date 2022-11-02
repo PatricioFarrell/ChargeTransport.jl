@@ -31,7 +31,7 @@ function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping
     return coord
 end
 
-function main(;n = 6, plotting = false, verbose = false, test = false, interfaceSpecies = true)
+function main(;n = 6, plotting = false, verbose = false, test = false, interfaceSpecies = true, leftInterface = true)
 
     PyPlot.close("all")
     ################################################################################
@@ -148,9 +148,25 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
     data.boundaryType[bregionDonor]     = OhmicContact
     data.fluxApproximation             .= ScharfetterGummel
 
+    if leftInterface == true
+        bregActive = bregionJunction1
+        bregDeact  = bregionJunction2
+        icoordJ    = 3*refinementfactor
+
+        regl       = regionAcceptor
+        regr       = regionIntrinsic
+    else
+        bregActive = bregionJunction2
+        bregDeact  = bregionJunction1
+        icoordJ    = 2 * 3*refinementfactor
+
+        regl       = regionIntrinsic
+        regr       = regionDonor
+    end
+
     if interfaceSpecies
-        enable_interface_carrier!(data, bulkCarrier = iphin, interfaceCarrier = iphinb, bregions = [bregionJunction1])
-        enable_interface_carrier!(data, bulkCarrier = iphip, interfaceCarrier = iphipb, bregions = [bregionJunction1])
+        enable_interface_carrier!(data, bulkCarrier = iphin, interfaceCarrier = iphinb, bregions = [bregActive])
+        enable_interface_carrier!(data, bulkCarrier = iphip, interfaceCarrier = iphipb, bregions = [bregActive])
     end
 
     if test == false
@@ -217,26 +233,36 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
 
     if interfaceSpecies
-        data.d                                               = 6.28 * 10e-7 * cm
 
-        δn                                                   = 0.0 * eV#- 0.4 * eV
-        δp                                                   = 0.0 * eV#0.4 * eV
-        params.bDoping[iphipb, bregionJunction1]             = data.d * Na
+        data.d                                         = 6.28 * 10e-7 * cm
 
-        params.bDensityOfStates[iphinb, bregionJunction1]    = data.d * Nc
-        params.bDensityOfStates[iphipb, bregionJunction1]    = data.d * Nv
+        if leftInterface
+            dopingN                                    = 0.0
+            dopingP                                    = data.d * Na
+        else
+            dopingN                                    = data.d * Nd
+            dopingP                                    = 0.0
+        end
 
-        params.bBandEdgeEnergy[iphinb, bregionJunction1]     = Ec + δn
-        params.bBandEdgeEnergy[iphipb, bregionJunction1]     = Ev + δp
+        δn                                             =  -0.1  * eV
+        δp                                             =   0.1  * eV
+        params.bDoping[iphinb, bregActive]             = dopingN
+        params.bDoping[iphipb, bregActive]             = dopingP
 
-        params.bReactionCoefficient[iphin, bregionJunction1] = params.UT * mun * Nc/data.d
-        params.bReactionCoefficient[iphip, bregionJunction1] = params.UT * mup * Nv/data.d
+        params.bDensityOfStates[iphinb, bregActive]    = data.d * Nc
+        params.bDensityOfStates[iphipb, bregActive]    = data.d * Nv
+
+        params.bBandEdgeEnergy[iphinb, bregActive]     = Ec + δn
+        params.bBandEdgeEnergy[iphipb, bregActive]     = Ev + δp
+
+        params.bReactionCoefficient[iphin, bregActive] = params.UT * mun * Nc/data.d
+        params.bReactionCoefficient[iphip, bregActive] = params.UT * mup * Nv/data.d
 
         # For the other interface, where we do not have interface species, we infer a high
         # reaction coefficient such that we observe continuity. If you still observe discontinuity
         # at the other interface without interface species, increase this value.
-        params.bReactionCoefficient[iphin, bregionJunction2] = 1.0e15
-        params.bReactionCoefficient[iphip, bregionJunction2] = 1.0e15
+        params.bReactionCoefficient[iphin, bregDeact] = 1.0e15
+        params.bReactionCoefficient[iphip, bregDeact] = 1.0e15
     end
 
     data.params                                           = params
@@ -357,8 +383,8 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
             # DA: current way out, when waiting for changes within ExtendableGrids and GridVisualize
             PyPlot.figure(2)
-            PyPlot.plot(coord[3*refinementfactor], phinb_sol, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
-            PyPlot.plot(coord[3*refinementfactor], phipb_sol, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
+            PyPlot.plot(coord[icoordJ], phinb_sol, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
+            PyPlot.plot(coord[icoordJ], phipb_sol, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
             println("value phin_b = ", phinb_sol)
             println("value phip_b = ", phipb_sol)
 
@@ -399,18 +425,24 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
             end
 
             PyPlot.figure(3)
-            eta_nb = -1/ data.params.UT * ( (phinb_sol[1] - psi_sol[1][end]) + data.params.bBandEdgeEnergy[iphinb, bregionJunction1]/q )
-            eta_pb =  1/ data.params.UT * ( (phipb_sol[1] - psi_sol[1][end]) + data.params.bBandEdgeEnergy[iphipb, bregionJunction1]/q )
 
+            if leftInterface
+                psib         = psi_sol[1][end]
+            else
+                psib         = psi_sol[2][end]
+            end
+
+            eta_nb = -1/ data.params.UT * ( (phinb_sol[1] - psib) + data.params.bBandEdgeEnergy[iphinb, bregActive]/q )
+            eta_pb =  1/ data.params.UT * ( (phipb_sol[1] - psib) + data.params.bBandEdgeEnergy[iphipb, bregActive]/q )
             # DA: divide by d such that it is three dimensional again?
-            nb     = data.params.bDensityOfStates[iphinb, bregionJunction1] * data.F[iphin](eta_nb)#./data.d
-            pb     = data.params.bDensityOfStates[iphipb, bregionJunction1] * data.F[iphip](eta_pb)#./data.d
+            nb     = data.params.bDensityOfStates[iphinb, bregActive] * data.F[iphin](eta_nb)#./data.d
+            pb     = data.params.bDensityOfStates[iphipb, bregActive] * data.F[iphip](eta_pb)#./data.d
 
             println("value n_b = ", nb)
             println("value p_b = ", pb)
 
-            PyPlot.semilogy(coord[3*refinementfactor], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
-            PyPlot.semilogy(coord[3*refinementfactor], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
+            PyPlot.semilogy(coord[icoordJ], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
+            PyPlot.semilogy(coord[icoordJ], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
 
             # since we have a homogeneous set of parameters, region does not matter
             n = compute_densities(iphin, 1, sol_ref[:, 2], sol_ref[:, 4])
@@ -551,8 +583,8 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
             # DA: current way out, when waiting for changes within ExtendableGrids and GridVisualize
             PyPlot.figure(4)
-            PyPlot.plot(coord[3*refinementfactor], phinb_sol, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
-            PyPlot.plot(coord[3*refinementfactor], phipb_sol, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
+            PyPlot.plot(coord[icoordJ], phinb_sol, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
+            PyPlot.plot(coord[icoordJ], phipb_sol, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{\\varphi}_p \$")
             println("value phin_b = ", phinb_sol)
             println("value phip_b = ", phipb_sol)
 
@@ -592,18 +624,26 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
             end
 
             PyPlot.figure(5)
-            eta_nb = -1/ data.params.UT * ( (phinb_sol[1] - psi_sol[1][end]) + data.params.bBandEdgeEnergy[iphinb, bregionJunction1]/q )
-            eta_pb =  1/ data.params.UT * ( (phipb_sol[1] - psi_sol[1][end]) + data.params.bBandEdgeEnergy[iphipb, bregionJunction1]/q )
+
+
+            if leftInterface
+                psib         = psi_sol[1][end]
+            else
+                psib         = psi_sol[2][end]
+            end
+
+            eta_nb = -1/ data.params.UT * ( (phinb_sol[1] - psib) + data.params.bBandEdgeEnergy[iphinb, bregActive]/q )
+            eta_pb =  1/ data.params.UT * ( (phipb_sol[1] - psib) + data.params.bBandEdgeEnergy[iphipb, bregActive]/q )
 
             # DA: divide by d such that it is three dimensional again?
-            nb     = data.params.bDensityOfStates[iphinb, bregionJunction1] * data.F[iphin](eta_nb)#./data.d
-            pb     = data.params.bDensityOfStates[iphipb, bregionJunction1] * data.F[iphip](eta_pb)#./data.d
+            nb     = data.params.bDensityOfStates[iphinb, bregActive] * data.F[iphin](eta_nb)#./data.d
+            pb     = data.params.bDensityOfStates[iphipb, bregActive] * data.F[iphip](eta_pb)#./data.d
 
             println("value n_b = ", nb)
             println("value p_b = ", pb)
 
-            PyPlot.semilogy(coord[3*refinementfactor], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
-            PyPlot.semilogy(coord[3*refinementfactor], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
+            PyPlot.semilogy(coord[icoordJ], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
+            PyPlot.semilogy(coord[icoordJ], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
 
             # since we have a homogeneous set of parameters, region does not matter
             n = compute_densities(iphin, 1, sol_ref[:, 2], sol_ref[:, 4])
