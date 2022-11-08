@@ -43,16 +43,6 @@ mutable struct BulkRecombination
 
 end
 
-"""
-$(TYPEDEF)
-
-A struct holding all information necessary for Interface species.
-With help of this constructor we can read out the indices and boundaries
-the user chooses for interface species.
-
-$(TYPEDFIELDS)
-
-"""
 
 """
 $(SIGNATURES)
@@ -79,6 +69,58 @@ function set_bulk_recombination(;iphin = 1, iphip = 2,
     end
 
     return bulkRecombination
+
+end
+
+
+"""
+$(TYPEDEF)
+
+A struct holding all necessary information for building interface recombination.
+With help of this constructor we can read out the indices the user chooses for interface
+electron and hole quasi Fermi potentials and the underlying interface region.
+
+$(TYPEDFIELDS)
+
+"""
+mutable struct InterfaceRecombinationStruct
+
+    """
+    Index for FVM construction of electron quasi Fermi potential.
+    """
+	iphin                 ::  Int64
+
+    """
+    Index for FVM construction of hole quasi Fermi potential.
+    """
+    iphip                 ::  Int64
+
+    """
+    Indices of interface regions where interface recombination is present.
+    """
+    bregions              ::  Array{Int64, 1}
+
+
+    InterfaceRecombinationStruct() = new()
+
+end
+
+
+"""
+$(SIGNATURES)
+
+Corresponding constructor for the interface recombination model.
+"""
+function set_interface_recombination(;iphin = 1, iphip = 2, bregions = [3])
+
+    intRecombination = InterfaceRecombinationStruct()
+
+    intRecombination.iphin    = iphin
+    intRecombination.iphip    = iphip
+    intRecombination.bregions = bregions
+
+
+    return intRecombination
 
 end
 
@@ -230,6 +272,7 @@ function enable_interface_carrier!(data;bulkCarrier::Int64, interfaceCarrier::In
     ##        AbstractQuantities allowing discontinuities.
     data.isContinuous[bulkCarrier] = false
     data.qFModel                   = DiscontQF
+    data.interfaceCarriers         = InterfaceCarriersPresent
 
     ## Second: We need to add this chosen interfaceCarrier with all needed information to
     ##         the interfaceCarrierList.
@@ -400,11 +443,19 @@ mutable struct Params
     for electrons and holes.
     """
     recombinationSRHvelocity     ::  Array{Float64,2}
+
+
     """
     A 2D array with the corresponding recombination surface boundary density values
     for electrons and holes.
     """
     bRecombinationSRHTrapDensity ::  Array{Float64,2}
+
+
+    """
+    A 2D array with the corresponding recombination surface recombination velocities
+    """
+    bRecombinationSRHLifetime    ::  Array{Float64,2}
 
 
     ###############################################################
@@ -565,12 +616,17 @@ mutable struct Data{TFuncs<:Function}
     """
     F                            ::  Array{TFuncs,1}
 
-
     """
     An datatype containing the information, whether at least on quasi Fermi potential is
     assumend to be continuous or discontinuous.
     """
     qFModel                      ::  QFModelType
+
+
+    """
+    A DataType indicating, if interface carriers are present or not
+    """
+    interfaceCarriers            ::  InterfaceCarriers
 
     """
     An array of DataTypes with the type of boundary model for each boundary
@@ -582,6 +638,11 @@ mutable struct Data{TFuncs<:Function}
     A struct containing information concerning the bulk recombination model.
     """
     bulkRecombination            ::  BulkRecombination
+
+    """
+    A struct containing information concerning the interface recombination model.
+    """
+    interfaceRecombination       ::  InterfaceRecombinationStruct
 
     ###############################################################
     ####        Information on present charge carriers         ####
@@ -807,9 +868,9 @@ function Params(grid, numberOfCarriers)
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
     ###############################################################
-    params.bRecombinationSRHTrapDensity = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.recombinationSRHvelocity     = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
-
+    params.bRecombinationSRHTrapDensity = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    params.bRecombinationSRHLifetime    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     ###############################################################
     ####        number of regions x number of carriers         ####
     ###############################################################
@@ -885,7 +946,7 @@ are located.
 """
 function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSet) where TFuncs
 
-    numberOfBoundaryRegions  = grid[NumBFaceRegions]
+    numberOfBoundaryRegions     = grid[NumBFaceRegions]
 
     ###############################################################
     data = Data{TFuncs}()
@@ -894,14 +955,17 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
     ####                   model information                   ####
     ###############################################################
 
-    data.F                    = TFuncs[ Boltzmann for i=1:numberOfCarriers]
-    data.qFModel              = ContQF
-    data.boundaryType         = BoundaryModelType[InterfaceModelNone for i = 1:numberOfBoundaryRegions]
+    data.F                      = TFuncs[ Boltzmann for i=1:numberOfCarriers]
+    data.qFModel                = ContQF
+    data.interfaceCarriers      = InterfaceCarriersNone
+    data.boundaryType           = BoundaryModelType[InterfaceNone for i = 1:numberOfBoundaryRegions]
 
     # bulkRecombination is a struct holding the input information
-    data.bulkRecombination    = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = true,
-                                                      bulk_recomb_radiative = true,
-                                                      bulk_recomb_SRH = true)
+    data.bulkRecombination      = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = true,
+                                                         bulk_recomb_radiative = true,
+                                                         bulk_recomb_SRH = true)
+
+    data.interfaceRecombination = set_interface_recombination(iphin = 1, iphip = 2, bregions = [3])
 
     ###############################################################
     ####        Information on present charge carriers         ####

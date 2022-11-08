@@ -149,7 +149,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## Following choices are possible for boundary model: For contacts currently only
     ## OhmicContact and SchottkyContact are possible. For inner boundaries we have
-    ## InterfaceModelNone, InterfaceModelSurfaceReco.
+    ## InterfaceNone, InterfaceRecombination.
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 

@@ -49,18 +49,18 @@ abstract type SchottkyBarrierLowering end
 $(TYPEDEF)
 Abstract type for no interface model.
 """
-abstract type InterfaceModelNone end
+abstract type InterfaceNone end
 
 
 """
 $(TYPEDEF)
 Abstract type for surface recombination mechanisms.
 """
-abstract type InterfaceModelSurfaceReco end
+abstract type InterfaceRecombination end
 
-abstract type InterfaceModelTangentialFlux end
+abstract type InterfaceTangentialFlux end
 
-abstract type InterfaceModelSurfaceRecoAndTangentialFlux end
+abstract type InterfaceSurfaceRecoAndTangentialFlux end
 
 ##########################################################
 """
@@ -70,16 +70,31 @@ const OuterBoundaryModelType = Union{Type{OhmicContact}, Type{SchottkyContact}, 
 
 
 """
+Possible Types of interface model (interior boundary conditions) which are implemented, but
+not well tested yet.
+"""
+const InterfaceNotTestedType = Union{Type{InterfaceTangentialFlux}, Type{InterfaceSurfaceRecoAndTangentialFlux}}
+
+"""
 Possible Types of interface model (interior boundary conditions).
 """
-const InterfaceModelType = Union{Type{InterfaceModelNone}, Type{InterfaceModelSurfaceReco},
-                                 Type{InterfaceModelTangentialFlux}, Type{InterfaceModelSurfaceRecoAndTangentialFlux}}
+const InterfaceModelType = Union{Type{InterfaceNone}, Type{InterfaceRecombination},
+                                 InterfaceNotTestedType}
 
 """
 Possible types of boundary models.
 """
 const BoundaryModelType  = Union{OuterBoundaryModelType, InterfaceModelType}
 
+
+##########################################################
+##########################################################
+# We need the distinction to embed specific boundary reactions based on user choice.
+
+abstract type InterfaceCarriersNone    end
+abstract type InterfaceCarriersPresent end
+
+const InterfaceCarriers = Union{Type{InterfaceCarriersNone}, Type{InterfaceCarriersPresent}}
 ##########################################################
 ##########################################################
 """

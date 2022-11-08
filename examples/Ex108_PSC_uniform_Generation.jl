@@ -239,8 +239,8 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## Possible choices: GenerationNone, GenerationUniform
     data.generationModel               = GenerationUniform
 
-    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    ## InterfaceModelSurfaceReco (inner boundary).
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    ## InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 

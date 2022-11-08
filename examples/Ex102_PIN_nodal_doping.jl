@@ -114,8 +114,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
                                                                 bulk_recomb_radiative = false,
                                                                 bulk_recomb_SRH = true)
 
-    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    ## InterfaceModelSurfaceReco (inner boundary).
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    ## InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 

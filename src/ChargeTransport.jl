@@ -34,8 +34,10 @@ export QFModelType, DiscontQF, ContQF
 
 export OuterBoundaryModelType, OuterBoundaryModelType, InterfaceModelType
 export OhmicContact, SchottkyContact, SchottkyBarrierLowering
-export InterfaceModelNone, InterfaceModelSurfaceReco, InterfaceModelTangentialFlux
-export InterfaceModelSurfaceRecoAndTangentialFlux
+export InterfaceNone, InterfaceRecombination, InterfaceTangentialFlux
+export InterfaceSurfaceRecoAndTangentialFlux
+
+export InterfaceCarriers, InterfaceCarriersNone, InterfaceCarriersPresent
 
 export ModelType, Transient, Stationary
 
@@ -61,6 +63,7 @@ include("ct_system.jl")
 
 export Params, ParamsNodal, Data, System
 export BulkRecombination, set_bulk_recombination
+export InterfaceRecombinationStruct, set_interface_recombination
 
 export enable_ionic_carrier!, enable_trap_carrier!, enable_interface_carrier!
 

@@ -151,7 +151,7 @@ for each boundary the chosen boundary model.
 Note that we have several different subfunctions.
 First, we go through the boundaryType.
 If the boundaryType declares an interfaceModel, then a subfunction breactionInterface! is parsed.
-If we have the interfaceModelNone, we need to check whether the quasi Fermi potentials are
+If we have the interfaceNone, we need to check whether the quasi Fermi potentials are
 continuous or discontinuous.
 
 """
@@ -269,6 +269,7 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
 
     params      = data.params
     ipsi        = data.index_psi
+    iphin       = data.bulkRecombination.iphin
 
     for icc ∈ data.electricCarrierList       # Array{Int64, 1}
 
@@ -333,133 +334,34 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
 
 end
 
-
+#################################################################################################
 #################################################################################################
 
-breaction!(f, u, bnode, data, ::InterfaceModelType) = breactionInterface!(f, u, bnode, data, data.boundaryType[bnode.region])
+breaction!(f, u, bnode, data, ::InterfaceNotTestedType)       = emptyFunction()
 
-# breaction term for tangential flux.
-breactionInterface!(f, u, bnode, data, ::Type{InterfaceModelTangentialFlux}) = emptyFunction()
+# Concerning the implemented inner interface models, we need to distinguish between a model
+# based on continuous quasi Fermi potentials or discontinuous.
+breaction!(f, u, bnode, data, ::Type{InterfaceNone})          = breactionqFNone!(f, u, bnode, data, data.qFModel)
 
-###################################################################################
-# breaction term for surface recombination.
-# DA: Note that, when we have a model for interface charge carriers and surface reco,
-# this one needs to also have cases.
-breactionInterface!(f, u, bnode, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = breactionInterface!(f, u, bnode, data, InterfaceModelSurfaceReco)
+breaction!(f, u, bnode, data, ::Type{InterfaceRecombination}) = breactionqFInterfaceReco!(f, u, bnode, data, data.qFModel)
 
-function breactionInterface!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
+#################################################################################################
+# Here are the two subcases w.r.t. to the quasi Fermi model in case of no inner interface reaction.
 
-    # indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (passed through recombination)
-    iphin    = data.bulkRecombination.iphin # integer index of φ_n
-    iphip    = data.bulkRecombination.iphip # integer index of φ_p
+breactionqFNone!(f, u, bnode, data, ::Type{ContQF})  = emptyFunction()
 
-    params   = data.params
-
-    get_DOS!(iphin, bnode, data); get_DOS!(iphip, bnode, data)
-    Nc   = data.tempDOS1[iphin]
-    Nv   = data.tempDOS1[iphip]
-    etan = etaFunction(u, bnode, data, iphin) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
-    etap = etaFunction(u, bnode, data, iphip) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
-
-    n    = Nc * data.F[iphin](etan)
-    p    = Nv * data.F[iphip](etap)
-
-    exponentialTerm = exp((q * u[iphin] - q  * u[iphip] ) / (kB * params.temperature))
-    excessDensTerm  = n * p * (1.0 - exponentialTerm)
-
-    kernelSRH = 1.0 / ( 1.0/params.recombinationSRHvelocity[iphip, bnode.region] * (n + params.bRecombinationSRHTrapDensity[iphin, bnode.region]) + 1.0/params.recombinationSRHvelocity[iphin, bnode.region] * (p + params.bRecombinationSRHTrapDensity[iphip, bnode.region] ) )
-
-    for icc ∈ data.electricCarrierList
-        icc = data.chargeCarrierList[icc]
-        f[icc] =  q * params.chargeNumbers[icc] * kernelSRH *  excessDensTerm
-    end
+# In case of discontinuous quasi Fermi potentials we need to distinguish, if interface carriers
+# are present or not.
+breactionqFNone!(f, u, bnode, data, ::Type{DiscontQF}) = breactionDiscontqF!(f, u, bnode, data, data.interfaceCarriers)
 
 
-end
+# This reaction is needed in two cases:
+# a. discontinuous qF and no reaction is defined
+# b. discontinuous qF and present interface carriers, but only at one inner boundary.
+function RHSNoInterfaceCarriers!(f, u, bnode, data)
+    ipsi   = data.index_psi
+    params = data.params
 
-###################################################################################
-# This breaction! function is chosen when no interface model is chosen. We need to distinguish
-# between cases for the discontinuous quantity case.
-
-breactionInterface!(f, u, bnode, data, ::Type{InterfaceModelNone})  = breactionqF!(f, u, bnode, data, data.qFModel)
-
-
-# In case of continuous quasi Fermi potentials no interface reaction will be parsed, hence
-# continuity is directly assumed for charge carriers and for the respective current densities.
-breactionqF!(f, u, bnode, data, ::Type{ContQF}) = emptyFunction()
-
-function breactionqF!(f, u, bnode, data, ::Type{DiscontQF})
-
-    if length(data.interfaceCarrierList) > 0
-
-        if data.calculationType == InEquilibrium
-
-            for iicc in data.interfaceCarrierList
-                if bnode.region in iicc.bregions
-
-                    icc_b      = data.chargeCarrierList[iicc.interfaceCarrier] # iicc.interfaceCarrier as the index of interface carrier
-
-                    # check for index of bulk carrier and read it out of chargeCarrierList
-                    icc        = iicc.bulkCarrier
-                    icc        = data.chargeCarrierList[icc]
-
-                    # zero quasi Fermi potential in equilibrium
-                    f[icc_b]     = u[icc_b]
-
-                    ipsi       = data.index_psi
-                    params     = data.params
-                    UT         = params.UT
-                    zalpha     = params.chargeNumbers[icc]
-                    Nalpha_b   = params.bDensityOfStates[icc_b, bnode.region]
-                    Ealpha_b   = params.bBandEdgeEnergy[ icc_b, bnode.region]
-
-                    etaalpha_b = zalpha / UT * ( (u[icc_b] - u[ipsi]) + Ealpha_b / q )
-                    nalpha_b   = Nalpha_b * data.F[icc](etaalpha_b)
-
-                    # add condition on interface charge density
-                    f[ipsi] = f[ipsi] + q * ( zalpha * (nalpha_b - params.bDoping[icc_b, bnode.region]))
-                end
-            end
-
-            return
-        end
-
-        # if interface carriers are present, then the interface model with present interface
-        # carriers is applied
-        for icc ∈ data.interfaceCarrierList
-
-            if bnode.region ∈ icc.bregions
-                breactionqFInterfaceCarrier!(f, u, bnode, data)
-            else
-                breactionqFNoInterfaceCarrier!(f, u, bnode, data)
-            end
-
-        end
-    else # no interface carriers
-
-        if data.calculationType == InEquilibrium
-            return emptyFunction()
-        end
-
-        # if no interface carriers are present at this interface, a simple reaction
-        # rate is applied
-        # DA: To Do, add more notes ...
-        breactionqFNoInterfaceCarrier!(f, u, bnode, data)
-    end
-
-end
-
-
-function breactionqFNoInterfaceCarrier!(f, u, bnode, data)
-
-    ipsi = data.index_psi
-
-    params      = data.params
-
-    # note that we use bnode.cellregions[1], i.e.\ we do not distinguish betweeen left and right parameter.
-    # This is because we want agreement in the quasi Fermi potentials and not the densities.
-    # Further, we need to infer here a conditions with respect to the densities to get the same order
-    # of magnitude as in the other discrete equations. Otherwise, we get convergence issues.
     for icc in eachindex(data.electricCarrierList)
 
         if data.isContinuous[icc] == true
@@ -467,88 +369,251 @@ function breactionqFNoInterfaceCarrier!(f, u, bnode, data)
         end
 
         # based on user index and regularity of solution quantities or integers are used and depicted here
-        icc   = data.chargeCarrierList[icc] # = Quantity or integer
+        icc       = data.chargeCarrierList[icc] # = Quantity or integer
 
-        etan1 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 1] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # left
-        etan2 = params.chargeNumbers[icc] / params.UT * ( (u[icc, 2] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # right
+        # note that we use bnode.cellregions[1], i.e.\ we do not distinguish betweeen left and right parameter.
+        # This is because we want agreement in the quasi Fermi potentials and not the densities.
+        etan1     = params.chargeNumbers[icc] / params.UT * ( (u[icc, 1] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # left
+        etan2     = params.chargeNumbers[icc] / params.UT * ( (u[icc, 2] - u[ipsi]) + params.bandEdgeEnergy[icc, bnode.cellregions[1]] / q ) # right
 
-        n1 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan1)
-        n2 = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan2)
+        n1        = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan1)
+        n2        = params.densityOfStates[icc, bnode.cellregions[1]] * data.F[icc](etan2)
 
         react     = q * params.chargeNumbers[icc] * params.bReactionCoefficient[icc, bnode.region]  * (n1 - n2)
 
+        # DA: correct signs?
         f[icc, 1] =   react
         f[icc, 2] = - react
     end
 
 end
 
-# breaction term for case where interface carriers are present
-function breactionqFInterfaceCarrier!(f, u, bnode, data)
+# In case of discontinuous quasi Fermi potentials with no interface carriers we have to
+# impose an artificial reaction, such that continuity of quasi Fermi potentials can be observed.
+# The reaction is infered in terms of densities due to consistency with the other model equations.
+# Otherwise, we get convergence issues.
+function breactionDiscontqF!(f, u, bnode, data, ::Type{InterfaceCarriersNone})
 
-    # go through the interface carrier list (this means that all electric charge carriers
-    # which are assumed to be continuous are neglected)
+    RHSNoInterfaceCarriers!(f, u, bnode, data)
+
+end
+
+function RHSPoissonInterface!(f, u, bnode, data)
+
+    ipsi   = data.index_psi
+    params = data.params
+
+    for iicc in data.interfaceCarrierList
+        if bnode.region in iicc.bregions
+
+            icc_b        = data.chargeCarrierList[iicc.interfaceCarrier] # iicc.interfaceCarrier as the index of interface carrier
+
+            # check for index of bulk carrier and read it out of chargeCarrierList
+            icc          = iicc.bulkCarrier
+            icc          = data.chargeCarrierList[icc]
+
+            ipsi         = data.index_psi
+            params       = data.params
+            UT           = params.UT
+            zalpha       = params.chargeNumbers[icc]
+            Nalpha_b     = params.bDensityOfStates[icc_b, bnode.region]
+            Ealpha_b     = params.bBandEdgeEnergy[ icc_b, bnode.region]
+
+            etaalpha_b   = zalpha / UT * ( (u[icc_b] - u[ipsi]) + Ealpha_b / q )
+            nalpha_b     = Nalpha_b * data.F[icc](etaalpha_b)
+
+            # add condition on interface charge density
+            # caution! The equation is implemented as: - j_\psi - Q_A = 0, hence, the minus sign.
+            f[ipsi]      = f[ipsi] - q * ( zalpha * (nalpha_b - params.bDoping[icc_b, bnode.region]))
+
+        end
+    end
+
+end
+
+
+# breaction term for case, where interface carriers are present
+function RHSInterfaceCarriers!(f, u, bnode, data)
+
+    ipsi   = data.index_psi
+    params = data.params
+
+    # go through the interface carrier list
     for iicc in data.interfaceCarrierList
 
         if bnode.region in iicc.bregions
 
-            icc_b    = data.chargeCarrierList[iicc.interfaceCarrier]
+            icc_b            = data.chargeCarrierList[iicc.interfaceCarrier]
 
-            # check for index of bulk carrier and read it out of chargeCarrierList
-            icc      = iicc.bulkCarrier
-            icc      = data.chargeCarrierList[icc]
+            # zero quasi Fermi potential in equilibrium
+            if data.calculationType == InEquilibrium
+                f[icc_b]     = u[icc_b]
 
-            il       = bnode.cellregions[1] # bnode.region == 3 -> il = 1
-            ir       = bnode.cellregions[2] # bnode.region == 3 -> ir = 2
+            else
+                 # check for index of bulk carrier and read it out of chargeCarrierList
+                icc          = iicc.bulkCarrier
+                icc          = data.chargeCarrierList[icc]
 
-            ipsi     = data.index_psi
+                il           = bnode.cellregions[1] # bnode.region == 3 -> il = 1
+                ir           = bnode.cellregions[2] # bnode.region == 3 -> ir = 2
 
-            params   = data.params
-            UT       = params.UT
-            zalpha   = params.chargeNumbers[icc]
+                ipsi         = data.index_psi
 
-            Nalpha_l = params.densityOfStates[icc, il]
-            Ealpha_l = params.bandEdgeEnergy[icc, il]
+                params       = data.params
+                UT           = params.UT
+                zalpha       = params.chargeNumbers[icc]
 
-            Nalpha_r = params.densityOfStates[icc, ir]
-            Ealpha_r = params.bandEdgeEnergy[icc, ir]
+                Nalpha_l     = params.densityOfStates[icc, il]
+                Ealpha_l     = params.bandEdgeEnergy[icc, il]
 
-            Nalpha_b = params.bDensityOfStates[icc_b, bnode.region]
-            Ealpha_b = params.bBandEdgeEnergy[ icc_b, bnode.region]
+                Nalpha_r     = params.densityOfStates[icc, ir]
+                Ealpha_r     = params.bandEdgeEnergy[icc, ir]
 
-            # left value
-            etaalpha_l   = zalpha / UT * ( (u[icc, 1] - u[ipsi]) + Ealpha_l / q )
-            nalpha_l     = Nalpha_l * data.F[icc](etaalpha_l)
+                Nalpha_b     = params.bDensityOfStates[icc_b, bnode.region]
+                Ealpha_b     = params.bBandEdgeEnergy[ icc_b, bnode.region]
 
-            # interface value
-            etaalpha_b  = zalpha / UT * ( (u[icc_b] - u[ipsi]) + Ealpha_b / q )
-            nalpha_b    = Nalpha_b * data.F[icc](etaalpha_b)
+                # left value
+                etaalpha_l   = zalpha / UT * ( (u[icc, 1] - u[ipsi]) + Ealpha_l / q )
+                nalpha_l     = Nalpha_l * data.F[icc](etaalpha_l)
 
-            # right value
-            etaalpha_r   = zalpha / UT * ( (u[icc, 2] - u[ipsi]) + Ealpha_r / q )
-            nalpha_r     = Nalpha_r * data.F[icc](etaalpha_r)
+                # interface value
+                etaalpha_b   = zalpha / UT * ( (u[icc_b] - u[ipsi]) + Ealpha_b / q )
+                nalpha_b     = Nalpha_b * data.F[icc](etaalpha_b)
 
-            Kalphaleft  = exp(- zalpha/ (kB * data.params.temperature) * (Ealpha_l - Ealpha_b))
-            Kalpharight = exp(- zalpha/ (kB * data.params.temperature) * (Ealpha_r - Ealpha_b))
+                # right value
+                etaalpha_r   = zalpha / UT * ( (u[icc, 2] - u[ipsi]) + Ealpha_r / q )
+                nalpha_r     = Nalpha_r * data.F[icc](etaalpha_r)
 
-            ##############################################################
-            k0alpha     = params.bReactionCoefficient[icc, bnode.region]
+                Kalphaleft   = exp(- zalpha/ (kB * data.params.temperature) * (Ealpha_l - Ealpha_b))
+                Kalpharight  = exp(- zalpha/ (kB * data.params.temperature) * (Ealpha_r - Ealpha_b))
 
-            reactalpha_l = q * zalpha * k0alpha * (Kalphaleft^(1/2)  * nalpha_l/Nalpha_l - Kalphaleft^(- 1/2)  * nalpha_b/Nalpha_b)
-            reactalpha_r = q * zalpha * k0alpha * (Kalpharight^(1/2) * nalpha_r/Nalpha_r - Kalpharight^(- 1/2) * nalpha_b/Nalpha_b)
+                #################
 
-            f[icc, 1]   =   reactalpha_l
-            f[icc, 2]   =   reactalpha_r
-            f[icc_b]    = - reactalpha_l - reactalpha_r
+                k0alpha      = params.bReactionCoefficient[icc, bnode.region]
 
-            # add condition on interface charge density
-            f[ipsi] = f[ipsi] + q * ( zalpha * (nalpha_b - params.bDoping[icc_b, bnode.region]))
+                reactalpha_l = q * zalpha * k0alpha * (Kalphaleft^(1/2)  * nalpha_l/Nalpha_l - Kalphaleft^(- 1/2)  * nalpha_b/Nalpha_b)
+                reactalpha_r = q * zalpha * k0alpha * (Kalpharight^(1/2) * nalpha_r/Nalpha_r - Kalpharight^(- 1/2) * nalpha_b/Nalpha_b)
 
+                f[icc, 1]    = reactalpha_l
+                f[icc, 2]    = reactalpha_r
+
+                # DA: How are the correct signs for a boundary species?
+                f[icc_b]     = - reactalpha_l - reactalpha_r
+
+            end
+
+        else
+            if data.calculationType == OutOfEquilibrium
+                RHSNoInterfaceCarriers!(f, u, bnode, data)
+            end
         end
 
     end
 
 end
+
+
+function breactionDiscontqF!(f, u, bnode, data, ::Type{InterfaceCarriersPresent})
+
+    RHSPoissonInterface!(f, u, bnode, data)
+    RHSInterfaceCarriers!(f, u, bnode, data)
+
+end
+
+
+####################################################
+# Here are the two subcases w.r.t. to the quasi Fermi model in case of present interface recombination.
+
+# Here, the interface recombination w.r.t. to continuous quasi Fermi potential is imposed.
+# Hence, the bulk carriers are used.
+# Note that the user chooses which parameters are used to define the bulk interface density!
+
+function breactionqFInterfaceReco!(f, u, bnode, data, ::Type{ContQF})
+
+    # indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (passed through recombination)
+    iphin           = data.bulkRecombination.iphin # integer index of φ_n
+    iphip           = data.bulkRecombination.iphip # integer index of φ_p
+
+    params          = data.params
+
+    get_DOS!(iphin, bnode, data); get_DOS!(iphip, bnode, data)
+    Nc              = data.tempDOS1[iphin]
+    Nv              = data.tempDOS1[iphip]
+    etan            = etaFunction(u, bnode, data, iphin) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
+    etap            = etaFunction(u, bnode, data, iphip) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
+
+    n               = Nc * data.F[iphin](etan)
+    p               = Nv * data.F[iphip](etap)
+
+    exponentialTerm = exp((q * u[iphin] - q  * u[iphip] ) / (kB * params.temperature))
+    excessDensTerm  = n * p * (1.0 - exponentialTerm)
+
+    vn              = params.recombinationSRHvelocity[iphin, bnode.region]
+    vp              = params.recombinationSRHvelocity[iphip, bnode.region]
+    nτ              = params.bRecombinationSRHTrapDensity[iphin, bnode.region]
+    pτ              = params.bRecombinationSRHTrapDensity[iphip, bnode.region]
+
+    kernelSRH       = 1.0 / ( 1.0/vp*(n + nτ) + 1.0/vn*(p + pτ ) )
+
+    # caution: -j_\alpha \cdot \nu + z_\alpha R_{surf} = 0 is implemented, i.e.\
+    #          1. we adjust the signs of surface reactions with respect to the hardcoded
+    #              negative sign before the projected flux (see VoronoiFVM documentation)
+    #          2. in contrast to bulk recombination, surface recombination has a different sign.
+    for icc ∈ data.electricCarrierList
+        icc         = data.chargeCarrierList[icc]
+        f[icc]      =  q * params.chargeNumbers[icc] * kernelSRH *  excessDensTerm
+    end
+
+end
+
+
+# currently this method is only implemented for the case of discontinuous qF AND
+# present interface species!
+function breactionqFInterfaceReco!(f, u, bnode, data, ::Type{DiscontQF})
+
+    RHSPoissonInterface!(f, u, bnode, data)
+    RHSInterfaceCarriers!(f, u, bnode, data)
+
+    if data.calculationType == OutOfEquilibrium
+        breg = bnode.region
+        if breg ∈ data.interfaceRecombination.bregions
+
+            # indices (∈ IN) of interface electron and hole quasi Fermi potentials used by user (passed through recombination)
+            iphinb          = data.interfaceRecombination.iphin
+            iphipb          = data.interfaceRecombination.iphip
+
+            # find corresponding index in charge carrier list
+            iphinb          = data.chargeCarrierList[iphinb]
+            iphipb          = data.chargeCarrierList[iphipb]
+
+            get_DOS!(iphinb, bnode, data); get_DOS!(iphipb, bnode, data)
+
+            Ncb             = data.tempDOS1[iphinb];      Nvb = data.tempDOS1[iphipb]
+
+            etanb           = etaFunction(u, bnode, data, iphinb)
+            etapb           = etaFunction(u, bnode, data, iphipb)
+            nb              = Ncb * data.F[iphinb](etanb)
+            pb              = Nvb * data.F[iphipb](etapb)
+
+            taunb           = data.params.bRecombinationSRHLifetime[iphinb,   breg]
+            n0b             = data.params.recombinationSRHTrapDensity[iphinb, breg]
+            taupb           = data.params.bRecombinationSRHLifetime[iphipb,   breg]
+            p0b             = data.params.recombinationSRHTrapDensity[iphipb, breg]
+
+            exponentialTerm = exp((q * u[iphinb] - q * u[iphipb]) / (kB * data.params.temperature))
+            excessDensTerm  = nb * pb * (1.0 - exponentialTerm)
+
+            # calculate recombination kernel
+            kernelSRH       = 1.0 / ( taupb * (nb + n0b) + taunb * (pb + p0b) )
+
+            # add interface recombination to previous interface conditions.
+            f[iphinb]       =  f[iphinb] + q * data.params.chargeNumbers[iphinb] * kernelSRH * excessDensTerm
+            f[iphipb]       =  f[iphipb] + q * data.params.chargeNumbers[iphipb] * kernelSRH * excessDensTerm
+
+        end
+    end
+end
+
 
 ##########################################################
 ##########################################################
@@ -597,26 +662,26 @@ bflux!(f, u, bedge, data) = bflux!(f, u, bedge, data, data.calculationType)
 
 
 # In case of equilibrium, the bflux shall not enter.
-bflux!(f, u, bedge, data, ::Type{InEquilibrium})             = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{InEquilibrium})           = emptyFunction()
 
 
 # Out of equilibrium, we need to additionally check for boundary type.
-bflux!(f, u, bedge, data, ::Type{OutOfEquilibrium})          = bflux!(f, u, bedge, data, data.boundaryType[bedge.region])
+bflux!(f, u, bedge, data, ::Type{OutOfEquilibrium})        = bflux!(f, u, bedge, data, data.boundaryType[bedge.region])
 
-bflux!(f, u, bedge, data, ::Type{InterfaceModelNone})        = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{InterfaceNone})           = emptyFunction()
 
-bflux!(f, u, bedge, data, ::Type{OhmicContact})              = emptyFunction()
-bflux!(f, u, bedge, data, ::Type{SchottkyContact})           = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{OhmicContact})            = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{SchottkyContact})         = emptyFunction()
 
-bflux!(f, u, bedge, data, ::Type{SchottkyBarrierLowering})   = emptyFunction()
-bflux!(f, u, bedge, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{SchottkyBarrierLowering}) = emptyFunction()
+bflux!(f, u, bedge, data, ::Type{InterfaceRecombination})  = emptyFunction()
 
 
 
 # Cases, where we have a tangential flux.
-bflux!(f, u, bedge, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = bflux!(f, u, bedge, data, data.fluxApproximation)
+bflux!(f, u, bedge, data, ::Type{InterfaceSurfaceRecoAndTangentialFlux}) = bflux!(f, u, bedge, data, data.fluxApproximation)
 
-bflux!(f, u, bedge, data, ::Type{InterfaceModelTangentialFlux}) = bflux!(f, u, bedge, data, data.fluxApproximation)
+bflux!(f, u, bedge, data, ::Type{InterfaceTangentialFlux}) = bflux!(f, u, bedge, data, data.fluxApproximation)
 
 
 # excess chemical potential flux discretization scheme for inner boundaries.

@@ -20,18 +20,8 @@ using GridVisualize
 using PyPlot
 using DelimitedFiles
 
-## This function is used to initialize the grid for a possible extension to other p-i-n devices.
-function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
-    coord_ndoping    = collect(range(0.0, stop = h_ndoping, length = 3 * refinementfactor))
-    coord_intrinsic  = collect(range(h_ndoping, stop = (h_ndoping + h_intrinsic), length = 3 * refinementfactor))
-    coord_pdoping    = collect(range((h_ndoping + h_intrinsic), stop = (h_ndoping + h_intrinsic + h_pdoping), length = 3 * refinementfactor))
-    coord            = glue(coord_ndoping, coord_intrinsic)
-    coord            = glue(coord, coord_pdoping)
 
-    return coord
-end
-
-function main(;n = 6, plotting = false, verbose = false, test = false, interfaceSpecies = true, leftInterface = true)
+function main(;n = 6, plotting = false, verbose = false, test = false, interfaceSpecies = false, leftInterface = true, interfaceReco = false)
 
     PyPlot.close("all")
     ################################################################################
@@ -57,11 +47,42 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
     h_pdoping               = 2.0 * μm
     h_intrinsic             = 2.0 * μm
     h_ndoping               = 2.0 * μm
-    refinementfactor        = 2^(n-1)
-    h_pdoping               = 2.0    * μm
-    coord                   = initialize_pin_grid(refinementfactor, h_pdoping,
-                                                  h_intrinsic, h_ndoping)
+    δ                       = 7*n        # the larger, the finer the mesh
+    t                       = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
+    k                       = 2.0        # the closer to 1, the closer to the boundary geomspace works
 
+    coord_p_u               = collect(range(0.0, 2/3 * h_pdoping, step=h_pdoping/(1.3*δ)))
+    coord_p_g               = geomspace(2/3 * h_pdoping,
+                                        h_pdoping,
+                                        h_pdoping/(0.4*δ),
+                                        h_pdoping/(9.2*δ),
+                                        tol=t)
+    coord_i_g1              = geomspace(h_pdoping,
+                                        h_pdoping+h_intrinsic/k,
+                                        h_intrinsic/(9.2*δ),
+                                        h_intrinsic/(0.4*δ),
+                                        tol=t)
+    coord_i_g2              = geomspace(h_pdoping+h_intrinsic/k,
+                                        h_pdoping+h_intrinsic,
+                                        h_intrinsic/(0.4*δ),
+                                        h_intrinsic/(9.1*δ),
+                                        tol=t)
+    coord_n_g               = geomspace(h_pdoping+h_intrinsic,
+                                        h_pdoping+h_intrinsic+1/3 * h_ndoping,
+                                        h_ndoping/(9.2*δ),
+                                        h_ndoping/(0.4*δ),
+                                        tol=t)
+    coord_n_u               = collect(range(h_pdoping+h_intrinsic+1/3 * h_ndoping, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(1.3*δ)))
+
+    coord                   = glue(coord_p_u,coord_p_g,  tol=10*t)
+    icoord_p                = length(coord)
+    coord                   = glue(coord,    coord_i_g1, tol=10*t)
+    coord                   = glue(coord,    coord_i_g2, tol=10*t)
+    icoord_pi               = length(coord)
+    coord                   = glue(coord,    coord_n_g,  tol=10*t)
+    coord                   = glue(coord,    coord_n_u,  tol=10*t)
+
+    # 5.0-9 m around interface
     grid                    = simplexgrid(coord)
 
     ## cellmask! for defining the subregions and assigning region number
@@ -148,17 +169,18 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
     data.boundaryType[bregionDonor]     = OhmicContact
     data.fluxApproximation             .= ScharfetterGummel
 
+
     if leftInterface == true
         bregActive = bregionJunction1
         bregDeact  = bregionJunction2
-        icoordJ    = 3*refinementfactor
+        icoordJ    = icoord_p
 
         regl       = regionAcceptor
         regr       = regionIntrinsic
     else
         bregActive = bregionJunction2
         bregDeact  = bregionJunction1
-        icoordJ    = 2 * 3*refinementfactor
+        icoordJ    = icoord_pi
 
         regl       = regionIntrinsic
         regr       = regionDonor
@@ -167,6 +189,18 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
     if interfaceSpecies
         enable_interface_carrier!(data, bulkCarrier = iphin, interfaceCarrier = iphinb, bregions = [bregActive])
         enable_interface_carrier!(data, bulkCarrier = iphip, interfaceCarrier = iphipb, bregions = [bregActive])
+
+    end
+
+    if interfaceReco
+
+        data.boundaryType[bregActive] = InterfaceRecombination
+        if interfaceSpecies
+
+            data.interfaceRecombination = set_interface_recombination(;iphin = iphinb, iphip = iphipb,
+                                                                       bregions = [bregActive])
+
+        end
     end
 
     if test == false
@@ -244,8 +278,8 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
             dopingP                                    = 0.0
         end
 
-        δn                                             =  -0.1  * eV
-        δp                                             =   0.1  * eV
+        δn                                             =  -0.0  * eV
+        δp                                             =   0.0  * eV
         params.bDoping[iphinb, bregActive]             = dopingN
         params.bDoping[iphipb, bregActive]             = dopingP
 
@@ -265,8 +299,41 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
         params.bReactionCoefficient[iphip, bregDeact] = 1.0e15
     end
 
-    data.params                                           = params
-    ctsys                                                 = System(grid, data, unknown_storage=:sparse)
+    if interfaceReco
+
+        # Caution! In case of interface species we have iphinb, iphipb and in bulk case iphin, iphip
+        if interfaceSpecies
+
+            params.bRecombinationSRHLifetime[iphinb, bregActive]    = 1/(1.0e1  * cm / s)
+            params.bRecombinationSRHLifetime[iphipb, bregActive]    = 1/(1.0e5  * cm / s)
+
+            params.bRecombinationSRHTrapDensity[iphinb, bregActive] = data.d * SRH_TrapDensity
+            params.bRecombinationSRHTrapDensity[iphipb, bregActive] = data.d * SRH_TrapDensity
+
+            params.bRecombinationSRHLifetime[iphinb, bregDeact]     = 1.0e100  * s#1.0e7  * cm / s
+            params.bRecombinationSRHLifetime[iphipb, bregDeact]     = 1.0e100  * s#1.0e1  * cm / s
+
+            params.bRecombinationSRHTrapDensity[iphinb, bregDeact]  = data.d * SRH_TrapDensity
+            params.bRecombinationSRHTrapDensity[iphipb, bregDeact]  = data.d * SRH_TrapDensity
+
+        else
+            params.recombinationSRHvelocity[iphin, bregActive]     = 1.0e1  * cm / s
+            params.recombinationSRHvelocity[iphip, bregActive]     = 1.0e5  * cm / s
+
+            params.bRecombinationSRHTrapDensity[iphin, bregActive] = SRH_TrapDensity
+            params.bRecombinationSRHTrapDensity[iphip, bregActive] = SRH_TrapDensity
+
+            # put these values small since the inverse enters
+            params.recombinationSRHvelocity[iphin, bregDeact]      = 1.0e-100  * cm / s#1.0e7  * cm / s
+            params.recombinationSRHvelocity[iphip, bregDeact]      = 1.0e-100  * cm / s#1.0e1  * cm / s
+
+            params.bRecombinationSRHTrapDensity[iphin, bregDeact]  = SRH_TrapDensity
+            params.bRecombinationSRHTrapDensity[iphip, bregDeact]  = SRH_TrapDensity
+        end
+
+    end
+    data.params                                       = params
+    ctsys                                             = System(grid, data, unknown_storage=:sparse)
 
     if test == false
         println("*** done\n")
@@ -434,12 +501,12 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
             eta_nb = -1/ data.params.UT * ( (phinb_sol[1] - psib) + data.params.bBandEdgeEnergy[iphinb, bregActive]/q )
             eta_pb =  1/ data.params.UT * ( (phipb_sol[1] - psib) + data.params.bBandEdgeEnergy[iphipb, bregActive]/q )
-            # DA: divide by d such that it is three dimensional again?
-            nb     = data.params.bDensityOfStates[iphinb, bregActive] * data.F[iphin](eta_nb)#./data.d
-            pb     = data.params.bDensityOfStates[iphipb, bregActive] * data.F[iphip](eta_pb)#./data.d
 
-            println("value n_b = ", nb)
-            println("value p_b = ", pb)
+            nb     = data.params.bDensityOfStates[iphinb, bregActive] * data.F[iphin](eta_nb)./data.d
+            pb     = data.params.bDensityOfStates[iphipb, bregActive] * data.F[iphip](eta_pb)./data.d
+
+            println("value n_b (scaled by thickness) = ", nb)
+            println("value p_b (scaled by thickness) = ", pb)
 
             PyPlot.semilogy(coord[icoordJ], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
             PyPlot.semilogy(coord[icoordJ], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
@@ -510,6 +577,10 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
         println("*** done\n")
     end
 
+    # writedlm("data/reference-sol-PIN-interface-reco.dat", [coord solution'])
+    # res = [biasValues IV]
+    # writedlm("data/reference-IV-PIN-interface-reco.dat", res)
+
     ################################################################################
     if test == false
         println("Some plotting")
@@ -518,8 +589,14 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 
     if plotting
 
-        sol_ref  = readdlm("data/reference-sol-PIN.dat") # [coord sol_iphin sol_iphip sol_ipsi]
-        IV_ref   = readdlm("data/reference-IV-PIN.dat")
+        if interfaceReco
+            sol_ref  = readdlm("data/reference-sol-PIN-interface-reco.dat") # [coord sol_iphin sol_iphip sol_ipsi]
+            IV_ref   = readdlm("data/reference-IV-PIN-interface-reco.dat")
+        else
+            sol_ref  = readdlm("data/reference-sol-PIN.dat") # [coord sol_iphin sol_iphip sol_ipsi]
+            IV_ref   = readdlm("data/reference-IV-PIN.dat")
+        end
+
         vis3     = GridVisualizer(Plotter = PyPlot, layout=(2,1), size = (600,670), xlabel = "space [m]", ylabel = "potential [V]", fignumber=4)
         vis4     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "space [m]", ylabel = "density [m\$^{-3}\$]", fignumber=5)
         vis5     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "voltage [V]", ylabel = "current density [Am\$^{-2}\$]",fignumber=6)
@@ -636,11 +713,11 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
             eta_pb =  1/ data.params.UT * ( (phipb_sol[1] - psib) + data.params.bBandEdgeEnergy[iphipb, bregActive]/q )
 
             # DA: divide by d such that it is three dimensional again?
-            nb     = data.params.bDensityOfStates[iphinb, bregActive] * data.F[iphin](eta_nb)#./data.d
-            pb     = data.params.bDensityOfStates[iphipb, bregActive] * data.F[iphip](eta_pb)#./data.d
+            nb     = data.params.bDensityOfStates[iphinb, bregActive] * data.F[iphin](eta_nb)./data.d
+            pb     = data.params.bDensityOfStates[iphipb, bregActive] * data.F[iphip](eta_pb)./data.d
 
-            println("value n_b = ", nb)
-            println("value p_b = ", pb)
+            println("value n_b (scaled by thickness) = ", nb)
+            println("value p_b (scaled by thickness) = ", pb)
 
             PyPlot.semilogy(coord[icoordJ], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
             PyPlot.semilogy(coord[icoordJ], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
@@ -690,8 +767,11 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 end #  main
 
 function test()
-    testvalinterfaceSpecies = 0.32708816536853264; testval = 0.9896905415004197
-    main(test = true, interfaceSpecies = true) ≈ testvalinterfaceSpecies && main(test = true, interfaceSpecies = false) ≈ testval
+    testval = 0.33162709336557233; testvalInterfaceReco = 0.3316270933652241
+    main(test = true, interfaceSpecies = true, leftInterface = true, interfaceReco=false) ≈ testval && main(test = true, interfaceSpecies = false, interfaceReco=true) ≈ testvalInterfaceReco
+
+    # main(test = true, interfaceSpecies = false, leftInterface = true, interfaceReco=false) = 0.9896905415004197
+    # main(test = true, interfaceSpecies = false, leftInterface = true, interfaceReco=true) = 0.9896905415004197
 end
 
 if test == false

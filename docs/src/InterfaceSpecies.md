@@ -73,10 +73,23 @@ Additional Information:
 We can likewise use surface recombination. For this, adjust:
 
 ```julia
-data.boundaryType[bregionJunction] = InterfaceModelSurfaceReco # InterfaceModelNone
+data.boundaryType[bregionJunction] = InterfaceRecombination # InterfaceNone
 ```
 
 How to infer other possible surface effects and how to incorporate them into the code is explained [here](@ DeveloperSide).
+
+
+Implementation (Interface Recombination)
+================================
+It would be nice to have a constructor like this
+
+
+```julia
+data.interfaceRecombination  = set_interface_recombination(;iphin = iphinb, iphip = iphipb,
+                                                            bregions = [bregActive])
+```
+without having the user to pay so much attention concerning the boundaryType ...
+
 
 
 

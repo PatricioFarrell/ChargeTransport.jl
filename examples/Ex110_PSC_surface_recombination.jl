@@ -232,11 +232,11 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
 
-    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    ## InterfaceModelSurfaceReco (inner boundary).
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    ## InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor]  = OhmicContact
-    data.boundaryType[bregionJunction1] = InterfaceModelSurfaceReco
-    data.boundaryType[bregionJunction2] = InterfaceModelSurfaceReco
+    data.boundaryType[bregionJunction1] = InterfaceRecombination
+    data.boundaryType[bregionJunction2] = InterfaceRecombination
     data.boundaryType[bregionDonor]     = OhmicContact
 
     ## Present ionic vacancies in perovskite layer
@@ -303,7 +303,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bBandEdgeEnergy[iphip, bregionDonor]                  = Ev_d
 
     ##############################################################
-    ## inner boundary region data
+    ## inner boundary region data (we choose the intrinsic values)
     params.bDensityOfStates[iphin, bregionJunction1]             = Nc_i
     params.bDensityOfStates[iphip, bregionJunction1]             = Nv_i
 
@@ -320,11 +320,11 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.recombinationSRHvelocity[iphin, bregionJunction1]     = 1.0e1  * cm / s
     params.recombinationSRHvelocity[iphip, bregionJunction1]     = 1.0e5  * cm / s
 
-    params.recombinationSRHvelocity[iphin, bregionJunction2]     = 1.0e7  * cm / s
-    params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e1  * cm / s
-
     params.bRecombinationSRHTrapDensity[iphin, bregionJunction1] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
     params.bRecombinationSRHTrapDensity[iphip, bregionJunction1] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
+
+    params.recombinationSRHvelocity[iphin, bregionJunction2]     = 1.0e7  * cm / s
+    params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e1  * cm / s
 
     params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
     params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
