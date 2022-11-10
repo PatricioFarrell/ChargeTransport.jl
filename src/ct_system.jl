@@ -270,17 +270,19 @@ function enable_interface_carrier!(data;bulkCarrier::Int64, interfaceCarrier::In
     ## First: Since we enable an interfaceCarrier corresponding to bulkCarrier, we cannot
     ##        assume continuity for this bulkCarrier anymore. Thus, we need to work with
     ##        AbstractQuantities allowing discontinuities.
-    data.isContinuous[bulkCarrier] = false
-    data.qFModel                   = DiscontQF
-    data.interfaceCarriers         = InterfaceCarriersPresent
+    data.isContinuous[bulkCarrier]   = false
+    data.qFModel                     = DiscontQF
+    for breg in bregions
+        data.interfaceCarriers[breg] = InterfaceCarriersPresent
+    end
 
     ## Second: We need to add this chosen interfaceCarrier with all needed information to
     ##         the interfaceCarrierList.
-    intCarrier                     = InterfaceCarrier()
+    intCarrier                       = InterfaceCarrier()
 
-    intCarrier.bulkCarrier         = bulkCarrier
-    intCarrier.interfaceCarrier    = interfaceCarrier
-    intCarrier.bregions            = bregions
+    intCarrier.bulkCarrier           = bulkCarrier
+    intCarrier.interfaceCarrier      = interfaceCarrier
+    intCarrier.bregions              = bregions
 
     push!(data.interfaceCarrierList, intCarrier)
 
@@ -624,9 +626,9 @@ mutable struct Data{TFuncs<:Function}
 
 
     """
-    A DataType indicating, if interface carriers are present or not
+    An array of DataTypes indicating, if interface carriers are present or not at a specific interface
     """
-    interfaceCarriers            ::  InterfaceCarriers
+    interfaceCarriers            ::  Array{InterfaceCarriers, 1}
 
     """
     An array of DataTypes with the type of boundary model for each boundary
@@ -957,7 +959,7 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
 
     data.F                      = TFuncs[ Boltzmann for i=1:numberOfCarriers]
     data.qFModel                = ContQF
-    data.interfaceCarriers      = InterfaceCarriersNone
+    data.interfaceCarriers      = InterfaceCarriers[InterfaceCarriersNone for i = 1:numberOfBoundaryRegions]
     data.boundaryType           = BoundaryModelType[InterfaceNone for i = 1:numberOfBoundaryRegions]
 
     # bulkRecombination is a struct holding the input information

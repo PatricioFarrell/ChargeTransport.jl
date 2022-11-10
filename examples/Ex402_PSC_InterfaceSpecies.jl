@@ -7,7 +7,7 @@ using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot
-using DelimitedFiles
+# using DelimitedFiles
 
 function main(;n = 19, plotting = false, verbose = false, test = false,
               interfaceSpecies = true, leftInterface = true, interfaceReco = false)
@@ -935,8 +935,8 @@ end #  main
 
 
 function test()
-    testvalDiscont = -0.3861540918777643; testvalinterfaceSpecies = -0.3066809721684242
-    main(test = true, leftInterface = true, interfaceSpecies = false) ≈ testvalDiscont && main(test = true, leftInterface = true, interfaceSpecies = true) ≈ testvalinterfaceSpecies
+    testvalwithoutReco = -0.2988993117821689; testvalwithReco = -0.2988993117821689
+    main(test = true, interfaceSpecies = true, leftInterface = true, interfaceReco=false) ≈ testvalwithoutReco && main(test = true, interfaceSpecies = true, leftInterface = true, interfaceReco=false) ≈ testvalwithReco
 
     # main(test = true, interfaceSpecies = false, leftInterface = true, interfaceReco=false) = -0.905305257878682
     # main(test = true, interfaceSpecies = false, leftInterface = true, interfaceReco=true)  = -0.892757917525781

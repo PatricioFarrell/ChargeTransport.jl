@@ -34,8 +34,7 @@ export QFModelType, DiscontQF, ContQF
 
 export OuterBoundaryModelType, OuterBoundaryModelType, InterfaceModelType
 export OhmicContact, SchottkyContact, SchottkyBarrierLowering
-export InterfaceNone, InterfaceRecombination, InterfaceTangentialFlux
-export InterfaceSurfaceRecoAndTangentialFlux
+export InterfaceNone, InterfaceRecombination
 
 export InterfaceCarriers, InterfaceCarriersNone, InterfaceCarriersPresent
 

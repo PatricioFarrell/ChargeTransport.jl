@@ -58,10 +58,6 @@ Abstract type for surface recombination mechanisms.
 """
 abstract type InterfaceRecombination end
 
-abstract type InterfaceTangentialFlux end
-
-abstract type InterfaceSurfaceRecoAndTangentialFlux end
-
 ##########################################################
 """
 Possible types of outer boundary model.
@@ -70,16 +66,9 @@ const OuterBoundaryModelType = Union{Type{OhmicContact}, Type{SchottkyContact}, 
 
 
 """
-Possible Types of interface model (interior boundary conditions) which are implemented, but
-not well tested yet.
-"""
-const InterfaceNotTestedType = Union{Type{InterfaceTangentialFlux}, Type{InterfaceSurfaceRecoAndTangentialFlux}}
-
-"""
 Possible Types of interface model (interior boundary conditions).
 """
-const InterfaceModelType = Union{Type{InterfaceNone}, Type{InterfaceRecombination},
-                                 InterfaceNotTestedType}
+const InterfaceModelType = Union{Type{InterfaceNone}, Type{InterfaceRecombination}}
 
 """
 Possible types of boundary models.
