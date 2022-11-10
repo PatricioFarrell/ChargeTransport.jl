@@ -7,7 +7,7 @@ using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot
-# using DelimitedFiles
+using DelimitedFiles
 
 function main(;n = 19, plotting = false, verbose = false, test = false,
               interfaceSpecies = true, leftInterface = true, interfaceReco = false)
@@ -257,6 +257,10 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     params.UT                                           = (kB * params.temperature) / q
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
+    if interfaceSpecies
+        params.chargeNumbers[iphinb]                      = -1
+        params.chargeNumbers[iphipb]                      =  1
+    end
 
     for ireg in 1:numberOfRegions ## interior region data
 
@@ -935,7 +939,7 @@ end #  main
 
 
 function test()
-    testvalwithoutReco = -0.2988993117821689; testvalwithReco = -0.2988993117821689
+    testvalwithoutReco = -0.2988993117821689; testvalwithReco = -0.2988993117852727
     main(test = true, interfaceSpecies = true, leftInterface = true, interfaceReco=false) ≈ testvalwithoutReco && main(test = true, interfaceSpecies = true, leftInterface = true, interfaceReco=false) ≈ testvalwithReco
 
     # main(test = true, interfaceSpecies = false, leftInterface = true, interfaceReco=false) = -0.905305257878682

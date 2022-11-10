@@ -383,7 +383,6 @@ function RHSNoInterfaceCarriers!(f, u, bnode, data)
 
         react     = q * params.chargeNumbers[icc] * params.bReactionCoefficient[icc, bnode.region]  * (n1 - n2)
 
-        # DA: correct signs?
         f[icc, 1] =   react
         f[icc, 2] = - react
 
@@ -493,10 +492,11 @@ function RHSInterfaceCarriers!(f, u, bnode, data)
             reactalpha_l = q * zalpha * k0alpha * (Kalphaleft^(1/2)  * nalpha_l/Nalpha_l - Kalphaleft^(- 1/2)  * nalpha_b/Nalpha_b)
             reactalpha_r = q * zalpha * k0alpha * (Kalpharight^(1/2) * nalpha_r/Nalpha_r - Kalpharight^(- 1/2) * nalpha_b/Nalpha_b)
 
+            # We have j * n = N, i.e. - j*n + N = 0, hence the signs are correct.
             f[icc, 1]    = reactalpha_l
             f[icc, 2]    = reactalpha_r
 
-            # DA: How are the correct signs for a boundary species?
+            # We have z_\alpha q d_t n_\alpha + \nabla j_\alpha - N_- - N_+ - z_\alpha q R_\alpha = 0, hence the signs are correct.
             f[icc_b]     = - reactalpha_l - reactalpha_r
 
         end
@@ -600,8 +600,9 @@ function breactionqFInterfaceReco!(f, u, bnode, data, ::Type{DiscontQF})
             kernelSRH       = 1.0 / ( taupb * (nb + n0b) + taunb * (pb + p0b) )
 
             # add interface recombination to previous interface conditions.
-            f[iphinb]       =  f[iphinb] + q * data.params.chargeNumbers[iphinb] * kernelSRH * excessDensTerm
-            f[iphipb]       =  f[iphipb] + q * data.params.chargeNumbers[iphipb] * kernelSRH * excessDensTerm
+            # We have z_\alpha q d_t n_\alpha + \nabla j_\alpha - N_- - N_+ - z_\alpha q R_\alpha = 0, hence the signs are correct.
+            f[iphinb]       =  f[iphinb] - q * data.params.chargeNumbers[iphinb] * kernelSRH * excessDensTerm
+            f[iphipb]       =  f[iphipb] - q * data.params.chargeNumbers[iphipb] * kernelSRH * excessDensTerm
 
         end
     end

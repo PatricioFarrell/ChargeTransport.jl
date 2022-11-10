@@ -18,10 +18,10 @@ using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 using PyPlot
-# using DelimitedFiles
+using DelimitedFiles
 
 
-function main(;n = 6, plotting = false, verbose = false, test = false, interfaceSpecies = false, leftInterface = true, interfaceReco = false)
+function main(;n = 6, plotting = false, verbose = false, test = false, interfaceSpecies = true, leftInterface = true, interfaceReco = false)
 
     PyPlot.close("all")
     ################################################################################
@@ -767,7 +767,7 @@ function main(;n = 6, plotting = false, verbose = false, test = false, interface
 end #  main
 
 function test()
-    testval = 0.3328132546684197; testvalInterfaceReco = 0.3328132546684171
+    testval = 0.3328132546684197; testvalInterfaceReco = 0.3328132546684223
     main(test = true, interfaceSpecies = true, leftInterface = true, interfaceReco=false) ≈ testval && main(test = true, interfaceSpecies = false, interfaceReco=true) ≈ testvalInterfaceReco
 
     # main(test = true, interfaceSpecies = false, leftInterface = true, interfaceReco=false) = 0.9897280460889134
