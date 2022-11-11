@@ -10,7 +10,11 @@ using PyPlot
 using DelimitedFiles
 
 function main(;n = 19, plotting = false, verbose = false, test = false,
-              interfaceSpecies = false, leftInterface = true, interfaceReco = false)
+              plotCTWithoutIntSpec  = false,
+              ionicSpecies      = false,
+              interfaceSpecies  = false,
+              interfaceReco     = false,
+              leftInterface     = true)
 
     PyPlot.close("all")
     ################################################################################
@@ -46,21 +50,21 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     coord_n_g               = geomspace(2/3 * h_ndoping,
                                         h_ndoping,
                                         h_ndoping/(0.4*δ),
-                                        h_ndoping/(2.2*δ),
+                                        h_ndoping/(4.2*δ),
                                         tol=t)
     coord_i_g1              = geomspace(h_ndoping,
                                         h_ndoping+h_intrinsic/k,
-                                        h_intrinsic/(7.1*δ),
+                                        h_intrinsic/(9.1*δ),
                                         h_intrinsic/(0.4*δ),
                                         tol=t)
     coord_i_g2              = geomspace(h_ndoping+h_intrinsic/k,
                                         h_ndoping+h_intrinsic,
                                         h_intrinsic/(0.4*δ),
-                                        h_intrinsic/(7.1*δ),
+                                        h_intrinsic/(9.1*δ),
                                         tol=t)
     coord_p_g               = geomspace(h_ndoping+h_intrinsic,
                                         h_ndoping+h_intrinsic+1/3 * h_pdoping,
-                                        h_pdoping/(5.0*δ),
+                                        h_pdoping/(7.0*δ),
                                         h_pdoping/(0.4*δ),
                                         tol=t)
     coord_p_u               = collect(range(h_ndoping+h_intrinsic+1/3 * h_pdoping, h_ndoping+h_intrinsic+h_pdoping, step=h_ndoping/(0.6*δ)))
@@ -99,14 +103,32 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     iphin                = 1 # electron quasi Fermi potential
     iphip                = 2 # hole quasi Fermi potential
 
-    if interfaceSpecies
+    if interfaceSpecies && ionicSpecies
+        iphia            = 3
+        iphinb           = 4
+        iphipb           = 5
+        numberOfCarriers = 5
+
+        ipsi             = 6
+
+    elseif interfaceSpecies && ionicSpecies == false
         iphinb           = 3
         iphipb           = 4
-        ipsi             = 5
         numberOfCarriers = 4
+
+        ipsi             = 5
+
+    elseif interfaceSpecies == false && ionicSpecies
+        iphia            = 3
+        numberOfCarriers = 3
+
+        ipsi             = 4
+
     else
-        ipsi             = 3
         numberOfCarriers = 2
+
+        ipsi             = 3
+
     end
 
     ## temperature
@@ -118,12 +140,14 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
     Ec_i               = -3.7                  *  eV
     Ev_i               = -5.4                  *  eV
+    Ea_i               = -4.45                 *  eV
 
     Ec_a               = -3.4                  *  eV
     Ev_a               = -5.1                  *  eV
 
     EC                 = [Ec_d, Ec_i, Ec_a]
     EV                 = [Ev_d, Ev_i, Ev_a]
+    EA                 = [0.0,  Ea_i,  0.0]
 
     ## effective densities of state
     Nc_d               = 5.0e19                / (cm^3)
@@ -131,12 +155,14 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
     Nc_i               = 8.1e18                / (cm^3)
     Nv_i               = 5.8e18                / (cm^3)
+    Nanion             = 1.6e19/0.01           / (cm^3)
 
     Nc_a               = 5.0e19                / (cm^3)
     Nv_a               = 5.0e19                / (cm^3)
 
     NC                 = [Nc_d, Nc_i,  Nc_a]
     NV                 = [Nv_d, Nv_i,  Nv_a]
+    NAnion             = [0.0,  Nanion, 0.0]
 
     ## diffusivities (from Ionmonger)
     UT                 = (kB * T) / q
@@ -146,6 +172,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
     Dn_i               = 1.7e-4                * m^2 / s
     Dp_i               = 1.7e-4                * m^2 / s
+    Da_i               = 6.5e-8 * m^2/s * exp(-0.58*eV/(kB * T))
 
     Dn_a               = 1.0e-6                * m^2 / s
     Dp_a               = 1.0e-6                * m^2 / s
@@ -156,12 +183,14 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
     μn_i               = Dn_i / UT
     μp_i               = Dp_i / UT
+    μa_i               = Da_i / UT
 
     μn_a               = Dn_a / UT
     μp_a               = Dp_a / UT
 
     μn                 = [μn_d, μn_i, μn_a]
     μp                 = [μp_d, μp_i, μp_a]
+    μa                 = [0.0,  μa_i, 0.0 ]
 
     ## relative dielectric permittivity
     ε_d                = 10.0                  *  1.0
@@ -202,6 +231,8 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     Na                 = 1.00e18             / (cm^3)
     C0                 = 1.6e19              / (cm^3)
 
+    ## contact voltage
+    voltageAcceptor    =  1.2                  * V
 
     if test == false
         println("*** done\n")
@@ -215,16 +246,20 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
     ## initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
-    data.modelType                      = Stationary
+    data.modelType                      = Transient
     data.F                             .= Boltzmann
+    if ionicSpecies # in case of present anion vacancies, put FermiDiracMinusOne.
+        data.F[iphia]                   = FermiDiracMinusOne
+    end
     data.bulkRecombination              = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                   bulk_recomb_Auger = false,
                                                                   bulk_recomb_radiative = false,
                                                                   bulk_recomb_SRH = true)
     data.boundaryType[bregionAcceptor]  = OhmicContact
     data.boundaryType[bregionDonor]     = OhmicContact
-    data.fluxApproximation             .= ScharfetterGummel
+    data.fluxApproximation             .= ExcessChemicalPotential
 
+    # declare left and right interface
     if leftInterface == true
         bregActive = bregionJunction1
         bregDeact  = bregionJunction2
@@ -241,19 +276,21 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         regr       = regionAcceptor
     end
 
-    if interfaceSpecies
-        enable_interface_carrier!(data, bulkCarrier = iphin, interfaceCarrier = iphinb, bregions = [bregActive])
-        enable_interface_carrier!(data, bulkCarrier = iphip, interfaceCarrier = iphipb, bregions = [bregActive])
+    if ionicSpecies     # enable ionic carrier
+        enable_ionic_carrier!(data = data, ionicCarrier = iphia, regions = [regionIntrinsic])
+    end
+
+    if interfaceSpecies # present interface species
+        enable_interface_carrier!(data = data, bulkCarrier = iphin, interfaceCarrier = iphinb, bregions = [bregActive])
+        enable_interface_carrier!(data = data, bulkCarrier = iphip, interfaceCarrier = iphipb, bregions = [bregActive])
     end
 
     if interfaceReco
-
         data.boundaryType[bregActive] = InterfaceRecombination
         if interfaceSpecies
-
-            data.interfaceRecombination = set_interface_recombination(;iphin = iphinb, iphip = iphipb,
-                                                                       bregions = [bregActive])
-
+            set_interface_recombination!(data = data, iphin = iphinb, iphip = iphipb, bregions = [bregActive])
+        else
+            data.boundaryType[bregDeact] = InterfaceRecombination
         end
     end
 
@@ -273,9 +310,12 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     params.UT                                           = (kB * params.temperature) / q
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
+    if ionicSpecies
+        params.chargeNumbers[iphia]                     =  1
+    end
     if interfaceSpecies
-        params.chargeNumbers[iphinb]                      = -1
-        params.chargeNumbers[iphipb]                      =  1
+        params.chargeNumbers[iphinb]                    = -1
+        params.chargeNumbers[iphipb]                    =  1
     end
 
     for ireg in 1:numberOfRegions ## interior region data
@@ -292,6 +332,12 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         params.mobility[iphin, ireg]                    = μn[ireg]
         params.mobility[iphip, ireg]                    = μp[ireg]
 
+        if ionicSpecies
+            params.densityOfStates[iphia, ireg]         = NAnion[ireg]
+            params.bandEdgeEnergy[iphia, ireg]          = EA[ireg]
+            params.mobility[iphia, ireg]                = μa[ireg]
+        end
+
         ## recombination parameters
         params.recombinationRadiative[ireg]             = r0[ireg]
         params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
@@ -300,7 +346,19 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, data, EI[ireg])
     end
 
+    ## interior doping
+    params.doping[iphin,  regionDonor]                  = Nd
+    params.doping[iphip,  regionAcceptor]               = Na
+    if ionicSpecies
+        params.doping[iphia, regionIntrinsic]           = C0
+    end
+
+    ##############################################################
     ## outer boundary region data
+    params.bDoping[iphin, bregionDonor]                 = Nd
+    params.bDoping[iphip, bregionAcceptor]              = Na
+
+
     params.bDensityOfStates[iphin, bregionDonor]        = Nc_d
     params.bDensityOfStates[iphip, bregionDonor]        = Nv_d
 
@@ -321,11 +379,12 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         data.d                                      = 6.28 * 10e-8 * cm # lattice size perovskite
 
         if leftInterface
-            dopingN                                 = 0.0
-            dopingP                                 = data.d * Na
-        else
             dopingN                                 = data.d * Nd
             dopingP                                 = 0.0
+
+        else
+            dopingN                                 = 0.0
+            dopingP                                 = data.d * Na
         end
 
         δn                                          =    0.2 * eV
@@ -394,36 +453,35 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
         else
             ## inner boundary region data (we choose the intrinsic values)
-            params.bDensityOfStates[iphin, bregActive]             = Nc_i
-            params.bDensityOfStates[iphip, bregActive]             = Nv_i
+            params.bDensityOfStates[iphin, bregionJunction1]             = Nc_i
+            params.bDensityOfStates[iphip, bregionJunction1]             = Nv_i
 
-            params.bBandEdgeEnergy[iphin, bregActive]              = Ec_i
-            params.bBandEdgeEnergy[iphip, bregActive]              = Ev_i
+            params.bBandEdgeEnergy[iphin, bregionJunction1]              = Ec_i
+            params.bBandEdgeEnergy[iphip, bregionJunction1]              = Ev_i
 
-            params.recombinationSRHvelocity[iphin, bregActive]     = 1.0e1  * cm / s
-            params.recombinationSRHvelocity[iphip, bregActive]     = 1.0e5  * cm / s
+            params.recombinationSRHvelocity[iphin, bregionJunction1]     = 1.0e5  * m / s
+            params.recombinationSRHvelocity[iphip, bregionJunction1]     = 1.0e1  * m / s
 
-            params.bRecombinationSRHTrapDensity[iphin, bregActive] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
-            params.bRecombinationSRHTrapDensity[iphip, bregActive] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
+            params.bRecombinationSRHTrapDensity[iphin, bregionJunction1] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
+            params.bRecombinationSRHTrapDensity[iphip, bregionJunction1] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
 
-            # put these values small since the inverse enters
-            params.recombinationSRHvelocity[iphin, bregDeact]      = 1.0e100  * cm / s#1.0e7  * cm / s
-            params.recombinationSRHvelocity[iphip, bregDeact]      = 1.0e100  * cm / s#1.0e1  * cm / s
+            ###################################################
+            params.bDensityOfStates[iphin, bregionJunction2]             = Nc_i
+            params.bDensityOfStates[iphip, bregionJunction2]             = Nv_i
 
-            params.bRecombinationSRHTrapDensity[iphin, bregDeact]  = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
-            params.bRecombinationSRHTrapDensity[iphip, bregDeact]  = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
+            params.bBandEdgeEnergy[iphin, bregionJunction2]              = Ec_i
+            params.bBandEdgeEnergy[iphip, bregionJunction2]              = Ev_i
+
+            params.recombinationSRHvelocity[iphin, bregionJunction2]     = 1.0e-1 * m / s
+            params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e5  * m / s
+
+            params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
+            params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
         end
 
     end
 
     ##############################################################
-
-    ## interior doping
-    params.doping[iphin,  regionDonor]                  = Nd
-    params.doping[iphip,  regionAcceptor]               = Na
-    ## boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd
-    params.bDoping[iphip, bregionAcceptor]              = Na
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=:sparse)
@@ -488,21 +546,24 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             return (data.params.densityOfStates[icc, ireg] .* data.F[icc].(eta))
         end
 
-        sol_ref  = readdlm("data/PSC-stationary-reference-sol-EQ.dat") # [coord sol_iphin sol_iphip sol_ipsi]
         vis1     = GridVisualizer(Plotter = PyPlot, layout=(2,1), size = (600,670), xlabel = "space [m]", ylabel = "potential [V]", fignumber=2)
         vis2     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "space [m]", ylabel = "density [m\$^{-3}\$]", fignumber=3)
 
         if interfaceSpecies
-            subgridB = subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
-            phin_sol = views(sol, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
-            phip_sol = views(sol, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
-            psi_sol  = views(sol, data.index_psi, subgridB, ctsys.fvmsys)
+            subgridB     = subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
+            phin_sol     = views(sol, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
+            phip_sol     = views(sol, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
+            psi_sol      = views(sol, data.index_psi, subgridB, ctsys.fvmsys)
+            if ionicSpecies
+                phia_sol = views(sol, data.chargeCarrierList[iphia], subgridB[regionIntrinsic], ctsys.fvmsys)
+            end
 
             # this is unfortunately not working soooo good ...
             bgrid    = subgrids(data.chargeCarrierList[iphinb], ctsys.fvmsys)
 
             phinb_sol = views(sol, data.chargeCarrierList[iphinb], bgrid, ctsys.fvmsys)
             phipb_sol = views(sol, data.chargeCarrierList[iphipb], bgrid, ctsys.fvmsys)
+
         else
             subgridn  = subgrid(grid, [1])
             subgridi  = subgrid(grid, [2])
@@ -522,19 +583,30 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             phip_soli = view(sol[iphip, :], subgridi)
             phip_soln = view(sol[iphip, :], subgridn)
 
+            if ionicSpecies
+                phia_soli = view(sol[iphia, :], subgridi)
+            end
+
+        end
+
+        if plotCTWithoutIntSpec
+            sol_ref  = readdlm("data/PSC-stationary-reference-sol-EQ.dat") # [coord sol_iphin sol_iphip sol_ipsi]
         end
         ###############################################################################
         ##########                         Potentials                        ##########
         ###############################################################################
         if interfaceSpecies
+
             for i in eachindex(phin_sol)
                 scalarplot!(    vis1[1, 1], subgridB[i], psi_sol[i], clear = false, color=:blue, linewidth = 5)
                 if i == 3
                     scalarplot!(vis1[1, 1], subgridB[i], psi_sol[i], clear = false, color=:blue, linewidth = 5, label = "\$ \\psi \$")
                 end
             end
-            scalarplot!(vis1[1, 1], sol_ref[:, 1], sol_ref[:, 4], clear = false, color =:black, linestyle=:dot, label = "ref sol",
-                        legend =:best)
+
+            if plotCTWithoutIntSpec
+                scalarplot!(vis1[1, 1], sol_ref[:, 1], sol_ref[:, 4], clear = false, color =:black, linestyle=:dot, label = "ref sol", legend =:best)
+            end
 
             ##########################
             for i in eachindex(phin_sol)
@@ -547,6 +619,10 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
                 end
             end
 
+            if ionicSpecies
+                scalarplot!(vis1[2, 1], subgridB[regionIntrinsic], phia_sol, clear = false, label = "\$ \\varphi_a \$", color=:gold)
+            end
+
             # DA: current way out, when waiting for changes within ExtendableGrids and GridVisualize
             PyPlot.figure(2)
             PyPlot.plot(coord[icoordJ], phinb_sol, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
@@ -554,27 +630,38 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             println("value phin_b = ", phinb_sol)
             println("value phip_b = ", phipb_sol)
 
-            scalarplot!(vis1[2, 1], sol_ref[:, 1], sol_ref[:, 3], marker ="", clear = false, color=:black, linestyle=:dot, label = "")
-            scalarplot!(vis1[2, 1], sol_ref[:, 1], sol_ref[:, 2], clear = false, color =:black, linestyle=:dot, label = "ref sol",
-                        legend =:best, show = true)
+            if plotCTWithoutIntSpec
+                scalarplot!(vis1[2, 1], sol_ref[:, 1], sol_ref[:, 3], marker ="", clear = false, color=:black, linestyle=:dot, label = "")
+                scalarplot!(vis1[2, 1], sol_ref[:, 1], sol_ref[:, 2], clear = false, color =:black, linestyle=:dot, label = "ref sol",
+                            legend =:best, show = true)
+            end
 
         else
             scalarplot!(vis1[1, 1], subgridp, psi_solp,  clear = false, color=:blue, linewidth = 5)
             scalarplot!(vis1[1, 1], subgridi, psi_soli,  clear = false, color=:blue, linewidth = 5)
             scalarplot!(vis1[1, 1], subgridn, psi_soln,  clear = false, color=:blue, linewidth = 5, label = "\$ \\psi \$")
 
-            # scalarplot!(vis1[1, 1], sol_ref[:, 1], sol_ref[:, 4], clear = false, color =:black, linestyle=:dot, label = "ref sol",
-            #             legend =:best)
+            if plotCTWithoutIntSpec
+                scalarplot!(vis1[1, 1], sol_ref[:, 1], sol_ref[:, 4], clear = false, color =:black, linestyle=:dot, label = "ref sol",
+                            legend =:best)
+            end
 
             scalarplot!(vis1[2, 1], subgridp, phin_solp, clear = false, color=:green, linestyle=:solid, linewidth = 5)
             scalarplot!(vis1[2, 1], subgridp, phip_solp, clear = false, color=:red)
             scalarplot!(vis1[2, 1], subgridi, phin_soli, clear = false, color=:green, linestyle=:solid, linewidth = 5)
             scalarplot!(vis1[2, 1], subgridi, phip_soli, clear = false, color=:red)
-            scalarplot!(vis1[2, 1], subgridn, phin_soln, clear = false, label = "\$ \\varphi_n \$", color=:green)
-            scalarplot!(vis1[2, 1], subgridn, phip_soln, clear = false, label = "\$ \\varphi_p \$", color=:red)
+            if ionicSpecies
+                scalarplot!(vis1[2, 1], subgridi, phia_soli, clear = false, label = "\$ \\varphi_a \$", color=:gold)
+            end
 
-            # scalarplot!(vis1[2, 1], sol_ref[:, 1], sol_ref[:, 3], marker ="", clear = false, color=:black, linestyle=:dot, label = "")
-            # scalarplot!(vis1[2, 1], sol_ref[:, 1], sol_ref[:, 2], clear = false, color =:black, linestyle=:dot, label = "ref sol")
+            scalarplot!(vis1[2, 1], subgridn, phin_soln, clear = false, label = "\$ \\varphi_n \$", color=:green)
+            scalarplot!(vis1[2, 1], subgridn, phip_soln, clear = false, label = "\$ \\varphi_p \$", color=:red,
+            legend =:best, show = true)
+
+            if plotCTWithoutIntSpec
+                scalarplot!(vis1[2, 1], sol_ref[:, 1], sol_ref[:, 3], marker ="", clear = false, color=:black, linestyle=:dot, label = "")
+                scalarplot!(vis1[2, 1], sol_ref[:, 1], sol_ref[:, 2], clear = false, color =:black, linestyle=:dot, label = "ref sol")
+            end
 
         end
 
@@ -594,15 +681,25 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         Nintr_d       = sqrt(Nc_d * Nv_d) * exp(-(Ec_d - Ev_d) / (2 * kB * T))
         psi0_d        = (Ec_d + Ev_d)/(2 * q) - 0.5 * UT * log(Nc_d/Nv_d) + UT * asinh(Nd/(2*Nintr_d)) # -4.100459358855549
 
-        psi_ETL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-ETL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
-        psi_intr_im   = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-intr-t-0p0.dat") .-Vbi/2 .+ psi0_d)
-        psi_HTL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-HTL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
+        if interfaceReco
+            psi_ETL_im    = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-ETL-t-0p0.dat")     .-Vbi/2 .+ psi0_d)
+            psi_intr_im   = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-intr-t-0p0.dat")    .-Vbi/2 .+ psi0_d)
+            psi_HTL_im    = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-HTL-t-0p0.dat")     .-Vbi/2 .+ psi0_d)
 
-        a_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-a-intr-t-0p0.dat"))
-        p_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-p-intr-t-0p0.dat"))
-        n_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-n-intr-t-0p0.dat"))
+            a_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-a-intr-t-0p0.dat"))
+            p_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-p-intr-t-0p0.dat"))
+            n_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-n-intr-t-0p0.dat"))
+        else
+            psi_ETL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-ETL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
+            psi_intr_im   = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-intr-t-0p0.dat") .-Vbi/2 .+ psi0_d)
+            psi_HTL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-HTL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
 
-        scalarplot!(vis1[1, 1], grid_ETL,  psi_ETL_im,  clear = false, marker ="", linestyle=:dot, color=:gray, linewidth = 5)
+            a_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-a-intr-t-0p0.dat"))
+            p_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-p-intr-t-0p0.dat"))
+            n_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-n-intr-t-0p0.dat"))
+        end
+
+        scalarplot!(vis1[1, 1], grid_ETL,  psi_ETL_im,  clear = false, marker ="", label = "", linestyle=:dot, color=:gray, linewidth = 5)
         scalarplot!(vis1[1, 1], grid_intr, psi_intr_im, clear = false)
         scalarplot!(vis1[1, 1], grid_HTL,  psi_HTL_im,  clear = false, label = "IM", legend =:best, show = true)
 
@@ -612,8 +709,13 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
         PyPlot.figure(3)
         if interfaceSpecies
+
+            if ionicSpecies
+                scalarplot!(vis2, subgridB[regionIntrinsic], compute_densities(iphia, subgridB[regionIntrinsic][CellRegions][1], phia_sol[regionIntrinsic], psi_sol[regionIntrinsic]), clear = false, color=:gold, label ="\$ n_a \$", linewidth = 5, yscale=:log)
+            end
+
             for i in eachindex(phin_sol)
-                scalarplot!(vis2, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, linewidth = 5, yscale=:log)
+                scalarplot!(vis2, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), label = "", clear = false, color=:green, linewidth = 5, yscale=:log)
                 scalarplot!(vis2, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, color=:red)
                 if i == 3
                     scalarplot!(vis2, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, label ="\$ n_n \$", yscale=:log)
@@ -637,53 +739,65 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             println("value n_b (scaled by thickness) = ", nb)
             println("value p_b (scaled by thickness) = ", pb)
 
-            PyPlot.semilogy(coord[icoordJ], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
-            PyPlot.semilogy(coord[icoordJ], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
+            if plotCTWithoutIntSpec
 
-            n1 = compute_densities(iphin, regionDonor, sol_ref[1:icoord_n, 2], sol_ref[1:icoord_n, 4])
-            p1 = compute_densities(iphip, regionDonor, sol_ref[1:icoord_n, 3], sol_ref[1:icoord_n, 4])
+                PyPlot.semilogy(coord[icoordJ], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
+                PyPlot.semilogy(coord[icoordJ], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
 
-            n2 = compute_densities(iphin, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 2], sol_ref[icoord_n:icoord_ni, 4])
-            p2 = compute_densities(iphip, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 3], sol_ref[icoord_n:icoord_ni, 4])
+                n1 = compute_densities(iphin, regionDonor, sol_ref[1:icoord_n, 2], sol_ref[1:icoord_n, 4])
+                p1 = compute_densities(iphip, regionDonor, sol_ref[1:icoord_n, 3], sol_ref[1:icoord_n, 4])
 
-            n3 = compute_densities(iphin, regionAcceptor, sol_ref[icoord_ni:end, 2], sol_ref[icoord_ni:end, 4])
-            p3 = compute_densities(iphip, regionAcceptor, sol_ref[icoord_ni:end, 3], sol_ref[icoord_ni:end, 4])
+                n2 = compute_densities(iphin, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 2], sol_ref[icoord_n:icoord_ni, 4])
+                p2 = compute_densities(iphip, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 3], sol_ref[icoord_n:icoord_ni, 4])
 
-            scalarplot!(vis2, subgridB[1], n1, clear = false, marker ="", label = "", linestyle=:dot, color=:black)
-            scalarplot!(vis2, subgridB[1], p1, clear = false)
-            scalarplot!(vis2, subgridB[2], n2, clear = false)
-            scalarplot!(vis2, subgridB[2], p2, clear = false)
-            scalarplot!(vis2, subgridB[3], n3, clear = false)
-            scalarplot!(vis2, subgridB[3], p3, clear = false, label = "ref sol", legend =:best, show = true)
+                n3 = compute_densities(iphin, regionAcceptor, sol_ref[icoord_ni:end, 2], sol_ref[icoord_ni:end, 4])
+                p3 = compute_densities(iphip, regionAcceptor, sol_ref[icoord_ni:end, 3], sol_ref[icoord_ni:end, 4])
+
+                scalarplot!(vis2, subgridB[1], n1, clear = false, marker ="", label = "", linestyle=:dot, color=:black)
+                scalarplot!(vis2, subgridB[1], p1, clear = false)
+                scalarplot!(vis2, subgridB[2], n2, clear = false)
+                scalarplot!(vis2, subgridB[2], p2, clear = false)
+                scalarplot!(vis2, subgridB[3], n3, clear = false)
+                scalarplot!(vis2, subgridB[3], p3, clear = false, label = "ref sol", legend =:best, show = true)
+            end
 
         else
+
+
             scalarplot!(vis2, subgridp, compute_densities(iphin, regionAcceptor,  phin_solp, psi_solp), clear = false, color=:green, linewidth = 5, yscale=:log)
             scalarplot!(vis2, subgridp, compute_densities(iphip, regionAcceptor,  phip_solp, psi_solp), clear = false, color=:red)
             scalarplot!(vis2, subgridi, compute_densities(iphin, regionIntrinsic, phin_soli, psi_soli), clear = false, color=:green, linewidth = 5, yscale=:log)
             scalarplot!(vis2, subgridi, compute_densities(iphip, regionIntrinsic, phip_soli, psi_soli), clear = false, color=:red)
             scalarplot!(vis2, subgridn, compute_densities(iphin, regionDonor,     phin_soln, psi_soln), clear = false, color=:green, label ="\$ n_n \$", yscale=:log)
+            if ionicSpecies
+                scalarplot!(vis2, subgridi, compute_densities(iphia, regionIntrinsic, phia_soli, psi_soli), clear = false, color=:gold, label ="\$ n_a \$", linewidth = 5, yscale=:log)
+            end
             scalarplot!(vis2, subgridn, compute_densities(iphip, regionDonor,     phip_soln, psi_soln), clear = false, label ="\$ n_p \$", color=:red)
 
-            # n1 = compute_densities(iphin, regionDonor, sol_ref[1:icoord_n, 2], sol_ref[1:icoord_n, 4])
-            # p1 = compute_densities(iphip, regionDonor, sol_ref[1:icoord_n, 3], sol_ref[1:icoord_n, 4])
 
-            # n2 = compute_densities(iphin, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 2], sol_ref[icoord_n:icoord_ni, 4])
-            # p2 = compute_densities(iphip, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 3], sol_ref[icoord_n:icoord_ni, 4])
+            if plotCTWithoutIntSpec
+                n1 = compute_densities(iphin, regionDonor, sol_ref[1:icoord_n, 2], sol_ref[1:icoord_n, 4])
+                p1 = compute_densities(iphip, regionDonor, sol_ref[1:icoord_n, 3], sol_ref[1:icoord_n, 4])
 
-            # n3 = compute_densities(iphin, regionAcceptor, sol_ref[icoord_ni:end, 2], sol_ref[icoord_ni:end, 4])
-            # p3 = compute_densities(iphip, regionAcceptor, sol_ref[icoord_ni:end, 3], sol_ref[icoord_ni:end, 4])
+                n2 = compute_densities(iphin, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 2], sol_ref[icoord_n:icoord_ni, 4])
+                p2 = compute_densities(iphip, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 3], sol_ref[icoord_n:icoord_ni, 4])
 
-            # scalarplot!(vis2, subgridn, n1, clear = false, marker ="", label = "", linestyle=:dot, color=:black)
-            # scalarplot!(vis2, subgridn, p1, clear = false)
-            # scalarplot!(vis2, subgridi, n2, clear = false)
-            # scalarplot!(vis2, subgridi, p2, clear = false)
-            # scalarplot!(vis2, subgridp, n3, clear = false)
-            # scalarplot!(vis2, subgridp, p3, clear = false, label = "ref sol")
+                n3 = compute_densities(iphin, regionAcceptor, sol_ref[icoord_ni:end, 2], sol_ref[icoord_ni:end, 4])
+                p3 = compute_densities(iphip, regionAcceptor, sol_ref[icoord_ni:end, 3], sol_ref[icoord_ni:end, 4])
+
+                scalarplot!(vis2, subgridn, n1, clear = false, marker ="", label = "", linestyle=:dot, color=:black)
+                scalarplot!(vis2, subgridn, p1, clear = false)
+                scalarplot!(vis2, subgridi, n2, clear = false)
+                scalarplot!(vis2, subgridi, p2, clear = false)
+                scalarplot!(vis2, subgridp, n3, clear = false)
+                scalarplot!(vis2, subgridp, p3, clear = false, label = "ref sol")
+
+            end
 
         end
 
         ##### Ionmonger solution
-        scalarplot!(vis2, grid_intr, n_im ,    clear = false, marker ="",linestyle=:dot, color=:gray)
+        scalarplot!(vis2, grid_intr, n_im ,    clear = false, marker ="", label = "", linestyle=:dot, color=:gray)
         scalarplot!(vis2, grid_intr, p_im,     clear = false)
         scalarplot!(vis2, grid_intr, a_im,     clear = false, label = "IM", legend =:best, show = true)
 
@@ -701,30 +815,42 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
     # Set calculation type to outOfEquilibrium for starting with respective simulation.
     data.calculationType = OutOfEquilibrium
-    biasValues           = range(0, stop = Vbi, length = 51)
     IV                   = zeros(0)
+    biasValues           = zeros(0)
 
-    control.damp_initial = 0.5
-    control.damp_growth  = 1.21 # >= 1
+    # control.damp_initial = 0.5
+    # control.damp_growth  = 1.21 # >= 1
 
-    for Δu in biasValues
+    ## primary data for I-V scan protocol
+    scanrate             = 0.2 * V/s
+    number_tsteps        = 101
+    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                 = endVoltage/scanrate
+    tvalues              = range(0, stop = tend, length = number_tsteps)
 
-        if test == false
-            println("Δu  = ", Δu )
-        end
+    for istep = 2:number_tsteps
 
-        ## set non equilibrium boundary conditions
+        t  = tvalues[istep]       # Actual time
+        Δu = t * scanrate         # Applied voltage
+        Δt = t - tvalues[istep-1] # Time step size
+
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        solve!(sol, inival, ctsys, control = control, tstep = Inf)
-        inival .= sol
+        if test == false
+            println("time value: t = $(t),", " Δu  = ", Δu)
+        end
+
+        solve!(sol, inival, ctsys, control  = control, tstep = Δt)
 
         ## get I-V data
-        val = get_current_val(ctsys, sol)
+        current = get_current_val(ctsys, sol, inival, Δt)
 
-        push!(IV, val)
+        push!(IV, current)
+        push!(biasValues, Δu)
 
-    end # bias loop
+        inival .= sol
+
+    end # time loop
 
     # writedlm("data/PSC-stationary-reference-sol-surface-reco.dat", [coord sol'])
     # res = [biasValues IV]
@@ -744,12 +870,14 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
     if plotting
 
-        if interfaceReco
-            sol_ref  = readdlm("data/PSC-stationary-reference-sol-surface-reco.dat") # [coord sol_iphin sol_iphip sol_ipsi]
-            IV_ref   = readdlm("data/PSC-stationary-reference-IV-surface-reco.dat")
-        else
-            sol_ref  = readdlm("data/PSC-stationary-reference-sol.dat") # [coord sol_iphin sol_iphip sol_ipsi]
-            IV_ref   = readdlm("data/PSC-stationary-reference-IV.dat")
+        if plotCTWithoutIntSpec
+            if interfaceReco
+                sol_ref  = readdlm("data/PSC-stationary-reference-sol-surface-reco.dat") # [coord sol_iphin sol_iphip sol_ipsi]
+                IV_ref   = readdlm("data/PSC-stationary-reference-IV-surface-reco.dat")
+            else
+                sol_ref  = readdlm("data/PSC-stationary-reference-sol.dat") # [coord sol_iphin sol_iphip sol_ipsi]
+                IV_ref   = readdlm("data/PSC-stationary-reference-IV.dat")
+            end
         end
 
         vis3     = GridVisualizer(Plotter = PyPlot, layout=(2,1), size = (600,670), xlabel = "space [m]", ylabel = "potential [V]", fignumber=4)
@@ -757,17 +885,20 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         vis5     = GridVisualizer(Plotter = PyPlot, layout=(1,1), xlabel = "voltage [V]", ylabel = "current density [Am\$^{-2}\$]",fignumber=6)
 
         if interfaceSpecies
-            subgridB = subgrids(data.chargeCarrierList[iphin], ctsys.fvmsys)
+
             phin_sol = views(sol, data.chargeCarrierList[iphin], subgridB, ctsys.fvmsys)
             phip_sol = views(sol, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
             psi_sol  = views(sol, data.index_psi, subgridB, ctsys.fvmsys)
 
-            # this is unfortunately not working soooo good ...
-            bgrid    = subgrids(data.chargeCarrierList[iphinb], ctsys.fvmsys)
 
             phinb_sol = views(sol, data.chargeCarrierList[iphinb], bgrid, ctsys.fvmsys)
             phipb_sol = views(sol, data.chargeCarrierList[iphipb], bgrid, ctsys.fvmsys)
+
+            if ionicSpecies
+                phia_sol = views(sol, data.chargeCarrierList[iphia], subgridB[regionIntrinsic], ctsys.fvmsys)
+            end
         else
+
             # actually, we do not need this cases, since for this set-up we have continuity
             # in the densities with no effects on interfaces, but still for demonstrational
             # purpose.
@@ -783,6 +914,10 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             phip_soli = view(sol[iphip, :], subgridi)
             phip_soln = view(sol[iphip, :], subgridn)
 
+            if ionicSpecies
+                phia_soli = view(sol[iphia, :], subgridi)
+            end
+
         end
 
         ###############################################################################
@@ -795,8 +930,11 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
                     scalarplot!(vis3[1, 1], subgridB[i], psi_sol[i], clear = false, color=:blue, linewidth = 5, label = "\$ \\psi \$")
                 end
             end
-            scalarplot!(vis3[1, 1], sol_ref[:, 1], sol_ref[:, 4], clear = false, color =:black, linestyle=:dot, label = "ref sol",
+
+            if plotCTWithoutIntSpec
+                scalarplot!(vis3[1, 1], sol_ref[:, 1], sol_ref[:, 4], clear = false, color =:black, linestyle=:dot, label = "ref sol",
                         legend =:best)
+            end
 
             ##########################
             for i in eachindex(phin_sol)
@@ -809,6 +947,10 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
                 end
             end
 
+            if ionicSpecies
+                scalarplot!(vis3[2, 1], subgridB[regionIntrinsic], phia_sol, clear = false, label = "\$ \\varphi_a \$", color=:gold)
+            end
+
             # DA: current way out, when waiting for changes within ExtendableGrids and GridVisualize
             PyPlot.figure(4)
             PyPlot.plot(coord[icoordJ], phinb_sol, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{\\varphi}_n \$")
@@ -816,38 +958,61 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             println("value phin_b = ", phinb_sol)
             println("value phip_b = ", phipb_sol)
 
-            scalarplot!(vis3[2, 1], sol_ref[:, 1], sol_ref[:, 3], marker ="", clear = false, color=:black, linestyle=:dot, label = "")
-            scalarplot!(vis3[2, 1], sol_ref[:, 1], sol_ref[:, 2], clear = false, color =:black, linestyle=:dot, label = "ref sol",
+            if plotCTWithoutIntSpec
+                scalarplot!(vis3[2, 1], sol_ref[:, 1], sol_ref[:, 3], marker ="", clear = false, color=:black, linestyle=:dot, label = "")
+                scalarplot!(vis3[2, 1], sol_ref[:, 1], sol_ref[:, 2], clear = false, color =:black, linestyle=:dot, label = "ref sol",
                         legend =:best, show = true)
+            end
+
         else
             scalarplot!(vis3[1, 1], subgridp, psi_solp,  clear = false, color=:blue, linewidth = 5)
             scalarplot!(vis3[1, 1], subgridi, psi_soli,  clear = false, color=:blue, linewidth = 5)
             scalarplot!(vis3[1, 1], subgridn, psi_soln,  clear = false, color=:blue, linewidth = 5, label = "\$ \\psi \$")
-            # scalarplot!(vis3[1, 1], sol_ref[:, 1], sol_ref[:, 4], clear = false, color =:black, linestyle=:dot, label = "ref sol",
-            #             legend =:best)
+
+            if plotCTWithoutIntSpec
+                scalarplot!(vis3[1, 1], sol_ref[:, 1], sol_ref[:, 4], clear = false, color =:black, linestyle=:dot, label = "ref sol",
+                        legend =:best)
+            end
 
             scalarplot!(vis3[2, 1], subgridp, phin_solp, clear = false, color=:green, linestyle=:solid, linewidth = 5)
             scalarplot!(vis3[2, 1], subgridp, phip_solp, clear = false, color=:red)
             scalarplot!(vis3[2, 1], subgridi, phin_soli, clear = false, color=:green, linestyle=:solid, linewidth = 5)
             scalarplot!(vis3[2, 1], subgridi, phip_soli, clear = false, color=:red)
+            if ionicSpecies
+                scalarplot!(vis3[2, 1], subgridi, phia_soli, clear = false, label = "\$ \\varphi_a \$", color=:gold)
+            end
             scalarplot!(vis3[2, 1], subgridn, phin_soln, clear = false, label = "\$ \\varphi_n \$", color=:green)
-            scalarplot!(vis3[2, 1], subgridn, phip_soln, clear = false, label = "\$ \\varphi_p \$", color=:red)
-            # scalarplot!(vis3[2, 1], sol_ref[:, 1], sol_ref[:, 3], marker ="", clear = false, color=:black, linestyle=:dot, label = "")
-            # scalarplot!(vis3[2, 1], sol_ref[:, 1], sol_ref[:, 2], clear = false, color =:black, linestyle=:dot, label = "ref sol",
-            #             legend =:best, show = true)
+            scalarplot!(vis3[2, 1], subgridn, phip_soln, clear = false, label = "\$ \\varphi_p \$", color=:red,legend =:best, show = true)
+
+            if plotCTWithoutIntSpec
+                scalarplot!(vis3[2, 1], sol_ref[:, 1], sol_ref[:, 3], marker ="", clear = false, color=:black, linestyle=:dot, label = "")
+                scalarplot!(vis3[2, 1], sol_ref[:, 1], sol_ref[:, 2], clear = false, color =:black, linestyle=:dot, label = "ref sol",
+                            legend =:best, show = true)
+            end
 
         end
 
         ## Ionmonger solution!
-        psi_ETL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-ETL-t-10p0.dat")   .+ psi0_d)
-        psi_intr_im   = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-intr-t-10p0.dat")  .+ psi0_d)
-        psi_HTL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-HTL-t-10p0.dat")   .+ psi0_d)
 
-        a_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-a-intr-t-10p0.dat"))
-        p_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-p-intr-t-10p0.dat"))
-        n_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-n-intr-t-10p0.dat"))
+        if interfaceReco
+            psi_ETL_im    = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-ETL-t-end.dat")     .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+            psi_intr_im   = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-intr-t-end.dat")    .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+            psi_HTL_im    = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-HTL-t-end.dat")     .-Vbi/2 .+ psi0_d .+ (1.2)/2)
 
-        scalarplot!(vis3[1, 1], grid_ETL,  psi_ETL_im,  clear = false, marker ="", linestyle=:dot, color=:gray, linewidth = 5)
+            a_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-a-intr-t-end.dat"))
+            p_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-p-intr-t-end.dat"))
+            n_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-n-intr-t-end.dat"))
+        else
+            psi_ETL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-ETL-t-end.dat")  .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+            psi_intr_im   = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-intr-t-end.dat") .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+            psi_HTL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-HTL-t-end.dat")  .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+
+            a_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-a-intr-t-end.dat"))
+            p_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-p-intr-t-end.dat"))
+            n_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-n-intr-t-end.dat"))
+        end
+
+        scalarplot!(vis3[1, 1], grid_ETL,  psi_ETL_im,  clear = false, marker ="", label ="", linestyle=:dot, color=:gray, linewidth = 5)
         scalarplot!(vis3[1, 1], grid_intr, psi_intr_im, clear = false)
         scalarplot!(vis3[1, 1], grid_HTL,  psi_HTL_im,  clear = false, label = "IM", legend =:best, show = true)
 
@@ -856,8 +1021,13 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         ###############################################################################
 
         if interfaceSpecies
+
+            if ionicSpecies
+                scalarplot!(vis4, subgridB[regionIntrinsic], compute_densities(iphia, subgridB[regionIntrinsic][CellRegions][1], phia_sol[regionIntrinsic], psi_sol[regionIntrinsic]), clear = false, color=:gold, label ="\$ n_a \$", linewidth = 5, yscale=:log)
+            end
+
             for i in eachindex(phin_sol)
-                scalarplot!(vis4, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, linewidth = 5, yscale=:log)
+                scalarplot!(vis4, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), label ="", clear = false, color=:green, linewidth = 5, yscale=:log)
                 scalarplot!(vis4, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, color=:red)
                 if i == 3
                     scalarplot!(vis4, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, label ="\$ n_n \$", yscale=:log)
@@ -867,8 +1037,6 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             end
 
             PyPlot.figure(5)
-
-
             if leftInterface
                 psib         = psi_sol[1][end]
             else
@@ -888,22 +1056,25 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             PyPlot.semilogy(coord[icoordJ], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
             PyPlot.semilogy(coord[icoordJ], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
 
-            n1 = compute_densities(iphin, regionDonor, sol_ref[1:icoord_n, 2], sol_ref[1:icoord_n, 4])
-            p1 = compute_densities(iphip, regionDonor, sol_ref[1:icoord_n, 3], sol_ref[1:icoord_n, 4])
+            if plotCTWithoutIntSpec
+                n1 = compute_densities(iphin, regionDonor, sol_ref[1:icoord_n, 2], sol_ref[1:icoord_n, 4])
+                p1 = compute_densities(iphip, regionDonor, sol_ref[1:icoord_n, 3], sol_ref[1:icoord_n, 4])
 
-            n2 = compute_densities(iphin, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 2], sol_ref[icoord_n:icoord_ni, 4])
-            p2 = compute_densities(iphip, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 3], sol_ref[icoord_n:icoord_ni, 4])
+                n2 = compute_densities(iphin, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 2], sol_ref[icoord_n:icoord_ni, 4])
+                p2 = compute_densities(iphip, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 3], sol_ref[icoord_n:icoord_ni, 4])
 
-            n3 = compute_densities(iphin, regionAcceptor, sol_ref[icoord_ni:end, 2], sol_ref[icoord_ni:end, 4])
-            p3 = compute_densities(iphip, regionAcceptor, sol_ref[icoord_ni:end, 3], sol_ref[icoord_ni:end, 4])
+                n3 = compute_densities(iphin, regionAcceptor, sol_ref[icoord_ni:end, 2], sol_ref[icoord_ni:end, 4])
+                p3 = compute_densities(iphip, regionAcceptor, sol_ref[icoord_ni:end, 3], sol_ref[icoord_ni:end, 4])
 
-            scalarplot!(vis4, subgridB[1], n1, clear = false, marker ="", label = "", linestyle=:dot, color=:black)
-            scalarplot!(vis4, subgridB[1], p1, clear = false)
-            scalarplot!(vis4, subgridB[2], n2, clear = false)
-            scalarplot!(vis4, subgridB[2], p2, clear = false)
-            scalarplot!(vis4, subgridB[3], n3, clear = false)
-            scalarplot!(vis4, subgridB[3], p3, clear = false, label = "ref sol", legend =:best, show = true)
+                scalarplot!(vis4, subgridB[1], n1, clear = false, marker ="", label = "", linestyle=:dot, color=:black)
+                scalarplot!(vis4, subgridB[1], p1, clear = false)
+                scalarplot!(vis4, subgridB[2], n2, clear = false)
+                scalarplot!(vis4, subgridB[2], p2, clear = false)
+                scalarplot!(vis4, subgridB[3], n3, clear = false)
+                scalarplot!(vis4, subgridB[3], p3, clear = false, label = "ref sol", legend =:best, show = true)
+            end
         else
+
             scalarplot!(vis4, subgridp, compute_densities(iphin, regionAcceptor,  phin_solp, psi_solp), clear = false, color=:green, linewidth = 5, yscale=:log)
             scalarplot!(vis4, subgridp, compute_densities(iphip, regionAcceptor,  phip_solp, psi_solp), clear = false, color=:red)
             scalarplot!(vis4, subgridi, compute_densities(iphin, regionIntrinsic, phin_soli, psi_soli), clear = false, color=:green, linewidth = 5, yscale=:log)
@@ -911,26 +1082,32 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             scalarplot!(vis4, subgridn, compute_densities(iphin, regionDonor,     phin_soln, psi_soln), clear = false, color=:green, label ="\$ n_n \$", yscale=:log)
             scalarplot!(vis4, subgridn, compute_densities(iphip, regionDonor,     phip_soln, psi_soln), clear = false, label ="\$ n_p \$", color=:red)
 
-            n1 = compute_densities(iphin, regionDonor, sol_ref[1:icoord_n, 2], sol_ref[1:icoord_n, 4])
-            p1 = compute_densities(iphip, regionDonor, sol_ref[1:icoord_n, 3], sol_ref[1:icoord_n, 4])
+            if ionicSpecies
+                scalarplot!(vis4, subgridi, compute_densities(iphia, regionIntrinsic, phia_soli, psi_soli), clear = false, color=:gold, label ="\$ n_a \$", linewidth = 5, yscale=:log)
+            end
 
-            n2 = compute_densities(iphin, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 2], sol_ref[icoord_n:icoord_ni, 4])
-            p2 = compute_densities(iphip, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 3], sol_ref[icoord_n:icoord_ni, 4])
+            if plotCTWithoutIntSpec
+                n1 = compute_densities(iphin, regionDonor, sol_ref[1:icoord_n, 2], sol_ref[1:icoord_n, 4])
+                p1 = compute_densities(iphip, regionDonor, sol_ref[1:icoord_n, 3], sol_ref[1:icoord_n, 4])
 
-            n3 = compute_densities(iphin, regionAcceptor, sol_ref[icoord_ni:end, 2], sol_ref[icoord_ni:end, 4])
-            p3 = compute_densities(iphip, regionAcceptor, sol_ref[icoord_ni:end, 3], sol_ref[icoord_ni:end, 4])
+                n2 = compute_densities(iphin, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 2], sol_ref[icoord_n:icoord_ni, 4])
+                p2 = compute_densities(iphip, regionIntrinsic, sol_ref[icoord_n:icoord_ni, 3], sol_ref[icoord_n:icoord_ni, 4])
 
-            # scalarplot!(vis4, subgridp, n1, clear = false, marker ="", label = "", linestyle=:dot, color=:black)
-            # scalarplot!(vis4, subgridp, p1, clear = false)
-            # scalarplot!(vis4, subgridi, n2, clear = false)
-            # scalarplot!(vis4, subgridi, p2, clear = false)
-            # scalarplot!(vis4, subgridn, n3, clear = false)
-            # scalarplot!(vis4, subgridn, p3, clear = false, label = "ref sol", legend =:best, show = true)
+                n3 = compute_densities(iphin, regionAcceptor, sol_ref[icoord_ni:end, 2], sol_ref[icoord_ni:end, 4])
+                p3 = compute_densities(iphip, regionAcceptor, sol_ref[icoord_ni:end, 3], sol_ref[icoord_ni:end, 4])
+
+                scalarplot!(vis4, subgridp, n1, clear = false, marker ="", label = "", linestyle=:dot, color=:black)
+                scalarplot!(vis4, subgridp, p1, clear = false)
+                scalarplot!(vis4, subgridi, n2, clear = false)
+                scalarplot!(vis4, subgridi, p2, clear = false)
+                scalarplot!(vis4, subgridn, n3, clear = false)
+                scalarplot!(vis4, subgridn, p3, clear = false, label = "ref sol", legend =:best, show = true)
+            end
 
         end
 
         ##### Ionmonger solution
-        scalarplot!(vis4, grid_intr, n_im ,    clear = false, marker ="",linestyle=:dot, color=:gray)
+        scalarplot!(vis4, grid_intr, n_im ,    clear = false, marker ="", label ="", linestyle=:dot, color=:gray)
         scalarplot!(vis4, grid_intr, p_im,     clear = false)
         scalarplot!(vis4, grid_intr, a_im,     clear = false, label = "IM", legend =:best, show = true)
 
@@ -938,7 +1115,17 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         ##########                            IV                             ##########
         ###############################################################################
         scalarplot!(vis5, biasValues,   IV,           clear = false, color=:green, linewidth = 5)
-        scalarplot!(vis5, IV_ref[:, 1], IV_ref[:, 2], clear = false, color=:black, linestyle=:dot)
+        if interfaceReco
+            IV_im         = readdlm("IM/with-surface-reco/IM-parameter-J.dat")
+        else
+            IV_im         = readdlm("IM/without-surface-reco/IM-parameter-J.dat")
+        end
+
+        if plotCTWithoutIntSpec
+            scalarplot!(vis5, IV_ref[:, 1], IV_ref[:, 2], clear = false, label = "ref sol", color=:black, linestyle=:dot)
+        end
+
+        scalarplot!(vis5, biasValues, -IV_im[2:end]./(cm^2 .* 1.0e3), clear = false, label = "IM", color=:gray, linestyle=:dot, legend =:best, show = true)
 
     end
 
