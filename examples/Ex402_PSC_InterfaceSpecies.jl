@@ -225,8 +225,8 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     end
 
     if interfaceSpecies
-        enable_interface_carrier!(data, bulkCarrier = iphin, interfaceCarrier = iphinb, bregions = [bregActive])
-        enable_interface_carrier!(data, bulkCarrier = iphip, interfaceCarrier = iphipb, bregions = [bregActive])
+        enable_interface_carrier!(data = data, bulkCarrier = iphin, interfaceCarrier = iphinb, bregions = [bregActive])
+        enable_interface_carrier!(data = data, bulkCarrier = iphip, interfaceCarrier = iphipb, bregions = [bregActive])
     end
 
     if interfaceReco
@@ -234,8 +234,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         data.boundaryType[bregActive] = InterfaceRecombination
         if interfaceSpecies
 
-            data.interfaceRecombination = set_interface_recombination(;iphin = iphinb, iphip = iphipb,
-                                                                       bregions = [bregActive])
+            set_interface_recombination!(data = data, iphin = iphinb, iphip = iphipb, bregions = [bregActive])
 
         end
     end

@@ -111,16 +111,15 @@ $(SIGNATURES)
 
 Corresponding constructor for the interface recombination model.
 """
-function set_interface_recombination(;iphin = 1, iphip = 2, bregions = [3])
+function set_interface_recombination!(;data, iphin = 1, iphip = 2, bregions = [3])
 
     intRecombination = InterfaceRecombinationStruct()
 
-    intRecombination.iphin    = iphin
-    intRecombination.iphip    = iphip
-    intRecombination.bregions = bregions
+    intRecombination.iphin      = iphin
+    intRecombination.iphip      = iphip
+    intRecombination.bregions   = bregions
 
-
-    return intRecombination
+    data.interfaceRecombination = intRecombination
 
 end
 
@@ -213,7 +212,7 @@ $(SIGNATURES)
 This method takes the user information concerning present ionic charge carriers,
 builds a struct of Type IonicCarrier and add this struct to the ionicCarrierList.
 """
-function enable_ionic_carrier!(data; ionicCarrier::Int64, regions::Array{Int64, 1})
+function enable_ionic_carrier!(;data, ionicCarrier::Int64, regions::Array{Int64, 1})
 
     enableIons              = IonicCarrier()
 
@@ -265,7 +264,7 @@ This method takes the user information concerning present interface charge carri
 builds a struct of Type InterfaceCarrier and add this struct to the interfaceCarrierList
 
 """
-function enable_interface_carrier!(data;bulkCarrier::Int64, interfaceCarrier::Int64, bregions::Array{Int64, 1})
+function enable_interface_carrier!(;data, bulkCarrier::Int64, interfaceCarrier::Int64, bregions::Array{Int64, 1})
 
     ## First: Since we enable an interfaceCarrier corresponding to bulkCarrier, we cannot
     ##        assume continuity for this bulkCarrier anymore. Thus, we need to work with
@@ -967,7 +966,7 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
                                                          bulk_recomb_radiative = true,
                                                          bulk_recomb_SRH = true)
 
-    data.interfaceRecombination = set_interface_recombination(iphin = 1, iphip = 2, bregions = [3])
+    data.interfaceRecombination = InterfaceRecombinationStruct()
 
     ###############################################################
     ####        Information on present charge carriers         ####
