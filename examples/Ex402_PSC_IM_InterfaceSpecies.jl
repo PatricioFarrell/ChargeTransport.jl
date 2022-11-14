@@ -12,7 +12,7 @@ using DelimitedFiles
 function main(;n = 19, plotting = false, verbose = false, test = false,
               plotCTWithoutIntSpec  = false,
               ionicSpecies      = false,
-              interfaceSpecies  = false,
+              interfaceSpecies  = true,
               interfaceReco     = false,
               leftInterface     = true)
 
@@ -378,6 +378,17 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
         data.d                                      = 6.28 * 10e-8 * cm # lattice size perovskite
 
+        if ionicSpecies
+            params.bBandEdgeEnergy[iphia, bregionJunction1]  = Ea_i
+            params.bBandEdgeEnergy[iphia, bregionJunction2]  = Ea_i
+
+            params.bDensityOfStates[iphia, bregionJunction1] = data.d * Nanion
+            params.bDensityOfStates[iphia, bregionJunction2] = data.d * Nanion
+
+            params.bDoping[iphia, bregionJunction1]           = data.d * C0
+            params.bDoping[iphia, bregionJunction2]           = data.d * C0
+        end
+
         if leftInterface
             dopingN                                 = data.d * Nd
             dopingP                                 = 0.0
@@ -387,8 +398,8 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             dopingP                                 = data.d * Na
         end
 
-        δn                                          =    0.2 * eV
-        δp                                          =  - 0.1 * eV
+        δn                                          =  0.05 * eV#0.1 * eV
+        δp                                          =  0.15 * eV#0.1 * eV
 
         params.bDoping[iphinb, bregActive]          = dopingN
         params.bDoping[iphipb, bregActive]          = dopingP
@@ -439,8 +450,8 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         # Caution! In case of interface species we have iphinb, iphipb and in bulk case iphin, iphip
         if interfaceSpecies
 
-            params.bRecombinationSRHLifetime[iphinb, bregActive]    = 1/(1.0e1  * cm / s)
-            params.bRecombinationSRHLifetime[iphipb, bregActive]    = 1/(1.0e5  * cm / s)
+            params.bRecombinationSRHLifetime[iphinb, bregActive]    = 1/(1.0e5  * m / s)
+            params.bRecombinationSRHLifetime[iphipb, bregActive]    = 1/(1.0e1  * m / s)
 
             params.bRecombinationSRHTrapDensity[iphinb, bregActive] = data.d * params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
             params.bRecombinationSRHTrapDensity[iphipb, bregActive] = data.d * params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
@@ -466,16 +477,16 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             params.bRecombinationSRHTrapDensity[iphip, bregionJunction1] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
 
             ###################################################
-            params.bDensityOfStates[iphin, bregionJunction2]             = Nc_i
+            params.bDensityOfStates[iphin, bregionJunction2]             = Nc_a
             params.bDensityOfStates[iphip, bregionJunction2]             = Nv_i
 
-            params.bBandEdgeEnergy[iphin, bregionJunction2]              = Ec_i
+            params.bBandEdgeEnergy[iphin, bregionJunction2]              = Ec_a
             params.bBandEdgeEnergy[iphip, bregionJunction2]              = Ev_i
 
             params.recombinationSRHvelocity[iphin, bregionJunction2]     = 1.0e-1 * m / s
             params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e5  * m / s
 
-            params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
+            params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = params.recombinationSRHTrapDensity[iphin, regionAcceptor]
             params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
         end
 
@@ -486,6 +497,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=:sparse)
 
+    #return data.electricCarrierList, data.ionicCarrierList, data.interfaceCarrierList
     if test == false
         println("*** done\n")
     end
@@ -555,7 +567,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             phip_sol     = views(sol, data.chargeCarrierList[iphip], subgridB, ctsys.fvmsys)
             psi_sol      = views(sol, data.index_psi, subgridB, ctsys.fvmsys)
             if ionicSpecies
-                phia_sol = views(sol, data.chargeCarrierList[iphia], subgridB[regionIntrinsic], ctsys.fvmsys)
+                phia_sol = views(sol, data.chargeCarrierList[iphia], subgridB, ctsys.fvmsys)
             end
 
             # this is unfortunately not working soooo good ...
@@ -620,7 +632,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             end
 
             if ionicSpecies
-                scalarplot!(vis1[2, 1], subgridB[regionIntrinsic], phia_sol, clear = false, label = "\$ \\varphi_a \$", color=:gold)
+                scalarplot!(vis1[2, 1], subgridB[regionIntrinsic], phia_sol[regionIntrinsic], clear = false, label = "\$ \\varphi_a \$", color=:gold)
             end
 
             # DA: current way out, when waiting for changes within ExtendableGrids and GridVisualize
@@ -682,21 +694,21 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         psi0_d        = (Ec_d + Ev_d)/(2 * q) - 0.5 * UT * log(Nc_d/Nv_d) + UT * asinh(Nd/(2*Nintr_d)) # -4.100459358855549
 
         if interfaceReco
-            psi_ETL_im    = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-ETL-t-0p0.dat")     .-Vbi/2 .+ psi0_d)
-            psi_intr_im   = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-intr-t-0p0.dat")    .-Vbi/2 .+ psi0_d)
-            psi_HTL_im    = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-HTL-t-0p0.dat")     .-Vbi/2 .+ psi0_d)
+            psi_ETL_im    = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-ETL-t-0p0.dat")     .-Vbi/2 .+ psi0_d)
+            psi_intr_im   = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-intr-t-0p0.dat")    .-Vbi/2 .+ psi0_d)
+            psi_HTL_im    = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-HTL-t-0p0.dat")     .-Vbi/2 .+ psi0_d)
 
-            a_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-a-intr-t-0p0.dat"))
-            p_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-p-intr-t-0p0.dat"))
-            n_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-n-intr-t-0p0.dat"))
+            a_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-a-intr-t-0p0.dat"))
+            p_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-p-intr-t-0p0.dat"))
+            n_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-n-intr-t-0p0.dat"))
         else
-            psi_ETL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-ETL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
-            psi_intr_im   = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-intr-t-0p0.dat") .-Vbi/2 .+ psi0_d)
-            psi_HTL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-HTL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
+            psi_ETL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-ETL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
+            psi_intr_im   = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-intr-t-0p0.dat") .-Vbi/2 .+ psi0_d)
+            psi_HTL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-HTL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
 
-            a_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-a-intr-t-0p0.dat"))
-            p_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-p-intr-t-0p0.dat"))
-            n_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-n-intr-t-0p0.dat"))
+            a_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-a-intr-t-0p0.dat"))
+            p_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-p-intr-t-0p0.dat"))
+            n_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-n-intr-t-0p0.dat"))
         end
 
         scalarplot!(vis1[1, 1], grid_ETL,  psi_ETL_im,  clear = false, marker ="", label = "", linestyle=:dot, color=:gray, linewidth = 5)
@@ -718,8 +730,8 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
                 scalarplot!(vis2, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), label = "", clear = false, color=:green, linewidth = 5, yscale=:log)
                 scalarplot!(vis2, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, color=:red)
                 if i == 3
-                    scalarplot!(vis2, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, label ="\$ n_n \$", yscale=:log)
-                    scalarplot!(vis2, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, label ="\$ n_p \$", color=:red)
+                   scalarplot!(vis2, subgridB[i], compute_densities(iphin, subgridB[i][CellRegions][1], phin_sol[i], psi_sol[i]), clear = false, color=:green, label ="\$ n_n \$", yscale=:log, show = true)
+                   scalarplot!(vis2, subgridB[i], compute_densities(iphip, subgridB[i][CellRegions][1], phip_sol[i], psi_sol[i]), clear = false, label ="\$ n_p \$", color=:red)
                 end
 
             end
@@ -738,6 +750,9 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
             println("value n_b (scaled by thickness) = ", nb)
             println("value p_b (scaled by thickness) = ", pb)
+
+            PyPlot.semilogy(coord[icoordJ], nb, marker = "o", markersize = 12,  color =:darkgreen, label = "\$ \\bar{n}_n \$")
+            PyPlot.semilogy(coord[icoordJ], pb, marker = "o", markersize = 12,  color =:darkred, label = "\$ \\bar{n}_p \$")
 
             if plotCTWithoutIntSpec
 
@@ -797,9 +812,9 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         end
 
         ##### Ionmonger solution
-        scalarplot!(vis2, grid_intr, n_im ,    clear = false, marker ="", label = "", linestyle=:dot, color=:gray)
-        scalarplot!(vis2, grid_intr, p_im,     clear = false)
-        scalarplot!(vis2, grid_intr, a_im,     clear = false, label = "IM", legend =:best, show = true)
+        scalarplot!(vis2, grid_intr, n_im , clear = false, marker ="", label = "", linestyle=:dot, color=:gray)
+        scalarplot!(vis2, grid_intr, p_im,  clear = false)
+        scalarplot!(vis2, grid_intr, a_im,  clear = false, label = "IM", legend =:best, show = true)
 
     end
 
@@ -822,7 +837,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
     # control.damp_growth  = 1.21 # >= 1
 
     ## primary data for I-V scan protocol
-    scanrate             = 0.2 * V/s
+    scanrate             = 0.1 * V/s
     number_tsteps        = 101
     endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     tend                 = endVoltage/scanrate
@@ -895,7 +910,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             phipb_sol = views(sol, data.chargeCarrierList[iphipb], bgrid, ctsys.fvmsys)
 
             if ionicSpecies
-                phia_sol = views(sol, data.chargeCarrierList[iphia], subgridB[regionIntrinsic], ctsys.fvmsys)
+                phia_sol = views(sol, data.chargeCarrierList[iphia], subgridB, ctsys.fvmsys)
             end
         else
 
@@ -948,7 +963,7 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
             end
 
             if ionicSpecies
-                scalarplot!(vis3[2, 1], subgridB[regionIntrinsic], phia_sol, clear = false, label = "\$ \\varphi_a \$", color=:gold)
+                scalarplot!(vis3[2, 1], subgridB[regionIntrinsic], phia_sol[regionIntrinsic], clear = false, label = "\$ \\varphi_a \$", color=:gold)
             end
 
             # DA: current way out, when waiting for changes within ExtendableGrids and GridVisualize
@@ -995,21 +1010,21 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         ## Ionmonger solution!
 
         if interfaceReco
-            psi_ETL_im    = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-ETL-t-end.dat")     .-Vbi/2 .+ psi0_d .+ (1.2)/2)
-            psi_intr_im   = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-intr-t-end.dat")    .-Vbi/2 .+ psi0_d .+ (1.2)/2)
-            psi_HTL_im    = vec(readdlm("IM/with-surface-reco/IM-parameter-psi-HTL-t-end.dat")     .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+            psi_ETL_im    = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-ETL-t-end.dat")     .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+            psi_intr_im   = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-intr-t-end.dat")    .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+            psi_HTL_im    = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-HTL-t-end.dat")     .-Vbi/2 .+ psi0_d .+ (1.2)/2)
 
-            a_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-a-intr-t-end.dat"))
-            p_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-p-intr-t-end.dat"))
-            n_im          = vec(readdlm("IM/with-surface-reco/IM-parameter-n-intr-t-end.dat"))
+            a_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-a-intr-t-end.dat"))
+            p_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-p-intr-t-end.dat"))
+            n_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-n-intr-t-end.dat"))
         else
-            psi_ETL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-ETL-t-end.dat")  .-Vbi/2 .+ psi0_d .+ (1.2)/2)
-            psi_intr_im   = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-intr-t-end.dat") .-Vbi/2 .+ psi0_d .+ (1.2)/2)
-            psi_HTL_im    = vec(readdlm("IM/without-surface-reco/IM-parameter-psi-HTL-t-end.dat")  .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+            psi_ETL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-ETL-t-end.dat")  .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+            psi_intr_im   = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-intr-t-end.dat") .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+            psi_HTL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-HTL-t-end.dat")  .-Vbi/2 .+ psi0_d .+ (1.2)/2)
 
-            a_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-a-intr-t-end.dat"))
-            p_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-p-intr-t-end.dat"))
-            n_im          = vec(readdlm("IM/without-surface-reco/IM-parameter-n-intr-t-end.dat"))
+            a_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-a-intr-t-end.dat"))
+            p_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-p-intr-t-end.dat"))
+            n_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-n-intr-t-end.dat"))
         end
 
         scalarplot!(vis3[1, 1], grid_ETL,  psi_ETL_im,  clear = false, marker ="", label ="", linestyle=:dot, color=:gray, linewidth = 5)
@@ -1116,9 +1131,9 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         ###############################################################################
         scalarplot!(vis5, biasValues,   IV,           clear = false, color=:green, linewidth = 5)
         if interfaceReco
-            IV_im         = readdlm("IM/with-surface-reco/IM-parameter-J.dat")
+            IV_im         = readdlm("IM/with-surface-reco/0p1/IM-parameter-J.dat")
         else
-            IV_im         = readdlm("IM/without-surface-reco/IM-parameter-J.dat")
+            IV_im         = readdlm("IM/without-surface-reco/0p1/IM-parameter-J.dat")
         end
 
         if plotCTWithoutIntSpec

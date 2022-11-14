@@ -1169,13 +1169,13 @@ function build_system(grid, data, unknown_storage, ::Type{DiscontQF})
     #########################################
     # if ionic carriers are present
     for icc ∈ data.ionicCarrierList
-        enable_species!(ctsys.fvmsys, icc.ionicCarrier, icc.regions)
+        data.chargeCarrierList[icc.ionicCarrier] = ContinuousQuantity(fvmsys, icc.regions, id = icc.ionicCarrier)
     end
 
     #########################################
     # if trap carriers are present
     for icc ∈ data.trapCarrierList
-        enable_species!(ctsys.fvmsys, icc.trapCarrier, icc.regions)
+        data.chargeCarrierList[icc.trapCarrier] = ContinuousQuantity(fvmsys, icc.regions, id = icc.trapCarrier)
     end
 
     #########################################

@@ -628,15 +628,28 @@ function bstorage!(f, u, bnode, data, ::Type{Transient})
 
     # Here, we can go over all chargeCarriers, since interface quantities may be likewise
     # defined (but need to check!)
-    for icc ∈ eachindex(data.chargeCarrierList)
+    for icc ∈ data.electricCarrierList
 
         icc    = data.chargeCarrierList[icc]
         get_DOS!(icc, bnode, data)
 
         Ni     = data.tempDOS1[icc]
         eta    = etaFunction(u, bnode, data, icc) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
-        f[icc] = q * params.chargeNumbers[icc] * Ni * Boltzmann(eta)
+        f[icc] = q * params.chargeNumbers[icc] * Ni * data.F[icc](eta)
 
+    end
+
+    for iicc in data.interfaceCarrierList
+
+        if bnode.region ∈ iicc.bregions
+            icc    = data.chargeCarrierList[iicc.interfaceCarrier] # iicc.interfaceCarrier as the index of interface carrier
+            get_DOS!(icc, bnode, data)
+
+            Ni     = data.tempDOS1[icc]
+            eta    = etaFunction(u, bnode, data, icc) # calls etaFunction(u,bnode::VoronoiFVM.BNode,data,icc)
+            f[icc] = q * params.chargeNumbers[icc] * Ni * data.F[icc](eta)
+
+        end
     end
 
     f[ipsi] = 0.0
