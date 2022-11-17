@@ -1,4 +1,3 @@
-
 using ForwardDiff
 
 """
@@ -65,23 +64,22 @@ $(TYPEDSIGNATURES)
 
 The incomplete Fermi-Dirac integral of order 1/2, implemented according to the software
 package TeSCA, see https://wias-berlin.de/software/index.jsp?lang=1&id=TeSCA.
+
+Modified to use log1p(x)=log(1+x).
 """
 function FermiDiracOneHalfTeSCA(x::Real)
     if x < 1.6107
-        ex = exp(x)
-        y  = 1+ex
-        w  = y-1
-        z  = w==0 ? ex : ex*log(y)/w
+        z=log1p(exp(x))
         return ( 1 + 0.16 * z ) * z
     elseif 1.6107 <= x <= 344.7
-        z = log( 1 + exp( x^(3/4)) )
-        return 0.3258 - 0.0321 * z  + 0.7523 * z^2
+        z = log1p(exp( x^(3/4)) )
+        return 0.3258 - (0.0321  - 0.7523 * z ) * z
     else
         z = x^(3/4)
-        return 0.3258 - 0.0321 * z  + 0.7523 * z^2
+        return 0.3258 - (0.0321 -  0.7523 * z ) * z
     end
-
 end
+
 
 """
 $(TYPEDSIGNATURES)
