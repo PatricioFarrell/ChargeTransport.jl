@@ -589,9 +589,10 @@ function breactionqFInterfaceReco!(f, u, bnode, data, ::Type{DiscontQF})
             pb              = Nvb * data.F[iphipb](etapb)
 
             taunb           = data.params.bRecombinationSRHLifetime[iphinb,   breg]
-            n0b             = data.params.recombinationSRHTrapDensity[iphinb, breg]
+            n0b             = data.params.bRecombinationSRHTrapDensity[iphinb, breg]
             taupb           = data.params.bRecombinationSRHLifetime[iphipb,   breg]
-            p0b             = data.params.recombinationSRHTrapDensity[iphipb, breg]
+            p0b             = data.params.bRecombinationSRHTrapDensity[iphipb, breg]
+
 
             exponentialTerm = exp((q * u[iphinb] - q * u[iphipb]) / (kB * data.params.temperature))
             excessDensTerm  = nb * pb * (1.0 - exponentialTerm)

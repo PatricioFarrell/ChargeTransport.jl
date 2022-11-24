@@ -11,7 +11,7 @@ using DelimitedFiles
 
 function main(;n = 19, plotting = false, verbose = false, test = false,
               plotCTWithoutIntSpec  = false,
-              ionicSpecies      = false,
+              ionicSpecies      = true,
               interfaceSpecies  = true,
               interfaceReco     = false,
               leftInterface     = true)
@@ -342,9 +342,10 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         params.recombinationRadiative[ireg]             = r0[ireg]
         params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
         params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
-        params.recombinationSRHTrapDensity[iphin, ireg] = trap_density!(iphin, ireg, data, EI[ireg])
-        params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, data, EI[ireg])
+        params.recombinationSRHTrapDensity[iphin, ireg] = params.densityOfStates[iphin, ireg] * exp( params.chargeNumbers[iphin] * (params.bandEdgeEnergy[iphin, ireg] - EI[ireg]) / (kB * params.temperature))
+        params.recombinationSRHTrapDensity[iphip, ireg] = params.densityOfStates[iphip, ireg] * exp( params.chargeNumbers[iphip] * (params.bandEdgeEnergy[iphip, ireg] - EI[ireg]) / (kB * params.temperature))
     end
+
 
     ## interior doping
     params.doping[iphin,  regionDonor]                  = Nd
@@ -693,27 +694,29 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         Nintr_d       = sqrt(Nc_d * Nv_d) * exp(-(Ec_d - Ev_d) / (2 * kB * T))
         psi0_d        = (Ec_d + Ev_d)/(2 * q) - 0.5 * UT * log(Nc_d/Nv_d) + UT * asinh(Nd/(2*Nintr_d)) # -4.100459358855549
 
-        if interfaceReco
-            psi_ETL_im    = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-ETL-t-0p0.dat")     .-Vbi/2 .+ psi0_d)
-            psi_intr_im   = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-intr-t-0p0.dat")    .-Vbi/2 .+ psi0_d)
-            psi_HTL_im    = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-HTL-t-0p0.dat")     .-Vbi/2 .+ psi0_d)
+        psi_ETL_imIR  = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-ETL-t-0p0.dat")     .-Vbi/2 .+ psi0_d)
+        psi_intr_imIR = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-intr-t-0p0.dat")    .-Vbi/2 .+ psi0_d)
+        psi_HTL_imIR  = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-HTL-t-0p0.dat")     .-Vbi/2 .+ psi0_d)
 
-            a_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-a-intr-t-0p0.dat"))
-            p_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-p-intr-t-0p0.dat"))
-            n_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-n-intr-t-0p0.dat"))
-        else
-            psi_ETL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-ETL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
-            psi_intr_im   = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-intr-t-0p0.dat") .-Vbi/2 .+ psi0_d)
-            psi_HTL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-HTL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
+        a_imIR        = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-a-intr-t-0p0.dat"))
+        p_imIR        = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-p-intr-t-0p0.dat"))
+        n_imIR        = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-n-intr-t-0p0.dat"))
+        ##########################
+        psi_ETL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-ETL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
+        psi_intr_im   = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-intr-t-0p0.dat") .-Vbi/2 .+ psi0_d)
+        psi_HTL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-HTL-t-0p0.dat")  .-Vbi/2 .+ psi0_d)
 
-            a_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-a-intr-t-0p0.dat"))
-            p_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-p-intr-t-0p0.dat"))
-            n_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-n-intr-t-0p0.dat"))
-        end
+        a_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-a-intr-t-0p0.dat"))
+        p_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-p-intr-t-0p0.dat"))
+        n_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-n-intr-t-0p0.dat"))
 
-        scalarplot!(vis1[1, 1], grid_ETL,  psi_ETL_im,  clear = false, marker ="", label = "", linestyle=:dot, color=:gray, linewidth = 5)
+        scalarplot!(vis1[1, 1], grid_ETL,  psi_ETL_im,  clear = false, marker ="", label = "", linestyle=:dash, color=:black, linewidth = 4)
         scalarplot!(vis1[1, 1], grid_intr, psi_intr_im, clear = false)
-        scalarplot!(vis1[1, 1], grid_HTL,  psi_HTL_im,  clear = false, label = "IM", legend =:best, show = true)
+        scalarplot!(vis1[1, 1], grid_HTL,  psi_HTL_im,  clear = false, label = "IM (without reco)")
+
+        scalarplot!(vis1[1, 1], grid_ETL,  psi_ETL_imIR,  clear = false, marker ="", label = "", linestyle=:dot, color=:gray, linewidth = 5)
+        scalarplot!(vis1[1, 1], grid_intr, psi_intr_imIR, clear = false)
+        scalarplot!(vis1[1, 1], grid_HTL,  psi_HTL_imIR,  clear = false, label = "IM (with reco)", legend =:best, show = true)
 
         ###############################################################################
         ##########                         Densities                         ##########
@@ -812,9 +815,13 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         end
 
         ##### Ionmonger solution
-        scalarplot!(vis2, grid_intr, n_im , clear = false, marker ="", label = "", linestyle=:dot, color=:gray)
+        scalarplot!(vis2, grid_intr, n_im , clear = false, marker ="", label = "", linestyle=:dash, color=:black)
         scalarplot!(vis2, grid_intr, p_im,  clear = false)
-        scalarplot!(vis2, grid_intr, a_im,  clear = false, label = "IM", legend =:best, show = true)
+        scalarplot!(vis2, grid_intr, a_im,  clear = false, label = "IM (without reco)")
+
+        scalarplot!(vis2, grid_intr, n_imIR , clear = false, marker ="", label = "", linestyle=:dot, color=:gray)
+        scalarplot!(vis2, grid_intr, p_imIR,  clear = false)
+        scalarplot!(vis2, grid_intr, a_imIR,  clear = false, label = "IM (with reco)", legend =:best, show = true)
 
     end
 
@@ -1009,27 +1016,29 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
 
         ## Ionmonger solution!
 
-        if interfaceReco
-            psi_ETL_im    = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-ETL-t-end.dat")     .-Vbi/2 .+ psi0_d .+ (1.2)/2)
-            psi_intr_im   = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-intr-t-end.dat")    .-Vbi/2 .+ psi0_d .+ (1.2)/2)
-            psi_HTL_im    = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-HTL-t-end.dat")     .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+        psi_ETL_imIR  = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-ETL-t-end.dat")     .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+        psi_intr_imIR = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-intr-t-end.dat")    .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+        psi_HTL_imIR  = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-psi-HTL-t-end.dat")     .-Vbi/2 .+ psi0_d .+ (1.2)/2)
 
-            a_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-a-intr-t-end.dat"))
-            p_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-p-intr-t-end.dat"))
-            n_im          = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-n-intr-t-end.dat"))
-        else
-            psi_ETL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-ETL-t-end.dat")  .-Vbi/2 .+ psi0_d .+ (1.2)/2)
-            psi_intr_im   = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-intr-t-end.dat") .-Vbi/2 .+ psi0_d .+ (1.2)/2)
-            psi_HTL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-HTL-t-end.dat")  .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+        a_imIR        = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-a-intr-t-end.dat"))
+        p_imIR        = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-p-intr-t-end.dat"))
+        n_imIR        = vec(readdlm("IM/with-surface-reco/0p1/IM-parameter-n-intr-t-end.dat"))
+        ###################
+        psi_ETL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-ETL-t-end.dat")  .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+        psi_intr_im   = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-intr-t-end.dat") .-Vbi/2 .+ psi0_d .+ (1.2)/2)
+        psi_HTL_im    = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-psi-HTL-t-end.dat")  .-Vbi/2 .+ psi0_d .+ (1.2)/2)
 
-            a_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-a-intr-t-end.dat"))
-            p_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-p-intr-t-end.dat"))
-            n_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-n-intr-t-end.dat"))
-        end
+        a_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-a-intr-t-end.dat"))
+        p_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-p-intr-t-end.dat"))
+        n_im          = vec(readdlm("IM/without-surface-reco/0p1/IM-parameter-n-intr-t-end.dat"))
+
+        scalarplot!(vis3[1, 1], grid_ETL,  psi_ETL_im,  clear = false, marker ="", label ="", linestyle=:dash, color=:black, linewidth = 4)
+        scalarplot!(vis3[1, 1], grid_intr, psi_intr_im, clear = false)
+        scalarplot!(vis3[1, 1], grid_HTL,  psi_HTL_im,  clear = false, label = "IM (without reco)")
 
         scalarplot!(vis3[1, 1], grid_ETL,  psi_ETL_im,  clear = false, marker ="", label ="", linestyle=:dot, color=:gray, linewidth = 5)
         scalarplot!(vis3[1, 1], grid_intr, psi_intr_im, clear = false)
-        scalarplot!(vis3[1, 1], grid_HTL,  psi_HTL_im,  clear = false, label = "IM", legend =:best, show = true)
+        scalarplot!(vis3[1, 1], grid_HTL,  psi_HTL_im,  clear = false, label = "IM (with reco)", legend =:best, show = true)
 
         ###############################################################################
         ##########                         Densities                         ##########
@@ -1122,25 +1131,29 @@ function main(;n = 19, plotting = false, verbose = false, test = false,
         end
 
         ##### Ionmonger solution
-        scalarplot!(vis4, grid_intr, n_im ,    clear = false, marker ="", label ="", linestyle=:dot, color=:gray)
+        scalarplot!(vis4, grid_intr, n_im ,    clear = false, marker ="", label ="", linestyle=:dash, color=:black)
         scalarplot!(vis4, grid_intr, p_im,     clear = false)
-        scalarplot!(vis4, grid_intr, a_im,     clear = false, label = "IM", legend =:best, show = true)
+        scalarplot!(vis4, grid_intr, a_im,     clear = false, label = "IM (without reco)")
+
+        scalarplot!(vis4, grid_intr, n_imIR , clear = false, marker ="", label = "", linestyle=:dot, color=:gray)
+        scalarplot!(vis4, grid_intr, p_imIR,  clear = false)
+        scalarplot!(vis4, grid_intr, a_imIR,  clear = false, label = "IM (with reco)", legend =:best, show = true)
 
         ###############################################################################
         ##########                            IV                             ##########
         ###############################################################################
-        scalarplot!(vis5, biasValues,   IV,           clear = false, color=:green, linewidth = 5)
-        if interfaceReco
-            IV_im         = readdlm("IM/with-surface-reco/0p1/IM-parameter-J.dat")
-        else
-            IV_im         = readdlm("IM/without-surface-reco/0p1/IM-parameter-J.dat")
-        end
+
+
+        IV_imIR        = readdlm("IM/with-surface-reco/0p1/IM-parameter-J.dat")
+        IV_im         = readdlm("IM/without-surface-reco/0p1/IM-parameter-J.dat")
 
         if plotCTWithoutIntSpec
             scalarplot!(vis5, IV_ref[:, 1], IV_ref[:, 2], clear = false, label = "ref sol", color=:black, linestyle=:dot)
         end
 
-        scalarplot!(vis5, biasValues, -IV_im[2:end]./(cm^2 .* 1.0e3), clear = false, label = "IM", color=:gray, linestyle=:dot, legend =:best, show = true)
+        scalarplot!(vis5, biasValues,  abs.(IV),           clear = false, color=:green, linewidth = 5)
+        scalarplot!(vis5, biasValues, abs.(IV_im[2:end]./(cm^2 .* 1.0e3)), clear = false, label = "IM (without reco)", color=:black, linestyle=:dot)
+        scalarplot!(vis5, biasValues, abs.(IV_imIR[2:end]./(cm^2 .* 1.0e3)), clear = false, label = "IM (with reco)", color=:gray, linestyle=:dot, legend =:best, show = true)
 
     end
 
