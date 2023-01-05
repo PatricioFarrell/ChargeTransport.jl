@@ -49,18 +49,14 @@ abstract type SchottkyBarrierLowering end
 $(TYPEDEF)
 Abstract type for no interface model.
 """
-abstract type InterfaceModelNone end
+abstract type InterfaceNone end
 
 
 """
 $(TYPEDEF)
 Abstract type for surface recombination mechanisms.
 """
-abstract type InterfaceModelSurfaceReco end
-
-abstract type InterfaceModelTangentialFlux end
-
-abstract type InterfaceModelSurfaceRecoAndTangentialFlux end
+abstract type InterfaceRecombination end
 
 ##########################################################
 """
@@ -72,8 +68,7 @@ const OuterBoundaryModelType = Union{Type{OhmicContact}, Type{SchottkyContact}, 
 """
 Possible Types of interface model (interior boundary conditions).
 """
-const InterfaceModelType = Union{Type{InterfaceModelNone}, Type{InterfaceModelSurfaceReco},
-                                 Type{InterfaceModelTangentialFlux}, Type{InterfaceModelSurfaceRecoAndTangentialFlux}}
+const InterfaceModelType = Union{Type{InterfaceNone}, Type{InterfaceRecombination}}
 
 """
 Possible types of boundary models.

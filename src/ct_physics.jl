@@ -263,16 +263,16 @@ no electrical field and a quasi Fermi level equal to the Schottky barrier ``\\ph
 function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
 
     params      = data.params
-    iphin       = data.bulkRecombination.iphin
     ipsi        = data.index_psi
+    iphin       = data.bulkRecombination.iphin
 
     for icc ∈ data.electricCarrierList       # Array{Int64, 1}
 
         icc    = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
 
         get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
-        Ni     = data.tempDOS1[icc]
-        Ei     = data.tempBEE1[icc]
+        Ni     =   data.tempDOS1[icc]
+        Ei     =   data.tempBEE1[icc]
         Ec     =   params.bBandEdgeEnergy[iphin, bnode.region]
         etaFix = - params.chargeNumbers[icc] / params.UT * (  ( (Ec - Ei) - params.SchottkyBarrier[bnode.region] ) / q  )
         eta    =   params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
@@ -320,17 +320,10 @@ end
 
 
 # This breaction! function is chosen when no interface model is chosen.
-breaction!(f, u, bnode, data, ::Type{InterfaceModelNone}) = emptyFunction()
+breaction!(f, u, bnode, data, ::Type{InterfaceNone}) = emptyFunction()
 
 
-# breaction term for surface recombination.
-breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = breaction!(f, u, bnode, data, InterfaceModelSurfaceReco)
-
-# breaction term for tangential flux.
-breaction!(f, u, bnode, data, ::Type{InterfaceModelTangentialFlux}) = emptyFunction()
-
-
-function breaction!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco})
+function breaction!(f, u, bnode, data, ::Type{InterfaceRecombination})
     if data.calculationType == InEquilibrium
         return
     end
@@ -379,37 +372,12 @@ bstorage!(f, u, bnode, data, ::Type{Stationary})  = emptyFunction()
 bstorage!(f, u, bnode, data, ::Type{Transient}) = bstorage!(f, u, bnode, data, data.boundaryType[bnode.region])
 
 
-bstorage!(f, u, bnode, data, ::Type{InterfaceModelNone}) = emptyFunction()
+bstorage!(f, u, bnode, data, ::Type{InterfaceNone}) = emptyFunction()
 
-bstorage!(f, u, bnode, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
+bstorage!(f, u, bnode, data, ::Type{InterfaceRecombination}) = emptyFunction()
 
 # No bstorage! is used, if an ohmic and schottky contact model is chosen.
 bstorage!(f, u, bnode, data, ::OuterBoundaryModelType) =  emptyFunction()
-
-bstorage!(f, u, bnode, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = bstorage!(f, u, bnode, data, InterfaceModelTangentialFlux)
-
-function bstorage!(f, u, bnode, data, ::Type{InterfaceModelTangentialFlux})
-
-    params      = data.params
-
-    #indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (they pass it through recombination)
-    iphin       = data.bulkRecombination.iphin # integer index of φ_n
-    iphip       = data.bulkRecombination.iphip # integer index of φ_p
-    looplist    = (iphin, iphip)
-
-    ipsi        = data.index_psi
-
-    for icc ∈ eachindex(data.chargeCarrierList)
-
-        icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used and depicted here
-        get_DOS!(icc, bnode, data)
-        Ni     = data.tempDOS[icc]
-        eta    = etaFunction(u, bnode, data, icc) # calls etaFunction(u,node::VoronoiFVM.Node,data,icc)
-        f[icc] = q * params.chargeNumbers[icc] * Ni * data.F[icc](eta)
-
-    end
-
-end
 
 ##########################################################
 ##########################################################
@@ -419,75 +387,9 @@ Master bflux! function. This is the function which enters VoronoiFVM and hands o
 for each boundary the flux within the boundary.
 
 """
-bflux!(f, u, bedge, data) = bflux!(f, u, bedge, data, data.calculationType)
+bflux!(f, u, bedge, data) = emptyFunction()
 
 
-# In case of equilibrium, the bflux shall not enter.
-bflux!(f, u, bedge, data, ::Type{InEquilibrium})             = emptyFunction()
-
-
-# Out of equilibrium, we need to additionally check for boundary type.
-bflux!(f, u, bedge, data, ::Type{OutOfEquilibrium})          = bflux!(f, u, bedge, data, data.boundaryType[bedge.region])
-
-bflux!(f, u, bedge, data, ::Type{InterfaceModelNone})        = emptyFunction()
-
-bflux!(f, u, bedge, data, ::Type{OhmicContact})              = emptyFunction()
-bflux!(f, u, bedge, data, ::Type{SchottkyContact})           = emptyFunction()
-
-bflux!(f, u, bedge, data, ::Type{SchottkyBarrierLowering})   = emptyFunction()
-bflux!(f, u, bedge, data, ::Type{InterfaceModelSurfaceReco}) = emptyFunction()
-
-
-
-# Cases, where we have a tangential flux.
-bflux!(f, u, bedge, data, ::Type{InterfaceModelSurfaceRecoAndTangentialFlux}) = bflux!(f, u, bedge, data, data.fluxApproximation)
-
-bflux!(f, u, bedge, data, ::Type{InterfaceModelTangentialFlux}) = bflux!(f, u, bedge, data, data.fluxApproximation)
-
-
-# excess chemical potential flux discretization scheme for inner boundaries.
-function bflux!(f, u, bedge, data, ::Type{ExcessChemicalPotential})
-
-    params      =   data.params
-    paramsnodal =   data.paramsnodal
-
-
-    nodel       =   bedge.node[2]
-    nodek       =   bedge.node[1]
-    ireg        =   bedge.region
-
-    # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
-    iphin       = data.bulkRecombination.iphin
-    iphip       = data.bulkRecombination.iphip
-    ipsi        = data.index_psi                  # final index for electrostatic potential
-    looplist    = (iphin, iphip)
-
-    # ############################################################
-    dpsi        =   u[ipsi, 2] - u[ipsi, 1]
-
-    # k = 1 refers to left side, where as l = 2 refers to right side.
-    for icc in eachindex(looplist)
-
-        icc          = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used and depicted here
-
-        j0           = params.chargeNumbers[icc] * q * params.bMobility[icc, ireg] * params.UT * params.bDensityOfStates[icc, ireg]
-
-        # need to add this to the other etaFunctions
-        Ek           = params.bBandEdgeEnergy[icc, bedge.region] + paramsnodal.bandEdgeEnergy[icc, nodek]
-        El           = params.bBandEdgeEnergy[icc, bedge.region] + paramsnodal.bandEdgeEnergy[icc, nodel]
-        etak         = etaFunction(u[ipsi, 1], u[icc, 1], data.params.UT, Ek, params.chargeNumbers[icc])
-        etal         = etaFunction(u[ipsi, 2], u[icc, 2], data.params.UT, El, params.chargeNumbers[icc])
-
-        bandEdgeDiff = paramsnodal.bandEdgeEnergy[icc, nodel] - paramsnodal.bandEdgeEnergy[icc, nodek]
-
-        Q            = params.chargeNumbers[icc]*( (dpsi - bandEdgeDiff/q) /params.UT) + (etal - etak) - log(data.F[icc](etal)) + log(data.F[icc](etak) )
-        bp, bm       = fbernoulli_pm(Q)
-
-        f[icc]       = - j0 * ( bm * data.F[icc](etal) - bp * data.F[icc](etak) )
-
-    end
-
-end
 
 ##########################################################
 ##########################################################
@@ -503,7 +405,6 @@ reaction!(f, u, node, data) = reaction!(f, u, node, data, data.calculationType)
 """
 $(TYPEDSIGNATURES)
 Reaction in case of equilibrium, i.e. no generation and recombination is considered.
-
 """
 function reaction!(f, u, node, data, ::Type{InEquilibrium})
 

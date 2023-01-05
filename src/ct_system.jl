@@ -43,6 +43,7 @@ mutable struct BulkRecombination
 
 end
 
+
 """
 $(SIGNATURES)
 
@@ -312,6 +313,12 @@ mutable struct Params
     """
     bDensitiesEQ                 ::  Array{Float64,2}
 
+    """
+    An array to define the reaction coefficient at internal boundaries.
+
+    """
+    bReactionCoefficient         ::  Array{Float64,2}
+
 
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
@@ -321,11 +328,19 @@ mutable struct Params
     for electrons and holes.
     """
     recombinationSRHvelocity     ::  Array{Float64,2}
+
+
     """
     A 2D array with the corresponding recombination surface boundary density values
     for electrons and holes.
     """
     bRecombinationSRHTrapDensity ::  Array{Float64,2}
+
+
+    """
+    A 2D array with the corresponding recombination surface recombination velocities
+    """
+    bRecombinationSRHLifetime    ::  Array{Float64,2}
 
 
     ###############################################################
@@ -475,6 +490,8 @@ $(TYPEDFIELDS)
 """
 mutable struct Data{TFuncs<:Function}
 
+    # DA: this one stands for interface thickness and is introduced for test set-up
+    d                            :: Float64
     ###############################################################
     ####                   model information                   ####
     ###############################################################
@@ -483,7 +500,6 @@ mutable struct Data{TFuncs<:Function}
     carriers ``\\alpha``.
     """
     F                            ::  Array{TFuncs,1}
-
 
     """
     An datatype containing the information, whether at least on quasi Fermi potential is
@@ -715,13 +731,14 @@ function Params(grid, numberOfCarriers)
     params.bDoping                      = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDensitiesEQ                 = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    params.bReactionCoefficient         = 1.0e15/s * ones(numberOfCarriers,  numberOfBoundaryRegions)
 
     ###############################################################
     ####   number of bregions x 2 (for electrons and holes!)   ####
     ###############################################################
-    params.bRecombinationSRHTrapDensity = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.recombinationSRHvelocity     = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
-
+    params.bRecombinationSRHTrapDensity = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    params.bRecombinationSRHLifetime    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     ###############################################################
     ####        number of regions x number of carriers         ####
     ###############################################################
@@ -797,7 +814,7 @@ are located.
 """
 function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSet) where TFuncs
 
-    numberOfBoundaryRegions  = grid[NumBFaceRegions]
+    numberOfBoundaryRegions     = grid[NumBFaceRegions]
 
     ###############################################################
     data = Data{TFuncs}()
@@ -806,14 +823,14 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
     ####                   model information                   ####
     ###############################################################
 
-    data.F                    = TFuncs[ Boltzmann for i=1:numberOfCarriers]
-    data.qFModel              = ContQF
-    data.boundaryType         = BoundaryModelType[InterfaceModelNone for i = 1:numberOfBoundaryRegions]
+    data.F                      = TFuncs[ Boltzmann for i=1:numberOfCarriers]
+    data.qFModel                = ContQF
+    data.boundaryType           = BoundaryModelType[InterfaceNone for i = 1:numberOfBoundaryRegions]
 
     # bulkRecombination is a struct holding the input information
-    data.bulkRecombination    = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = true,
-                                                      bulk_recomb_radiative = true,
-                                                      bulk_recomb_SRH = true)
+    data.bulkRecombination      = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = true,
+                                                         bulk_recomb_radiative = true,
+                                                         bulk_recomb_SRH = true)
 
     ###############################################################
     ####        Information on present charge carriers         ####
