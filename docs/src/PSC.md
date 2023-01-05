@@ -78,7 +78,7 @@ numberOfCarriers         = 3
 Consider the transient problem and enable the ionic charge carriers only in the active layer:
 ```julia
 data.modelType           = Transient
-data.enableIonicCarriers = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 ```
 
 Following specification is needed for a linear I-V scan protocol.
@@ -118,7 +118,7 @@ for ireg in 1:numberOfRegions
     params.generationUniform[ireg] = generationUniform[ireg]
 end
 ```
-for given data stored in `generationUniform`. 
+for given data stored in `generationUniform`.
 If one wishes to use the Beer-Lambert generation, then the corresponding code would be
 ```julia
 data.generationModel                          = GenerationBeerLambert
@@ -130,7 +130,7 @@ end
 
 params.generationPeak                         = generationPeak
 ```
-If one wishes to invert the illumination, one needs to define 
+If one wishes to invert the illumination, one needs to define
 ```julia
 params.invertedIllumination                   = -1
 ```
