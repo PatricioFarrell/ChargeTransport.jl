@@ -261,9 +261,9 @@ mutable struct Params
     SchottkyBarrier              ::  Array{Float64,1}
 
     """
-    An array containing information on the applied bias at each outer boundary.
+    An array containing predefined functions for the applied bias at each outer boundary.
     """
-    contactVoltage               ::  Array{Float64, 1}
+    contactVoltageFunction       ::  Array{Function, 1}
     ###############################################################
     ####                  number of carriers                   ####
     ###############################################################
@@ -308,12 +308,6 @@ mutable struct Params
     bVelocity                    ::  Array{Float64,2}
 
     """
-    An array for the given equilibrium densities for Schottky contact Barrier Lowering.
-
-    """
-    bDensitiesEQ                 ::  Array{Float64,2}
-
-    """
     An array to define the reaction coefficient at internal boundaries.
 
     """
@@ -338,9 +332,14 @@ mutable struct Params
 
 
     """
-    A 2D array with the corresponding recombination surface recombination velocities
+    A 2D array with the corresponding recombination surface recombination velocities.
     """
     bRecombinationSRHLifetime    ::  Array{Float64,2}
+
+    """
+    A 2D array containing the equilibrium density of electric charge carriers at the boundary.
+    """
+    bDensityEQ                   ::  Array{Float64,2}
 
 
     ###############################################################
@@ -490,8 +489,6 @@ $(TYPEDFIELDS)
 """
 mutable struct Data{TFuncs<:Function}
 
-    # DA: this one stands for interface thickness and is introduced for test set-up
-    d                            :: Float64
     ###############################################################
     ####                   model information                   ####
     ###############################################################
@@ -715,7 +712,7 @@ function Params(grid, numberOfCarriers)
     ####              number of boundary regions               ####
     ###############################################################
     params.SchottkyBarrier              = spzeros(Float64, numberOfBoundaryRegions)
-    params.contactVoltage               = spzeros(Float64, numberOfBoundaryRegions)
+    params.contactVoltageFunction       = [zeroVoltage, zeroVoltage]
 
     ###############################################################
     ####                  number of carriers                   ####
@@ -723,24 +720,24 @@ function Params(grid, numberOfCarriers)
     params.chargeNumbers                = spzeros(Float64, numberOfCarriers)
 
     ###############################################################
-    ####    number of boundary regions x number of carriers    ####
+    ####     number of carriers x number of boundary regions   ####
     ###############################################################
     params.bBandEdgeEnergy              = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDensityOfStates             = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bMobility                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bDoping                      = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bVelocity                    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
-    params.bDensitiesEQ                 = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
     params.bReactionCoefficient         = 1.0e15/s * ones(numberOfCarriers,  numberOfBoundaryRegions)
 
     ###############################################################
-    ####   number of bregions x 2 (for electrons and holes!)   ####
+    ####   2 x number of bregions (for electrons and holes!)   ####
     ###############################################################
-    params.recombinationSRHvelocity     = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
-    params.bRecombinationSRHTrapDensity = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
-    params.bRecombinationSRHLifetime    = spzeros(Float64, numberOfCarriers, numberOfBoundaryRegions)
+    params.recombinationSRHvelocity     = spzeros(Float64, 2, numberOfBoundaryRegions)
+    params.bRecombinationSRHTrapDensity = spzeros(Float64, 2, numberOfBoundaryRegions)
+    params.bRecombinationSRHLifetime    = spzeros(Float64, 2, numberOfBoundaryRegions)
+    params.bDensityEQ                   = spzeros(Float64, 2, numberOfBoundaryRegions)
     ###############################################################
-    ####        number of regions x number of carriers         ####
+    ####        number of carriers x number of regions         ####
     ###############################################################
     params.doping                       = spzeros(Float64, numberOfCarriers, numberOfRegions)
     params.densityOfStates              = spzeros(Float64, numberOfCarriers, numberOfRegions)
@@ -748,7 +745,7 @@ function Params(grid, numberOfCarriers)
     params.mobility                     = spzeros(Float64, numberOfCarriers, numberOfRegions)
 
     ###############################################################
-    #### number of regions x 2 (for electrons and holes only!) ####
+    #### 2 x number of regions (for electrons and holes only!) ####
     ###############################################################
     params.recombinationSRHLifetime     = spzeros(Float64, numberOfCarriers, numberOfRegions)
     params.recombinationSRHTrapDensity  = spzeros(Float64, numberOfCarriers, numberOfRegions)
@@ -768,6 +765,7 @@ function Params(grid, numberOfCarriers)
     return params
 
 end
+
 
 """
 $(TYPEDSIGNATURES)
@@ -1105,18 +1103,27 @@ function __set_contact!(ctsys, ibreg, Δu, ::Type{SchottkyContact})
 
     ipsi  = ctsys.data.index_psi
     iphin = ctsys.data.bulkRecombination.iphin
+    grid  = ctsys.fvmsys.grid
+    bnode = grid[BFaceNodes]
+
+    Ec    = ctsys.data.params.bBandEdgeEnergy[iphin, ibreg] #+ ctsys.data.paramsnodal.bandEdgeEnergy[iphin, bnode[ibreg]]
 
     # set Schottky barrier and applied voltage. Note that the barrier is applied with respect to the choice of conduction band-edge energy.
-    ctsys.fvmsys.boundary_values[ipsi,  ibreg] = - (ctsys.data.params.SchottkyBarrier[ibreg] - ctsys.data.params.bBandEdgeEnergy[iphin, ibreg])/q + Δu
+    ctsys.fvmsys.boundary_values[ipsi,  ibreg] = - (ctsys.data.params.SchottkyBarrier[ibreg] - Ec)/q + Δu
     ctsys.fvmsys.boundary_factors[ipsi, ibreg] =   VoronoiFVM.Dirichlet
 
+end
+
+# For internal boundaries, do nothing
+function __set_contact!(ctsys, ibreg, Δu, ::InterfaceModelType)
+    return
 end
 
 # For schottky contacts with barrier lowering
 function __set_contact!(ctsys, ibreg, Δu, ::Type{SchottkyBarrierLowering})
 
     # set Schottky barrier and applied voltage
-    ctsys.data.params.contactVoltage[ibreg] = Δu
+    ctsys.data.params.contactVoltageFunction[ibreg] = Δu
 
 end
 
@@ -1138,13 +1145,18 @@ end
 ###########################################################
 # Wrappers for methods of VoronoiFVM
 
-VoronoiFVM.enable_species!(ctsys::System, ispecies, regions) = VoronoiFVM.enable_species!(ctsys.fvmsys, ispecies, regions)
+VoronoiFVM.enable_species!(ctsys::System, ispecies, regions)                    = VoronoiFVM.enable_species!(ctsys.fvmsys, ispecies, regions)
 
-VoronoiFVM.enable_boundary_species!(ctsys::System, ispecies, regions) = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
+VoronoiFVM.enable_boundary_species!(ctsys::System, ispecies, regions)           = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
 
-VoronoiFVM.unknowns(ctsys::System) = VoronoiFVM.unknowns(ctsys.fvmsys)
+VoronoiFVM.unknowns(ctsys::System)                                              = VoronoiFVM.unknowns(ctsys.fvmsys)
+
+VoronoiFVM.TestFunctionFactory(ctsys::System)                                   = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+VoronoiFVM.integrate(ctsys::System, tf, solution, inival, Δt)                   = VoronoiFVM.integrate(ctsys.fvmsys, tf, solution, inival, Δt)
 
 VoronoiFVM.solve!(solution, initialGuess, ctsys, ;control=control, tstep=tstep) = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
+
+VoronoiFVM.solve(ctsys::System; kwargs...)                                      = VoronoiFVM.solve(ctsys.fvmsys; kwargs...)
 
 ###########################################################
 ###########################################################
@@ -1158,12 +1170,18 @@ a given value.
 
 function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0)
 
-    ctsys.data.calculationType = InEquilibrium
+    ctsys.fvmsys.physics.data.calculationType = InEquilibrium
+    grid                                      = ctsys.fvmsys.grid
+
+    # We set zero voltage for each charge carrier at all outer boundaries for equilibrium calculations.
+    for ibreg ∈ grid[BFaceRegions]
+        set_contact!(ctsys, ibreg, Δu = 0.0)
+    end
 
     # initialize solution and starting vectors
-    initialGuess               = unknowns(ctsys)
-    solution                   = unknowns(ctsys)
-    initialGuess              .= 0.0
+    inival               = unknowns(ctsys)
+    sol                  = unknowns(ctsys)
+    inival              .= 0.0
 
     # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
     I      = collect(nonlinear_steps:-1:0.0)
@@ -1177,21 +1195,41 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
         end
         ctsys.fvmsys.physics.data.λ1 = LAMBDA[i]
         try
-
-            VoronoiFVM.solve!(solution, initialGuess, ctsys, control = control, tstep=Inf)
-
+            VoronoiFVM.solve!(sol, inival, ctsys, control = control, tstep=Inf)
         catch
             if (control.handle_exceptions)
                 error("try to adjust nonlinear_steps, currently set to $(nonlinear_steps) or adjust Newton control parameters.")
             end
         end
 
-        initialGuess = solution
+        inival = sol
+
     end
 
-    return solution
+    data        = ctsys.fvmsys.physics.data
+    params      = ctsys.fvmsys.physics.data.params
+    paramsnodal = ctsys.fvmsys.physics.data.paramsnodal
+    bnode       = grid[BFaceNodes]
+    ipsi        = data.index_psi
+
+    # calculate equilibrium densities (especially needed for Schottky boundary conditions)
+    for icc ∈ data.electricCarrierList
+        for ibreg ∈ grid[BFaceRegions]
+            Ncc                           = params.bDensityOfStates[icc, ibreg] + paramsnodal.densityOfStates[icc, bnode[ibreg]]
+            Ecc                           = params.bBandEdgeEnergy[icc, ibreg]  + paramsnodal.bandEdgeEnergy[icc, bnode[ibreg]]
+
+            eta                           = params.chargeNumbers[icc]/params.UT * ( (sol[icc, bnode[ibreg]] - sol[ipsi, bnode[ibreg]]) + Ecc/q )
+            params.bDensityEQ[icc, ibreg] = Ncc * data.F[icc](eta)
+        end
+    end
+
+    # save changes on fvmsys of VoronoiFVM likewise in ctsys.data
+    ctsys.data = ctsys.fvmsys.physics.data
+
+    return sol
 
 end
+
 ###########################################################
 ###########################################################
 

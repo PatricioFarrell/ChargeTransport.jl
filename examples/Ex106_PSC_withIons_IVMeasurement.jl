@@ -209,6 +209,12 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## contact voltage
     voltageAcceptor  = 1.2                  * V
 
+    ## primary data for I-V scan protocol
+    scanrate             = 1.0 * V/s
+    number_tsteps        = 31
+    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend                 = endVoltage/scanrate
+
     if test == false
         println("*** done\n")
     end
@@ -314,6 +320,19 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bDoping[iphip, bregionAcceptor]              = Na
     params.bDoping[iphin, bregionDonor]                 = Nd
 
+    ## Define scan protocol function
+    function linearScanProtocol(t)
+        if t == Inf
+            0.0
+        else
+            scanrate * t
+        end
+    end
+
+    # Apply zero voltage on left boundary and a linear scan protocol on right boundary
+    params.contactVoltageFunction[bregionDonor]         = zeroVoltage
+    params.contactVoltageFunction[bregionAcceptor]      = linearScanProtocol
+
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
@@ -336,20 +355,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.figure()
         plot_doping(Plotter, grid, data, label_density)
         Plotter.figure()
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
-        println("Define outer boundary conditions")
-    end
-    ################################################################################
-
-    ## set zero voltage ohmic contacts for electrons and holes at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
         println("*** done\n")
     end
     ################################################################################
@@ -404,12 +409,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
     data.calculationType = OutOfEquilibrium
 
-    ## primary data for I-V scan protocol
-    scanrate             = 1.0 * V/s
-    number_tsteps        = 31
-    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend                 = endVoltage/scanrate
-
     ## with fixed timestep sizes we can calculate the times a priori
     tvalues              = range(0, stop = tend, length = number_tsteps)
 
@@ -419,9 +418,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for istep = 2:number_tsteps
 
-        t  = tvalues[istep]       # Actual time
-        Δu = t * scanrate         # Applied voltage
-        Δt = t - tvalues[istep-1] # Time step size
+        t  = tvalues[istep]                                    # Actual time
+        Δu = params.contactVoltageFunction[bregionAcceptor](t) # Applied voltage
+        Δt = t - tvalues[istep-1]                              # Time step size
 
         ## Apply new voltage by setting non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
@@ -467,7 +466,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -0.6305710078001743
+    testval = -0.6305710078001884
     main(test = true, unknown_storage=:dense) ≈ testval  && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

@@ -201,19 +201,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     ################################################################################
     if test == false
-        println("Define outer boundary conditions")
-    end
-    ################################################################################
-
-    ## set zero voltage ohmic contacts for each charge carrier at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-    ################################################################################
-    if test == false
         println("Define control parameters for Newton solver")
     end
     ################################################################################

@@ -200,6 +200,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     Na               = 4.529587947185444e18 / (cm^3)
     C0               = 1.0e18               / (cm^3)
 
+    ## scan protocol parameter
+    frequence        = 10.0                 * Hz
+    amplitude        = 0.2                  * V
+    endTime          = 1/frequence
+
     if test == false
         println("*** done\n")
     end
@@ -308,6 +313,19 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bDoping[iphip, bregionAcceptor]              = Na
     params.bDoping[iphin, bregionDonor]                 = Nd
 
+    ## Define sinusoidal applied voltage
+    function sinusoidalScanProtocol(t)
+        if t == Inf
+            0.0
+        else
+            amplitude * sin(2.0 * pi * frequence * t)
+        end
+    end
+
+    # Apply zero voltage on left boundary and a predefined scan protocol on right boundary
+    params.contactVoltageFunction[bregionDonor]         = zeroVoltage
+    params.contactVoltageFunction[bregionAcceptor]      = sinusoidalScanProtocol
+
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
@@ -315,21 +333,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         show_params(ctsys)
         println("*** done\n")
     end
-
-    ################################################################################
-    if test == false
-        println("Define outer boundary conditions")
-    end
-    ################################################################################
-
-    ## set zero voltage ohmic contacts for electrons and holes at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-
     ################################################################################
     if test == false
         println("Define control parameters for Newton solver")
@@ -395,26 +398,18 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.damp_growth  = 1.61 # >= 1
     control.max_round    = 7
 
-    ## sinusoidal applied voltage
-    frequence            = 10.0 * Hz
-    amplitude            = 0.2 * V
     ## time mesh
     number_tsteps        = 40
-    endTime              = 1/frequence
     tvalues              = range(0, stop = endTime, length = number_tsteps)
-    biasValues           = Float64[amplitude * sin(2.0 * pi * frequence * tvalues[i]) for i=1:number_tsteps]
-
-    # PyPlot.plot(tvalues, biasValues)
-    # return biasValues
 
     ## for saving I-V data
     IV                   = zeros(0) # for IV values
 
     for istep = 2:number_tsteps
 
-        t  = tvalues[istep]       # Actual time
-        Δu = biasValues[istep]    # Applied voltage
-        Δt = t - tvalues[istep-1] # Time step size
+        t  = tvalues[istep]                                    # Actual time
+        Δu = params.contactVoltageFunction[bregionAcceptor](t) # Applied voltage
+        Δt = t - tvalues[istep-1]                              # Time step size
 
         ## Apply new voltage (set non equilibrium boundary conditions)
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
@@ -439,6 +434,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("*** done\n")
     end
 
+    biasValues = params.contactVoltageFunction[bregionAcceptor].(tvalues)
     ## here in res the biasValues and the corresponding current are stored.
     ## res = [biasValues IV];
 
@@ -449,7 +445,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.figure()
         plot_solution(Plotter, grid, data, solution, "Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,IV, "Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", plotGridpoints = true)
+        plot_IV(Plotter, biasValues, IV, "Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", plotGridpoints = true)
     end
 
     testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
@@ -458,7 +454,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -1.1854681887433849
+    testval = -1.185468188743152
     main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

@@ -54,6 +54,7 @@ export GenerationNone, GenerationBeerLambert, GenerationUniform
 include("ct_physics.jl")
 
 export breaction!, bstorage!, reaction!, storage!, flux!
+export zeroVoltage
 ##################################################################
 
 include("ct_system.jl")

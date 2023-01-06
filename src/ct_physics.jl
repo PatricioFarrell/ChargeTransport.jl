@@ -143,7 +143,13 @@ end
 function emptyFunction()
 end
 
+"""
+Function in case of an applied voltage equal to zero at one boundary.
+"""
+zeroVoltage(t) = 0.0
 
+##########################################################
+##########################################################
 """
 $(TYPEDSIGNATURES)
 Master breaction! function. This is the function which enters VoronoiFVM and hands over
@@ -249,39 +255,89 @@ Creates Schottky boundary conditions. For the electrostatic potential we assume
 ``\\psi = - \\phi_S/q + U, ``
 
 where  ``\\phi_S`` corresponds to a given value (non-negative Schottky barrier) and ``U`` to the applied voltage. The quantitity ``\\phi_S`` needs to be specified in the main file.
-For the charge carriers we assume the following
+For eletrons and holes we assume the following
 
 ``f[n_\\alpha]  =  z_\\alpha q v_\\alpha (n_\\alpha - n_{\\alpha, 0})``,
 
 where ``v_{\\alpha}`` can be treated as a surface recombination mechanism and is given. The parameter
-``n_{\\alpha, 0}`` is a given value, calculated by the statistical relation, when assuming
-no electrical field and a quasi Fermi level equal to the Schottky barrier ``\\phi_S``, i.e.
+``n_{\\alpha, 0}`` is the equilibrium density of the charge carrier ``\\alpha`` and can be
+calculated via
 
 ``n_{\\alpha, 0}= N_\\alpha \\mathcal{F}_\\alpha \\Bigl( - z_\\alpha/ U_T (E_c - E_\\alpha) - \\phi_S) / q \\Bigr). ``
 
 """
+
 function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
 
     params      = data.params
+    paramsnodal = data.paramsnodal
     ipsi        = data.index_psi
     iphin       = data.bulkRecombination.iphin
 
-    for icc ∈ data.electricCarrierList       # Array{Int64, 1}
+    if data.calculationType == InEquilibrium
 
-        icc    = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+        for icc ∈ data.electricCarrierList
+            f[icc] = u[icc]
+        end
 
-        get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
-        Ni     =   data.tempDOS1[icc]
-        Ei     =   data.tempBEE1[icc]
-        Ec     =   params.bBandEdgeEnergy[iphin, bnode.region]
-        etaFix = - params.chargeNumbers[icc] / params.UT * (  ( (Ec - Ei) - params.SchottkyBarrier[bnode.region] ) / q  )
-        eta    =   params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
+    else
 
-        f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+        for icc ∈ data.electricCarrierList       # Array{Int64, 1}
 
+            icc    = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+
+            get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
+            Ni     =  data.tempDOS1[icc]
+            Ei     =  data.tempBEE1[icc]
+            eta    =  params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
+
+            f[icc] =  params.chargeNumbers[icc] * q * params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - params.bDensityEQ[icc, bnode.region] )
+
+        end
     end
 
+    # Ec    = params.bBandEdgeEnergy[iphin, bnode.region] + paramsnodal.bandEdgeEnergy[iphin, bnode.index]
+    # Δu    = params.contactVoltageFunction[bnode.region](bnode.time)
+
+    # boundary_dirichlet!(f, u, bnode, species=ipsi, region=bnode.region, value=(- (params.SchottkyBarrier[bnode.region]  - Ec)/q) + Δu)
+
 end
+
+# function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
+
+#     params      = data.params
+#     paramsnodal = data.paramsnodal
+#     iphin       = data.bulkRecombination.iphin
+#     ipsi        = data.index_psi
+
+#     if data.calculationType == InEquilibrium
+
+#         for icc ∈ data.electricCarrierList
+#             f[icc] = u[icc]
+#         end
+
+#     else
+
+#         for icc ∈ data.electricCarrierList       # Array{Int64, 1}
+
+#             icc    = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+
+#             get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
+#             Ni     =  data.tempDOS1[icc]
+#             Ei     =  data.tempBEE1[icc]
+#             eta    =  params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
+
+#             f[icc] =  params.chargeNumbers[icc] * q * params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - params.bDensityEQ[icc, bnode.region] )
+
+#         end
+#     end
+
+#     # Ec    = params.bBandEdgeEnergy[iphin, bnode.region] + paramsnodal.bandEdgeEnergy[iphin, bnode.index]
+#     # Δu    = params.contactVoltageFunction[bnode.region](bnode.time)
+
+#     # boundary_dirichlet!(f, u, bnode, species=ipsi, region=bnode.region, value=(- (params.SchottkyBarrier[bnode.region]  - Ec)/q) + Δu)
+
+# end
 
 """
 $(TYPEDSIGNATURES)
@@ -304,11 +360,11 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
         Ei     = data.tempBEE1[icc]
         eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
 
-        f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - data.params.bDensitiesEQ[icc, bnode.region]  )
+        f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - data.params.bDensityEQ[icc, bnode.region]  )
 
     end
 
-    barrier    = -  (u[ipsi]  - params.SchottkyBarrier[ibreg]/q - params.contactVoltage[ibreg])
+    barrier    = -  (u[ipsi]  - params.SchottkyBarrier[ibreg]/q - params.contactVoltageFunction[ibreg])
 
     if data.λ1 == 0.0
         f[ipsi] = - (2.0)^50 * (4.0 * pi * params.dielectricConstant[bnode.cellregions[1]] * params.dielectricConstantImageForce[bnode.cellregions[1]])/q * (barrier)^2

@@ -355,19 +355,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     if test == false
-        println("Define boundary conditions")
-    end
-    ################################################################################
-
-    ## set Schottky contacts.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-    ################################################################################
-    if test == false
         println("Define control parameters for Newton solver")
     end
     ################################################################################
@@ -461,7 +448,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval= 0.11725154162011475
+    testval= 0.11725154137942578
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

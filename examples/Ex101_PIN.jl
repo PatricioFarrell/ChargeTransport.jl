@@ -237,21 +237,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("*** done\n")
     end
 
-    ################################################################################
-    if test == false
-        println("Define outer boundary conditions")
-    end
-    ################################################################################
-
-    ## We set zero voltage ohmic contacts for each charge carrier at all outer boundaries
-    ## for the equilibrium calculations.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-
     if plotting == true
         ################################################################################
         println("Plot electroneutral potential, band-edge energies and doping")
