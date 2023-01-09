@@ -261,7 +261,13 @@ mutable struct Params
     SchottkyBarrier              ::  Array{Float64,1}
 
     """
-    An array containing predefined functions for the applied bias at each outer boundary.
+    An array containing a contant value for the applied voltage.
+    """
+    contactVoltage               ::  Array{Float64, 1}
+
+    """
+    An array containing predefined functions for the applied bias in dependance of time
+    at each outer boundary.
     """
     contactVoltageFunction       ::  Array{Function, 1}
     ###############################################################
@@ -712,7 +718,8 @@ function Params(grid, numberOfCarriers)
     ####              number of boundary regions               ####
     ###############################################################
     params.SchottkyBarrier              = spzeros(Float64, numberOfBoundaryRegions)
-    params.contactVoltageFunction       = [zeroVoltage, zeroVoltage]
+    params.contactVoltage               = spzeros(Float64, numberOfBoundaryRegions)
+    params.contactVoltageFunction       = Function[zeroVoltage for i = 1:numberOfBoundaryRegions]
 
     ###############################################################
     ####                  number of carriers                   ####
@@ -1101,16 +1108,8 @@ set_contact!(ctsys, ibreg, ;Δu) = __set_contact!(ctsys, ibreg, Δu, ctsys.data.
 # For schottky contacts
 function __set_contact!(ctsys, ibreg, Δu, ::Type{SchottkyContact})
 
-    ipsi  = ctsys.data.index_psi
-    iphin = ctsys.data.bulkRecombination.iphin
-    grid  = ctsys.fvmsys.grid
-    bnode = grid[BFaceNodes]
-
-    Ec    = ctsys.data.params.bBandEdgeEnergy[iphin, ibreg] #+ ctsys.data.paramsnodal.bandEdgeEnergy[iphin, bnode[ibreg]]
-
-    # set Schottky barrier and applied voltage. Note that the barrier is applied with respect to the choice of conduction band-edge energy.
-    ctsys.fvmsys.boundary_values[ipsi,  ibreg] = - (ctsys.data.params.SchottkyBarrier[ibreg] - Ec)/q + Δu
-    ctsys.fvmsys.boundary_factors[ipsi, ibreg] =   VoronoiFVM.Dirichlet
+    ctsys.fvmsys.physics.data.params.contactVoltage[ibreg] = Δu
+    ctsys.data.params.contactVoltage[ibreg]                = Δu
 
 end
 

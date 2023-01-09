@@ -87,13 +87,15 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     vn               = An * T^2 / (q*Nc)
     vp               = Ap * T^2 / (q*Nv)
 
-    Nd               =  1.0e17               / (m^3) # doping
+    Nd               = 1.0e17               / (m^3) # doping
 
     Area             = 2.1e-11 *  m^2                # Area of electrode
 
     # Scan protocol information
-    endTime          = 9.6    * s
-    amplitude        = 12.0 * V
+    # endTime          = 9.6    * s
+    # amplitude        = 12.0   * V
+    endTime          = 1.0    * s
+    amplitude        = 1.0    * V
     scanrate         = 4*amplitude/endTime
 
     if test == false
@@ -271,13 +273,16 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     control.tol_relative   = 1.0e-9
     control.tol_round      = 1.0e-9
     control.max_iterations = 500
+
     control.Δt             = 1.0e-4
     control.Δt_min         = 1.0e-7
     control.Δt_max         = 1.0e-2
     control.Δt_grow        = 1.005
-    control.print_time = true
+    if test == false
+        control.print_time = true
+    end
 
-    sol = solve(ctsys, inival = inival, times=(0.0, 0.04), control = control)
+    sol = solve(ctsys, inival = inival, times=(0.0, endTime), control = control)
 
     if test == false
         println("*** done\n")
@@ -295,6 +300,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     factory = VoronoiFVM.TestFunctionFactory(ctsys)
     tf      = testfunction(factory, [bregionLeft], [bregionRight])
 
+    push!(IV, 0.0)
     for istep = 2:number_tsteps
         Δt       = tvalues[istep] - tvalues[istep-1] # Time step size
         inival   = sol[istep-1]
@@ -320,7 +326,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         PyPlot.grid()
 
         PyPlot.figure()
-        PyPlot.semilogy(biasValues[2:end], abs.(Area .* IV), linewidth = 5, color = "black")
+        PyPlot.semilogy(biasValues, abs.(Area .* IV), linewidth = 5, color = "black")
         PyPlot.grid()
         PyPlot.xlabel("applied bias [V]")
         PyPlot.ylabel("total current [A]")
@@ -333,7 +339,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 end #  main
 
 function test()
-    testval = -0.00011623322450530968
+    testval = 19849.917786040238
     main(test = true) ≈ testval
 end
 

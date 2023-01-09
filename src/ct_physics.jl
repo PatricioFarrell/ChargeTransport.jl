@@ -273,71 +273,30 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
     paramsnodal = data.paramsnodal
     ipsi        = data.index_psi
     iphin       = data.bulkRecombination.iphin
+    Ec          =   params.bBandEdgeEnergy[iphin, bnode.region]
 
-    if data.calculationType == InEquilibrium
+    for icc ∈ data.electricCarrierList       # Array{Int64, 1}
 
-        for icc ∈ data.electricCarrierList
-            f[icc] = u[icc]
-        end
+        icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used
 
-    else
+        get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
+        Ni     =   data.tempDOS1[icc]
+        Ei     =   data.tempBEE1[icc]
+        etaFix = - params.chargeNumbers[icc] / params.UT * (  ( (Ec - Ei) - params.SchottkyBarrier[bnode.region] ) / q  )
+        eta    =   params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
 
-        for icc ∈ data.electricCarrierList       # Array{Int64, 1}
+        f[icc] =  params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
 
-            icc    = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
-
-            get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
-            Ni     =  data.tempDOS1[icc]
-            Ei     =  data.tempBEE1[icc]
-            eta    =  params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
-
-            f[icc] =  params.chargeNumbers[icc] * q * params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - params.bDensityEQ[icc, bnode.region] )
-
-        end
     end
 
-    # Ec    = params.bBandEdgeEnergy[iphin, bnode.region] + paramsnodal.bandEdgeEnergy[iphin, bnode.index]
-    # Δu    = params.contactVoltageFunction[bnode.region](bnode.time)
+    # function evaluation causes allocation!!!
+    Δu         = params.contactVoltage[bnode.region] + params.contactVoltageFunction[bnode.region](bnode.time)
 
-    # boundary_dirichlet!(f, u, bnode, species=ipsi, region=bnode.region, value=(- (params.SchottkyBarrier[bnode.region]  - Ec)/q) + Δu)
+    # passing a Q Type and not an integer causes allocation!!
+    boundary_dirichlet!(f, u, bnode, species=ipsi, region=bnode.region, value=(- (params.SchottkyBarrier[bnode.region]  - Ec)/q) + Δu)
 
 end
 
-# function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
-
-#     params      = data.params
-#     paramsnodal = data.paramsnodal
-#     iphin       = data.bulkRecombination.iphin
-#     ipsi        = data.index_psi
-
-#     if data.calculationType == InEquilibrium
-
-#         for icc ∈ data.electricCarrierList
-#             f[icc] = u[icc]
-#         end
-
-#     else
-
-#         for icc ∈ data.electricCarrierList       # Array{Int64, 1}
-
-#             icc    = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
-
-#             get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
-#             Ni     =  data.tempDOS1[icc]
-#             Ei     =  data.tempBEE1[icc]
-#             eta    =  params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
-
-#             f[icc] =  params.chargeNumbers[icc] * q * params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - params.bDensityEQ[icc, bnode.region] )
-
-#         end
-#     end
-
-#     # Ec    = params.bBandEdgeEnergy[iphin, bnode.region] + paramsnodal.bandEdgeEnergy[iphin, bnode.index]
-#     # Δu    = params.contactVoltageFunction[bnode.region](bnode.time)
-
-#     # boundary_dirichlet!(f, u, bnode, species=ipsi, region=bnode.region, value=(- (params.SchottkyBarrier[bnode.region]  - Ec)/q) + Δu)
-
-# end
 
 """
 $(TYPEDSIGNATURES)
