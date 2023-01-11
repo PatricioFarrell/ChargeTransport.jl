@@ -292,8 +292,8 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
     # function evaluation causes allocation!!!
     Δu         = params.contactVoltage[bnode.region] + params.contactVoltageFunction[bnode.region](bnode.time)
 
-    # passing a Q Type and not an integer causes allocation!!
-    boundary_dirichlet!(f, u, bnode, species=ipsi, region=bnode.region, value=(- (params.SchottkyBarrier[bnode.region]  - Ec)/q) + Δu)
+    ipsiIndex  = length(data.chargeCarrierList) + 1 # This is necessary, since passing something other than an Integer in boundary_dirichlet!() causes allocations
+    boundary_dirichlet!(f, u, bnode, species=ipsiIndex, region=bnode.region, value=(- (params.SchottkyBarrier[bnode.region]  - Ec)/q) + Δu)
 
 end
 

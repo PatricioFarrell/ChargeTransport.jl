@@ -10,6 +10,8 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
+ENV["VORONOIFVM_CHECK_ALLOCS"]="false"
+
 function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     PyPlot.close("all")
