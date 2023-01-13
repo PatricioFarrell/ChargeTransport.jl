@@ -215,7 +215,7 @@ mutable struct BarrierLoweringSpecies
     """
     This quantity is needed to define the generic operator.
     """
-    #DA: Problem with type when dense system?? (LinearIndices{2, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}} ? )
+
     idx                ::  Union{VoronoiFVM.SparseSolutionIndices, LinearIndices{2, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}}}
 
     BarrierLoweringSpecies() = new()
