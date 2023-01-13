@@ -250,10 +250,10 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     label_density[iphix]   = "\$ n_X\$";       label_solution[iphix]  = "\$ \\varphi_x\$"
 
     if plotting
-        plot_densities(Plotter, Plotter, solEQ,"Equilibrium", label_density)
+        plot_densities(Plotter, ctsys, solEQ,"Equilibrium", label_density)
         Plotter.legend()
         Plotter.figure()
-        plot_solution(Plotter, Plotter, solEQ, "Equilibrium", label_solution)
+        plot_solution(Plotter, ctsys, solEQ, "Equilibrium", label_solution)
         Plotter.figure()
     end
 

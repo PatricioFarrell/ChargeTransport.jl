@@ -429,6 +429,11 @@ function plot_solution(Plotter, ctsys, solution, title, label_solution, ;plotGri
 
     Plotter.clf()
     Plotter.plot(coord, solution[ipsi,:], marker = marker, label = "\$\\psi\$", color="b", linewidth= 3)
+    if data.barrierLoweringInfo.BarrierLoweringOn == BarrierLoweringOn
+        ipsiStandard = data.barrierLoweringInfo.ipsiStandard
+        Plotter.plot(coord, solution[ipsiStandard,:], marker = marker, label = "\$\\psi\$ (Schottky contacts)", color="black", linestyle = ":", linewidth= 3)
+    end
+
     # electrons and holes
     for icc ∈ data.electricCarrierList
         Plotter.plot(coord./1, solution[icc,:], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
