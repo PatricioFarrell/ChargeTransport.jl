@@ -49,6 +49,8 @@ export SRHOff, SRHWithoutTrapsStationary, SRHTrapsTransient
 
 export GenerationModelType
 export GenerationNone, GenerationBeerLambert, GenerationUniform
+export BarrierLoweringType
+export BarrierLoweringOn, BarrierLoweringOff
 ##################################################################
 
 include("ct_physics.jl")

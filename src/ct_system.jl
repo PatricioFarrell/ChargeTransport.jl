@@ -175,6 +175,57 @@ end
 ###########################################################
 ###########################################################
 
+###########################################################
+###########################################################
+
+"""
+$(TYPEDEF)
+
+A struct holding all information necessary for Schottky barrier lowering boundary
+conditions. The implementation of this type of boundary condition needs two additional
+species, see the explanation in breaction!(args ..., ::Type{SchottkyBarrierLowering}) for
+further information.
+$(TYPEDFIELDS)
+
+"""
+
+mutable struct BarrierLoweringSpecies
+
+    """
+    Datatype which gives information whether barrier lowering is turned on or off.
+    """
+    BarrierLoweringOn  :: BarrierLoweringType
+
+    """
+    Index of additional electric potential for the case with standard Schottky contacts.
+    """
+    ipsiStandard       ::  QType
+
+    """
+    Additional species, where the projected gradient of the electric potential without
+    Schottky barrier lowering is stored.
+    """
+    ipsiGrad           ::  QType
+
+    """
+    Boundary region numbers, where Schottky barrier lowering boundary conditions are defined.
+    """
+    breg               ::  Array{Int64, 1}
+
+    """
+    This quantity is needed to define the generic operator.
+    """
+    #DA: Problem with type when dense system?? (LinearIndices{2, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}} ? )
+    idx                ::  Union{VoronoiFVM.SparseSolutionIndices, LinearIndices{2, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}}}
+
+    BarrierLoweringSpecies() = new()
+
+end
+
+
+
+###########################################################
+###########################################################
 """
 $(TYPEDEF)
 
@@ -561,6 +612,11 @@ mutable struct Data{TFuncs<:Function}
     """
     index_psi                    :: QType
 
+    """
+    This is a struct containing all information necessary to simulate Schottky Barrier Lowering.
+    """
+    barrierLoweringInfo          :: BarrierLoweringSpecies
+
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
@@ -847,6 +903,8 @@ function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSe
     data.ionicCarrierList     = IonicCarrier[]
     data.trapCarrierList      = TrapCarrier[]
     data.index_psi            = numberOfCarriers + 1
+    data.barrierLoweringInfo  = BarrierLoweringSpecies()
+    data.barrierLoweringInfo.BarrierLoweringOn = BarrierLoweringOff # set in general case barrier lowering off
 
     ###############################################################
     ####                 Numerics information                  ####
@@ -930,30 +988,62 @@ function build_system(grid, data, unknown_storage, ::Type{ContQF})
     end
 
     if data.bulkRecombination.bulk_recomb_SRH == SRHOff
-        data.params.prefactor_SRH                      = 0.0
+        data.params.prefactor_SRH                            = 0.0
         # need to define at least one entry within each region to be non-zero. Otherwise get a NaN expression in reaction.
         for ireg = 1:grid[NumCellRegions]
-            data.params.recombinationSRHTrapDensity[1, ireg]  = 1.0
-            data.params.recombinationSRHLifetime[1, ireg]     = 1.0
+            data.params.recombinationSRHTrapDensity[1, ireg] = 1.0
+            data.params.recombinationSRHLifetime[1, ireg]    = 1.0
         end
+    end
+
+    #################################################################################
+    #####    Check, if Schottky barrier lowering conditions applicable or not   #####
+
+    boundaryReg = Int64[]
+    for ibreg in eachindex(data.boundaryType)
+        if data.boundaryType[ibreg] == SchottkyBarrierLowering
+            push!(boundaryReg, ibreg)
+        end
+    end
+
+    if dim_space(grid) > 1 && !isempty(boundaryReg)
+        error("Schottky Barrier Lowering so far only implemented in 1D.")
+    elseif dim_space(grid) == 1 && length(boundaryReg) == 1
+        error("Schottky Barrier Lowering only working for two contacts.")
+    elseif dim_space(grid) == 1 && !isempty(boundaryReg)
+        data.barrierLoweringInfo.BarrierLoweringOn = BarrierLoweringOn
     end
 
     #################################################################################
     #####        Set carrier lists correctly based on user information          #####
     #####    Build system for VoronoiFVM and enable carriers accordingly        #####
-    ctsys                    = System()
-    ctsys.data               = data
+    ctsys        = System()
+    ctsys.data   = data
 
-    physics                  = VoronoiFVM.Physics(data        = data,
-                                                  flux        = flux!,
-                                                  reaction    = reaction!,
-                                                  storage     = storage!,
-                                                  breaction   = breaction!,
-                                                  bstorage    = bstorage!,
-                                                  bflux       = bflux!
-                                                 )
+    if data.barrierLoweringInfo.BarrierLoweringOn == BarrierLoweringOff
+        physics  = VoronoiFVM.Physics(data        = data,
+                                      flux        = flux!,
+                                      reaction    = reaction!,
+                                      storage     = storage!,
+                                      breaction   = breaction!,
+                                      bstorage    = bstorage!,
+                                      bflux       = bflux!
+                                      )
+    else # in this case we add the generic operator
+        physics  = VoronoiFVM.Physics(data        = data,
+                                      flux        = flux!,
+                                      reaction    = reaction!,
+                                      storage     = storage!,
+                                      breaction   = breaction!,
+                                      bstorage    = bstorage!,
+                                      bflux       = bflux!,
+                                      generic     = generic_operator!
+                                      )
+    end
 
     ctsys.fvmsys = VoronoiFVM.System(grid, physics, unknown_storage = unknown_storage)
+
+    data         = ctsys.fvmsys.physics.data
 
     ######################################
     # continuous case = integer indexing
@@ -983,6 +1073,24 @@ function build_system(grid, data, unknown_storage, ::Type{ContQF})
 
     # enable lastly the electric potential on whole domain
     enable_species!(ctsys.fvmsys, data.index_psi, 1:data.params.numberOfRegions)
+
+    # add here additional electric potential and boundary species in case of Schottky
+    # barrier lowering conditions
+    if data.barrierLoweringInfo.BarrierLoweringOn == BarrierLoweringOn
+
+        data.barrierLoweringInfo.ipsiStandard = data.index_psi + 1
+        data.barrierLoweringInfo.ipsiGrad     = data.index_psi + 2
+        data.barrierLoweringInfo.breg         = boundaryReg
+
+        enable_species!(         ctsys.fvmsys, data.barrierLoweringInfo.ipsiStandard, 1:data.params.numberOfRegions)
+        enable_boundary_species!(ctsys.fvmsys, data.barrierLoweringInfo.ipsiGrad,     boundaryReg)
+
+        # for detection of number of species
+        VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species_sys)
+
+        data.barrierLoweringInfo.idx          = unknown_indices(unknowns(ctsys))
+
+    end
 
     # for detection of number of species
     VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species_sys)
@@ -1049,6 +1157,9 @@ function build_system(grid, data, unknown_storage, ::Type{DiscontQF})
     #########################################
 
     data.index_psi = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)
+    #########################################
+    # DA: Note that Schottky barrier lowering is for the discontinuous case not implemented yet.
+
     #################################################################################
     #####                 Build system for VoronoiFVM                           #####
 
@@ -1122,7 +1233,7 @@ end
 function __set_contact!(ctsys, ibreg, Δu, ::Type{SchottkyBarrierLowering})
 
     # set Schottky barrier and applied voltage
-    ctsys.data.params.contactVoltageFunction[ibreg] = Δu
+    ctsys.data.params.contactVoltage[ibreg] = Δu
 
 end
 

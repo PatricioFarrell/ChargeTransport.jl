@@ -235,3 +235,23 @@ const GenerationModelType = Union{Type{GenerationUniform}, Type{GenerationBeerLa
 
 
 ##########################################################
+##########################################################
+
+"""
+$(TYPEDEF)
+Abstract type for the choice of Schottky barrier lowering as boundary conditions.
+"""
+abstract type BarrierLoweringOn end
+
+
+"""
+$(TYPEDEF)
+Abstract type for the neglection of Schottky barrier lowering as boundary conditions.
+"""
+abstract type BarrierLoweringOff end
+
+##########################################################
+"""
+Possible types for barrier lowering model.
+"""
+const BarrierLoweringType = Union{Type{BarrierLoweringOn}, Type{BarrierLoweringOff}}

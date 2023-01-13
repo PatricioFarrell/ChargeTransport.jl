@@ -285,7 +285,7 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
         etaFix = - params.chargeNumbers[icc] / params.UT * (  ( (Ec - Ei) - params.SchottkyBarrier[bnode.region] ) / q  )
         eta    =   params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
 
-        f[icc] =  params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
+        f[icc] =   params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * (data.F[icc](eta) - data.F[icc](etaFix)  ))
 
     end
 
@@ -300,36 +300,49 @@ end
 
 """
 $(TYPEDSIGNATURES)
-Creates Schottky boundary conditions with additional lowering.
-Note that this code is still experimental and can only be used for an electric potential which is bend downwards.
+Creates Schottky boundary conditions with additional lowering which are modelled as
 
+`` \\psi = - \\phi_S/q  + \\sqrt{ -\\frac{ q  \\nabla_{\\boldsymbol{\\nu}} \\psi_\\mathrm{R}}{4\\pi \\varepsilon_\\mathrm{i}}} + U``,
+
+where `` \\psi_\\mathrm{R}`` denotes the electric potential with standard Schottky contacts and the same space charge density as `` \\psi`` and where ``\\varepsilon_\\mathrm{i}}}`` corresponds to the image force dielectric constant.
+
+To solve for this additional boundary conditions the projected gradient ``\\nabla_{\\boldsymbol{\\nu}} \\psi_\\mathrm{R} `` is stored within a boundary species and calculated in the method generic_operator!().
 """
 function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
 
-    params     = data.params
-    ibreg      = bnode.region
-    ipsi       = data.index_psi
+    params       = data.params
+    ipsi         = data.index_psi
+    iphin        = data.bulkRecombination.iphin
+    Ec           = params.bBandEdgeEnergy[iphin, bnode.region]
+    ipsiStandard = data.barrierLoweringInfo.ipsiStandard
+    ipsiGrad     = data.barrierLoweringInfo.ipsiGrad
 
-    for icc ∈ data.electricCarrierList       # Array{Int64, 1}
+    if data.calculationType == OutOfEquilibrium
+        for icc ∈ data.electricCarrierList       # Array{Int64, 1}
 
-        icc    = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+            icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used
 
-        get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
-        Ni     = data.tempDOS1[icc]
-        Ei     = data.tempBEE1[icc]
-        eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
+            get_DOS!(icc, bnode, data);  get_BEE!(icc, bnode, data)
+            Ni     = data.tempDOS1[icc]
+            Ei     = data.tempBEE1[icc]
+            eta    = params.chargeNumbers[icc] / params.UT * (  (u[icc]  - u[ipsi]) + Ei / q )
 
-        f[icc] =  data.λ1 * params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - data.params.bDensityEQ[icc, bnode.region]  )
+            f[icc] = params.chargeNumbers[icc] * q *  params.bVelocity[icc, bnode.region] * (  Ni  * data.F[icc](eta) - params.bDensityEQ[icc, bnode.region]  )
 
+        end
     end
 
-    barrier    = -  (u[ipsi]  - params.SchottkyBarrier[ibreg]/q - params.contactVoltageFunction[ibreg])
+    # function evaluation causes allocation!!!
+    Δu         = params.contactVoltage[bnode.region] + params.contactVoltageFunction[bnode.region](bnode.time)
 
-    if data.λ1 == 0.0
-        f[ipsi] = - (2.0)^50 * (4.0 * pi * params.dielectricConstant[bnode.cellregions[1]] * params.dielectricConstantImageForce[bnode.cellregions[1]])/q * (barrier)^2
+    if u[ipsiGrad] < 0
+        PsiS = sqrt( - q/(4 * pi * params.dielectricConstantImageForce[bnode.cellregions[1]]) * u[ipsiGrad]) #bnode.cellregions[1] ∈ iicc.regions    # bnode.cellregions = [bnode.region, 0] for outer boundary.
     else
-        f[ipsi] = - 1/data.λ1 * (4.0 * pi * params.dielectricConstant[bnode.cellregions[1]] * params.dielectricConstantImageForce[bnode.cellregions[1]])/q * (barrier)^2
+        PsiS = 0.0
     end
+
+    f[ipsiStandard] = 1/tiny_penalty_value * (u[ipsi]  + (params.SchottkyBarrier[bnode.region] - Ec)/q - PsiS - Δu)
+    f[ipsi]         = 1/tiny_penalty_value * (u[ipsiStandard] + (params.SchottkyBarrier[bnode.region] - Ec)/q        - Δu)
 
 end
 
@@ -367,6 +380,34 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceRecombination})
         icc = data.chargeCarrierList[icc]
         f[icc] =  q * params.chargeNumbers[icc] * kernelSRH *  excessDensTerm
     end
+
+
+end
+
+##########################################################
+##########################################################
+
+"""
+$(TYPEDSIGNATURES)
+Generic operator to save the projected gradient of electric potential
+(for system with standard Schotty contacts). Note that this currently
+only working in one dimension!
+
+"""
+function generic_operator!(f, u, fvmsys)
+
+    f                  .=0
+
+    coord               = fvmsys.grid[Coordinates]
+    n                   = length(coord)
+    barrierLoweringInfo = fvmsys.physics.data.barrierLoweringInfo
+    ipsiStandard        = barrierLoweringInfo.ipsiStandard
+    ipsiGrad            = barrierLoweringInfo.ipsiGrad
+
+    idx                 = barrierLoweringInfo.idx
+
+    f[idx[ipsiGrad, 1]] = u[idx[ipsiGrad, 1]] - (-1) * ( u[idx[ipsiStandard, 2]] - u[idx[ipsiStandard, 1]]   ) / (coord[2] - coord[1]  )
+    f[idx[ipsiGrad, n]] = u[idx[ipsiGrad, n]] -        ( u[idx[ipsiStandard, n]] - u[idx[ipsiStandard, n-1]] ) / (coord[n] - coord[n-1])
 
 
 end
@@ -423,8 +464,13 @@ Reaction in case of equilibrium, i.e. no generation and recombination is conside
 """
 function reaction!(f, u, node, data, ::Type{InEquilibrium})
 
+    ipsi = data.index_psi
     # RHS of Poisson
-    RHSPoisson!(f, u, node, data)
+    RHSPoisson!(f, u, node, data, ipsi)
+    if data.barrierLoweringInfo.BarrierLoweringOn == BarrierLoweringOn
+        ipsiStandard = data.barrierLoweringInfo.ipsiStandard
+        RHSPoisson!(f, u, node, data, ipsiStandard)
+    end
 
     # zero reaction term for all icc (stability purpose)
     for icc ∈ data.electricCarrierList # Array{Int64, 1}
@@ -570,9 +616,8 @@ $(TYPEDSIGNATURES)
 Function which builds right-hand side of Poisson equation, i.e. which builds
 the space charge density.
 """
-function RHSPoisson!(f, u, node, data)
+function RHSPoisson!(f, u, node, data, ipsi)
 
-    ipsi = data.index_psi
     ###########################################################
     ####         right-hand side of nonlinear Poisson      ####
     ####         equation (space charge density)           ####
@@ -660,7 +705,12 @@ that the electron index is 1 and the hole index is 2.
 """
 function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
 
-    RHSPoisson!(f, u, node, data)               # RHS of Poisson
+    ipsi = data.index_psi
+    RHSPoisson!(f, u, node, data, ipsi)               # RHS of Poisson
+    if data.barrierLoweringInfo.BarrierLoweringOn == BarrierLoweringOn # additional Poisson in case of Barrier Lowering
+        ipsiStandard = data.barrierLoweringInfo.ipsiStandard
+        RHSPoisson!(f, u, node, data, ipsiStandard)
+    end
 
     # First, set RHS to zero for all icc
     for icc ∈ eachindex(data.chargeCarrierList) # Array{Int61, 1}
@@ -805,6 +855,11 @@ function displacementFlux!(f, u, edge, data)
 
     dielConst   =   params.dielectricConstant[ireg]  + (paramsnodal.dielectricConstant[nodel] + paramsnodal.dielectricConstant[nodek])/2
     f[ipsi]     = - dielConst * dpsi
+
+    if data.barrierLoweringInfo.BarrierLoweringOn == BarrierLoweringOn # additional Poisson in case of Barrier Lowering
+        ipsiStandard    = data.barrierLoweringInfo.ipsiStandard
+        f[ipsiStandard] = - dielConst * (u[ipsiStandard, 2] - u[ipsiStandard, 1])
+    end
 
 end
 

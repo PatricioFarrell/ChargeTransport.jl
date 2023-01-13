@@ -12,7 +12,7 @@ using PyPlot
 
 ENV["VORONOIFVM_CHECK_ALLOCS"]="false"
 
-function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, barrierLowering = true)
 
     PyPlot.close("all")
     ################################################################################
@@ -94,10 +94,10 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     Area             = 2.1e-11 *  m^2                # Area of electrode
 
     # Scan protocol information
-    # endTime          = 9.6    * s
-    # amplitude        = 12.0   * V
-    endTime          = 1.0    * s
-    amplitude        = 1.0    * V
+    endTime          = 9.6    * s
+    amplitude        = 12.0   * V
+    # endTime          = 1.0    * s
+    # amplitude        = 1.0    * V
     scanrate         = 4*amplitude/endTime
 
     if test == false
@@ -118,8 +118,14 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
                                                               bulk_recomb_Auger = false,
                                                               bulk_recomb_radiative = false,
                                                               bulk_recomb_SRH = false)
-    data.boundaryType[bregionLeft]  = SchottkyContact
-    data.boundaryType[bregionRight] = SchottkyContact
+    if barrierLowering
+        data.boundaryType[bregionLeft]  = SchottkyBarrierLowering
+        data.boundaryType[bregionRight] = SchottkyBarrierLowering
+    else
+        data.boundaryType[bregionLeft]  = SchottkyContact
+        data.boundaryType[bregionRight] = SchottkyContact
+    end
+
     data.fluxApproximation         .= ExcessChemicalPotential
 
     enable_ionic_carrier!(data, ionicCarrier = iphix, regions = [regionflake])
@@ -205,7 +211,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     params.contactVoltageFunction[bregionRight]   = scanProtocol
 
     data.params                                   = params
-    ctsys                                         = System(grid, data, unknown_storage=unknown_storage)
+    ctsys                                         = System(grid, data, unknown_storage=:sparse)
 
     if test == false
         println("*** done\n")
@@ -341,8 +347,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 end #  main
 
 function test()
-    testval = 19849.917786040238
-    main(test = true) ≈ testval
+   main(test = true, barrierLowering = true) ≈ 32350.210962204783 #  main(test = true, barrierLowering = false) ≈ 19877.638250681746
 end
 
 

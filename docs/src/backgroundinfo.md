@@ -67,6 +67,8 @@ with the negative gradients of the quasi Fermi potentials as driving forces. Usi
 
     The unknowns in `ChargeTransport.jl` are always defined as the quasi Fermi potentials $ \varphi_\alpha$ and the electric potential $\psi$.
 
+## Boundary conditions
+Currently, ohmic contacts, Schottky contacts and Schottky barrier lowering boundary conditions are implemented. For further model information, please look closer to the types, constructors and methods section.
 
 ## Background literature
 
