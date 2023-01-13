@@ -351,9 +351,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"; label_BEE[iphia] = "\$E_a\$"
         label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
 
-        plot_energies(Plotter, grid, data, label_BEE)
+        plot_energies(Plotter, ctsys, label_BEE)
         Plotter.figure()
-        plot_doping(Plotter, grid, data, label_density)
+        plot_doping(Plotter, ctsys, label_density)
         Plotter.figure()
         println("*** done\n")
     end
@@ -392,11 +392,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     initialGuess .= solution
 
     if plotting
-        plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
+        plot_energies(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
+        plot_densities(Plotter, ctsys, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+        plot_solution(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
     if test == false
@@ -451,11 +451,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## res = [biasValues IV];
 
     if plotting
-        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
+        plot_energies(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
+        plot_densities(Plotter, ctsys, solution,"bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+        plot_solution(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
     testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution

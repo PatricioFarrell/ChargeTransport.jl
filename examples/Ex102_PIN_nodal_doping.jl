@@ -238,11 +238,11 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         label_solution, label_density, label_energy = set_plotting_labels(data)
 
         Plotter.figure()
-        plot_energies(Plotter,  grid, data, solution, "Equilibrium", label_energy)
+        plot_energies(Plotter,  ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Equilibrium", label_density)
+        plot_densities(Plotter, ctsys, solution, "Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter,  grid, data, solution, "Equilibrium", label_solution)
+        plot_solution(Plotter,  ctsys, solution, "Equilibrium", label_solution)
         Plotter.figure()
     end
 
@@ -284,11 +284,11 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
 
     if plotting # plot solution and IV curve
-        plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])",  label_energy)
+        plot_energies(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])",  label_energy)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])",  label_solution, plotGridpoints = true)
+        plot_solution(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])",  label_solution, plotGridpoints = true)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
+        plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
     end

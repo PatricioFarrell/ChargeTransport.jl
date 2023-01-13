@@ -38,9 +38,12 @@ One input parameter is the boolean plotGridpoints which makes it possible to plo
 which indicate where the nodes are located.
 
 """
-function plot_densities(Plotter, grid, data::Data, sol, title, label_density, ;plotGridpoints=false)
+function plot_densities(Plotter, ctsys, sol, title, label_density, ;plotGridpoints=false)
 
     Plotter.clf()
+
+    grid = ctsys.fvmsys.grid
+    data = ctsys.fvmsys.physics.data
 
     if dim_space(grid) > 1
         error("plot_densities is so far only tested in 1D")
@@ -129,16 +132,18 @@ One input parameter is the boolean plotGridpoints which makes it possible to plo
 which indicate where the nodes are located.
 
 """
-function plot_energies(Plotter, grid, data::Data, sol, title, label_energy, ;plotGridpoints=false)
+function plot_energies(Plotter, ctsys, sol, title, label_energy, ;plotGridpoints=false)
 
     Plotter.clf()
 
-    params         = data.params
-    paramsnodal    = data.paramsnodal
-    ipsi           = data.index_psi
-    cellnodes      = grid[CellNodes]
-    cellregions    = grid[CellRegions]
-    coord          = grid[Coordinates]
+    grid        = ctsys.fvmsys.grid
+    data        = ctsys.fvmsys.physics.data
+    params      = data.params
+    paramsnodal = data.paramsnodal
+    ipsi        = data.index_psi
+    cellnodes   = grid[CellNodes]
+    cellregions = grid[CellRegions]
+    coord       = grid[Coordinates]
 
     if length(coord[1]) != 1
         println("plotEnergies is so far only implemented in 1D")
@@ -206,8 +211,10 @@ With this method it is possible to depict the band-edge energies ``E_\\alpha ``.
 This can be useful for debugging when dealing with heterojunctions.
 
 """
-function plot_energies(Plotter, grid::ExtendableGrid, data::Data, label_BEE)
+function plot_energies(Plotter, ctsys, label_BEE)
 
+    grid        = ctsys.fvmsys.grid
+    data        = ctsys.fvmsys.physics.data
     params      = data.params
     paramsnodal = data.paramsnodal
 
@@ -278,8 +285,10 @@ Possibility to plot the considered doping. This is especially useful
 for making sure that the interior and the boundary doping agree.
 
 """
-function plot_doping(Plotter, g::ExtendableGrid, data::Data, label_density)
+function plot_doping(Plotter, ctsys, label_density)
 
+    g           = ctsys.fvmsys.grid
+    data        = ctsys.fvmsys.physics.data
     params      = data.params
     coord       = g[Coordinates]
     cellregions = g[CellRegions]
@@ -397,7 +406,10 @@ multidimensional plottings are not included.
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
 """
-function plot_solution(Plotter, grid, data::Data, solution, title, label_solution, ;plotGridpoints=false)
+function plot_solution(Plotter, ctsys, solution, title, label_solution, ;plotGridpoints=false)
+
+    grid = ctsys.fvmsys.grid
+    data = ctsys.fvmsys.physics.data
 
     if dim_space(grid) > 1
         error("plot_solution is so far only tested in 1D")

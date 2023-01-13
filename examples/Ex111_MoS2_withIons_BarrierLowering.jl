@@ -10,11 +10,8 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-ENV["VORONOIFVM_CHECK_ALLOCS"]="false"
-
 function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, barrierLowering = true)
 
-    PyPlot.close("all")
     ################################################################################
     if test == false
         println("Set up grid, regions and time mesh")
@@ -253,11 +250,11 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     label_density[iphix]   = "\$ n_X\$";       label_solution[iphix]  = "\$ \\varphi_x\$"
 
     if plotting
-        plot_densities(PyPlot, grid, data, solEQ,"Equilibrium", label_density)
-        PyPlot.legend()
-        PyPlot.figure()
-        plot_solution(PyPlot, grid, data, solEQ, "Equilibrium", label_solution)
-        PyPlot.figure()
+        plot_densities(Plotter, Plotter, solEQ,"Equilibrium", label_density)
+        Plotter.legend()
+        Plotter.figure()
+        plot_solution(Plotter, Plotter, solEQ, "Equilibrium", label_solution)
+        Plotter.figure()
     end
 
     if test == false
@@ -327,17 +324,17 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
 
     if plotting
-        PyPlot.figure()
-        PyPlot.plot(tvalues, biasValues, marker = "x")
-        PyPlot.xlabel("time [s]")
-        PyPlot.ylabel("voltage [V]")
-        PyPlot.grid()
+        Plotter.figure()
+        Plotter.plot(tvalues, biasValues, marker = "x")
+        Plotter.xlabel("time [s]")
+        Plotter.ylabel("voltage [V]")
+        Plotter.grid()
 
-        PyPlot.figure()
-        PyPlot.semilogy(biasValues, abs.(Area .* IV), linewidth = 5, color = "black")
-        PyPlot.grid()
-        PyPlot.xlabel("applied bias [V]")
-        PyPlot.ylabel("total current [A]")
+        Plotter.figure()
+        Plotter.semilogy(biasValues, abs.(Area .* IV), linewidth = 5, color = "black")
+        Plotter.grid()
+        Plotter.xlabel("applied bias [V]")
+        Plotter.ylabel("total current [A]")
     end
 
 

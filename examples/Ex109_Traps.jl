@@ -275,11 +275,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
         label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
 
-        plot_energies(Plotter, grid, data, solution, "Equilibrium", label_energy)
+        plot_energies(Plotter, ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"Equilibrium", label_density)
+        plot_densities(Plotter, ctsys, solution,"Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Equilibrium", label_solution)
+        plot_solution(Plotter, ctsys, solution, "Equilibrium", label_solution)
     end
 
     ################################################################################
@@ -363,11 +363,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## plot solution and IV curve
     if plotting
-        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_energy)
+        plot_energies(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_density)
+        plot_densities(Plotter, ctsys, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_solution)
+        plot_solution(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_solution)
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
     end

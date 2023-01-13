@@ -385,11 +385,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
 
-        plot_energies(Plotter,  grid, data, solution, "Equilibrium", label_energy)
+        plot_energies(Plotter,  ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Equilibrium", label_density)
+        plot_densities(Plotter, ctsys, solution, "Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter,  grid, data, solution, "Equilibrium", label_solution)
+        plot_solution(Plotter,  ctsys, solution, "Equilibrium", label_solution)
         Plotter.figure()
     end
 
@@ -427,11 +427,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## plotting
     if plotting
-        plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias", label_energy)
+        plot_energies(Plotter, ctsys, solution, "Applied voltage Δu = $maxBias", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias", label_density)
+        plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $maxBias", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias", label_solution)
+        plot_solution(Plotter, ctsys, solution, "Applied voltage Δu = $maxBias", label_solution)
     end
 
     if test == false

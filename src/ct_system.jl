@@ -1503,7 +1503,10 @@ the Poisson equation equal to zero and solving for ``\\psi``.
 The charge carriers may obey different statitics functions.
 Currently, this one is not well tested for the case of charge carriers beyond electrons and holes.
 """
-function electroNeutralSolution!(grid, data; Newton=false)
+function electroNeutralSolution!(ctsys; Newton=false)
+
+    grid            = ctsys.fvmsys.grid
+    data            = ctsys.fvmsys.physics.data
 
     params          = data.params
     paramsnodal     = data.paramsnodal

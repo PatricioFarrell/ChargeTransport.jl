@@ -244,10 +244,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## set legend for plotting routines. Either you can use the predefined labels or write your own.
         label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
 
-        psi0 = electroNeutralSolution!(grid, data)
-        plot_energies(Plotter, grid, data, label_BEE)
+        psi0 = electroNeutralSolution!(ctsys)
+        plot_energies(Plotter, ctsys, label_BEE)
         Plotter.figure()
-        plot_doping(Plotter, grid, data, label_density)
+        plot_doping(Plotter, ctsys, label_density)
         Plotter.figure()
         plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=true)
         Plotter.figure()
@@ -330,11 +330,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## plot solution and IV curve
     if plotting
-        plot_energies(Plotter, grid, data, solution,  "Applied voltage Δu = $(biasValues[end])", label_energy,   plotGridpoints = false)
+        plot_energies(Plotter, ctsys, solution,  "Applied voltage Δu = $(biasValues[end])", label_energy,   plotGridpoints = false)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution,  "Applied voltage Δu = $(biasValues[end])", label_solution, plotGridpoints = true)
+        plot_solution(Plotter, ctsys, solution,  "Applied voltage Δu = $(biasValues[end])", label_solution, plotGridpoints = true)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
+        plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV,  "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
     end
