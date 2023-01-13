@@ -254,7 +254,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         Plotter.legend()
         Plotter.figure()
         plot_solution(Plotter, ctsys, solEQ, "Equilibrium", label_solution)
-        Plotter.figure()
     end
 
     if test == false
