@@ -246,6 +246,17 @@ function breaction!(f, u, bnode, data, ::Type{OhmicContact})
 
     f[ipsi] = - data.λ1 * 1 / tiny_penalty_value *  q * f[ipsi]
 
+
+    # electrons and holes boundary condition
+    iphin    = data.bulkRecombination.iphin # integer index of φ_n
+    iphip    = data.bulkRecombination.iphip # integer index of φ_p
+
+    # function evaluation causes allocation!!!
+    Δu       = params.contactVoltage[bnode.region] + params.contactVoltageFunction[bnode.region](bnode.time)
+
+    boundary_dirichlet!(f, u, bnode, species = iphin, region=bnode.region, value=Δu)
+    boundary_dirichlet!(f, u, bnode, species = iphip, region=bnode.region, value=Δu)
+
 end
 
 """
@@ -273,7 +284,7 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
     paramsnodal = data.paramsnodal
     ipsi        = data.index_psi
     iphin       = data.bulkRecombination.iphin
-    Ec          =   params.bBandEdgeEnergy[iphin, bnode.region]
+    Ec          = params.bBandEdgeEnergy[iphin, bnode.region]
 
     for icc ∈ data.electricCarrierList       # Array{Int64, 1}
 
