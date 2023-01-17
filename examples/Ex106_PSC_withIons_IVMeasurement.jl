@@ -461,7 +461,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
-    println("*** done\n")
 
 end #  main
 
