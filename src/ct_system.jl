@@ -1,6 +1,5 @@
 ##########################################################
 ##########################################################
-
 """
 $(TYPEDEF)
 
@@ -1240,14 +1239,8 @@ end
 
 function __set_contact!(ctsys, ibreg, Δu, ::Type{OhmicContact})
 
-    iphin = ctsys.data.bulkRecombination.iphin
-    iphip = ctsys.data.bulkRecombination.iphip
-
-    iphin = ctsys.data.chargeCarrierList[iphin]
-    iphip = ctsys.data.chargeCarrierList[iphip]
-
-    boundary_dirichlet!(ctsys.fvmsys, iphin, ibreg, Δu)
-    boundary_dirichlet!(ctsys.fvmsys, iphip, ibreg, Δu)
+    ctsys.fvmsys.physics.data.params.contactVoltage[ibreg] = Δu
+    ctsys.data.params.contactVoltage[ibreg]                = Δu
 
 end
 
@@ -1490,6 +1483,26 @@ function compute_energies!(grid, data, sol)
 
     return energies, fermiLevel
 
+end
+
+
+###########################################################
+###########################################################
+
+"""
+
+$(SIGNATURES)
+
+For given bias vector and given IV vector this method calculates the open circuit voltage
+for solar cells under illumination.
+"""
+
+function compute_open_circuit_voltage(bias::Array{Float64, 1}, IV::Array{Float64, 1})
+
+    # http://juliamath.github.io/Interpolations.jl/latest/control/#Gridded-interpolation-1
+    interpolated_IV = Interpolations.interpolate((bias,), IV, Gridded(Linear()))
+
+    return find_zero(interpolated_IV, (bias[1], bias[end]))
 end
 
 

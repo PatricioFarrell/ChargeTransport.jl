@@ -4,6 +4,7 @@ authors = ["Dilara Abdel <dilara.abdel@wias-berlin.de>, Patricio Farrell <patric
 version = "0.2.0"
 
 [deps]
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 ExtendableGrids = "cfc395e8-590f-11e8-1f13-43a2532b2fa8"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -23,4 +24,5 @@ GridVisualize = "^0.6"
 PyPlot = "^2.0"
 Roots = "^2.0"
 VoronoiFVM = "^0.18"
+Interpolations = "^0.14.7"
 julia = "^1.6"

@@ -8,8 +8,7 @@ accumulation is limited by the Fermi-Dirac integral of order -1. The simulations
 out of equilibrium, time-dependent and with abrupt interfaces. A linear I-V measurement
 protocol is included and the corresponding solution vectors after the scan can be depicted.
 
-The parameters can be found in Table S.13, https://arxiv.org/abs/2009.04384. Or here:
-https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
+The parameters are the default parameters in IonMonger.
 =#
 
 module Ex108_PSC_BeerLambert_Generation
@@ -20,7 +19,7 @@ using ExtendableGrids
 using GridVisualize
 using PyPlot
 
-function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false)
+function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test = false)
 
     ################################################################################
     if test == false
@@ -28,63 +27,68 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     ## region numbers
-    regionDonor     = 1                           # n doped region
-    regionIntrinsic = 2                           # intrinsic region
-    regionAcceptor  = 3                           # p doped region
-    regions         = [regionDonor, regionIntrinsic, regionAcceptor]
-    numberOfRegions = length(regions)
+    regionDonor      = 1                           # n doped region
+    regionIntrinsic  = 2                           # intrinsic region
+    regionAcceptor   = 3                           # p doped region
+    regions          = [regionDonor, regionIntrinsic, regionAcceptor]
+    numberOfRegions  = length(regions)
 
     ## boundary region numbers
-    bregionDonor    = 1
-    bregionAcceptor = 2
+    bregionDonor     = 1
+    bregionAcceptor  = 2
+    bregionJunction1 = 3
+    bregionJunction2 = 4
 
     ## grid
-    h_ndoping       = 9.90e-6 * cm
-    h_intrinsic     = 4.00e-5 * cm + 2.0e-7 * cm
-    h_pdoping       = 1.99e-5 * cm
-    heightLayers    = [h_ndoping,
-                       h_ndoping + h_intrinsic,
-                       h_ndoping + h_intrinsic + h_pdoping]
+    h_ndoping        = 1.00e-5 * cm
+    h_intrinsic      = 4.00e-5 * cm
+    h_pdoping        = 2.00e-5 * cm
+    heightLayers     = [h_ndoping,
+                        h_ndoping + h_intrinsic,
+                        h_ndoping + h_intrinsic + h_pdoping]
 
-    x0              = 0.0 * cm
-    δ               = 4*n        # the larger, the finer the mesh
-    t               = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
-    k               = 1.5        # the closer to 1, the closer to the boundary geomspace
+    x0               = 0.0 * cm
+    δ                = 4*n        # the larger, the finer the mesh
+    t                = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
+    k                = 1.5        # the closer to 1, the closer to the boundary geomspace
 
-    coord_n_u       = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
-    coord_n_g       = geomspace(h_ndoping/2,
-                                h_ndoping,
-                                h_ndoping/(0.7*δ),
-                                h_ndoping/(1.1*δ),
-                                tol=t)
-    coord_i_g1      = geomspace(h_ndoping,
-                                h_ndoping+h_intrinsic/k,
-                                h_intrinsic/(2.8*δ),
-                                h_intrinsic/(2.1*δ),
-                                tol=t)
-    coord_i_g2      = geomspace(h_ndoping+h_intrinsic/k,
-                                h_ndoping+h_intrinsic,
-                                h_intrinsic/(2.1*δ),
-                                h_intrinsic/(2.8*δ),
-                                tol=t)
-    coord_p_g       = geomspace(h_ndoping+h_intrinsic,
-                                h_ndoping+h_intrinsic+h_pdoping/2,
-                                h_pdoping/(1.6*δ),
-                                h_pdoping/(1.6*δ),
-                                tol=t)
-    coord_p_u       = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(1.3*δ)))
+    coord_n_u        = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
+    coord_n_g        = geomspace(h_ndoping/2,
+                                 h_ndoping,
+                                 h_ndoping/(0.7*δ),
+                                 h_ndoping/(1.1*δ),
+                                 tol=t)
+    coord_i_g1       = geomspace(h_ndoping,
+                                 h_ndoping+h_intrinsic/k,
+                                 h_intrinsic/(2.8*δ),
+                                 h_intrinsic/(2.1*δ),
+                                 tol=t)
+    coord_i_g2       = geomspace(h_ndoping+h_intrinsic/k,
+                                 h_ndoping+h_intrinsic,
+                                 h_intrinsic/(2.1*δ),
+                                 h_intrinsic/(2.8*δ),
+                                 tol=t)
+    coord_p_g        = geomspace(h_ndoping+h_intrinsic,
+                                 h_ndoping+h_intrinsic+h_pdoping/2,
+                                 h_pdoping/(1.6*δ),
+                                 h_pdoping/(1.6*δ),
+                                 tol=t)
+    coord_p_u        = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(1.3*δ)))
 
-    coord           = glue(coord_n_u, coord_n_g,  tol=10*t)
-    coord           = glue(coord,     coord_i_g1, tol=10*t)
-    coord           = glue(coord,     coord_i_g2, tol=10*t)
-    coord           = glue(coord,     coord_p_g,  tol=10*t)
-    coord           = glue(coord,     coord_p_u,  tol=10*t)
-    grid            = ExtendableGrids.simplexgrid(coord)
+    coord            = glue(coord_n_u, coord_n_g,  tol=10*t)
+    coord            = glue(coord,     coord_i_g1, tol=10*t)
+    coord            = glue(coord,     coord_i_g2, tol=10*t)
+    coord            = glue(coord,     coord_p_g,  tol=10*t)
+    coord            = glue(coord,     coord_p_u,  tol=10*t)
+    grid             = ExtendableGrids.simplexgrid(coord)
 
     ## set different regions in grid, doping profiles do not intersect
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)     # n-doped region   = 1
     cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
     cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)  # p-doped region   = 3
+
+    bfacemask!(grid, [heightLayers[1]], [heightLayers[1]], bregionJunction1, tol = 1.0e-18)
+    bfacemask!(grid, [heightLayers[2]], [heightLayers[2]], bregionJunction2, tol = 1.0e-18)
 
     if plotting
         gridplot(grid, Plotter = Plotter)
@@ -196,7 +200,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     Auger              = 0.0
 
     ## generation
-    photonflux_i       = 1.4e21                / (m^2 * s)
+    photonflux_i       = 8.0e20                / (m^2 * s)
     absorption_i       = 1.3e7                 / m
     incidentPhotonFlux = [0.0, photonflux_i, 0.0]
     absorption         = [0.0, absorption_i, 0.0]
@@ -209,6 +213,12 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## contact voltage
     voltageAcceptor    = 1.2                   * V
+
+    ## primary data for I-V scan protocol
+    scanrate           = 0.4 * V/s
+    number_tsteps      = 101
+    endVoltage         = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend               = endVoltage/scanrate
 
     if test == false
         println("*** done\n")
@@ -309,6 +319,25 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bDoping[iphip, bregionAcceptor]              = Na
     params.bDoping[iphin, bregionDonor]                 = Nd
 
+    ## Define scan protocol function
+    function scanProtocol(t)
+
+        if    0.0 <= t  && t <= tend
+            biasVal = 0.0 + scanrate * t
+        elseif  t > tend  && t <= 2*tend
+            biasVal = scanrate * tend .+ scanrate * (tend - t)
+        else
+            biasVal = 0.0
+        end
+
+        return biasVal
+
+    end
+
+    # Apply zero voltage on left boundary and a linear scan protocol on right boundary
+    params.contactVoltageFunction[bregionDonor]         = zeroVoltage
+    params.contactVoltageFunction[bregionAcceptor]      = scanProtocol
+
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=:sparse)
 
@@ -331,6 +360,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.max_round         = 5
     control.damp_initial      = 0.5
     control.damp_growth       = 1.21 # >= 1
+    control.Δt_max            = 5.0e-2
+    if test == false
+        control.print_time    = true
+    end
 
     if test == false
         println("*** done\n")
@@ -349,6 +382,43 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     initialGuess .= solution
 
+    if test == false
+        println("*** done\n")
+    end
+
+    ################################################################################
+    if test == false
+        println("Loop for generation")
+    end
+    ################################################################################
+
+    ctsys.data.calculationType = OutOfEquilibrium
+    ctsys.data.λ2              = 0.0
+
+    # these values are needed for putting the generation slightly on
+    I      = collect(20:-1:0.0)
+    LAMBDA = 10 .^ (-I)
+
+    ## since the constant which represents the constant quasi Fermi potential of anion vacancies is undetermined, we need
+    ## to fix it in the bias loop, since we have no applied bias. Otherwise we get convergence errors
+    ctsys.fvmsys.boundary_factors[iphia, bregionJunction2] = VoronoiFVM.Dirichlet
+    ctsys.fvmsys.boundary_values[iphia, bregionJunction2]  = 0.0
+
+    for istep = 1:length(I)-1
+
+        ## turn slowly generation on
+        ctsys.data.λ2   = LAMBDA[istep + 1]
+
+        if test == false
+            println("increase generation with λ2 = $(data.λ2)")
+        end
+
+        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
+
+        initialGuess .= solution
+
+    end # generation loop
+
     if plotting
         label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
 
@@ -356,12 +426,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"; label_BEE[iphia] = "\$E_a\$"
         label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
 
-        plot_energies(Plotter, ctsys, solution, "Equilibrium", label_energy)
+        plot_densities(Plotter, ctsys, solution, "Initial condition", label_density)
+        Plotter.legend()
         Plotter.figure()
-        plot_densities(Plotter, ctsys, solution,"Equilibrium", label_density)
-        Plotter.figure()
-        plot_solution(Plotter, ctsys, solution, "Equilibrium", label_solution)
-        Plotter.figure()
+        plot_solution(Plotter, ctsys, solution, "Initial condition", label_solution)
     end
 
     if test == false
@@ -370,50 +438,23 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ################################################################################
     if test == false
-        println("Upward scan with increasing bias and generation")
+        println("IV Measurement loop")
     end
     ################################################################################
 
-    data.calculationType = OutOfEquilibrium
-    ## primary data for I-V scan protocol
-    scanrate      = 1.0 * V/s
-    number_tsteps = 21
-    endVoltage    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend          = endVoltage/scanrate
-    tvalues       = range(0, stop = tend, length = number_tsteps)
+    ## put here back the homogenous Neumann boundary conditions.
+    ctsys.fvmsys.boundary_factors[iphia, bregionJunction2] = 0.0
+    ctsys.fvmsys.boundary_values[iphia, bregionJunction2]  = 0.0
 
-    # these values are needed for putting the generation slightly on
-    I      = collect(length(tvalues):-1:0.0)
-    LAMBDA = 10 .^ (-I)
-
-    for istep = 2:number_tsteps
-
-        ## turn slowly generation on
-        data.λ2   = LAMBDA[istep + 1]
-
-        t  = tvalues[istep]       # Actual time
-        Δu = t * scanrate         # Applied voltage
-        Δt = t - tvalues[istep-1] # Time step size
-
-        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
-
-        if test == false
-            println("increase generation with λ2 = $(data.λ2)")
-            println("time value: t = $(t)")
-        end
-
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
-
-        initialGuess .= solution
-
-    end # time loop
+    sol = solve(ctsys, inival = initialGuess, times=(0.0, tend), control = control)
 
     if plotting
-        plot_energies(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(voltageAcceptor)", label_energy)
+
+        tsol = sol(tend)
+        plot_densities(Plotter, ctsys, tsol, "Densities at end time", label_density)
+        Plotter.legend()
         Plotter.figure()
-        plot_densities(Plotter, ctsys, solution,"bias \$\\Delta u\$ = $(voltageAcceptor)", label_density)
-        Plotter.figure()
-        plot_solution(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(voltageAcceptor)", label_solution)
+        plot_solution(Plotter, ctsys, tsol, "Solution at end time", label_solution)
     end
 
     if test == false
@@ -425,38 +466,108 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("Reverse scan protocol")
     end
     ################################################################################
-    ## for saving I-V data
-    IV            = zeros(0) # for IV values
-    biasValues    = zeros(0) # for bias values
 
-    for istep = number_tsteps:-1:2
+    initialGuessReverse = sol(tend)
 
-        t  = tvalues[istep]       # Actual time
-        Δu = t * scanrate         # Applied voltage
-        Δt = t - tvalues[istep-1] # Time step size
+    solReverse = solve(ctsys, inival = initialGuessReverse, times=(tend, 2 * tend), control = control)
 
-        set_contact!(ctsys, bregionAcceptor, Δu = Δu)
+    if test == false
+        println("*** done\n")
+    end
 
-        if test == false
-            println("applied voltage: Δu = $(Δu)")
+    ################################################################################
+    if test == false
+        println("IV Curve calculation")
+    end
+    ################################################################################
+
+    factory       = VoronoiFVM.TestFunctionFactory(ctsys)
+    tf            = testfunction(factory, [bregionDonor], [bregionAcceptor])
+
+    tvalues       = sol.t
+    number_tsteps = length(tvalues)
+    biasValues    = scanProtocol.(tvalues)
+    IV            = zeros(0)
+
+    for istep = 2:number_tsteps
+        Δt       = tvalues[istep] - tvalues[istep-1] # Time step size
+        inival   = sol[istep-1]
+        solution = sol[istep]
+
+        I        = integrate(ctsys, tf, solution, inival, Δt)
+
+        current = 0.0
+        for ii = 1:numberOfCarriers+1
+            current = current + I[ii]
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
-
-        ## get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
-
         push!(IV, current)
-        push!(biasValues, Δu)
 
-        initialGuess .= solution
+    end
 
-    end # time loop
+    tvaluesReverse       = solReverse.t
+    number_tstepsReverse = length(tvaluesReverse)
+    biasValuesReverse    = scanProtocol.(tvaluesReverse)
+    IVReverse            = zeros(0)
 
+    for istep = 2:number_tstepsReverse
+        Δt       = tvaluesReverse[istep] - tvaluesReverse[istep-1] # Time step size
+        inival   = solReverse[istep-1]
+        solution = solReverse[istep]
+
+        I        = integrate(ctsys, tf, solution, inival, Δt)
+
+        current = 0.0
+        for ii = 1:numberOfCarriers+1
+            current = current + I[ii]
+        end
+
+        push!(IVReverse, current)
+
+    end
 
     if plotting
         Plotter.figure()
-        plot_IV(Plotter, biasValues, -IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
+        Plotter.plot([tvalues tvaluesReverse], [biasValues biasValuesReverse], marker = "x")
+        Plotter.xlabel("time [s]")
+        Plotter.ylabel("voltage [V]")
+        Plotter.grid()
+
+        Plotter.figure()
+        Plotter.plot(biasValues[2:end], -IV, linewidth = 5, label = "forward")
+        Plotter.plot(biasValuesReverse[2:end], -IVReverse, linewidth = 5, label = "reverse")
+        Plotter.grid()
+        PyPlot.legend()
+        Plotter.xlabel("applied bias [V]")
+        Plotter.ylabel("total current [A]")
+    end
+
+    if test == false
+        println("*** done\n")
+    end
+
+    ################################################################################
+    if test == false
+        println("Compute fill factor and efficiency")
+    end
+    ################################################################################
+
+    bias                      = biasValues[2:end]
+    IV                        = -IV
+
+    powerDensity              = bias .* (IV)           # power density function
+    MaxPD, indexPD            = findmax(powerDensity)
+
+    open_circuit              = compute_open_circuit_voltage(bias, IV)
+
+    IncidentLightPowerDensity = 1000.0 * W/m^2
+
+    efficiency                =  bias[indexPD] * IV[indexPD]  / IncidentLightPowerDensity
+    fillfactor                = (bias[indexPD] * IV[indexPD]) / (IV[1] * open_circuit)
+
+    if test == false
+        println("The fill factor is $fillfactor.")
+        println("The efficiency  is $efficiency%.")
     end
 
     if test == false
@@ -466,12 +577,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
-    println("*** done\n")
-
 end #  main
 
 function test()
-    testval = -1.0893186658197205
+    testval = -1.0976590711344825
     main(test = true) ≈ testval
 end
 

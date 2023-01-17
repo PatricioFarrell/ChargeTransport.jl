@@ -5,6 +5,7 @@ using ExtendableGrids
 using Printf
 using DocStringExtensions
 using SparseArrays
+using Interpolations
 using Roots
 
 
@@ -15,7 +16,7 @@ export kB, Planck_constant, mₑ, q, ε0
 
 include("ct_units.jl")
 
-export K, J, A, V, m, s, C, kg, Hz, kHz
+export K, J, A, V, m, s, C, kg, Hz, kHz, W, kW
 export cm, mm, μm, nm, ms, μs, ns, ps, eV
 export tiny_penalty_value
 ##################################################################
@@ -68,7 +69,9 @@ export enable_ionic_carrier!, enable_trap_carrier!
 
 export equilibrium_solve!
 export set_contact!
-export compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
+export compute_densities!, compute_energies!
+export compute_open_circuit_voltage
+export electroNeutralSolution!, print_jacobi
 export show_params, trap_density!
 export get_current_val, charge_density
 
