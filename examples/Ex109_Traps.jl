@@ -7,10 +7,8 @@ Simulating transient charge transport in a GaAs p-i-n diode with an electron tra
 
 module Ex109_Traps
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 ## function to initialize the grid for a possble extension to other p-i-n devices.

@@ -13,10 +13,8 @@ https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/
 
 module Ex103_PSC
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)

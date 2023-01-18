@@ -1055,23 +1055,23 @@ function build_system(grid, data, unknown_storage, ::Type{ContQF})
 
     # electrons and holes
     for icc ∈ data.electricCarrierList
-        enable_species!(ctsys.fvmsys, icc, 1:data.params.numberOfRegions)
+        enable_species!(ctsys, icc, 1:data.params.numberOfRegions)
     end
 
     # if ionic carriers are present
     for icc ∈ data.ionicCarrierList
-        enable_species!(ctsys.fvmsys, icc.ionicCarrier, icc.regions)
+        enable_species!(ctsys, icc.ionicCarrier, icc.regions)
     end
 
     # if trap carriers are present
     for icc ∈ data.trapCarrierList
-        enable_species!(ctsys.fvmsys, icc.trapCarrier, icc.regions)
+        enable_species!(ctsys, icc.trapCarrier, icc.regions)
     end
 
     # we need no loop for interface carriers, since in this case there are not present.
 
     # enable lastly the electric potential on whole domain
-    enable_species!(ctsys.fvmsys, data.index_psi, 1:data.params.numberOfRegions)
+    enable_species!(ctsys, data.index_psi, 1:data.params.numberOfRegions)
 
     # add here additional electric potential and boundary species in case of Schottky
     # barrier lowering conditions
@@ -1081,8 +1081,8 @@ function build_system(grid, data, unknown_storage, ::Type{ContQF})
         data.barrierLoweringInfo.ipsiGrad     = data.index_psi + 2
         data.barrierLoweringInfo.breg         = boundaryReg
 
-        enable_species!(         ctsys.fvmsys, data.barrierLoweringInfo.ipsiStandard, 1:data.params.numberOfRegions)
-        enable_boundary_species!(ctsys.fvmsys, data.barrierLoweringInfo.ipsiGrad,     boundaryReg)
+        enable_species!(         ctsys, data.barrierLoweringInfo.ipsiStandard, 1:data.params.numberOfRegions)
+        enable_boundary_species!(ctsys, data.barrierLoweringInfo.ipsiGrad,     boundaryReg)
 
         # for detection of number of species
         VoronoiFVM.increase_num_species!(ctsys.fvmsys, num_species_sys)
@@ -1144,13 +1144,13 @@ function build_system(grid, data, unknown_storage, ::Type{DiscontQF})
     #########################################
     # if ionic carriers are present
     for icc ∈ data.ionicCarrierList
-        enable_species!(ctsys.fvmsys, icc.ionicCarrier, icc.regions)
+        enable_species!(ctsys, icc.ionicCarrier, icc.regions)
     end
 
     #########################################
     # if trap carriers are present
     for icc ∈ data.trapCarrierList
-        enable_species!(ctsys.fvmsys, icc.trapCarrier, icc.regions)
+        enable_species!(ctsys, icc.trapCarrier, icc.regions)
     end
 
     #########################################
@@ -1248,21 +1248,30 @@ end
 ###########################################################
 # Wrappers for methods of VoronoiFVM
 
-VoronoiFVM.enable_species!(ctsys::System, ispecies, regions)                    = VoronoiFVM.enable_species!(ctsys.fvmsys, ispecies, regions)
+enable_species!(ctsys::System, ispecies, regions)                    = VoronoiFVM.enable_species!(ctsys.fvmsys, ispecies, regions)
+enable_boundary_species!(ctsys::System, ispecies, regions)           = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
 
-VoronoiFVM.enable_boundary_species!(ctsys::System, ispecies, regions)           = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
+unknowns(ctsys::System)                                              = VoronoiFVM.unknowns(ctsys.fvmsys)
+NewtonControl()                                                      = VoronoiFVM.NewtonControl()
 
-VoronoiFVM.unknowns(ctsys::System)                                              = VoronoiFVM.unknowns(ctsys.fvmsys)
+solve!(solution, initialGuess, ctsys, ;control=control, tstep=tstep) = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
+solve(ctsys::System; kwargs...)                                      = VoronoiFVM.solve(ctsys.fvmsys; kwargs...)
 
-VoronoiFVM.TestFunctionFactory(ctsys::System)                                   = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
-VoronoiFVM.integrate(ctsys::System, tf, solution, inival, Δt)                   = VoronoiFVM.integrate(ctsys.fvmsys, tf, solution, inival, Δt)
-
-VoronoiFVM.solve!(solution, initialGuess, ctsys, ;control=control, tstep=tstep) = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
-
-VoronoiFVM.solve(ctsys::System; kwargs...)                                      = VoronoiFVM.solve(ctsys.fvmsys; kwargs...)
+TestFunctionFactory(ctsys::System)                                   = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+integrate(ctsys::System, tf, solution, inival, Δt)                   = VoronoiFVM.integrate(ctsys.fvmsys, tf, solution, inival, Δt)
+integrate(ctsys::System, tf, solution)                               = VoronoiFVM.integrate(ctsys.fvmsys, tf, solution)
+testfunction(factory::VoronoiFVM.TestFunctionFactory, bc0, bc1)      = VoronoiFVM.testfunction(factory::VoronoiFVM.TestFunctionFactory, bc0, bc1)
 
 ###########################################################
 ###########################################################
+
+# Wrappers for GridVisualize
+
+gridplot(grid::ExtendableGrid; Plotter, kwargs...)                   = GridVisualize.gridplot(grid::ExtendableGrid; Plotter, kwargs...)
+
+###########################################################
+###########################################################
+
 """
 $(TYPEDSIGNATURES)
 
@@ -1298,7 +1307,7 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
         end
         ctsys.fvmsys.physics.data.λ1 = LAMBDA[i]
         try
-            VoronoiFVM.solve!(sol, inival, ctsys, control = control, tstep=Inf)
+            solve!(sol, inival, ctsys, control = control, tstep=Inf)
         catch
             if (control.handle_exceptions)
                 error("try to adjust nonlinear_steps, currently set to $(nonlinear_steps) or adjust Newton control parameters.")
@@ -1345,7 +1354,7 @@ function get_current_val(ctsys, U, Uold, Δt) # DA: But caution, still need some
 
     # left outer boundary = 1; right outer boundary = 2 (caution with order)
     tf     = testfunction(factory, [1], [2])
-    I      = integrate(ctsys.fvmsys, tf, U, Uold, Δt)
+    I      = integrate(ctsys, tf, U, Uold, Δt)
 
     current = 0.0
     for ii in eachindex(I)
@@ -1368,7 +1377,7 @@ function get_current_val(ctsys, U)
 
     # left outer boundary = 1; right outer boundary = 2 (caution with order)
     tf     = testfunction(factory, [1], [2])
-    I      = integrate(ctsys.fvmsys, tf, U)
+    I      = VoronoiFVM.integrate(ctsys.fvmsys, tf, U)
 
     current = 0.0
     for ii in eachindex(I)
@@ -1584,7 +1593,7 @@ $(TYPEDSIGNATURES)
 Compute the charge density for each region separately.
 """
 function charge_density(ctsys, sol)
-    integrate(ctsys.fvmsys,reaction!,sol)[ctsys.data.index_psi,:]
+    VoronoiFVM.integrate(ctsys.fvmsys,reaction!,sol)[ctsys.data.index_psi,:]
 end
 
 

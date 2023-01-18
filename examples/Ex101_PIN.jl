@@ -10,12 +10,9 @@ The simulations are performed out of equilibrium and for the stationary problem.
 
 module Ex101_PIN
 
-using VoronoiFVM       # PDE solver with a FVM spatial discretization
 using ChargeTransport  # drift-diffusion solver
 using ExtendableGrids  # grid initializer
-using GridVisualize    # grid visualizer
 using PyPlot           # solution visualizer
-
 
 ## This function is used to initialize the grid for a possible extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
@@ -228,7 +225,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
     if test == false
-        ## Here we cn show region dependent physical parameters. show_params() only supports
+        ## Here we can show region dependent physical parameters. show_params() only supports
         ## region dependent parameters, but, if one wishes to print nodal dependent parameters,
         ## currently this is possible with println(ctsys.data.paramsnodal). We neglected here,
         ## since in most applications where the numberOfNodes is >> 10 this would results in a

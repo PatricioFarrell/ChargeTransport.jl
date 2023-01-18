@@ -13,10 +13,8 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 
 module Ex110_PSC_surface_recombination
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
@@ -356,7 +354,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    control                   = VoronoiFVM.NewtonControl()
+    control                   = NewtonControl()
     control.verbose           = verbose
     control.max_iterations    = 300
     control.tol_absolute      = 1.0e-10

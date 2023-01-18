@@ -9,10 +9,8 @@ the stationary problem. A special feature here is that the doping is node-depend
 
 module Ex102_PIN_nodal_doping
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
@@ -272,11 +270,11 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         initialGuess .= solution
 
         ## get IV curve
-        factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+        factory = TestFunctionFactory(ctsys)
 
         ## testfunction zero in bregionAcceptor and one in bregionDonor
-        tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])
-        I      = integrate(ctsys.fvmsys, tf, solution)
+        tf      = testfunction(factory, [bregionAcceptor], [bregionDonor])
+        I       = integrate(ctsys, tf, solution)
 
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 

@@ -1,12 +1,13 @@
 module ChargeTransport
 
-using VoronoiFVM
-using ExtendableGrids
-using Printf
-using DocStringExtensions
-using SparseArrays
-using Interpolations
-using Roots
+using VoronoiFVM          # PDE solver with a FVM spatial discretization
+using ExtendableGrids     # grid initializer
+using GridVisualize       # visualizer wrapper
+using Printf              # printing
+using DocStringExtensions # for documentation
+using SparseArrays        # for generating sparse arrays
+using Interpolations      # for interpolation of data
+using Roots               # for finding zeros
 
 
 include("ct_constants.jl")
@@ -68,6 +69,13 @@ export BulkRecombination, set_bulk_recombination
 export enable_ionic_carrier!, enable_trap_carrier!
 
 export equilibrium_solve!
+export enable_species!, enable_boundary_species!
+export solve, solve!
+export unknowns, NewtonControl
+export TestFunctionFactory, integrate, testfunction
+
+export gridplot
+
 export set_contact!
 export compute_densities!, compute_energies!
 export compute_open_circuit_voltage

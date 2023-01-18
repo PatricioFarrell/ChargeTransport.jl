@@ -14,10 +14,8 @@ https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/
 
 module Ex104_PSC_gradedFlux_Schottky_contacts
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 ## function for grading the physical parameters

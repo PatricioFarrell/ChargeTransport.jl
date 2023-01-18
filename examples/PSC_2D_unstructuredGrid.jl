@@ -14,7 +14,6 @@ ENV["LC_NUMERIC"]="C" # put this in to work with Triangulate.jl, which is origin
 
 module PSC_2D_unstructuredGrid
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
 using GridVisualize
@@ -331,7 +330,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
     end
     ################################################################################
 
-    control                   = VoronoiFVM.NewtonControl()
+    control                   = NewtonControl()
     control.verbose           = verbose
     control.max_iterations    = 300
     control.tol_absolute      = 1.0e-10

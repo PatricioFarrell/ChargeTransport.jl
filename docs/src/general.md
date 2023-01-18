@@ -30,13 +30,6 @@ julia> using Pkg
 julia> Pkg.add("ChargeTransport")
 ```
 
-
-The following packages need to be loaded
-
-```julia
-julia> using ChargeTransport
-julia> using VoronoiFVM      # nonlinear PDE solver
-julia> using ExtendableGrids # grid package
 ```
 We recommend to have a look at the example files:
 

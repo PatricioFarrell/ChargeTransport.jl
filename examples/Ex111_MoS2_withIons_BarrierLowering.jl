@@ -4,10 +4,8 @@ Memristor simulation with additional moving ions and Schottky barrier lowering a
 
 module Ex111_MoS2_withIons_BarrierLowering
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, barrierLowering = true)
@@ -220,15 +218,15 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    control                = VoronoiFVM.NewtonControl()
+    control                = NewtonControl()
     control.verbose        = verbose
 
-    control.damp_initial      = 0.9
-    control.damp_growth       = 1.61 # >= 1
-    control.max_round         = 20
-    control.tol_absolute      = 1.0e-9
-    control.tol_relative      = 1.0e-9
-    control.tol_round         = 1.0e-9
+    control.damp_initial   = 0.9
+    control.damp_growth    = 1.61 # >= 1
+    control.max_round      = 20
+    control.tol_absolute   = 1.0e-9
+    control.tol_relative   = 1.0e-9
+    control.tol_round      = 1.0e-9
 
     if test == false
         println("*** done\n")
@@ -301,7 +299,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     biasValues = scanProtocol.(tvalues)
 
-    factory = VoronoiFVM.TestFunctionFactory(ctsys)
+    factory = TestFunctionFactory(ctsys)
     tf      = testfunction(factory, [bregionLeft], [bregionRight])
 
     push!(IV, 0.0)

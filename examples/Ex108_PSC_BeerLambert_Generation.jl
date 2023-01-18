@@ -13,10 +13,8 @@ The parameters are the default parameters in IonMonger.
 
 module Ex108_PSC_BeerLambert_Generation
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test = false)
@@ -401,7 +399,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## since the constant which represents the constant quasi Fermi potential of anion vacancies is undetermined, we need
     ## to fix it in the bias loop, since we have no applied bias. Otherwise we get convergence errors
-    ctsys.fvmsys.boundary_factors[iphia, bregionJunction2] = VoronoiFVM.Dirichlet
+    ctsys.fvmsys.boundary_factors[iphia, bregionJunction2] = 1.0e30
     ctsys.fvmsys.boundary_values[iphia, bregionJunction2]  = 0.0
 
     for istep = 1:length(I)-1
@@ -481,7 +479,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    factory       = VoronoiFVM.TestFunctionFactory(ctsys)
+    factory       = TestFunctionFactory(ctsys)
     tf            = testfunction(factory, [bregionDonor], [bregionAcceptor])
 
     tvalues       = sol.t
