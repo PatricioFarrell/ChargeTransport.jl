@@ -252,7 +252,7 @@ function breaction!(f, u, bnode, data, ::Type{OhmicContact})
     iphip    = data.bulkRecombination.iphip # integer index of φ_p
 
     # function evaluation causes allocation!!!
-    Δu       = params.contactVoltage[bnode.region] + params.contactVoltageFunction[bnode.region](bnode.time)
+    Δu       = params.contactVoltage[bnode.region] + data.contactVoltageFunction[bnode.region](bnode.time)
 
     boundary_dirichlet!(f, u, bnode, species = iphin, region=bnode.region, value=Δu)
     boundary_dirichlet!(f, u, bnode, species = iphip, region=bnode.region, value=Δu)
@@ -301,7 +301,7 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
     end
 
     # function evaluation causes allocation!!!
-    Δu         = params.contactVoltage[bnode.region] + params.contactVoltageFunction[bnode.region](bnode.time)
+    Δu         = params.contactVoltage[bnode.region] + data.contactVoltageFunction[bnode.region](bnode.time)
 
     ipsiIndex  = length(data.chargeCarrierList) + 1 # This is necessary, since passing something other than an Integer in boundary_dirichlet!() causes allocations
     boundary_dirichlet!(f, u, bnode, species=ipsiIndex, region=bnode.region, value=(- (params.SchottkyBarrier[bnode.region]  - Ec)/q) + Δu)
@@ -344,7 +344,7 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyBarrierLowering})
     end
 
     # function evaluation causes allocation!!!
-    Δu         = params.contactVoltage[bnode.region] + params.contactVoltageFunction[bnode.region](bnode.time)
+    Δu         = params.contactVoltage[bnode.region] + data.contactVoltageFunction[bnode.region](bnode.time)
 
     if u[ipsiGrad] < 0
         PsiS = sqrt( - q/(4 * pi * params.dielectricConstantImageForce[bnode.cellregions[1]]) * u[ipsiGrad]) #bnode.cellregions[1] ∈ iicc.regions    # bnode.cellregions = [bnode.region, 0] for outer boundary.

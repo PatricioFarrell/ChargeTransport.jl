@@ -198,24 +198,24 @@ mutable struct BarrierLoweringSpecies
     """
     Index of additional electric potential for the case with standard Schottky contacts.
     """
-    ipsiStandard       ::  QType
+    ipsiStandard       :: QType
 
     """
     Additional species, where the projected gradient of the electric potential without
     Schottky barrier lowering is stored.
     """
-    ipsiGrad           ::  QType
+    ipsiGrad           :: QType
 
     """
     Boundary region numbers, where Schottky barrier lowering boundary conditions are defined.
     """
-    breg               ::  Array{Int64, 1}
+    breg               :: Array{Int64, 1}
 
     """
     This quantity is needed to define the generic operator.
     """
 
-    idx                ::  Union{VoronoiFVM.SparseSolutionIndices, LinearIndices{2, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}}}
+    idx                :: Union{VoronoiFVM.SparseSolutionIndices, LinearIndices{2, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}}}
 
     BarrierLoweringSpecies() = new()
 
@@ -315,11 +315,6 @@ mutable struct Params
     """
     contactVoltage               ::  Array{Float64, 1}
 
-    """
-    An array containing predefined functions for the applied bias in dependance of time
-    at each outer boundary.
-    """
-    contactVoltageFunction       ::  Array{Function, 1}
     ###############################################################
     ####                  number of carriers                   ####
     ###############################################################
@@ -543,7 +538,7 @@ but also all physical parameters for a drift-diffusion simulation of a semicondu
 $(TYPEDFIELDS)
 
 """
-mutable struct Data{TFuncs<:Function}
+mutable struct Data{TFuncs<:Function, TContVol<:Function}
 
     ###############################################################
     ####                   model information                   ####
@@ -565,6 +560,12 @@ mutable struct Data{TFuncs<:Function}
     (interior and exterior).
     """
     boundaryType                 ::  Array{BoundaryModelType, 1}
+
+    """
+    An array containing predefined functions for the applied bias in dependance of time
+    at each outer boundary.
+    """
+    contactVoltageFunction       ::  Array{TContVol, 1}
 
     """
     A struct containing information concerning the bulk recombination model.
@@ -700,7 +701,7 @@ mutable struct Data{TFuncs<:Function}
     paramsnodal                  :: ParamsNodal
 
     ###############################################################
-    Data{TFuncs}() where {TFuncs} = new()
+    Data{TFuncs, TContVol}() where {TFuncs, TContVol} = new()
 
 end
 
@@ -774,7 +775,6 @@ function Params(grid, numberOfCarriers)
     ###############################################################
     params.SchottkyBarrier              = spzeros(Float64, numberOfBoundaryRegions)
     params.contactVoltage               = spzeros(Float64, numberOfBoundaryRegions)
-    params.contactVoltageFunction       = Function[zeroVoltage for i = 1:numberOfBoundaryRegions]
 
     ###############################################################
     ####                  number of carriers                   ####
@@ -872,64 +872,72 @@ including the physical parameters, but also some numerical information
 are located.
 
 """
-function Data(grid, numberOfCarriers; statfunctions::Type{TFuncs}=StandardFuncSet) where TFuncs
+function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage, zeroVoltage], statfunctions::Type{TFuncs}=StandardFuncSet) where TFuncs
 
-    numberOfBoundaryRegions     = grid[NumBFaceRegions]
+    numberOfBoundaryRegions                    = grid[NumBFaceRegions]
 
     ###############################################################
-    data = Data{TFuncs}()
+    TypeContVol                                = Union{}
+
+    for ii in eachindex(contactVoltageFunction)
+        TypeContVol = Union{TypeContVol, typeof(contactVoltageFunction[ii])}
+    end
+
+    data                                       = Data{TFuncs, TypeContVol}()
 
     ###############################################################
     ####                   model information                   ####
     ###############################################################
 
-    data.F                      = TFuncs[ Boltzmann for i=1:numberOfCarriers]
-    data.qFModel                = ContQF
-    data.boundaryType           = BoundaryModelType[InterfaceNone for i = 1:numberOfBoundaryRegions]
+    data.F                                     = TFuncs[ Boltzmann for i=1:numberOfCarriers]
+    data.qFModel                               = ContQF
+    data.boundaryType                          = BoundaryModelType[InterfaceNone for i = 1:numberOfBoundaryRegions]
+    data.contactVoltageFunction                = contactVoltageFunction
 
     # bulkRecombination is a struct holding the input information
-    data.bulkRecombination      = set_bulk_recombination(iphin = 1, iphip = 2, bulk_recomb_Auger = true,
-                                                         bulk_recomb_radiative = true,
-                                                         bulk_recomb_SRH = true)
+    data.bulkRecombination                     = set_bulk_recombination(iphin = 1, iphip = 2,
+                                                                        bulk_recomb_Auger = true,
+                                                                        bulk_recomb_radiative = true,
+                                                                        bulk_recomb_SRH = true)
 
     ###############################################################
     ####        Information on present charge carriers         ####
     ###############################################################
     # default values for most simple case
-    data.isContinuous         = Bool[true for ii = 1:numberOfCarriers]
-    data.chargeCarrierList    = QType[ii  for ii = 1:numberOfCarriers]
-    data.electricCarrierList  = Int64[ii for ii = 1:2]                       # electrons and holes
-    data.ionicCarrierList     = IonicCarrier[]
-    data.trapCarrierList      = TrapCarrier[]
-    data.index_psi            = numberOfCarriers + 1
-    data.barrierLoweringInfo  = BarrierLoweringSpecies()
+    data.isContinuous                          = Bool[true for ii = 1:numberOfCarriers]
+    data.chargeCarrierList                     = QType[ii  for ii = 1:numberOfCarriers]
+    data.electricCarrierList                   = Int64[ii for ii = 1:2]                       # electrons and holes
+    data.ionicCarrierList                      = IonicCarrier[]
+    data.trapCarrierList                       = TrapCarrier[]
+    data.index_psi                             = numberOfCarriers + 1
+    data.barrierLoweringInfo                   = BarrierLoweringSpecies()
     data.barrierLoweringInfo.BarrierLoweringOn = BarrierLoweringOff # set in general case barrier lowering off
 
     ###############################################################
     ####                 Numerics information                  ####
     ###############################################################
-    data.fluxApproximation    = FluxApproximationType[ScharfetterGummel for i = 1:numberOfCarriers]
-    data.calculationType      = InEquilibrium     # do performances InEquilibrium or OutOfEquilibrium
-    data.modelType            = Stationary        # indicates if we need additional time dependent part
-    data.generationModel      = GenerationNone    # generation model
-    data.λ1                   = 1.0               # λ1: embedding parameter for NLP
-    data.λ2                   = 1.0               # λ2: embedding parameter for G
-    data.λ3                   = 1.0               # λ3: embedding parameter for electro chemical reaction
+    data.fluxApproximation                     = FluxApproximationType[ScharfetterGummel for i = 1:numberOfCarriers]
+    data.calculationType                       = InEquilibrium     # do performances InEquilibrium or OutOfEquilibrium
+    data.modelType                             = Stationary        # indicates if we need additional time dependent part
+    data.generationModel                       = GenerationNone    # generation model
+    data.λ1                                    = 1.0               # λ1: embedding parameter for NLP
+    data.λ2                                    = 1.0               # λ2: embedding parameter for G
+    data.λ3                                    = 1.0               # λ3: embedding parameter for electro chemical reaction
 
     ###############################################################
     ####             Templates for DOS and BEE                 ####
     ###############################################################
 
-    data.tempBEE1             = spzeros(Float64, numberOfCarriers)
-    data.tempBEE2             = spzeros(Float64, numberOfCarriers)
-    data.tempDOS1             = spzeros(Float64, numberOfCarriers)
-    data.tempDOS2             = spzeros(Float64, numberOfCarriers)
+    data.tempBEE1                              = spzeros(Float64, numberOfCarriers)
+    data.tempBEE2                              = spzeros(Float64, numberOfCarriers)
+    data.tempDOS1                              = spzeros(Float64, numberOfCarriers)
+    data.tempDOS2                              = spzeros(Float64, numberOfCarriers)
 
     ###############################################################
     ####          Physical parameters as own structs           ####
     ###############################################################
-    data.params               = Params(grid, numberOfCarriers)
-    data.paramsnodal          = ParamsNodal(grid, numberOfCarriers)
+    data.params                                = Params(grid, numberOfCarriers)
+    data.paramsnodal                           = ParamsNodal(grid, numberOfCarriers)
 
     ###############################################################
 

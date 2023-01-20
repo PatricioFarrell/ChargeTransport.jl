@@ -218,6 +218,23 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     endVoltage         = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     tend               = endVoltage/scanrate
 
+    ## Define scan protocol function
+    function scanProtocol(t)
+
+        if    0.0 <= t  && t <= tend
+            biasVal = 0.0 + scanrate * t
+        elseif  t > tend  && t <= 2*tend
+            biasVal = scanrate * tend .+ scanrate * (tend - t)
+        else
+            biasVal = 0.0
+        end
+
+        return biasVal
+
+    end
+
+    contactVoltageFunction = [zeroVoltage, scanProtocol]
+
     if test == false
         println("*** done\n")
     end
@@ -228,7 +245,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## Initialize Data instance and fill in predefined data
-    data                               = Data(grid, numberOfCarriers)
+    data                               = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunction)
     data.modelType                     = Transient
     data.F                             = [Boltzmann, Boltzmann, FermiDiracMinusOne]
 
@@ -316,25 +333,6 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## boundary doping
     params.bDoping[iphip, bregionAcceptor]              = Na
     params.bDoping[iphin, bregionDonor]                 = Nd
-
-    ## Define scan protocol function
-    function scanProtocol(t)
-
-        if    0.0 <= t  && t <= tend
-            biasVal = 0.0 + scanrate * t
-        elseif  t > tend  && t <= 2*tend
-            biasVal = scanrate * tend .+ scanrate * (tend - t)
-        else
-            biasVal = 0.0
-        end
-
-        return biasVal
-
-    end
-
-    # Apply zero voltage on left boundary and a linear scan protocol on right boundary
-    params.contactVoltageFunction[bregionDonor]         = zeroVoltage
-    params.contactVoltageFunction[bregionAcceptor]      = scanProtocol
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=:sparse)

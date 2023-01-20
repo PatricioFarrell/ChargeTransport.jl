@@ -88,12 +88,13 @@ scanrate                 = 1.0 * V/s
 number_tsteps            = 31
 endVoltage               = voltageAcceptor # bias goes until the given voltage at acceptor boundary
 tend                     = endVoltage/scanrate
+```
 
+### Variant A: Solve the transient problem manually
+```julia
 ## with fixed timestep sizes we can calculate the times a priori
 tvalues                    = range(0, stop = tend, length = number_tsteps)
-```
-Solve the transient problem:
-```julia
+
 for istep = 2:number_tsteps
 
     t  = tvalues[istep]                  # current time
@@ -105,6 +106,32 @@ for istep = 2:number_tsteps
 
 end
 ```
+
+### Variant B: Use internal time stepping
+To make use of internal time stepping, the scan protocol need to be previously defined, e.g.
+
+```julia
+function linearScanProtocol(t)
+    if t == Inf
+        0.0
+    else
+        scanrate * t
+    end
+end
+
+## Apply zero voltage on left boundary and a linear scan protocol on right boundary
+contactVoltageFunction = [zeroVoltage, linearScanProtocol]
+```
+And then, need to be parsed into the data construction method
+```julia
+data = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunction)
+```
+This makes it possible to use the internal time solving method
+
+```julia
+sol = solve(ctsys, inival = initialGuess, times=(0.0, tend), control = control)
+```
+
 ## Example 3: Illumination
 Add uniform illumination to the previous code by setting
 

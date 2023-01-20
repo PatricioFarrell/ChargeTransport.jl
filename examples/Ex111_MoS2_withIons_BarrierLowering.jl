@@ -91,9 +91,27 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     # Scan protocol information
     endTime          = 9.6    * s
     amplitude        = 12.0   * V
-    # endTime          = 1.0    * s
-    # amplitude        = 1.0    * V
     scanrate         = 4*amplitude/endTime
+
+    ## Define scan protocol function
+    function scanProtocol(t)
+
+        if    0.0 <= t  && t <= endTime/4
+            biasVal = 0.0 + scanrate * t
+        elseif  t >= endTime/4  && t <= 3*endTime/4
+            biasVal = amplitude .- scanrate *(t-endTime/4)
+        elseif  t >= 3*endTime/4 && t <= endTime
+            biasVal = - amplitude .+ scanrate * (t-3*endTime/4)
+        else
+            biasVal = 0.0
+        end
+
+        return biasVal
+
+    end
+
+    # Apply zero voltage on left boundary and a linear scan protocol on right boundary
+    contactVoltageFunction = [zeroVoltage, scanProtocol]
 
     if test == false
         println("*** done\n")
@@ -106,7 +124,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ################################################################################
 
     ## Initialize Data instance and fill in predefined data
-    data                            = Data(grid, numberOfCarriers)
+    data                            = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunction)
     data.modelType                  = Transient
     data.F                          = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
     data.bulkRecombination          = set_bulk_recombination(;iphin = iphin, iphip = iphip,
@@ -183,27 +201,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ## boundary doping
     params.bDoping[iphin, bregionLeft]            = Nd
     params.bDoping[iphin, bregionRight]           = Nd
-
-    ## Define scan protocol function
-    function scanProtocol(t)
-
-        if    0.0 <= t  && t <= endTime/4
-            biasVal = 0.0 + scanrate * t
-        elseif  t >= endTime/4  && t <= 3*endTime/4
-            biasVal = amplitude .- scanrate *(t-endTime/4)
-        elseif  t >= 3*endTime/4 && t <= endTime
-            biasVal = - amplitude .+ scanrate * (t-3*endTime/4)
-        else
-            biasVal = 0.0
-        end
-
-        return biasVal
-
-    end
-
-    # Apply zero voltage on left boundary and a linear scan protocol on right boundary
-    params.contactVoltageFunction[bregionLeft]    = zeroVoltage
-    params.contactVoltageFunction[bregionRight]   = scanProtocol
 
     data.params                                   = params
     ctsys                                         = System(grid, data, unknown_storage=:sparse)

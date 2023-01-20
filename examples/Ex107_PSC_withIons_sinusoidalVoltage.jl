@@ -203,6 +203,18 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     amplitude        = 0.2                  * V
     endTime          = 1/frequence
 
+    ## Define sinusoidal applied voltage
+    function sinusoidalScanProtocol(t)
+        if t == Inf
+            0.0
+        else
+            amplitude * sin(2.0 * pi * frequence * t)
+        end
+    end
+
+    # Apply zero voltage on left boundary and a predefined scan protocol on right boundary
+    contactVoltageFunction = [sinusoidalScanProtocol, zeroVoltage]
+
     if test == false
         println("*** done\n")
     end
@@ -213,8 +225,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## Initialize Data instance and fill in predefined data
-    data                               = Data(grid, numberOfCarriers)
+    ## Initialize Data instance and fill in predefined data.
+    ## Currently, the way to go is to pass a contact voltage function exactly here.
+    data                               = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunction)
 
     ## Possible choices: Stationary, Transient
     data.modelType                     = Transient
@@ -311,19 +324,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bDoping[iphip, bregionAcceptor]              = Na
     params.bDoping[iphin, bregionDonor]                 = Nd
 
-    ## Define sinusoidal applied voltage
-    function sinusoidalScanProtocol(t)
-        if t == Inf
-            0.0
-        else
-            amplitude * sin(2.0 * pi * frequence * t)
-        end
-    end
-
-    # Apply zero voltage on left boundary and a predefined scan protocol on right boundary
-    params.contactVoltageFunction[bregionDonor]         = zeroVoltage
-    params.contactVoltageFunction[bregionAcceptor]      = sinusoidalScanProtocol
-
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
@@ -406,7 +406,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     for istep = 2:number_tsteps
 
         t  = tvalues[istep]                                    # Actual time
-        Δu = params.contactVoltageFunction[bregionAcceptor](t) # Applied voltage
+        Δu = data.contactVoltageFunction[bregionAcceptor](t) # Applied voltage
         Δt = t - tvalues[istep-1]                              # Time step size
 
         ## Apply new voltage (set non equilibrium boundary conditions)
@@ -432,7 +432,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("*** done\n")
     end
 
-    biasValues = params.contactVoltageFunction[bregionAcceptor].(tvalues)
+    biasValues = data.contactVoltageFunction[bregionAcceptor].(tvalues)
     ## here in res the biasValues and the corresponding current are stored.
     ## res = [biasValues IV];
 
