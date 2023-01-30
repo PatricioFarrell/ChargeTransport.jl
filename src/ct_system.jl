@@ -744,7 +744,7 @@ Simplified constructor for Params which only takes the grid and the numberOfCarr
 """
 function Params(grid, numberOfCarriers)
 
-    numberOfNodes           = size(grid[Coordinates], 2)
+    numberOfNodes           = num_nodes(grid)
     numberOfRegions         = grid[NumCellRegions]
     numberOfBoundaryRegions = grid[NumBFaceRegions]
     ###############################################################
