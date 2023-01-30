@@ -1,10 +1,8 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>PSC device with sinusoidal applied voltage (1D). · ChargeTransport.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../general/">ChargeTransport.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../general/">ChargeTransport.jl – Simulating charge transport in semiconductors</a></li><li><a class="tocitem" href="../../backgroundinfo/">Mathematical drift-diffusion models</a></li><li><span class="tocitem">How to get started</span><ul><li><a class="tocitem" href="../../GeneralInformation/">Code overview</a></li><li><a class="tocitem" href="../../GaAs/">van Roosbroeck system</a></li><li><a class="tocitem" href="../../PSC/">Perovskite solar cell</a></li></ul></li><li><a class="tocitem" href="../../allindex/">Types, Constructors and Methods</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../Ex101_PIN/">GaAs diode (1D).</a></li><li><a class="tocitem" href="../Ex102_PIN_nodal_doping/">GaAs diode with spatially varying doping (1D).</a></li><li><a class="tocitem" href="../Ex103_PSC/">PSC device without mobile ions (1D).</a></li><li><a class="tocitem" href="../Ex104_PSC_gradedFlux_Schottky_contacts/">PSC device with graded interfaces &amp; Schottky contacts (1D).</a></li><li><a class="tocitem" href="../Ex105_PSC_gradedFlux/">PSC device with graded interfaces &amp; Ohmic contacts (1D).</a></li><li><a class="tocitem" href="../Ex106_PSC_withIons_IVMeasurement/">PSC device with ions and linear I-V scan protocol (1D).</a></li><li class="is-active"><a class="tocitem" href>PSC device with sinusoidal applied voltage (1D).</a></li><li><a class="tocitem" href="../Ex108_PSC_BeerLambert_Generation/">PSC device with Beer-Lambert generation rate (1D).</a></li><li><a class="tocitem" href="../Ex108_PSC_uniform_Generation/">PSC device with uniform generation rate (1D).</a></li><li><a class="tocitem" href="../Ex109_Traps/">GaAs diode: transient with traps (1D).</a></li><li><a class="tocitem" href="../Ex110_PSC_surface_recombination/">PSC device with surface recombination (1D).</a></li><li><a class="tocitem" href="../Ex201_PSC_tensorGrid/">PSC device on 2D domain (Tensor grid).</a></li><li><a class="tocitem" href="../Grid_3D/">Example code for a 3D grid.</a></li><li><a class="tocitem" href="../Non_RectangularGrid_2D/">Example code for a 2D non rectangular grid.</a></li><li><a class="tocitem" href="../PSC_2D_unstructuredGrid/">PSC device on 2D domain (unstructured grid).</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>PSC device with sinusoidal applied voltage (1D).</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>PSC device with sinusoidal applied voltage (1D).</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/PatricioFarrell/ChargeTransport.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="PSC-device-with-sinusoidal-applied-voltage-(1D)."><a class="docs-heading-anchor" href="#PSC-device-with-sinusoidal-applied-voltage-(1D).">PSC device with sinusoidal applied voltage (1D).</a><a id="PSC-device-with-sinusoidal-applied-voltage-(1D).-1"></a><a class="docs-heading-anchor-permalink" href="#PSC-device-with-sinusoidal-applied-voltage-(1D)." title="Permalink"></a></h1><p>(<a href="https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx107_PSC_withIons_sinusoidalVoltage.jl">source code</a>)</p><p>Simulating a three layer PSC device Pedot| MAPI | PCBM. The simulations are performed out of equilibrium, time-dependent and with abrupt interfaces. A sinusoidal I-V measurement protocol is included and the corresponding solution vectors after the scan can be depicted.</p><p>The paramters are from Calado et al.: https://github.com/barnesgroupICL/Driftfusion/blob/master/Input<em>files/pedotpss</em>mapi_pcbm.csv. (with adjustments on layer lengths)</p><pre><code class="language-julia hljs">module Ex107_PSC_withIons_sinusoidalVoltage
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>PSC device with sinusoidal applied voltage (1D). · ChargeTransport.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../general/">ChargeTransport.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../general/">ChargeTransport.jl – Simulating charge transport in semiconductors</a></li><li><a class="tocitem" href="../../backgroundinfo/">Mathematical drift-diffusion models</a></li><li><span class="tocitem">How to get started</span><ul><li><a class="tocitem" href="../../GeneralInformation/">Code overview</a></li><li><a class="tocitem" href="../../GaAs/">van Roosbroeck system</a></li><li><a class="tocitem" href="../../PSC/">Perovskite solar cell</a></li></ul></li><li><a class="tocitem" href="../../allindex/">Types, Constructors and Methods</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../Ex101_PIN/">GaAs diode (1D).</a></li><li><a class="tocitem" href="../Ex102_PIN_nodal_doping/">GaAs diode with spatially varying doping (1D).</a></li><li><a class="tocitem" href="../Ex103_PSC/">PSC device without mobile ions (1D).</a></li><li><a class="tocitem" href="../Ex104_PSC_gradedFlux_Schottky_contacts/">PSC device with graded interfaces &amp; Schottky contacts (1D).</a></li><li><a class="tocitem" href="../Ex105_PSC_gradedFlux/">PSC device with graded interfaces &amp; Ohmic contacts (1D).</a></li><li><a class="tocitem" href="../Ex106_PSC_withIons_IVMeasurement/">PSC device with ions and linear I-V scan protocol (1D).</a></li><li class="is-active"><a class="tocitem" href>PSC device with sinusoidal applied voltage (1D).</a></li><li><a class="tocitem" href="../Ex108_PSC_BeerLambert_Generation/">PSC device with Beer-Lambert generation rate (1D).</a></li><li><a class="tocitem" href="../Ex108_PSC_uniform_Generation/">PSC device with uniform generation rate (1D).</a></li><li><a class="tocitem" href="../Ex109_Traps/">GaAs diode: transient with traps (1D).</a></li><li><a class="tocitem" href="../Ex110_PSC_surface_recombination/">PSC device with surface recombination (1D).</a></li><li><a class="tocitem" href="../Ex111_MoS2_withIons_BarrierLowering/">-</a></li><li><a class="tocitem" href="../Ex201_PSC_tensorGrid/">PSC device on 2D domain (Tensor grid).</a></li><li><a class="tocitem" href="../Grid_3D/">Example code for a 3D grid.</a></li><li><a class="tocitem" href="../Non_RectangularGrid_2D/">Example code for a 2D non rectangular grid.</a></li><li><a class="tocitem" href="../PSC_2D_unstructuredGrid/">PSC device on 2D domain (unstructured grid).</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>PSC device with sinusoidal applied voltage (1D).</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>PSC device with sinusoidal applied voltage (1D).</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/PatricioFarrell/ChargeTransport.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="PSC-device-with-sinusoidal-applied-voltage-(1D)."><a class="docs-heading-anchor" href="#PSC-device-with-sinusoidal-applied-voltage-(1D).">PSC device with sinusoidal applied voltage (1D).</a><a id="PSC-device-with-sinusoidal-applied-voltage-(1D).-1"></a><a class="docs-heading-anchor-permalink" href="#PSC-device-with-sinusoidal-applied-voltage-(1D)." title="Permalink"></a></h1><p>(<a href="https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx107_PSC_withIons_sinusoidalVoltage.jl">source code</a>)</p><p>Simulating a three layer PSC device Pedot| MAPI | PCBM. The simulations are performed out of equilibrium, time-dependent and with abrupt interfaces. A sinusoidal I-V measurement protocol is included and the corresponding solution vectors after the scan can be depicted.</p><p>The paramters are from Calado et al.: https://github.com/barnesgroupICL/Driftfusion/blob/master/Input<em>files/pedotpss</em>mapi_pcbm.csv. (with adjustments on layer lengths)</p><pre><code class="language-julia hljs">module Ex107_PSC_withIons_sinusoidalVoltage
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
@@ -188,6 +186,20 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     Na               = 4.529587947185444e18 / (cm^3)
     C0               = 1.0e18               / (cm^3)
 
+    # scan protocol parameter
+    frequence        = 10.0                 * Hz
+    amplitude        = 0.2                  * V
+    endTime          = 1/frequence
+
+    # Define sinusoidal applied voltage
+    function sinusoidalScanProtocol(t)
+        if t == Inf
+            0.0
+        else
+            amplitude * sin(2.0 * pi * frequence * t)
+        end
+    end</code></pre><p>Apply zero voltage on left boundary and a predefined scan protocol on right boundary</p><pre><code class="language-julia hljs">    contactVoltageFunction = [sinusoidalScanProtocol, zeroVoltage]
+
     if test == false
         println(&quot;*** done\n&quot;)
     end
@@ -198,8 +210,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # Initialize Data instance and fill in predefined data
-    data                               = Data(grid, numberOfCarriers)
+    # Initialize Data instance and fill in predefined data.
+    # Currently, the way to go is to pass a contact voltage function exactly here.
+    data                               = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunction)
 
     # Possible choices: Stationary, Transient
     data.modelType                     = Transient
@@ -213,13 +226,15 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
 
-    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    # InterfaceModelSurfaceReco (inner boundary).
+    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    # InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
-    # Present ionic vacancies in perovskite layer
-    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    # With this method, the user enable the ionic carrier parsed to ionicCarrier and gives
+    # gives the information on which regions this ionic carrier is defined.
+    # In this application ion vacancies only live in active perovskite layer.
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
@@ -301,28 +316,13 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         show_params(ctsys)
         println(&quot;*** done\n&quot;)
     end
-
-    ################################################################################
-    if test == false
-        println(&quot;Define outer boundary conditions&quot;)
-    end
-    ################################################################################
-
-    # set zero voltage ohmic contacts for electrons and holes at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println(&quot;*** done\n&quot;)
-    end
-
     ################################################################################
     if test == false
         println(&quot;Define control parameters for Newton solver&quot;)
     end
     ################################################################################
 
-    control                   = VoronoiFVM.NewtonControl()
+    control                   = NewtonControl()
     control.verbose           = verbose
     control.max_iterations    = 300
     control.tol_absolute      = 1.0e-8
@@ -358,11 +358,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphia] = &quot;\$E_a-q\\psi\$&quot;; label_energy[2, iphia] = &quot;\$ - q \\varphi_a\$&quot;
         label_density[iphia]   = &quot;a&quot;;              label_solution[iphia]  = &quot;\$ \\varphi_a\$&quot;
 
-        plot_energies(Plotter, grid, data, solution, &quot;Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_energy)
+        plot_energies(Plotter, ctsys, solution, &quot;Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,&quot;Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_density)
+        plot_densities(Plotter, ctsys, solution,&quot;Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, &quot;Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_solution)
+        plot_solution(Plotter, ctsys, solution, &quot;Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_solution)
     end
 
     if test == false
@@ -381,21 +381,18 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.damp_growth  = 1.61 # &gt;= 1
     control.max_round    = 7
 
-    # sinusoidal applied voltage
-    frequence            = 10.0 * Hz
-    amplitude            = 0.2 * V
     # time mesh
     number_tsteps        = 40
-    endTime              = 1/frequence
     tvalues              = range(0, stop = endTime, length = number_tsteps)
-    biasValues           = Float64[amplitude * sin(2.0 * pi * frequence * tvalues[i]) for i=1:number_tsteps]</code></pre><p>PyPlot.plot(tvalues, biasValues) return biasValues</p><pre><code class="language-julia hljs">    # for saving I-V data
+
+    # for saving I-V data
     IV                   = zeros(0) # for IV values
 
     for istep = 2:number_tsteps
 
-        t  = tvalues[istep]       # Actual time
-        Δu = biasValues[istep]    # Applied voltage
-        Δt = t - tvalues[istep-1] # Time step size
+        t  = tvalues[istep]                                    # Actual time
+        Δu = data.contactVoltageFunction[bregionAcceptor](t) # Applied voltage
+        Δt = t - tvalues[istep-1]                              # Time step size
 
         # Apply new voltage (set non equilibrium boundary conditions)
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
@@ -420,17 +417,18 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         println(&quot;*** done\n&quot;)
     end
 
+    biasValues = data.contactVoltageFunction[bregionAcceptor].(tvalues)
     # here in res the biasValues and the corresponding current are stored.
     # res = [biasValues IV];
 
     if plotting
-        plot_energies(Plotter, grid, data, solution, &quot;Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_energy)
+        plot_energies(Plotter, ctsys, solution, &quot;Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,&quot;Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_density)
+        plot_densities(Plotter, ctsys, solution,&quot;Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, &quot;Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_solution)
+        plot_solution(Plotter, ctsys, solution, &quot;Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, label_solution)
         Plotter.figure()
-        plot_IV(Plotter, biasValues,IV, &quot;Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, plotGridpoints = true)
+        plot_IV(Plotter, biasValues, IV, &quot;Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$&quot;, plotGridpoints = true)
     end
 
     testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
@@ -439,7 +437,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -1.1854681887433849
+    testval = -1.185468188743152
     main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
@@ -447,4 +445,4 @@ if test == false
     println(&quot;This message should show when this module is successfully recompiled.&quot;)
 end
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex106_PSC_withIons_IVMeasurement/">« PSC device with ions and linear I-V scan protocol (1D).</a><a class="docs-footer-nextpage" href="../Ex108_PSC_BeerLambert_Generation/">PSC device with Beer-Lambert generation rate (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Monday 5 December 2022 12:35">Monday 5 December 2022</span>. Using Julia version 1.8.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex106_PSC_withIons_IVMeasurement/">« PSC device with ions and linear I-V scan protocol (1D).</a><a class="docs-footer-nextpage" href="../Ex108_PSC_BeerLambert_Generation/">PSC device with Beer-Lambert generation rate (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 30 January 2023 16:33">Monday 30 January 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
