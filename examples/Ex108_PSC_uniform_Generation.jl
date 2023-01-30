@@ -14,10 +14,8 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 
 module Ex108_PSC_uniform_Generation
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
@@ -239,13 +237,13 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## Possible choices: GenerationNone, GenerationUniform
     data.generationModel               = GenerationUniform
 
-    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    ## InterfaceModelSurfaceReco (inner boundary).
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    ## InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
     ## Present ionic vacancies in perovskite layer
-    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
@@ -328,28 +326,13 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
         show_params(ctsys)
         println("*** done\n")
     end
-
-    ################################################################################
-    if test == false
-        println("Define outer boundary conditions")
-    end
-    ################################################################################
-
-    ## set zero voltage ohmic contacts for electrons and holes at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-
     ################################################################################
     if test == false
         println("Define control parameters for Newton solver")
     end
     ################################################################################
 
-    control                   = VoronoiFVM.NewtonControl()
+    control                   = NewtonControl()
     control.verbose           = verbose
     control.max_iterations    = 300
     control.tol_absolute      = 1.0e-10
@@ -385,11 +368,11 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"
         label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
 
-        plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
+        plot_energies(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
+        plot_densities(Plotter, ctsys, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+        plot_solution(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
     if test == false
@@ -527,10 +510,10 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         Plotter.figure()
 
-        plot_densities(Plotter, grid, data, solution, "\$ \\Delta u = $(biasValuesForward[end])\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$", label_density)
+        plot_densities(Plotter, ctsys, solution, "\$ \\Delta u = $(biasValuesForward[end])\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$", label_density)
         ## ###############
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "\$ \\Delta u = $(biasValuesForward[end])\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$", label_solution)
+        plot_solution(Plotter, ctsys, solution, "\$ \\Delta u = $(biasValuesForward[end])\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$", label_solution)
         ## ###############
         Plotter.figure()
 

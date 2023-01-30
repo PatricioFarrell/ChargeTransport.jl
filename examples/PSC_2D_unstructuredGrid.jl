@@ -14,7 +14,6 @@ ENV["LC_NUMERIC"]="C" # put this in to work with Triangulate.jl, which is origin
 
 module PSC_2D_unstructuredGrid
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
 using GridVisualize
@@ -239,13 +238,13 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
 
-    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    ## InterfaceModelSurfaceReco (inner boundary).
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    ## InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
     ## Present ionic vacancies in perovskite layer
-    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
@@ -325,28 +324,13 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
         show_params(ctsys)
         println("*** done\n")
     end
-
-    ################################################################################
-    if test == false
-        println("Define oute boundary conditions")
-    end
-    ################################################################################
-
-    ## set zero voltage ohmic contacts for electrons and holes at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-
     ################################################################################
     if test == false
         println("Define control parameters for Newton solver")
     end
     ################################################################################
 
-    control                   = VoronoiFVM.NewtonControl()
+    control                   = NewtonControl()
     control.verbose           = verbose
     control.max_iterations    = 300
     control.tol_absolute      = 1.0e-10
@@ -477,7 +461,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
 end #  main
 
 function test()
-    testval = -0.6729879350578447
+    testval = -0.6729879350578445
     main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

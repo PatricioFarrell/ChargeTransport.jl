@@ -14,10 +14,8 @@ https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/
 
 module Ex104_PSC_gradedFlux_Schottky_contacts
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 ## function for grading the physical parameters
@@ -269,8 +267,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
 
-    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    ## InterfaceModelSurfaceReco (inner boundary).
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    ## InterfaceRecombination (inner boundary).
     data.boundaryType[bregionDonor]    = SchottkyContact
     data.boundaryType[bregionAcceptor] = SchottkyContact
 
@@ -355,19 +353,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     if test == false
-        println("Define boundary conditions")
-    end
-    ################################################################################
-
-    ## set Schottky contacts.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-    ################################################################################
-    if test == false
         println("Define control parameters for Newton solver")
     end
     ################################################################################
@@ -402,11 +387,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
 
-        plot_energies(Plotter,  grid, data, solution, "Equilibrium", label_energy)
+        plot_energies(Plotter,  ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Equilibrium", label_density)
+        plot_densities(Plotter, ctsys, solution, "Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter,  grid, data, solution, "Equilibrium", label_solution)
+        plot_solution(Plotter,  ctsys, solution, "Equilibrium", label_solution)
         Plotter.figure()
     end
 
@@ -444,11 +429,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## plotting
     if plotting
-        plot_energies(Plotter,  grid, data, solution, "Applied voltage Δu = $maxBias", label_energy)
+        plot_energies(Plotter,  ctsys, solution, "Applied voltage Δu = $maxBias", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias", label_density)
+        plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $maxBias", label_density)
         Plotter.figure()
-        plot_solution(Plotter,  grid, data, solution, "Applied voltage Δu = $maxBias", label_solution)
+        plot_solution(Plotter,  ctsys, solution, "Applied voltage Δu = $maxBias", label_solution)
     end
 
     if test == false
@@ -461,7 +446,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval= 0.11725154162011475
+    testval= 0.11725154137942578
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

@@ -1,11 +1,13 @@
 module ChargeTransport
 
-using VoronoiFVM
-using ExtendableGrids
-using Printf
-using DocStringExtensions
-using SparseArrays
-using Roots
+using VoronoiFVM          # PDE solver with a FVM spatial discretization
+using ExtendableGrids     # grid initializer
+using GridVisualize       # visualizer wrapper
+using Printf              # printing
+using DocStringExtensions # for documentation
+using SparseArrays        # for generating sparse arrays
+using Interpolations      # for interpolation of data
+using Roots               # for finding zeros
 
 
 include("ct_constants.jl")
@@ -15,7 +17,7 @@ export kB, Planck_constant, mₑ, q, ε0
 
 include("ct_units.jl")
 
-export K, J, A, V, m, s, C, kg, Hz, kHz
+export K, J, A, V, m, s, C, kg, Hz, kHz, W, kW
 export cm, mm, μm, nm, ms, μs, ns, ps, eV
 export tiny_penalty_value
 ##################################################################
@@ -28,12 +30,13 @@ export FermiDiracOneHalfTeSCA, FermiDiracZero
 
 include("ct_datatypes.jl")
 
-export StandardFuncSet, QType
+export StandardFuncSet
+export QType
+export QFModelType, DiscontQF, ContQF
 
 export OuterBoundaryModelType, OuterBoundaryModelType, InterfaceModelType
 export OhmicContact, SchottkyContact, SchottkyBarrierLowering
-export InterfaceModelNone, InterfaceModelSurfaceReco, InterfaceModelTangentialFlux, InterfaceModelDiscontqF
-export InterfaceModelIonCharge, InterfaceModelSurfaceRecoAndTangentialFlux
+export InterfaceNone, InterfaceRecombination
 
 export ModelType, Transient, Stationary
 
@@ -48,23 +51,38 @@ export SRHOff, SRHWithoutTrapsStationary, SRHTrapsTransient
 
 export GenerationModelType
 export GenerationNone, GenerationBeerLambert, GenerationUniform
+export BarrierLoweringType
+export BarrierLoweringOn, BarrierLoweringOff
 ##################################################################
 
 include("ct_physics.jl")
 
 export breaction!, bstorage!, reaction!, storage!, flux!
+export zeroVoltage
 ##################################################################
 
 include("ct_system.jl")
 
 export Params, ParamsNodal, Data, System
-export BulkRecombination, set_bulk_recombination, IonicChargeCarriers, enable_ionic_carriers
+export BulkRecombination, set_bulk_recombination
+
+export enable_ionic_carrier!, enable_trap_carrier!
+
 export equilibrium_solve!
+export enable_species!, enable_boundary_species!
+export solve, solve!
+export unknowns, NewtonControl
+export TestFunctionFactory, integrate, testfunction
+
+export gridplot
+
 export set_contact!
-export compute_densities!, compute_energies!, electroNeutralSolution!, print_jacobi
+export compute_densities!, compute_energies!
+export compute_open_circuit_voltage
+export electroNeutralSolution!, print_jacobi
 export show_params, trap_density!
 export get_current_val, charge_density
-export enable_traps!
+
 ##################################################################
 
 include("ct_plotting.jl")

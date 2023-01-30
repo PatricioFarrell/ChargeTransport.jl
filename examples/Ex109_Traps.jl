@@ -7,10 +7,8 @@ Simulating transient charge transport in a GaAs p-i-n diode with an electron tra
 
 module Ex109_Traps
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 ## function to initialize the grid for a possble extension to other p-i-n devices.
@@ -144,13 +142,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_SRH = true)
 
     ## Here, we enable the traps and parse the respective index and the regions where the trap is defined.
-    enable_traps!(data = data, traps = iphit, regions = regions)
+    enable_trap_carrier!(;data = data, trapCarrier = iphit, regions = regions)
 
     ## Possible choices: GenerationNone, GenerationUniform
     data.generationModel               = GenerationUniform
 
-    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    ## InterfaceModelSurfaceReco (inner boundary).
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    ## InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
@@ -230,20 +228,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         show_params(ctsys)
         println("*** done\n")
     end
-
-    ################################################################################
-    if test == false
-        println("Define outer boundary conditions and enabled layers")
-    end
-    ################################################################################
-
-    ## set zero voltage ohmic contacts for each charge carrier at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
     ################################################################################
     if test == false
         println("Define control parameters for Newton solver")
@@ -289,11 +273,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
         label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
 
-        plot_energies(Plotter, grid, data, solution, "Equilibrium", label_energy)
+        plot_energies(Plotter, ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"Equilibrium", label_density)
+        plot_densities(Plotter, ctsys, solution,"Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Equilibrium", label_solution)
+        plot_solution(Plotter, ctsys, solution, "Equilibrium", label_solution)
     end
 
     ################################################################################
@@ -317,7 +301,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## a priori
     tvalues              = range(0.0, stop = tend, length = number_tsteps)
     Δt                   = tvalues[2] - tvalues[1]
-
 
     # these values are needed for putting the generation slightly on
     I      = collect(20:-1:0.0)
@@ -378,11 +361,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## plot solution and IV curve
     if plotting
-        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_energy)
+        plot_energies(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_density)
+        plot_densities(Plotter, ctsys, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_solution)
+        plot_solution(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_solution)
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
     end
@@ -397,7 +380,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 0.9390846288839085
+    testval = 0.9390846288839082
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

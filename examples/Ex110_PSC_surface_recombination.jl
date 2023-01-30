@@ -13,10 +13,8 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 
 module Ex110_PSC_surface_recombination
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
@@ -232,15 +230,15 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
 
-    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    ## InterfaceModelSurfaceReco (inner boundary).
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    ## InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor]  = OhmicContact
-    data.boundaryType[bregionJunction1] = InterfaceModelSurfaceReco
-    data.boundaryType[bregionJunction2] = InterfaceModelSurfaceReco
+    data.boundaryType[bregionJunction1] = InterfaceRecombination
+    data.boundaryType[bregionJunction2] = InterfaceRecombination
     data.boundaryType[bregionDonor]     = OhmicContact
 
     ## Present ionic vacancies in perovskite layer
-    data.enableIonicCarriers            = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
@@ -303,7 +301,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bBandEdgeEnergy[iphip, bregionDonor]                  = Ev_d
 
     ##############################################################
-    ## inner boundary region data
+    ## inner boundary region data (we choose the intrinsic values)
     params.bDensityOfStates[iphin, bregionJunction1]             = Nc_i
     params.bDensityOfStates[iphip, bregionJunction1]             = Nv_i
 
@@ -320,11 +318,11 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.recombinationSRHvelocity[iphin, bregionJunction1]     = 1.0e1  * cm / s
     params.recombinationSRHvelocity[iphip, bregionJunction1]     = 1.0e5  * cm / s
 
-    params.recombinationSRHvelocity[iphin, bregionJunction2]     = 1.0e7  * cm / s
-    params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e1  * cm / s
-
     params.bRecombinationSRHTrapDensity[iphin, bregionJunction1] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
     params.bRecombinationSRHTrapDensity[iphip, bregionJunction1] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
+
+    params.recombinationSRHvelocity[iphin, bregionJunction2]     = 1.0e7  * cm / s
+    params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e1  * cm / s
 
     params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
     params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
@@ -350,28 +348,13 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     if test == false
         println("*** done\n")
     end
-
-    ################################################################################
-    if test == false
-        println("Define outer boundary conditions")
-    end
-    ################################################################################
-
-    ## set zero voltage ohmic contacts for electrons and holes at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-
     ################################################################################
     if test == false
         println("Define control parameters for Newton solver")
     end
     ################################################################################
 
-    control                   = VoronoiFVM.NewtonControl()
+    control                   = NewtonControl()
     control.verbose           = verbose
     control.max_iterations    = 300
     control.tol_absolute      = 1.0e-10
@@ -464,7 +447,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
             label_solution[iphin]  = "\$ \\varphi_n\$"; label_solution[iphip]  = "\$ \\varphi_p\$"; label_solution[iphia]  = "\$ \\varphi_a\$"
 
             PyPlot.clf()
-            plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+            plot_solution(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
             PyPlot.pause(0.5)
         end
 
@@ -483,7 +466,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 end # main
 
 function test()
-    testval = -0.5198379953833059
+    testval = -0.5198379953833077
     main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

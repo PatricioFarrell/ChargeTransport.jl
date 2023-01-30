@@ -13,10 +13,8 @@ https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/
 
 module Ex103_PSC
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
@@ -217,8 +215,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = false)
 
-    ## Possible choices: OhmicContact, SchottkyContact(outer boundary) and InterfaceModelNone,
-    ## InterfaceModelSurfaceReco (inner boundary).
+    ## Possible choices: OhmicContact, SchottkyContact(outer boundary) and InterfaceNone,
+    ## InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
@@ -303,21 +301,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     if test == false
-        println("Define outer boundary conditions")
-    end
-    ################################################################################
-
-    ## We set zero voltage ohmic contacts for each charge carrier at all outer boundaries
-    ## for the equilibrium calculations.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
         println("Define control parameters for Newton solver")
     end
     ################################################################################
@@ -355,11 +338,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
 
-        plot_energies(Plotter,  grid, data, solution, "Equilibrium", label_energy)
+        plot_energies(Plotter,  ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Equilibrium", label_density)
+        plot_densities(Plotter, ctsys, solution, "Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter,  grid, data, solution, "Equilibrium", label_solution)
+        plot_solution(Plotter,  ctsys, solution, "Equilibrium", label_solution)
         Plotter.figure()
     end
 
@@ -398,11 +381,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## plotting
     if plotting
-        plot_energies(Plotter,  grid, data, solution, "Applied voltage Δu = $maxBias", label_energy)
+        plot_energies(Plotter,  ctsys, solution, "Applied voltage Δu = $maxBias", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias", label_density)
+        plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $maxBias", label_density)
         Plotter.figure()
-        plot_solution(Plotter,  grid, data, solution, "Applied voltage Δu = $maxBias", label_solution)
+        plot_solution(Plotter,  ctsys, solution, "Applied voltage Δu = $maxBias", label_solution)
     end
 
     if test == false

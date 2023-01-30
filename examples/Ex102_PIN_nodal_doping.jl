@@ -9,10 +9,8 @@ the stationary problem. A special feature here is that the doping is node-depend
 
 module Ex102_PIN_nodal_doping
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
@@ -114,8 +112,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
                                                                 bulk_recomb_radiative = false,
                                                                 bulk_recomb_SRH = true)
 
-    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    ## InterfaceModelSurfaceReco (inner boundary).
+    ## Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    ## InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
@@ -201,19 +199,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     ################################################################################
     if test == false
-        println("Define outer boundary conditions")
-    end
-    ################################################################################
-
-    ## set zero voltage ohmic contacts for each charge carrier at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-    ################################################################################
-    if test == false
         println("Define control parameters for Newton solver")
     end
     ################################################################################
@@ -251,11 +236,11 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         label_solution, label_density, label_energy = set_plotting_labels(data)
 
         Plotter.figure()
-        plot_energies(Plotter,  grid, data, solution, "Equilibrium", label_energy)
+        plot_energies(Plotter,  ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Equilibrium", label_density)
+        plot_densities(Plotter, ctsys, solution, "Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter,  grid, data, solution, "Equilibrium", label_solution)
+        plot_solution(Plotter,  ctsys, solution, "Equilibrium", label_solution)
         Plotter.figure()
     end
 
@@ -285,11 +270,11 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         initialGuess .= solution
 
         ## get IV curve
-        factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+        factory = TestFunctionFactory(ctsys)
 
         ## testfunction zero in bregionAcceptor and one in bregionDonor
-        tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])
-        I      = integrate(ctsys.fvmsys, tf, solution)
+        tf      = testfunction(factory, [bregionAcceptor], [bregionDonor])
+        I       = integrate(ctsys, tf, solution)
 
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 
@@ -297,11 +282,11 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
 
     if plotting # plot solution and IV curve
-        plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])",  label_energy)
+        plot_energies(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])",  label_energy)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])",  label_solution, plotGridpoints = true)
+        plot_solution(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])",  label_solution, plotGridpoints = true)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
+        plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
     end

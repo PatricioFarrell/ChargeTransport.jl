@@ -78,7 +78,7 @@ numberOfCarriers         = 3
 Consider the transient problem and enable the ionic charge carriers only in the active layer:
 ```julia
 data.modelType           = Transient
-data.enableIonicCarriers = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 ```
 
 Following specification is needed for a linear I-V scan protocol.
@@ -88,12 +88,13 @@ scanrate                 = 1.0 * V/s
 number_tsteps            = 31
 endVoltage               = voltageAcceptor # bias goes until the given voltage at acceptor boundary
 tend                     = endVoltage/scanrate
+```
 
+### Variant A: Solve the transient problem manually
+```julia
 ## with fixed timestep sizes we can calculate the times a priori
 tvalues                    = range(0, stop = tend, length = number_tsteps)
-```
-Solve the transient problem:
-```julia
+
 for istep = 2:number_tsteps
 
     t  = tvalues[istep]                  # current time
@@ -105,6 +106,32 @@ for istep = 2:number_tsteps
 
 end
 ```
+
+### Variant B: Use internal time stepping
+To make use of internal time stepping, the scan protocol need to be previously defined, e.g.
+
+```julia
+function linearScanProtocol(t)
+    if t == Inf
+        0.0
+    else
+        scanrate * t
+    end
+end
+
+## Apply zero voltage on left boundary and a linear scan protocol on right boundary
+contactVoltageFunction = [zeroVoltage, linearScanProtocol]
+```
+And then, need to be parsed into the data construction method
+```julia
+data = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunction)
+```
+This makes it possible to use the internal time solving method
+
+```julia
+sol = solve(ctsys, inival = initialGuess, times=(0.0, tend), control = control)
+```
+
 ## Example 3: Illumination
 Add uniform illumination to the previous code by setting
 
@@ -118,7 +145,7 @@ for ireg in 1:numberOfRegions
     params.generationUniform[ireg] = generationUniform[ireg]
 end
 ```
-for given data stored in `generationUniform`. 
+for given data stored in `generationUniform`.
 If one wishes to use the Beer-Lambert generation, then the corresponding code would be
 ```julia
 data.generationModel                          = GenerationBeerLambert
@@ -130,7 +157,7 @@ end
 
 params.generationPeak                         = generationPeak
 ```
-If one wishes to invert the illumination, one needs to define 
+If one wishes to invert the illumination, one needs to define
 ```julia
 params.invertedIllumination                   = -1
 ```

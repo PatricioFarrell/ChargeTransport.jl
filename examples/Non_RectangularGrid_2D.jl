@@ -11,12 +11,11 @@ module Non_RectangularGrid_2D
 
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 ## For using this example, one additionally needs to add Triangulate. SimplexGridFactory is a wrapper for using this meshgenerator.
-## using SimplexGridFactory
-## using Triangulate
+using SimplexGridFactory
+using Triangulate
 
 function main(;Plotter = PyPlot, plotting = false)
 
@@ -105,11 +104,11 @@ function main(;Plotter = PyPlot, plotting = false)
     grid = simplexgrid(b)
 
     if plotting
-        ## GridVisualize.gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.6)
-        ## Plotter.xlabel("length [m]")
-        ## Plotter.ylabel("height [m]")
-        ## Plotter.tight_layout()
-        builderplot(b,Plotter=Plotter,resolution=(750,700))
+        gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.6)
+        Plotter.xlabel("length [m]")
+        Plotter.ylabel("height [m]")
+        Plotter.tight_layout()
+        # builderplot(b,Plotter=Plotter,resolution=(750,700))
 end
 
 end # main

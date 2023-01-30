@@ -25,6 +25,7 @@ function set_plotting_labels(data)
     label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"; label_BEE[iphip] = "\$E_v\$"
     label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
 
+
     return label_solution, label_density, label_energy, label_BEE
 end
 
@@ -37,9 +38,12 @@ One input parameter is the boolean plotGridpoints which makes it possible to plo
 which indicate where the nodes are located.
 
 """
-function plot_densities(Plotter, grid, data::Data, sol, title, label_density, ;plotGridpoints=false)
+function plot_densities(Plotter, ctsys, sol, title, label_density, ;plotGridpoints=false)
 
     Plotter.clf()
+
+    grid = ctsys.fvmsys.grid
+    data = ctsys.fvmsys.physics.data
 
     if dim_space(grid) > 1
         error("plot_densities is so far only tested in 1D")
@@ -128,16 +132,18 @@ One input parameter is the boolean plotGridpoints which makes it possible to plo
 which indicate where the nodes are located.
 
 """
-function plot_energies(Plotter, grid, data::Data, sol, title, label_energy, ;plotGridpoints=false)
+function plot_energies(Plotter, ctsys, sol, title, label_energy, ;plotGridpoints=false)
 
     Plotter.clf()
 
-    params         = data.params
-    paramsnodal    = data.paramsnodal
-    ipsi           = data.index_psi
-    cellnodes      = grid[CellNodes]
-    cellregions    = grid[CellRegions]
-    coord          = grid[Coordinates]
+    grid        = ctsys.fvmsys.grid
+    data        = ctsys.fvmsys.physics.data
+    params      = data.params
+    paramsnodal = data.paramsnodal
+    ipsi        = data.index_psi
+    cellnodes   = grid[CellNodes]
+    cellregions = grid[CellRegions]
+    coord       = grid[Coordinates]
 
     if length(coord[1]) != 1
         println("plotEnergies is so far only implemented in 1D")
@@ -205,8 +211,10 @@ With this method it is possible to depict the band-edge energies ``E_\\alpha ``.
 This can be useful for debugging when dealing with heterojunctions.
 
 """
-function plot_energies(Plotter, grid::ExtendableGrid, data::Data, label_BEE)
+function plot_energies(Plotter, ctsys, label_BEE)
 
+    grid        = ctsys.fvmsys.grid
+    data        = ctsys.fvmsys.physics.data
     params      = data.params
     paramsnodal = data.paramsnodal
 
@@ -277,8 +285,10 @@ Possibility to plot the considered doping. This is especially useful
 for making sure that the interior and the boundary doping agree.
 
 """
-function plot_doping(Plotter, g::ExtendableGrid, data::Data, label_density)
+function plot_doping(Plotter, ctsys, label_density)
 
+    g           = ctsys.fvmsys.grid
+    data        = ctsys.fvmsys.physics.data
     params      = data.params
     coord       = g[Coordinates]
     cellregions = g[CellRegions]
@@ -396,7 +406,10 @@ multidimensional plottings are not included.
 One input parameter is the boolean plotGridpoints which makes it possible to plot markers,
 which indicate where the nodes are located.
 """
-function plot_solution(Plotter, grid, data::Data, solution, title, label_solution, ;plotGridpoints=false)
+function plot_solution(Plotter, ctsys, solution, title, label_solution, ;plotGridpoints=false)
+
+    grid = ctsys.fvmsys.grid
+    data = ctsys.fvmsys.physics.data
 
     if dim_space(grid) > 1
         error("plot_solution is so far only tested in 1D")
@@ -411,37 +424,54 @@ function plot_solution(Plotter, grid, data::Data, solution, title, label_solutio
     coord        = grid[Coordinates]'
     ipsi         = data.index_psi
 
-    # DA: could be modified by using subgrids from ExtendableGrids.
-    # this is needed to only plot present ionic charge carrier in respective defined regions
-    if isdefined(data.enableIonicCarriers, :regions)
-        regions    = grid[CellRegions]
-
-        subregions = zeros(Int64, 0)
-        for ix in 1:length(data.enableIonicCarriers.regions)
-            subreg = findall(x -> x == data.enableIonicCarriers.regions[ix], regions)
-            append!(subregions, subreg)
-            push!(subregions, subregions[end]+1)
-        end
-        subgrid    = coord[subregions]
-    end
-
     colors       = ["green", "red", "gold", "purple", "orange"]
     linestyles   = ["-", ":", "--", "-.", "-"]
 
     Plotter.clf()
     Plotter.plot(coord, solution[ipsi,:], marker = marker, label = "\$\\psi\$", color="b", linewidth= 3)
+    if data.barrierLoweringInfo.BarrierLoweringOn == BarrierLoweringOn
+        ipsiStandard = data.barrierLoweringInfo.ipsiStandard
+        Plotter.plot(coord, solution[ipsiStandard,:], marker = marker, label = "\$\\psi\$ (Schottky contacts)", color="black", linestyle = ":", linewidth= 3)
+    end
 
-    for icc ∈ data.chargeCarrierList
-        if isdefined(data.enableIonicCarriers, :regions)
-            if icc ∈ data.enableIonicCarriers.ionic_carriers
-                Plotter.plot(subgrid./1, solution[icc, subregions], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
-            else
-                Plotter.plot(coord./1, solution[icc,:], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
-            end
-        else
-            Plotter.plot(coord./1, solution[icc,:], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
+    # electrons and holes
+    for icc ∈ data.electricCarrierList
+        Plotter.plot(coord./1, solution[icc,:], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
+    end
 
+    for icc ∈ data.ionicCarrierList
+        # DA: could be modified by using subgrids from ExtendableGrids.
+        # this is needed to only plot present ionic charge carrier in respective defined regions
+        regions    = grid[CellRegions]
+
+        subregions = zeros(Int64, 0)
+        for ix in 1:length(icc.regions)
+            subreg = findall(x -> x == icc.regions[ix], regions)
+            append!(subregions, subreg)
+            push!(subregions, subregions[end]+1)
         end
+        subgrid    = coord[subregions]
+
+        icc        = icc.ionicCarrier
+
+        Plotter.plot(subgrid./1, solution[icc, subregions], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
+    end
+
+    for icc ∈ data.trapCarrierList
+        # this is needed to only plot present ionic charge carrier in respective defined regions
+        regions    = grid[CellRegions]
+
+        subregions = zeros(Int64, 0)
+        for ix in 1:length(icc.regions)
+            subreg = findall(x -> x == icc.regions[ix], regions)
+            append!(subregions, subreg)
+            push!(subregions, subregions[end]+1)
+        end
+        subgrid    = coord[subregions]
+
+        icc = icc.trapCarrier
+
+        Plotter.plot(subgrid./1, solution[icc, subregions], label =  label_solution[icc], marker = marker, color= colors[icc], linestyle = linestyles[1], linewidth= 3)
     end
 
     Plotter.grid()

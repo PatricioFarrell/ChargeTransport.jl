@@ -5,16 +5,18 @@ Physical units in SI units
 """
 
 # SI units
-const K  = 1.0      # Kelvin
-const J  = 1.0      # Joule
-const A  = 1.0      # Ampere
-const V  = 1.0      # Volt
-const m  = 1.0      # meter
-const s  = 1.0      # seconds
-const C  = A * s    # Coulomb
-const kg = 1.0      # kilogramm
-const Hz = 1 / s    # Hertz
+const K  = 1.0         # Kelvin
+const J  = 1.0         # Joule
+const A  = 1.0         # Ampere
+const V  = 1.0         # Volt
+const m  = 1.0         # meter
+const s  = 1.0         # seconds
+const C  = A * s       # Coulomb
+const kg = 1.0         # kilogramm
+const Hz = 1 / s       # Hertz
 const kHz = 1.0e3 * Hz # Kilohertz
+const W   = 1.0        # Watt
+const kW  = 1.0e3 * W  # KiloWatt
 
 
 # scaled SI units

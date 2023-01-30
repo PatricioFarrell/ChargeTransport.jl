@@ -10,12 +10,9 @@ The simulations are performed out of equilibrium and for the stationary problem.
 
 module Ex101_PIN
 
-using VoronoiFVM       # PDE solver with a FVM spatial discretization
 using ChargeTransport  # drift-diffusion solver
 using ExtendableGrids  # grid initializer
-using GridVisualize    # grid visualizer
 using PyPlot           # solution visualizer
-
 
 ## This function is used to initialize the grid for a possible extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
@@ -140,7 +137,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## Here, we need to specify which numbers are associated with electron and hole quasi
     ## Fermi potential. Further, the desired recombination processes can be chosen here.
     ## Note that, if you choose a SRH recombination you can further specify a transient SRH
-    ## recombination by the method enable_traps! and adjusting the modelType. Otherwise, by
+    ## recombination by the method enable_trap_carrier! and adjusting the modelType. Otherwise, by
     ## default we use the stationary model for this type of recombination.
     data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                  bulk_recomb_Auger = true,
@@ -149,7 +146,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## Following choices are possible for boundary model: For contacts currently only
     ## OhmicContact and SchottkyContact are possible. For inner boundaries we have
-    ## InterfaceModelNone, InterfaceModelSurfaceReco.
+    ## InterfaceNone, InterfaceRecombination.
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
@@ -228,27 +225,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
     if test == false
-        ## Here we cn show region dependent physical parameters. show_params() only supports
+        ## Here we can show region dependent physical parameters. show_params() only supports
         ## region dependent parameters, but, if one wishes to print nodal dependent parameters,
         ## currently this is possible with println(ctsys.data.paramsnodal). We neglected here,
         ## since in most applications where the numberOfNodes is >> 10 this would results in a
         ## large output in the terminal.
         show_params(ctsys)
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
-        println("Define outer boundary conditions")
-    end
-    ################################################################################
-
-    ## We set zero voltage ohmic contacts for each charge carrier at all outer boundaries
-    ## for the equilibrium calculations.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
         println("*** done\n")
     end
 
@@ -259,10 +241,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## set legend for plotting routines. Either you can use the predefined labels or write your own.
         label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
 
-        psi0 = electroNeutralSolution!(grid, data)
-        plot_energies(Plotter, grid, data, label_BEE)
+        psi0 = electroNeutralSolution!(ctsys)
+        plot_energies(Plotter, ctsys, label_BEE)
         Plotter.figure()
-        plot_doping(Plotter, grid, data, label_density)
+        plot_doping(Plotter, ctsys, label_density)
         Plotter.figure()
         plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=true)
         Plotter.figure()
@@ -345,11 +327,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## plot solution and IV curve
     if plotting
-        plot_energies(Plotter, grid, data, solution,  "Applied voltage Δu = $(biasValues[end])", label_energy,   plotGridpoints = false)
+        plot_energies(Plotter, ctsys, solution,  "Applied voltage Δu = $(biasValues[end])", label_energy,   plotGridpoints = false)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution,  "Applied voltage Δu = $(biasValues[end])", label_solution, plotGridpoints = true)
+        plot_solution(Plotter, ctsys, solution,  "Applied voltage Δu = $(biasValues[end])", label_solution, plotGridpoints = true)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
+        plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV,  "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
     end

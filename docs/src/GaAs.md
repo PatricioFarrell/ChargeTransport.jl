@@ -154,13 +154,6 @@ data.params   = params
 ctsys         = System(grid, data, unknown_storage=unknown_storage)
 ```
 
-We use ohmic contacts and set the applied voltage to zero in equilibrium.
-
-```julia
-set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-```
-
 ### Step 3: Solve the problem in equilibrium
 Solve the equilibrium. Note that `control` refers to the Newton control
 parameters given in `VoronoiFVM`.
