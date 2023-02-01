@@ -38,6 +38,13 @@ mutable struct BulkRecombination
     """
     bulk_recomb_SRH       ::  SRHModelType
 
+    """
+    Data type with which you can include a stationary trap density
+    to the right-hand side of the Poisson equation. This stationary trap
+    density corresponds to the number of unoccupied trap states.
+    """
+    SRH_2species_trap     ::  AuxModelSRHType
+
     BulkRecombination() = new()
 
 end
@@ -63,8 +70,10 @@ function set_bulk_recombination(;iphin = 1, iphip = 2,
 
     if bulk_recomb_SRH == true
         bulkRecombination.bulk_recomb_SRH   = SRHStationary
+        bulkRecombination.SRH_2species_trap = SRHStationary
     else
         bulkRecombination.bulk_recomb_SRH   = SRHOff
+        bulkRecombination.SRH_2species_trap = SRHOff
     end
 
     return bulkRecombination
@@ -105,7 +114,7 @@ $(SIGNATURES)
 This method takes the user information concerning present trap charge carriers,
 builds a struct of Type TrapCarrier and add this struct to the trapCarrierList.
 """
-function enable_trap_carrier!(;data = data, trapCarrier::Int64, regions::Array{Int64, 1})
+function enable_trap_carrier!(;data = data::Data, trapCarrier::Int64, regions::Array{Int64, 1})
 
     enableTraps                                = TrapCarrier()
 
@@ -122,6 +131,44 @@ function enable_trap_carrier!(;data = data, trapCarrier::Int64, regions::Array{I
 
 end
 
+"""
+$(TYPEDEF)
+Auxiliary struct with the charge number zt and the effective density of trap states Nt
+for a stationary trap density which corresponds to the number of unoccupied states.
+$(TYPEDFIELDS)
+"""
+
+mutable struct AuxiliaryStationaryTrapValues
+
+    """
+    Index of traps.
+    """
+    zt     ::  Int64
+
+    """
+    Array with the corresponding effective density of trap states.
+    """
+    Nt     ::  Array{Float64, 1}
+
+    AuxiliaryStationaryTrapValues() = new()
+
+end
+
+"""
+$(SIGNATURES)
+This method includes traps for a simplified model, where the trap carriers are not
+considered as additional carrier with an own continuity equation. In this case the trap
+density is additionally added to the right-hand side of Poisson equation.
+"""
+function add_trap_density!(;data = data::Data, zt = 1::Int64, Nt = 5e20*ones(Float64,data.params.numberOfRegions)::Array{Float64, 1})
+
+    data.bulkRecombination.SRH_2species_trap = SRH2SpeciesPresentTrapDens
+    aux_trap_values                          = AuxiliaryStationaryTrapValues()
+    aux_trap_values.zt                       = zt
+    aux_trap_values.Nt                       = Nt
+    data.AuxTrapValues                       = aux_trap_values
+
+end
 ###########################################################
 ###########################################################
 
@@ -607,6 +654,11 @@ mutable struct Data{TFuncs<:Function, TContVol<:Function}
     trapCarrierList              :: Array{TrapCarrier, 1}
 
     """
+    A struct which contains auxiliary trap values for the stationary setting.
+    """
+    AuxTrapValues                ::  AuxiliaryStationaryTrapValues
+
+    """
     This variable stores the index of the electric potential. Based on the user choice we have
     with this new type the opportunity to simulate discontinuous unknowns.
     """
@@ -909,6 +961,7 @@ function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage, zer
     data.electricCarrierList                   = Int64[ii for ii = 1:2]                       # electrons and holes
     data.ionicCarrierList                      = IonicCarrier[]
     data.trapCarrierList                       = TrapCarrier[]
+    data.AuxTrapValues                         = AuxiliaryStationaryTrapValues()
     data.index_psi                             = numberOfCarriers + 1
     data.barrierLoweringInfo                   = BarrierLoweringSpecies()
     data.barrierLoweringInfo.BarrierLoweringOn = BarrierLoweringOff # set in general case barrier lowering off

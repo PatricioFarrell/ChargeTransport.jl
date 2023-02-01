@@ -48,6 +48,7 @@ export InEquilibrium, OutOfEquilibrium
 
 export SRHModelType, SRHWithoutTrapsType, SRHWithTrapsType
 export SRHOff, SRHWithoutTrapsStationary, SRHTrapsTransient
+export AuxModelSRHType, SRH2SpeciesPresentTrapDens
 
 export GenerationModelType
 export GenerationNone, GenerationBeerLambert, GenerationUniform
@@ -66,7 +67,8 @@ include("ct_system.jl")
 export Params, ParamsNodal, Data, System
 export BulkRecombination, set_bulk_recombination
 
-export enable_ionic_carrier!, enable_trap_carrier!
+export enable_ionic_carrier!
+export enable_trap_carrier!, add_trap_density!
 
 export equilibrium_solve!
 export enable_species!, enable_boundary_species!
