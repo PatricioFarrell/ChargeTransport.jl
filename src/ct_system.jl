@@ -124,7 +124,7 @@ function enable_trap_carrier!(;data = data::Data, trapCarrier::Int64, regions::A
     if data.modelType == Transient
         data.bulkRecombination.bulk_recomb_SRH = SRHTrapsTransient
     else
-        data.bulkRecombination.bulk_recomb_SRH = SRHStationary
+        data.bulkRecombination.bulk_recomb_SRH = SRHTrapsStationary
     end
 
     push!(data.trapCarrierList, enableTraps)

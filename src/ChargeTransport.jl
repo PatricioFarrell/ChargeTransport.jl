@@ -47,7 +47,8 @@ export ScharfetterGummelGraded, ExcessChemicalPotentialGraded
 export InEquilibrium, OutOfEquilibrium
 
 export SRHModelType, SRHWithoutTrapsType, SRHWithTrapsType
-export SRHOff, SRHWithoutTrapsStationary, SRHTrapsTransient
+export SRHOff, SRHWithoutTrapsStationary
+export SRHTrapsTransient, SRHTrapsStationary
 export AuxModelSRHType, SRH2SpeciesPresentTrapDens
 
 export GenerationModelType

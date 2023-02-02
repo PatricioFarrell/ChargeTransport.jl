@@ -509,8 +509,6 @@ function reaction!(f, u, node, data, ::Type{InEquilibrium})
         end
     end
 
-    addTrapDensity!(f, u, node, data)     # This is the trap density for the stationry case
-
 end
 
 
@@ -584,27 +582,31 @@ function addRecombination!(f, u, node, data, ::SRHWithTrapsType)
     p0   = params.recombinationSRHTrapDensity[iphip, ireg]
 
     for iicc ∈ data.trapCarrierList
-        icc   = iicc.trapCarrier
-        itrap = data.chargeCarrierList[icc]
+        # add trap carriers only in defined regions (otherwise get NaN error)
+        if node.region ∈ iicc.regions
+            icc   = iicc.trapCarrier
+            itrap = data.chargeCarrierList[icc]
 
-        Nt    = params.densityOfStates[itrap, ireg]
-        t     = Nt * data.F[itrap](etaFunction(u, node, data, itrap))
+            Nt    = params.densityOfStates[itrap, ireg]
+            t     = Nt * data.F[itrap](etaFunction(u, node, data, itrap))
 
-        # Rn, Rp agree up to sign with *On the Shockley-Read-Hall Model: Generation-Recombination
-        # in Semiconductors* in SIAM Journal on Applied Mathematics, Vol. 67, No. 4 (2007), pp. 1183-1201.
-        # The sign is chosen according to *Supporting Information: Consistent Device Simulation Model
-        # Describing Perovskite Solar Cells in Steady-State, Transient and Frequency Domain* in ACS (2018)
-        if params.chargeNumbers[itrap] == -1
-            Rn =  1 / taun * (n * (1-t/Nt) - n0 * t/Nt)
-            Rp =  1 / taup * (p * t/Nt     - p0 * (1-t/Nt))
-        elseif params.chargeNumbers[itrap] == 1
-            Rn =  1 / taun * (n * t/Nt     - n0 * (1-t/Nt))
-            Rp =  1 / taup * (p * (1-t/Nt) - p0 * t/Nt)
+            # Rn, Rp agree up to sign with *On the Shockley-Read-Hall Model: Generation-Recombination
+            # in Semiconductors* in SIAM Journal on Applied Mathematics, Vol. 67, No. 4 (2007), pp. 1183-1201.
+            # The sign is chosen according to *Supporting Information: Consistent Device Simulation Model
+            # Describing Perovskite Solar Cells in Steady-State, Transient and Frequency Domain* in ACS (2018)
+            if params.chargeNumbers[itrap] == -1
+                Rn = 1 / taun * (n * (1-t/Nt) - n0 * t/Nt)
+                Rp = 1 / taup * (p * t/Nt     - p0 * (1-t/Nt))
+            elseif params.chargeNumbers[itrap] == 1
+                Rn = 1 / taun * (n * t/Nt     - n0 * (1-t/Nt))
+                Rp = 1 / taup * (p * (1-t/Nt) - p0 * t/Nt)
+            end
+
+            f[itrap] = q * params.chargeNumbers[itrap] * (Rp-Rn)
+            f[iphin] = q * params.chargeNumbers[iphin] * Rn
+            f[iphip] = q * params.chargeNumbers[iphip] * Rp
         end
 
-        f[itrap] = q * params.chargeNumbers[itrap] * (Rp-Rn)
-        f[iphin] = q * params.chargeNumbers[iphin] * Rn
-        f[iphip] = q * params.chargeNumbers[iphip] * Rp
     end
 
 
@@ -666,25 +668,28 @@ function RHSPoisson!(f, u, node, data, ipsi)
         end
     end
 
-    # for iicc ∈ data.trapCarrierList # ∈ Array{TrapCarrier, 1}
-    #     # add trap carriers only in defined regions (otherwise get NaN error)
-    #     if node.region ∈ iicc.regions
-    #         icc     = iicc.trapCarrier            # species number chosen by user
-    #         icc     = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+    for iicc ∈ data.trapCarrierList # ∈ Array{TrapCarrier, 1}
+        # add trap carriers only in defined regions (otherwise get NaN error)
+        if node.region ∈ iicc.regions
+            icc     = iicc.trapCarrier            # species number chosen by user
+            icc     = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
 
-    #         get_DOS!(icc, node, data)
+            get_DOS!(icc, node, data)
 
-    #         Ni      = data.tempDOS1[icc]
-    #         eta     = etaFunction(u, node, data, icc)
+            Ni      = data.tempDOS1[icc]
+            eta     = etaFunction(u, node, data, icc)
 
-    #         f[ipsi] = f[ipsi] - data.params.chargeNumbers[icc] * ( data.params.doping[icc, node.region] )  # subtract doping
-    #         f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * Ni * data.F[icc](eta)   # add charge carrier
-    #     end
-    # end
+            f[ipsi] = f[ipsi] - data.params.chargeNumbers[icc] * ( data.params.doping[icc, node.region] )  # subtract doping
+            f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * Ni * data.F[icc](eta)   # add charge carrier
+        end
+    end
 
     f[ipsi] = f[ipsi] - data.paramsnodal.doping[node.index]
 
     f[ipsi] = - q * data.λ1 * f[ipsi]
+
+    ## This is the trap density for the stationary case without traps as own charge carrier
+    addTrapDensity!(f, u, node, data)
 
 end
 
@@ -734,8 +739,6 @@ function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
     # Then, add RHS of continuity equations based on user information
     RHSContinuityEquations!(f, u, node, data) # RHS of Charge Carriers with special treatment of recombination
 
-    addTrapDensity!(f, u, node, data)    # This is the trap density for the stationary case
-
 end
 
 # Function which adds additional trap density to right-hand side of Poisson equation
@@ -779,9 +782,9 @@ function addTrapDensity!(f, u, node, data, ::Type{SRH2SpeciesPresentTrapDens})
 
     # add trap density
     if zt==1
-        f[ipsi] = f[ipsi] - q * zt * Nt * ( 1 - (taun*p0 + taup*n) / (taun*(p0+p) + taup*(n0+n)) )
+        f[ipsi] = f[ipsi] - q * zt * data.λ1 * Nt * ( 1 - (taun*p0 + taup*n) / (taun*(p0+p) + taup*(n0+n)) )
     elseif zt==-1
-        f[ipsi] = f[ipsi] + q * zt * Nt * ( (taun*p0 + taup*n) / (taun*(p0+p) + taup*(n0+n)) )
+        f[ipsi] = f[ipsi] + q * zt * data.λ1 * Nt * ( (taun*p0 + taup*n) / (taun*(p0+p) + taup*(n0+n)) )
     end
 
 end
