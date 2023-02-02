@@ -1,6 +1,11 @@
+
 #=
+# MoS2 with moving ions and Schottky Barrier Lowering.
+([source code](SOURCE_URL))
+
 Memristor simulation with additional moving ions and Schottky barrier lowering at the contacts.
 =#
+
 
 module Ex111_MoS2_withIons_BarrierLowering
 
