@@ -160,7 +160,7 @@ This method includes traps for a simplified model, where the trap carriers are n
 considered as additional carrier with an own continuity equation. In this case the trap
 density is additionally added to the right-hand side of Poisson equation.
 """
-function add_trap_density!(;data = data::Data, zt = 1::Int64, Nt = 5e20*ones(Float64,data.params.numberOfRegions)::Array{Float64, 1})
+function add_trap_density_Poisson!(;data = data::Data, zt = 1::Int64, Nt = 5e20*ones(Float64,data.params.numberOfRegions)::Array{Float64, 1})
 
     data.bulkRecombination.SRH_2species_trap = SRH2SpeciesPresentTrapDens
     aux_trap_values                          = AuxiliaryStationaryTrapValues()

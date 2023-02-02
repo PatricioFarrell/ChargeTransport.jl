@@ -69,7 +69,7 @@ export Params, ParamsNodal, Data, System
 export BulkRecombination, set_bulk_recombination
 
 export enable_ionic_carrier!
-export enable_trap_carrier!, add_trap_density!
+export enable_trap_carrier!, add_trap_density_Poisson!
 
 export equilibrium_solve!
 export enable_species!, enable_boundary_species!
