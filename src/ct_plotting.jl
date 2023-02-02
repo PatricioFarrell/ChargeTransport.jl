@@ -158,7 +158,7 @@ function plot_energies(Plotter, ctsys, sol, title, label_energy, ;plotGridpoints
     colors         = ["green", "red", "gold", "purple", "orange"]
     linestyles     = ["-", ":", "--", "-.", "-"]
 
-    for icc in data.chargeCarrierList
+    for icc in data.electricCarrierList
         # first cell
         ireg         = cellregions[1]
         E1           = params.bBandEdgeEnergy[icc, 1] + paramsnodal.bandEdgeEnergy[icc, 1] # left boundary
