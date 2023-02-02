@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>CIGS pn junction: stationary with traps and Schottky contacts. · ChargeTransport.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../general/">ChargeTransport.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../general/">ChargeTransport.jl – Simulating charge transport in semiconductors</a></li><li><a class="tocitem" href="../../backgroundinfo/">Mathematical drift-diffusion models</a></li><li><span class="tocitem">How to get started</span><ul><li><a class="tocitem" href="../../GeneralInformation/">Code overview</a></li><li><a class="tocitem" href="../../GaAs/">van Roosbroeck system</a></li><li><a class="tocitem" href="../../PSC/">Perovskite solar cell</a></li></ul></li><li><a class="tocitem" href="../../allindex/">Types, Constructors and Methods</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../Ex101_PIN/">GaAs diode (1D).</a></li><li><a class="tocitem" href="../Ex102_PIN_nodal_doping/">GaAs diode with spatially varying doping (1D).</a></li><li><a class="tocitem" href="../Ex103_PSC/">PSC device without mobile ions (1D).</a></li><li><a class="tocitem" href="../Ex104_PSC_gradedFlux_Schottky_contacts/">PSC device with graded interfaces &amp; Schottky contacts (1D).</a></li><li><a class="tocitem" href="../Ex105_PSC_gradedFlux/">PSC device with graded interfaces &amp; Ohmic contacts (1D).</a></li><li><a class="tocitem" href="../Ex106_PSC_withIons_IVMeasurement/">PSC device with ions and linear I-V scan protocol (1D).</a></li><li><a class="tocitem" href="../Ex107_PSC_withIons_sinusoidalVoltage/">PSC device with sinusoidal applied voltage (1D).</a></li><li><a class="tocitem" href="../Ex108_PSC_BeerLambert_Generation/">PSC device with Beer-Lambert generation rate (1D).</a></li><li><a class="tocitem" href="../Ex108_PSC_uniform_Generation/">PSC device with uniform generation rate (1D).</a></li><li><a class="tocitem" href="../Ex109_Traps/">GaAs diode: transient with traps (1D).</a></li><li><a class="tocitem" href="../Ex110_PSC_surface_recombination/">PSC device with surface recombination (1D).</a></li><li><a class="tocitem" href="../Ex111_MoS2_withIons_BarrierLowering/">-</a></li><li class="is-active"><a class="tocitem" href>CIGS pn junction: stationary with traps and Schottky contacts.</a></li><li><a class="tocitem" href="../Ex201_PSC_tensorGrid/">PSC device on 2D domain (Tensor grid).</a></li><li><a class="tocitem" href="../Grid_3D/">Example code for a 3D grid.</a></li><li><a class="tocitem" href="../Non_RectangularGrid_2D/">Example code for a 2D non rectangular grid.</a></li><li><a class="tocitem" href="../PSC_2D_unstructuredGrid/">PSC device on 2D domain (unstructured grid).</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>CIGS pn junction: stationary with traps and Schottky contacts.</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>CIGS pn junction: stationary with traps and Schottky contacts.</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/PatricioFarrell/ChargeTransport.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="CIGS-pn-junction:-stationary-with-traps-and-Schottky-contacts."><a class="docs-heading-anchor" href="#CIGS-pn-junction:-stationary-with-traps-and-Schottky-contacts.">CIGS pn junction: stationary with traps and Schottky contacts.</a><a id="CIGS-pn-junction:-stationary-with-traps-and-Schottky-contacts.-1"></a><a class="docs-heading-anchor-permalink" href="#CIGS-pn-junction:-stationary-with-traps-and-Schottky-contacts." title="Permalink"></a></h1><p>(<a href="https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx112_CIGS_WithTraps.jl">source code</a>) Simulating stationary charge transport in a pn junction with hole traps and mixed Schottky/Ohmic contact conditions.</p><pre><code class="language-julia hljs">module Ex112_CIGS_WithTraps
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>CIGS: stationary with traps and Schottky contacts. · ChargeTransport.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../general/">ChargeTransport.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../general/">ChargeTransport.jl – Simulating charge transport in semiconductors</a></li><li><a class="tocitem" href="../../backgroundinfo/">Mathematical drift-diffusion models</a></li><li><span class="tocitem">How to get started</span><ul><li><a class="tocitem" href="../../GeneralInformation/">Code overview</a></li><li><a class="tocitem" href="../../GaAs/">van Roosbroeck system</a></li><li><a class="tocitem" href="../../PSC/">Perovskite solar cell</a></li></ul></li><li><a class="tocitem" href="../../allindex/">Types, Constructors and Methods</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../Ex101_PIN/">GaAs diode (1D).</a></li><li><a class="tocitem" href="../Ex102_PIN_nodal_doping/">GaAs diode with spatially varying doping (1D).</a></li><li><a class="tocitem" href="../Ex103_PSC/">PSC device without mobile ions (1D).</a></li><li><a class="tocitem" href="../Ex104_PSC_gradedFlux_Schottky_contacts/">PSC device with graded interfaces &amp; Schottky contacts (1D).</a></li><li><a class="tocitem" href="../Ex105_PSC_gradedFlux/">PSC device with graded interfaces &amp; Ohmic contacts (1D).</a></li><li><a class="tocitem" href="../Ex106_PSC_withIons_IVMeasurement/">PSC device with ions and linear I-V scan protocol (1D).</a></li><li><a class="tocitem" href="../Ex107_PSC_withIons_sinusoidalVoltage/">PSC device with sinusoidal applied voltage (1D).</a></li><li><a class="tocitem" href="../Ex108_PSC_BeerLambert_Generation/">PSC device with Beer-Lambert generation rate (1D).</a></li><li><a class="tocitem" href="../Ex108_PSC_uniform_Generation/">PSC device with uniform generation rate (1D).</a></li><li><a class="tocitem" href="../Ex109_Traps/">GaAs diode: transient with traps (1D).</a></li><li><a class="tocitem" href="../Ex110_PSC_surface_recombination/">PSC device with surface recombination (1D).</a></li><li><a class="tocitem" href="../Ex111_MoS2_withIons_BarrierLowering/">-</a></li><li class="is-active"><a class="tocitem" href>CIGS: stationary with traps and Schottky contacts.</a></li><li><a class="tocitem" href="../Ex201_PSC_tensorGrid/">PSC device on 2D domain (Tensor grid).</a></li><li><a class="tocitem" href="../Grid_3D/">Example code for a 3D grid.</a></li><li><a class="tocitem" href="../Non_RectangularGrid_2D/">Example code for a 2D non rectangular grid.</a></li><li><a class="tocitem" href="../PSC_2D_unstructuredGrid/">PSC device on 2D domain (unstructured grid).</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>CIGS: stationary with traps and Schottky contacts.</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>CIGS: stationary with traps and Schottky contacts.</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/PatricioFarrell/ChargeTransport.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="CIGS:-stationary-with-traps-and-Schottky-contacts."><a class="docs-heading-anchor" href="#CIGS:-stationary-with-traps-and-Schottky-contacts.">CIGS: stationary with traps and Schottky contacts.</a><a id="CIGS:-stationary-with-traps-and-Schottky-contacts.-1"></a><a class="docs-heading-anchor-permalink" href="#CIGS:-stationary-with-traps-and-Schottky-contacts." title="Permalink"></a></h1><p>(<a href="https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx112_CIGS_WithTraps.jl">source code</a>) Simulating stationary charge transport for CIGS with hole traps and mixed Schottky/Ohmic contact conditions. Assume that SRH recombination is only happening within a small regime.</p><pre><code class="language-julia hljs">module Ex112_CIGS_WithTraps
 
 using ChargeTransport
 using ExtendableGrids
@@ -22,7 +22,7 @@ function initialize_pin_grid(refinementfactor, h_ndoping, h_pdoping_left, h_pdop
     return coord
 end
 
-function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, AdditionalTrapSpecies = false)
 
     ################################################################################
     if test == false
@@ -48,7 +48,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     refinementfactor        = 2^(n-1)
     h_ndoping               = 0.5    * μm
     h_pdoping_left          = 1.0    * μm
-    h_pdoping_trap          = 0.01   * μm
+    h_pdoping_trap          = 0.1    * μm
     h_pdoing_right          = 1.0    * μm
     w_device                = 0.5    * μm  # width of device
     z_device                = 1.0e-4 * cm  # depth of device
@@ -83,9 +83,14 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    iphin             = 1 # index electron quasi Fermi potential
-    iphip             = 2 # index hole quasi Fermi potential
-    numberOfCarriers  = 2 # electrons and holes
+    iphin                = 1 # index electron quasi Fermi potential
+    iphip                = 2 # index hole quasi Fermi potential
+    if AdditionalTrapSpecies
+        iphit            = 3 # index trap quasi Fermi potential
+        numberOfCarriers = 3 # electrons, holes and traps
+    else
+        numberOfCarriers = 2 # electrons and holes
+    end
 
     # physical data
     T                 = 300.0                *  K
@@ -108,39 +113,42 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     NV                = [Nv, Nv, Nv, Nv]
 
     # mobilities
-    mun_CIGS          = 100.0                * (cm^2) / (V * s)
-    mup_CIGS          = 25                   * (cm^2) / (V * s)
     mun_ZnO           = 100                  * (cm^2) / (V * s)
     mup_ZnO           = 25                   * (cm^2) / (V * s)
+    mun_CIGS          = 100.0                * (cm^2) / (V * s)
+    mup_CIGS          = 25                   * (cm^2) / (V * s)
 
     μn                = [mun_ZnO, mun_CIGS, mun_CIGS, mun_CIGS]
     μp                = [mup_ZnO, mup_CIGS, mup_CIGS, mup_CIGS]
 
     # relative dielectric permittivity
-    εr_CIGS           = 13.6                 *  1.0
     εr_ZnO            = 9                    *  1.0
+    εr_CIGS           = 13.6                 *  1.0
 
     ε                 = [εr_ZnO, εr_CIGS, εr_CIGS, εr_CIGS]
 
     # trap information
     zt                = 1 # hole traps
     Et                = 2.8                  *  eV
-    Nt                = 5e14                 / (cm^3)
-    NT                = [Nt, Nt, Nt, Nt]
+    ET                = [0.0, 0.0, Et, 0.0]
+    Nt                = 1.0e18               / (cm^3)
+    NT                = [0, 0, Nt, 0]
+
+    mu_t              = 0                    * (cm^2) / (V * s)
+    μt                = [0.0, 0.0, mu_t, 0.0]
 
     # recombination information parameters
-    ni_CIGS           = sqrt(Nc * Nv) * exp(-(Ec_CIGS - Ev_CIGS) / (2 * kB * T)) # intrinsic concentration
-    n0_CIGS           = Nc * Boltzmann( (Et-Ec_CIGS) / (kB*T) )                  # Boltzmann equilibrium concentration
-    p0_CIGS           = ni_CIGS^2 / n0_CIGS                                      # Boltzmann equilibrium concentration
     ni_ZnO            = sqrt(Nc * Nv) * exp(-(Ec_ZnO - Ev_ZnO) / (2 * kB * T))   # intrinsic concentration
     n0_ZnO            = Nc * Boltzmann( (Et-Ec_ZnO) / (kB*T) )                   # Boltzmann equilibrium concentration
     p0_ZnO            = ni_ZnO^2 / n0_ZnO                                        # Boltzmann equilibrium concentration
+    ni_CIGS           = sqrt(Nc * Nv) * exp(-(Ec_CIGS - Ev_CIGS) / (2 * kB * T)) # intrinsic concentration
+    n0_CIGS           = Nc * Boltzmann( (Et-Ec_CIGS) / (kB*T) )                  # Boltzmann equilibrium concentration
+    p0_CIGS           = ni_CIGS^2 / n0_CIGS                                      # Boltzmann equilibrium concentration
 
     p0                = [p0_ZnO, p0_CIGS, p0_CIGS, p0_CIGS]
-    n0                = [n0_ZnO, n0_CIGS, n0_CIGS, n0_CIGS]
+    n0                = [n0_ZnO, n0_CIGS, n0_CIGS, n0_CIGS]</code></pre><p>set the lifetime value high in all other regions, such that SRH recombination can be neglected there</p><pre><code class="language-julia hljs">    SRH_LifeTime      = [1.0e100, 1.0e100, 1.0e-3*ns, 1.0e100]
 
     Auger             = 1.0e-29  * cm^6 / s
-    SRH_LifeTime      = 1.0e-3   * ns
     Radiative         = 1.0e-10  * cm^3 / s
 
     # Schottky contact information
@@ -169,17 +177,28 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
     data.modelType                      = Stationary
-    data.F                             .= FermiDiracOneHalfTeSCA
+    if AdditionalTrapSpecies
+        data.F                          = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
+    else
+        data.F                         .= FermiDiracOneHalfTeSCA
+    end
+
     data.bulkRecombination              = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                  bulk_recomb_Auger = true,
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
+
     data.boundaryType[bregionAcceptor]  = SchottkyContact
     data.boundaryType[bregionDonor]     = OhmicContact
     data.fluxApproximation             .= ExcessChemicalPotential
 
-    # pass trap data in stationary setting since there is no separate trap species
-    add_trap_density!(data=data, zt = zt, Nt = NT)
+    if AdditionalTrapSpecies
+        # Here, we enable the traps and parse the respective index and the regions where the trap is defined.
+        enable_trap_carrier!(;data = data, trapCarrier = iphit, regions = [regionAcceptorTrap])
+    else
+        # pass trap data in stationary setting since there is no separate trap species
+        add_trap_density_Poisson!(data = data, zt = zt, Nt = NT)
+    end
 
     if test == false
         println(&quot;*** done\n&quot;)
@@ -197,10 +216,17 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.UT                                           = (kB * params.temperature) / q
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
+    if AdditionalTrapSpecies
+        params.chargeNumbers[iphit]                     =  zt
+    end
 
     for ibreg in 1:numberOfBoundaryRegions   # boundary region data
         params.bDensityOfStates[iphin, ibreg]           = Nc
         params.bDensityOfStates[iphip, ibreg]           = Nv
+        if AdditionalTrapSpecies
+            params.bDensityOfStates[iphit, ibreg]       = Nt
+            params.bBandEdgeEnergy[ iphit, ibreg]       = Et
+        end
     end
 
     params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_ZnO
@@ -220,10 +246,16 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.mobility[iphin, ireg]                    = μn[ireg]
         params.mobility[iphip, ireg]                    = μp[ireg]
 
+        if AdditionalTrapSpecies
+            params.densityOfStates[iphit, ireg]         = NT[ireg]
+            params.bandEdgeEnergy[iphit, ireg]          = ET[ireg]
+            params.mobility[iphit, ireg]                = μt[ireg]
+        end
+
         # recombination parameters
         params.recombinationRadiative[ireg]             = Radiative
-        params.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime
-        params.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime
+        params.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime[ireg]
+        params.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime[ireg]
         params.recombinationSRHTrapDensity[iphin, ireg] = n0[ireg]
         params.recombinationSRHTrapDensity[iphip, ireg] = p0[ireg]
         params.recombinationAuger[iphin, ireg]          = Auger
@@ -289,6 +321,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
+
+        if AdditionalTrapSpecies
+            # add labels for traps
+            label_energy[1, iphit] = &quot;\$E_{\\tau}-q\\psi\$&quot;; label_energy[2, iphit] = &quot;\$ - q \\varphi_{\\tau}\$&quot;
+            label_density[iphit]   = &quot;\$n_{\\tau}\$&quot;;        label_solution[iphit]  = &quot;\$ \\varphi_{\\tau}\$&quot;
+        end
 
         # ##### set legend for plotting routines #####
         plot_energies(Plotter, ctsys, solution, &quot;Equilibrium&quot;, label_energy)
@@ -375,8 +413,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.2612532579953044
-    main(test = true) ≈ testval
+    testval                  = 1.484831267714751
+    testvalAdditionalSpecies = 1.1334257666192746
+
+    main(test = true, AdditionalTrapSpecies = false) ≈ testval &amp;&amp; main(test = true, AdditionalTrapSpecies = true) ≈ testvalAdditionalSpecies
 end
 
 if test == false
@@ -384,4 +424,4 @@ if test == false
 end
 
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex111_MoS2_withIons_BarrierLowering/">« -</a><a class="docs-footer-nextpage" href="../Ex201_PSC_tensorGrid/">PSC device on 2D domain (Tensor grid). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 2 February 2023 08:25">Thursday 2 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex111_MoS2_withIons_BarrierLowering/">« -</a><a class="docs-footer-nextpage" href="../Ex201_PSC_tensorGrid/">PSC device on 2D domain (Tensor grid). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 2 February 2023 14:51">Thursday 2 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
