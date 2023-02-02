@@ -1,7 +1,8 @@
 #=
-# CIGS pn junction: stationary with traps and Schottky contacts.
+# CIGS: stationary with traps and Schottky contacts.
 ([source code](SOURCE_URL))
-Simulating stationary charge transport in a pn junction with hole traps and mixed Schottky/Ohmic contact conditions.
+Simulating stationary charge transport for CIGS with hole traps and mixed Schottky/Ohmic contact conditions.
+Assume that SRH recombination is only happening within a small regime.
 =#
 
 module Ex112_CIGS_WithTraps
@@ -27,7 +28,7 @@ function initialize_pin_grid(refinementfactor, h_ndoping, h_pdoping_left, h_pdop
     return coord
 end
 
-function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, AdditionalTrapSpecies = false)
 
     ################################################################################
     if test == false
@@ -53,7 +54,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     refinementfactor        = 2^(n-1)
     h_ndoping               = 0.5    * μm
     h_pdoping_left          = 1.0    * μm
-    h_pdoping_trap          = 0.01   * μm
+    h_pdoping_trap          = 0.1    * μm
     h_pdoing_right          = 1.0    * μm
     w_device                = 0.5    * μm  # width of device
     z_device                = 1.0e-4 * cm  # depth of device
@@ -88,9 +89,14 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    iphin             = 1 # index electron quasi Fermi potential
-    iphip             = 2 # index hole quasi Fermi potential
-    numberOfCarriers  = 2 # electrons and holes
+    iphin                = 1 # index electron quasi Fermi potential
+    iphip                = 2 # index hole quasi Fermi potential
+    if AdditionalTrapSpecies
+        iphit            = 3 # index trap quasi Fermi potential
+        numberOfCarriers = 3 # electrons, holes and traps
+    else
+        numberOfCarriers = 2 # electrons and holes
+    end
 
     ## physical data
     T                 = 300.0                *  K
@@ -113,39 +119,45 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     NV                = [Nv, Nv, Nv, Nv]
 
     ## mobilities
-    mun_CIGS          = 100.0                * (cm^2) / (V * s)
-    mup_CIGS          = 25                   * (cm^2) / (V * s)
     mun_ZnO           = 100                  * (cm^2) / (V * s)
     mup_ZnO           = 25                   * (cm^2) / (V * s)
+    mun_CIGS          = 100.0                * (cm^2) / (V * s)
+    mup_CIGS          = 25                   * (cm^2) / (V * s)
 
     μn                = [mun_ZnO, mun_CIGS, mun_CIGS, mun_CIGS]
     μp                = [mup_ZnO, mup_CIGS, mup_CIGS, mup_CIGS]
 
     ## relative dielectric permittivity
-    εr_CIGS           = 13.6                 *  1.0
     εr_ZnO            = 9                    *  1.0
+    εr_CIGS           = 13.6                 *  1.0
 
     ε                 = [εr_ZnO, εr_CIGS, εr_CIGS, εr_CIGS]
 
     ## trap information
     zt                = 1 # hole traps
     Et                = 2.8                  *  eV
-    Nt                = 5e14                 / (cm^3)
-    NT                = [Nt, Nt, Nt, Nt]
+    ET                = [0.0, 0.0, Et, 0.0]
+    Nt                = 1.0e18               / (cm^3)
+    NT                = [0, 0, Nt, 0]
+
+    mu_t              = 0                    * (cm^2) / (V * s)
+    μt                = [0.0, 0.0, mu_t, 0.0]
 
     ## recombination information parameters
-    ni_CIGS           = sqrt(Nc * Nv) * exp(-(Ec_CIGS - Ev_CIGS) / (2 * kB * T)) # intrinsic concentration
-    n0_CIGS           = Nc * Boltzmann( (Et-Ec_CIGS) / (kB*T) )                  # Boltzmann equilibrium concentration
-    p0_CIGS           = ni_CIGS^2 / n0_CIGS                                      # Boltzmann equilibrium concentration
     ni_ZnO            = sqrt(Nc * Nv) * exp(-(Ec_ZnO - Ev_ZnO) / (2 * kB * T))   # intrinsic concentration
     n0_ZnO            = Nc * Boltzmann( (Et-Ec_ZnO) / (kB*T) )                   # Boltzmann equilibrium concentration
     p0_ZnO            = ni_ZnO^2 / n0_ZnO                                        # Boltzmann equilibrium concentration
+    ni_CIGS           = sqrt(Nc * Nv) * exp(-(Ec_CIGS - Ev_CIGS) / (2 * kB * T)) # intrinsic concentration
+    n0_CIGS           = Nc * Boltzmann( (Et-Ec_CIGS) / (kB*T) )                  # Boltzmann equilibrium concentration
+    p0_CIGS           = ni_CIGS^2 / n0_CIGS                                      # Boltzmann equilibrium concentration
 
     p0                = [p0_ZnO, p0_CIGS, p0_CIGS, p0_CIGS]
     n0                = [n0_ZnO, n0_CIGS, n0_CIGS, n0_CIGS]
 
+    # set the lifetime value high in all other regions, such that SRH recombination can be neglected there
+    SRH_LifeTime      = [1.0e100, 1.0e100, 1.0e-3*ns, 1.0e100]
+
     Auger             = 1.0e-29  * cm^6 / s
-    SRH_LifeTime      = 1.0e-3   * ns
     Radiative         = 1.0e-10  * cm^3 / s
 
     ## Schottky contact information
@@ -174,17 +186,28 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
     data.modelType                      = Stationary
-    data.F                             .= FermiDiracOneHalfTeSCA
+    if AdditionalTrapSpecies
+        data.F                          = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
+    else
+        data.F                         .= FermiDiracOneHalfTeSCA
+    end
+
     data.bulkRecombination              = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                  bulk_recomb_Auger = true,
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
+
     data.boundaryType[bregionAcceptor]  = SchottkyContact
     data.boundaryType[bregionDonor]     = OhmicContact
     data.fluxApproximation             .= ExcessChemicalPotential
 
-    ## pass trap data in stationary setting since there is no separate trap species
-    add_trap_density!(data=data, zt = zt, Nt = NT)
+    if AdditionalTrapSpecies
+        ## Here, we enable the traps and parse the respective index and the regions where the trap is defined.
+        enable_trap_carrier!(;data = data, trapCarrier = iphit, regions = [regionAcceptorTrap])
+    else
+        ## pass trap data in stationary setting since there is no separate trap species
+        add_trap_density_Poisson!(data = data, zt = zt, Nt = NT)
+    end
 
     if test == false
         println("*** done\n")
@@ -202,10 +225,17 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.UT                                           = (kB * params.temperature) / q
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
+    if AdditionalTrapSpecies
+        params.chargeNumbers[iphit]                     =  zt
+    end
 
     for ibreg in 1:numberOfBoundaryRegions   # boundary region data
         params.bDensityOfStates[iphin, ibreg]           = Nc
         params.bDensityOfStates[iphip, ibreg]           = Nv
+        if AdditionalTrapSpecies
+            params.bDensityOfStates[iphit, ibreg]       = Nt
+            params.bBandEdgeEnergy[ iphit, ibreg]       = Et
+        end
     end
 
     params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_ZnO
@@ -225,10 +255,16 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.mobility[iphin, ireg]                    = μn[ireg]
         params.mobility[iphip, ireg]                    = μp[ireg]
 
+        if AdditionalTrapSpecies
+            params.densityOfStates[iphit, ireg]         = NT[ireg]
+            params.bandEdgeEnergy[iphit, ireg]          = ET[ireg]
+            params.mobility[iphit, ireg]                = μt[ireg]
+        end
+
         ## recombination parameters
         params.recombinationRadiative[ireg]             = Radiative
-        params.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime
-        params.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime
+        params.recombinationSRHLifetime[iphin, ireg]    = SRH_LifeTime[ireg]
+        params.recombinationSRHLifetime[iphip, ireg]    = SRH_LifeTime[ireg]
         params.recombinationSRHTrapDensity[iphin, ireg] = n0[ireg]
         params.recombinationSRHTrapDensity[iphip, ireg] = p0[ireg]
         params.recombinationAuger[iphin, ireg]          = Auger
@@ -294,6 +330,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
+
+        if AdditionalTrapSpecies
+            ## add labels for traps
+            label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
+            label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
+        end
 
         ## ##### set legend for plotting routines #####
         plot_energies(Plotter, ctsys, solution, "Equilibrium", label_energy)
@@ -380,8 +422,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.2612532579953044
-    main(test = true) ≈ testval
+    testval                  = 1.484831267714751
+    testvalAdditionalSpecies = 1.1334257666192746
+
+    main(test = true, AdditionalTrapSpecies = false) ≈ testval && main(test = true, AdditionalTrapSpecies = true) ≈ testvalAdditionalSpecies
 end
 
 if test == false
