@@ -8,14 +8,14 @@ hole within the the device. The grid is produced with TetGen.jl.
 module Grid_3D
 
 using ExtendableGrids
-using GridVisualize
 
+using ChargeTransport
 # For using this example, one additionally needs to add TetGen. SimplexGridFactory is a wrapper for using this meshgenerator.
-#using SimplexGridFactory
-#using TetGen
-#using GLMakie
+using SimplexGridFactory
+using TetGen
+using GLMakie
 
-function main(;Plotter = nothing, plotting = true) # plotting is currently only tested with GLMakie and PyPlot
+function main(;Plotter = GLMakie, plotting = true) # plotting is currently only tested with GLMakie and PyPlot
 
     cm       = 0.01
     builder3d=let
@@ -144,7 +144,7 @@ function main(;Plotter = nothing, plotting = true) # plotting is currently only 
     grid = simplexgrid(builder3d)
 
     if plotting == true # plotting is currently only tested with GLMakie and PyPlot
-        gridplot(Plotter = Plotter, grid,zplane=1.50e-7,azim=20,elev=60,linewidth=0.5, legend=:lt)
+        gridplot(Plotter = Plotter, grid, zplane=1.50e-7,azim=20,elev=60,linewidth=0.5, legend=:lt)
     end
 
 end # main

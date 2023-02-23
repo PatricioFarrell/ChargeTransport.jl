@@ -13,21 +13,20 @@ ENV["LC_NUMERIC"]="C" # put this in to work with Triangulate.jl, which is origin
 
 module PSC_2D_unstructuredGrid
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
 using GridVisualize
 
 # For using this example one additionally needs to add Triangulate.
 # SimplexGridFactory is a wrapper for using this meshgenerator.
-# using SimplexGridFactory
-# using Triangulate
+using SimplexGridFactory
+using Triangulate
 
 # problem with linux, when including PyPlot not until the end: "ERROR: LoadError: InitError: could not load library "/home/abdel/.julia/artifacts/8cc532f6a1ace8d1b756fc413f4ab340195ec3c3/lib/libgio-2.0.so"/home/abdel/.julia/artifacts/8cc532f6a1ace8d1b756fc413f4ab340195ec3c3/lib/libgobject-2.0.so.0: undefined symbol: g_uri_ref"
 # It seems that this problem is common: https://discourse.julialang.org/t/could-not-load-library-librsvg-very-strange-error/21276
 using PyPlot
 
-function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true, unknown_storage=:dense)
+function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -238,17 +237,17 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
 
-    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    # InterfaceModelSurfaceReco (inner boundary).
+    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    # InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
     # Present ionic vacancies in perovskite layer
-    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ExcessChemicalPotential
+    data.fluxApproximation            .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -283,7 +282,7 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
 
     for ireg in 1:numberOfRegions # interior region data
 
-        params.dielectricConstant[ireg]                 = ε[ireg]
+        params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
         # effective DOS, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = NC[ireg]
@@ -324,35 +323,16 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
         show_params(ctsys)
         println("*** done\n")
     end
-
     ################################################################################
     if test == false
-        println("Define oute boundary conditions")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    # set zero voltage ohmic contacts for electrons and holes at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
-        println("Define control parameters for Newton solver")
-    end
-    ################################################################################
-
-    control                   = VoronoiFVM.NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-10
-    control.tol_relative      = 1.0e-10
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-10
-    control.max_round         = 5
+    control           = SolverControl()
+    control.verbose   = verbose
+    control.maxiters  = 300
+    control.max_round = 5
 
     if test == false
         println("*** done\n")
@@ -364,13 +344,8 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
     end
     ################################################################################
 
-    # initialize solution and starting vectors
-    initialGuess  = unknowns(ctsys)
-    solution      = unknowns(ctsys)
-
-    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess .= solution
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if plotting # currently, plotting the solution was only tested with PyPlot.
         ipsi = data.index_psi
@@ -414,12 +389,13 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
 
     # with fixed timestep sizes we can calculate the times a priori
     tvalues              = range(0, stop = tend, length = number_tsteps)
+    numbertsteps         = length(tvalues)
 
     # for saving I-V data
     IV                   = zeros(0) # for IV values
     biasValues           = zeros(0) # for bias values
 
-    for istep = 2:length(tvalues)
+    for istep = 2:numbertsteps
 
         t  = tvalues[istep]       # Actual time
         Δu = t * scanrate         # Applied voltage
@@ -429,18 +405,18 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
-            println("time value: t = $(t)")
+            println("time value: t = $(t) s")
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+        solution = solve(ctsys, inival = inival, control = control, tstep = Δt)
 
         # get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IV, current)
         push!(biasValues, Δu)
 
-        initialGuess .= solution
+        inival   = solution
     end # time loop
 
     if test == false
@@ -469,14 +445,14 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
         Plotter.xlabel("Applied Voltage [V]")
     end
 
-    testval = solution[data.index_psi, 42]
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
 end #  main
 
 function test()
-    testval = -4.068687295374785
-    main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
+    testval = -0.6729879350578445
+    main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 if test == false

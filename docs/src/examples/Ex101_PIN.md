@@ -9,12 +9,9 @@ The simulations are performed out of equilibrium and for the stationary problem.
 ````julia
 module Ex101_PIN
 
-using VoronoiFVM       # PDE solver with a FVM spatial discretization
 using ChargeTransport  # drift-diffusion solver
 using ExtendableGrids  # grid initializer
-using GridVisualize    # grid visualizer
 using PyPlot           # solution visualizer
-
 
 # This function is used to initialize the grid for a possible extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)
@@ -145,7 +142,7 @@ We initialize the Data instance and fill in predefined data.
     # Here, we need to specify which numbers are associated with electron and hole quasi
     # Fermi potential. Further, the desired recombination processes can be chosen here.
     # Note that, if you choose a SRH recombination you can further specify a transient SRH
-    # recombination by the method enable_traps! and adjusting the modelType. Otherwise, by
+    # recombination by the method enable_trap_carrier! and adjusting the modelType. Otherwise, by
     # default we use the stationary model for this type of recombination.
     data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                  bulk_recomb_Auger = true,
@@ -154,14 +151,14 @@ We initialize the Data instance and fill in predefined data.
 
     # Following choices are possible for boundary model: For contacts currently only
     # OhmicContact and SchottkyContact are possible. For inner boundaries we have
-    # InterfaceModelNone, InterfaceModelSurfaceReco.
+    # InterfaceNone, InterfaceRecombination.
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
     # Following choices are possible for the flux discretization scheme: ScharfetterGummel,
     # ScharfetterGummelGraded, ExcessChemicalPotential, ExcessChemicalPotentialGraded,
     # DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ExcessChemicalPotential
+    data.fluxApproximation            .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -195,7 +192,7 @@ ParamsNodal struct, see Ex102.
 
     for ireg in 1:numberOfRegions           # interior region data
 
-        params.dielectricConstant[ireg]                 = εr
+        params.dielectricConstant[ireg]                 = εr * ε0
 
         # effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
@@ -242,27 +239,12 @@ VoronoiFVMSys is not dependent on the data we initialized but rather on default 
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
     if test == false
-        # Here we cn show region dependent physical parameters. show_params() only supports
+        # Here we can show region dependent physical parameters. show_params() only supports
         # region dependent parameters, but, if one wishes to print nodal dependent parameters,
         # currently this is possible with println(ctsys.data.paramsnodal). We neglected here,
         # since in most applications where the numberOfNodes is >> 10 this would results in a
         # large output in the terminal.
         show_params(ctsys)
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
-        println("Define outer boundary conditions")
-    end
-    ################################################################################
-
-    # We set zero voltage ohmic contacts for each charge carrier at all outer boundaries
-    # for the equilibrium calculations.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
         println("*** done\n")
     end
 
@@ -273,10 +255,10 @@ VoronoiFVMSys is not dependent on the data we initialized but rather on default 
         # set legend for plotting routines. Either you can use the predefined labels or write your own.
         label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
 
-        psi0 = electroNeutralSolution!(grid, data)
-        plot_energies(Plotter, grid, data, label_BEE)
+        psi0 = electroNeutralSolution!(ctsys)
+        plot_energies(Plotter, ctsys, label_BEE)
         Plotter.figure()
-        plot_doping(Plotter, grid, data, label_density)
+        plot_doping(Plotter, ctsys, label_density)
         Plotter.figure()
         plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=true)
         Plotter.figure()
@@ -284,17 +266,18 @@ VoronoiFVMSys is not dependent on the data we initialized but rather on default 
     end
     ################################################################################
     if test == false
-        println("Define control parameters for Newton solver")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 250
-    control.tol_absolute      = 1.0e-14
-    control.tol_relative      = 1.0e-14
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-8
+    control              = SolverControl()
+    control.verbose      = verbose
+    control.maxiters     = 50
+    control.abstol       = 1.0e-14
+    control.reltol       = 1.0e-14
+    control.tol_round    = 1.0e-8
+    control.damp_initial = 0.5
+    control.max_round    = 3
 
     if test == false
         println("*** done\n")
@@ -306,17 +289,9 @@ VoronoiFVMSys is not dependent on the data we initialized but rather on default 
     end
     ################################################################################
 
-    control.damp_initial = 0.5
-    control.damp_growth  = 1.2 # >= 1
-    control.max_round    = 3
-
-    # initialize solution and starting vectors
-    initialGuess         = unknowns(ctsys)
-    solution             = unknowns(ctsys)
-
-    solution             = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess        .= solution
+    # calculate equilibrium solution and as initial guess
+    solution  = equilibrium_solve!(ctsys, control = control)
+    inival    = solution
 
     if test == false
         println("*** done\n")
@@ -340,15 +315,22 @@ Set calculationType to OutOfEquilibrium for starting with respective simulation.
     for Δu in biasValues
 
         if test == false
-            println("Δu  = ", Δu)
+            println("bias value: Δu = ", Δu, " V")
         end
+
         # set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
+        solution  = solve(ctsys; inival = inival, control = control)
+        inival   .= solution
 
-        initialGuess .= solution
+        # Note that the old way of solving will be soon removed (see current API changes in VoronoiFVM)
+````
 
+solve!(solution, inival, ctsys, control = control, tstep = Inf)
+inival .= solution
+
+````julia
         # get I-V data
         current = get_current_val(ctsys, solution)
 
@@ -362,11 +344,11 @@ Set calculationType to OutOfEquilibrium for starting with respective simulation.
 
     # plot solution and IV curve
     if plotting
-        plot_energies(Plotter, grid, data, solution,  "Applied voltage Δu = $(biasValues[end])", label_energy,   plotGridpoints = false)
+        plot_energies(Plotter, ctsys, solution,  "Applied voltage Δu = $(biasValues[end])", label_energy,   plotGridpoints = false)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution,  "Applied voltage Δu = $(biasValues[end])", label_solution, plotGridpoints = true)
+        plot_solution(Plotter, ctsys, solution,  "Applied voltage Δu = $(biasValues[end])", label_solution, plotGridpoints = true)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
+        plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV,  "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
     end

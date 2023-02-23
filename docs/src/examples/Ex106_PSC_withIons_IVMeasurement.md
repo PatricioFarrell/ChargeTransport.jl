@@ -12,13 +12,11 @@ https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/
 ````julia
 module Ex106_PSC_withIons_IVMeasurement
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
-function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -208,6 +206,24 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     # contact voltage
     voltageAcceptor  = 1.2                  * V
 
+    # primary data for I-V scan protocol
+    scanrate         = 1.0 * V/s
+    number_tsteps    = 31
+    endVoltage       = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend             = endVoltage/scanrate
+
+    # Define scan protocol function
+    function linearScanProtocol(t)
+        if t == Inf
+            0.0
+        else
+            scanrate * t
+        end
+    end
+
+    # Apply zero voltage on left boundary and a linear scan protocol on right boundary
+    contactVoltageFunction = [zeroVoltage, linearScanProtocol]
+
     if test == false
         println("*** done\n")
     end
@@ -218,7 +234,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     # Initialize Data instance and fill in predefined data
-    data                               = Data(grid, numberOfCarriers)
+    # Currently, the way to go is to pass a contact voltage function exactly here.
+    data                               = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunction)
 
     # Possible choices: Stationary, Transient
     data.modelType                     = Transient
@@ -232,19 +249,19 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
 
-    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    # InterfaceModelSurfaceReco (inner boundary).
+    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    # InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
-    # Here, the user gives information on which indices belong to ionic charge carriers and
-    # in which regions these charge carriers are present. In this application ion vacancies
-    # only live in active perovskite layer.
-    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    # With this method, the user enable the ionic carrier parsed to ionicCarrier and gives
+    # gives the information on which regions this ionic carrier is defined.
+    # In this application ion vacancies only live in active perovskite layer.
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ExcessChemicalPotential
+    data.fluxApproximation            .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -266,7 +283,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for ireg in 1:numberOfRegions # interior region data
 
-        params.dielectricConstant[ireg]                 = ε[ireg]
+        params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
         # effective DOS, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = NC[ireg]
@@ -331,42 +348,24 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"; label_BEE[iphia] = "\$E_a\$"
         label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
 
-        plot_energies(Plotter, grid, data, label_BEE)
+        plot_energies(Plotter, ctsys, label_BEE)
         Plotter.figure()
-        plot_doping(Plotter, grid, data, label_density)
+        plot_doping(Plotter, ctsys, label_density)
         Plotter.figure()
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
-        println("Define outer boundary conditions")
-    end
-    ################################################################################
-
-    # set zero voltage ohmic contacts for electrons and holes at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
         println("*** done\n")
     end
     ################################################################################
     if test == false
-        println("Define control parameters for Newton solver")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-10
-    control.tol_relative      = 1.0e-10
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-10
-    control.max_round         = 5
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.61 # >= 1
+    control              = SolverControl()
+    control.verbose      = verbose
+    control.maxiters     = 300
+    control.max_round    = 5
+    control.damp_initial = 0.5
+    control.damp_growth  = 1.61 # >= 1
 
     if test == false
         println("*** done\n")
@@ -377,20 +376,16 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # initialize solution and starting vectors
-    initialGuess  = unknowns(ctsys)
-    solution      = unknowns(ctsys)
-
-    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess .= solution
+    # calculate equilibrium solution and as initial guess
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if plotting
-        plot_energies(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
+        plot_energies(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
+        plot_densities(Plotter, ctsys, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+        plot_solution(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
     if test == false
@@ -403,12 +398,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
     data.calculationType = OutOfEquilibrium
 
-    # primary data for I-V scan protocol
-    scanrate             = 1.0 * V/s
-    number_tsteps        = 31
-    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend                 = endVoltage/scanrate
-
     # with fixed timestep sizes we can calculate the times a priori
     tvalues              = range(0, stop = tend, length = number_tsteps)
 
@@ -418,28 +407,27 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for istep = 2:number_tsteps
 
-        t  = tvalues[istep]       # Actual time
-        Δu = t * scanrate         # Applied voltage
-        Δt = t - tvalues[istep-1] # Time step size
+        t  = tvalues[istep]                                    # Actual time
+        Δu = data.contactVoltageFunction[bregionAcceptor](t) # Applied voltage
+        Δt = t - tvalues[istep-1]                              # Time step size
 
         # Apply new voltage by setting non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
-            println("time value: t = $(t)")
+            println("time value: t = $(t) s")
         end
 
-        # Solve time step problems with timestep Δt. initialGuess plays the role of the solution
+        # Solve time step problems with timestep Δt. inival plays the role of the solution
         # from last timestep
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
-
+        solution = solve(ctsys; inival = inival, control = control, tstep = Δt)
         # get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IV, current)
         push!(biasValues, Δu)
 
-        initialGuess .= solution
+        inival = solution
 
     end # time loop
 
@@ -451,23 +439,22 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     # res = [biasValues IV];
 
     if plotting
-        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
+        plot_energies(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
+        plot_densities(Plotter, ctsys, solution,"bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+        plot_solution(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
     end
 
-    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
-    println("*** done\n")
 
 end #  main
 
 function test()
-    testval = 26.04675814190998
-    main(test = true, unknown_storage=:dense) ≈ testval  #&& main(test = true, unknown_storage=:sparse) ≈ testval
+    testval = -0.6305710078001884
+    main(test = true, unknown_storage=:dense) ≈ testval  && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 if test == false

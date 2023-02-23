@@ -12,13 +12,11 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 ````julia
 module Ex110_PSC_surface_recombination
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
-function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -231,19 +229,19 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
 
-    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    # InterfaceModelSurfaceReco (inner boundary).
+    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    # InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor]  = OhmicContact
-    data.boundaryType[bregionJunction1] = InterfaceModelSurfaceReco
-    data.boundaryType[bregionJunction2] = InterfaceModelSurfaceReco
+    data.boundaryType[bregionJunction1] = InterfaceRecombination
+    data.boundaryType[bregionJunction2] = InterfaceRecombination
     data.boundaryType[bregionDonor]     = OhmicContact
 
     # Present ionic vacancies in perovskite layer
-    data.enableIonicCarriers            = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation              = ExcessChemicalPotential
+    data.fluxApproximation             .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -265,7 +263,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for ireg in 1:numberOfRegions ## interior region data
 
-        params.dielectricConstant[ireg]                          = ε[ireg]
+        params.dielectricConstant[ireg]                          = ε[ireg] * ε0
 
         # effective dos, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]                      = NC[ireg]
@@ -302,7 +300,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.bBandEdgeEnergy[iphip, bregionDonor]                  = Ev_d
 
     ##############################################################
-    # inner boundary region data
+    # inner boundary region data (we choose the intrinsic values)
     params.bDensityOfStates[iphin, bregionJunction1]             = Nc_i
     params.bDensityOfStates[iphip, bregionJunction1]             = Nv_i
 
@@ -319,11 +317,11 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.recombinationSRHvelocity[iphin, bregionJunction1]     = 1.0e1  * cm / s
     params.recombinationSRHvelocity[iphip, bregionJunction1]     = 1.0e5  * cm / s
 
-    params.recombinationSRHvelocity[iphin, bregionJunction2]     = 1.0e7  * cm / s
-    params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e1  * cm / s
-
     params.bRecombinationSRHTrapDensity[iphin, bregionJunction1] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
     params.bRecombinationSRHTrapDensity[iphip, bregionJunction1] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
+
+    params.recombinationSRHvelocity[iphin, bregionJunction2]     = 1.0e7  * cm / s
+    params.recombinationSRHvelocity[iphip, bregionJunction2]     = 1.0e1  * cm / s
 
     params.bRecombinationSRHTrapDensity[iphin, bregionJunction2] = params.recombinationSRHTrapDensity[iphin, regionIntrinsic]
     params.bRecombinationSRHTrapDensity[iphip, bregionJunction2] = params.recombinationSRHTrapDensity[iphip, regionIntrinsic]
@@ -349,34 +347,17 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     if test == false
         println("*** done\n")
     end
-
     ################################################################################
     if test == false
-        println("Define outer boundary conditions")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    # set zero voltage ohmic contacts for electrons and holes at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
-        println("Define control parameters for Newton solver")
-    end
-    ################################################################################
-
-    control                   = VoronoiFVM.NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-10
-    control.tol_relative      = 1.0e-10
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-10
+    control              = SolverControl()
+    control.verbose      = verbose
+    control.damp_initial = 0.9
+    control.damp_growth  = 1.61 # >= 1
+    control.max_round    = 5
 
     if test == false
         println("*** done\n")
@@ -388,22 +369,8 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    control.damp_initial = 0.05
-    control.damp_growth  = 1.21 # >= 1
-    control.max_round    = 5
-
-    # initialize solution and starting vectors
-    initialGuess         = unknowns(ctsys)
-    solution             = unknowns(ctsys)
-
-    solution             = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess        .= solution
-
-    if test == false
-        println("*** done\n")
-    end
-
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if test == false
         println("*** done\n")
@@ -417,10 +384,6 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # set calculationType to OutOfEquilibrium for starting with respective simulation.
     data.calculationType = OutOfEquilibrium
-
-    control.damp_initial = 0.5
-    control.damp_growth  = 1.21
-    control.max_round    = 5
 
     # there are different ways to control time stepping. Here we assume these primary data
     scanrate             = 1.0 * V/s
@@ -448,12 +411,11 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
             println("time value: Δt = $(t)")
         end
 
-        solve!(solution, initialGuess, ctsys, control = control, tstep = Δt)
-
-        initialGuess .= solution
+        solution = solve(ctsys, inival = inival, control = control, tstep = Δt)
+        inival   = solution
 
         # get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IV, current)
         push!(biasValues, Δu)
@@ -462,7 +424,9 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
             label_solution = Array{String, 1}(undef, numberOfCarriers)
             label_solution[iphin]  = "\$ \\varphi_n\$"; label_solution[iphip]  = "\$ \\varphi_p\$"; label_solution[iphia]  = "\$ \\varphi_a\$"
 
-            plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+            PyPlot.clf()
+            plot_solution(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)
+            PyPlot.pause(0.5)
         end
 
     end # time loop
@@ -473,15 +437,15 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("*** done\n")
     end
 
-    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
 
 end # main
 
 function test()
-    testval = 50.608171445993875
-    main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
+    testval = -0.5198379953833077
+    main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 if test == false

@@ -11,13 +11,11 @@ https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_m
 ````julia
 module Ex201_PSC_tensorGrid
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
-function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:dense)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -241,17 +239,17 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
 
-    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    # InterfaceModelSurfaceReco (inner boundary).
+    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    # InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
     # Present ionic vacancies in perovskite layer
-    data.enableIonicCarriers           = enable_ionic_carriers(ionic_carriers = [iphia], regions = [regionIntrinsic])
+    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ExcessChemicalPotential
+    data.fluxApproximation            .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -286,7 +284,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for ireg in 1:numberOfRegions # interior region data
 
-        params.dielectricConstant[ireg]                 = ε[ireg]
+        params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
         # effective DOS, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = NC[ireg]
@@ -328,37 +326,18 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         show_params(ctsys)
         println("*** done\n")
     end
-
     ################################################################################
     if test == false
-        println("Define outer boundary conditions")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    # set zero voltage ohmic contacts for electrons and holes at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
-        println("Define control parameters for Newton solver")
-    end
-    ################################################################################
-
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-10
-    control.tol_relative      = 1.0e-10
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-10
-    control.max_round         = 5
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.21 # >= 1
+    control              = SolverControl()
+    control.verbose      = verbose
+    control.maxiters     = 300
+    control.max_round    = 5
+    control.damp_initial = 0.5
+    control.damp_growth  = 1.21 # >= 1
 
     if test == false
         println("*** done\n")
@@ -370,13 +349,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # initialize solution and starting vectors
-    initialGuess  = unknowns(ctsys)
-    solution      = unknowns(ctsys)
-
-    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess .= solution
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if plotting # currently, plotting the solution was only tested with PyPlot.
         ipsi = data.index_psi
@@ -423,7 +397,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # for saving I-V data
     IV                  = zeros(0) # for IV values
-    biasValues         = zeros(0) # for bias values
+    biasValues          = zeros(0) # for bias values
 
     for istep = 2:number_tsteps
 
@@ -435,18 +409,18 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
-            println("time value: t = $(t)")
+            println("time value: t = $(t) s")
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+        solution = solve(ctsys, inival = inival, control = control, tstep = Δt)
 
         # get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IV, current)
         push!(biasValues, Δu)
 
-        initialGuess .= solution
+        inival   = solution
     end # time loop
 
     if plotting
@@ -481,8 +455,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -4.067616138729543
-    main(test = true, unknown_storage=:dense) ≈ testval #&& main(test = true, unknown_storage=:sparse) ≈ testval
+    testval = -4.067614136332431
+    main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
 if test == false

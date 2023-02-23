@@ -6,10 +6,8 @@ Simulating transient charge transport in a GaAs p-i-n diode with an electron tra
 ````julia
 module Ex109_Traps
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 # function to initialize the grid for a possble extension to other p-i-n devices.
@@ -143,19 +141,19 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
                                                                  bulk_recomb_SRH = true)
 
     # Here, we enable the traps and parse the respective index and the regions where the trap is defined.
-    enable_traps!(data = data, traps = iphit, regions = regions)
+    enable_trap_carrier!(;data = data, trapCarrier = iphit, regions = regions)
 
     # Possible choices: GenerationNone, GenerationUniform
     data.generationModel               = GenerationUniform
 
-    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    # InterfaceModelSurfaceReco (inner boundary).
+    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    # InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ExcessChemicalPotential
+    data.fluxApproximation            .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -187,7 +185,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     for ireg in 1:numberOfRegions           # interior region data
 
-        params.dielectricConstant[ireg]                 = εr
+        params.dielectricConstant[ireg]                 = εr * ε0
 
         # effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
@@ -229,34 +227,17 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         show_params(ctsys)
         println("*** done\n")
     end
-
     ################################################################################
     if test == false
-        println("Define outer boundary conditions and enabled layers")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    # set zero voltage ohmic contacts for each charge carrier at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-    ################################################################################
-    if test == false
-        println("Define control parameters for Newton solver")
-    end
-    ################################################################################
-
-    control                = NewtonControl()
+    control                = SolverControl()
     control.verbose        = verbose
-    control.tol_absolute   = 1.0e-10
-    control.tol_relative   = 1.0e-10
     control.tol_round      = 1.0e-4
     control.damp_initial   = 0.5
-    control.damp_growth    = 1.2
-    control.max_iterations = 30
+    control.damp_growth    = 1.61
     control.max_round      = 3
 
     if test == false
@@ -269,13 +250,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # initialize solution and starting vectors
-    initialGuess          = unknowns(ctsys)
-    solution              = unknowns(ctsys)
-
     # solve thermodynamic equilibrium and update initial guess
-    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-    initialGuess         .= solution
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if test == false
         println("*** done\n")
@@ -288,11 +265,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
         label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
 
-        plot_energies(Plotter, grid, data, solution, "Equilibrium", label_energy)
+        plot_energies(Plotter, ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"Equilibrium", label_density)
+        plot_densities(Plotter, ctsys, solution,"Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Equilibrium", label_solution)
+        plot_solution(Plotter, ctsys, solution, "Equilibrium", label_solution)
     end
 
     ################################################################################
@@ -315,24 +292,28 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # with fixed timestep sizes we can calculate the times
     # a priori
     tvalues              = range(0.0, stop = tend, length = number_tsteps)
-
-    steps                = 20
-    I                    = collect(steps:-1:0.0)
-    LAMBDA               = 10 .^ (I)
     Δt                   = tvalues[2] - tvalues[1]
+````
 
-    for i in 1:length(LAMBDA)
+these values are needed for putting the generation slightly on
 
-        data.λ2 = 1 / (LAMBDA[i] )
+````julia
+    I      = collect(20:-1:0.0)
+    LAMBDA = 10 .^ (-I)
+
+    for istep = 1:length(I)-1
+
+        # turn slowly generation on
+        data.λ2   = LAMBDA[istep + 1]
 
         if test == false
             println("increase generation with λ2 = $(data.λ2)")
         end
 
-        VoronoiFVM.solve!(solution, initialGuess, ctsys, control = control, tstep=Δt)
+        solution = solve(ctsys, inival = inival, control = control)
+        inival   = solution
 
-        initialGuess = solution
-    end
+    end # generation loop
 
     if test == false
         println("*** done\n")
@@ -353,18 +334,18 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
-            println("time value: t = $(t)")
+            println("time value: t = $(t) s")
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+        solution = solve(ctsys, inival = inival, control = control, tstep = Δt)
 
         # get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IV, w_device * z_device * current)
         push!(biasValues, Δu)
 
-        initialGuess .= solution
+        inival   = solution
 
     end # bias loop
 
@@ -374,16 +355,16 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # plot solution and IV curve
     if plotting
-        plot_energies(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_energy)
+        plot_energies(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_density)
+        plot_densities(Plotter, ctsys, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_density)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_solution)
+        plot_solution(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_solution)
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV, "bias \$\\Delta u\$ = $(biasValues[end])", plotGridpoints = true)
     end
 
-    testval = solution[iphit, 17]
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
     if test == false
@@ -393,7 +374,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.0245795906936774
+    testval = 0.9699244984603224
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

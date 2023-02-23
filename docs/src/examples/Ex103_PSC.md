@@ -12,10 +12,8 @@ https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/
 ````julia
 module Ex103_PSC
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
@@ -222,14 +220,14 @@ We initialize the Data instance and fill in predefined data.
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = false)
 
-    # Possible choices: OhmicContact, SchottkyContact(outer boundary) and InterfaceModelNone,
-    # InterfaceModelSurfaceReco (inner boundary).
+    # Possible choices: OhmicContact, SchottkyContact(outer boundary) and InterfaceNone,
+    # InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ExcessChemicalPotential
+    data.fluxApproximation            .= ExcessChemicalPotential
 
     if test == false
         println("*** done\n")
@@ -264,7 +262,7 @@ We initialize the Data instance and fill in predefined data.
     # interior region data
     for ireg in 1:numberOfRegions
 
-        params.dielectricConstant[ireg]                 = ε[ireg]
+        params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
         # effective DOS, band edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = NC[ireg]
@@ -308,32 +306,18 @@ We initialize the Data instance and fill in predefined data.
     end
     ################################################################################
     if test == false
-        println("Define outer boundary conditions")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    # We set zero voltage ohmic contacts for each charge carrier at all outer boundaries
-    # for the equilibrium calculations.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-
-    ################################################################################
-    if test == false
-        println("Define control parameters for Newton solver")
-    end
-    ################################################################################
-
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-13
-    control.tol_relative      = 1.0e-13
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-13
+    control              = SolverControl()
+    control.verbose      = verbose
+    control.abstol       = 1.0e-13
+    control.reltol       = 1.0e-13
+    control.tol_round    = 1.0e-13
+    control.damp_initial = 0.6
+    control.damp_growth  = 1.21 # >= 1
+    control.max_round    = 7
 
     if test == false
         println("*** done\n")
@@ -345,26 +329,17 @@ We initialize the Data instance and fill in predefined data.
     end
     ################################################################################
 
-    control.damp_initial  = 0.8
-    control.damp_growth   = 1.61 # >= 1
-    control.max_round     = 5
-
-    # initialize solution and starting vectors
-    initialGuess          = unknowns(ctsys)
-    solution              = unknowns(ctsys)
-
-    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess         .= solution
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
 
-        plot_energies(Plotter,  grid, data, solution, "Equilibrium", label_energy)
+        plot_energies(Plotter,  ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Equilibrium", label_density)
+        plot_densities(Plotter, ctsys, solution, "Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter,  grid, data, solution, "Equilibrium", label_solution)
+        plot_solution(Plotter,  ctsys, solution, "Equilibrium", label_solution)
         Plotter.figure()
     end
 
@@ -380,47 +355,43 @@ We initialize the Data instance and fill in predefined data.
 
     data.calculationType = OutOfEquilibrium
 
-    control.damp_initial = 0.6
-    control.damp_growth  = 1.21 # >= 1
-    control.max_round    = 7
-
     maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 13)
 
     for Δu in biasValues
+
         if test == false
-            println("Bias value: Δu = $(Δu)")
+            println("bias value: Δu = $(Δu)", " V")
         end
 
         # set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
-
-        initialGuess .= solution
+        solution  = solve(ctsys; inival = inival, control = control)
+        inival   .= solution
 
     end # bias loop
 
     # plotting
     if plotting
-        plot_energies(Plotter,  grid, data, solution, "Applied voltage Δu = $maxBias", label_energy)
+        plot_energies(Plotter,  ctsys, solution, "Applied voltage Δu = $maxBias", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $maxBias", label_density)
+        plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $maxBias", label_density)
         Plotter.figure()
-        plot_solution(Plotter,  grid, data, solution, "Applied voltage Δu = $maxBias", label_solution)
+        plot_solution(Plotter,  ctsys, solution, "Applied voltage Δu = $maxBias", label_solution)
     end
 
     if test == false
         println("*** done\n")
     end
 
-    testval = VoronoiFVM.norm(ctsys.fvmsys, solution, 2)
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
 end #  main
 
 function test()
-    testval = 22.166685901417342
+    testval = -0.9114885947340186
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

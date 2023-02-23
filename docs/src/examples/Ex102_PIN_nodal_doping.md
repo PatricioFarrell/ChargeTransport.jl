@@ -8,10 +8,8 @@ the stationary problem. A special feature here is that the doping is node-depend
 ````julia
 module Ex102_PIN_nodal_doping
 
-using VoronoiFVM
 using ChargeTransport
 using ExtendableGrids
-using GridVisualize
 using PyPlot
 
 function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
@@ -116,14 +114,14 @@ We initialize the Data instance and fill in predefined data.
                                                                 bulk_recomb_radiative = false,
                                                                 bulk_recomb_SRH = true)
 
-    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceModelNone,
-    # InterfaceModelSurfaceReco (inner boundary).
+    # Possible choices: OhmicContact, SchottkyContact (outer boundary) and InterfaceNone,
+    # InterfaceRecombination (inner boundary).
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
     # Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     # ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
-    data.fluxApproximation             = ScharfetterGummel
+    data.fluxApproximation            .= ScharfetterGummel
 
     if test == false
         println("*** done\n")
@@ -157,7 +155,7 @@ Define the Params and ParamsNodal struct.
 
     for ireg in 1:numberOfRegions           # interior region data
 
-        params.dielectricConstant[ireg]                 = εr
+        params.dielectricConstant[ireg]                 = εr * ε0
 
         # effective DOS, band-edge energy and mobilities
         params.densityOfStates[iphin, ireg]             = Nc
@@ -206,32 +204,15 @@ Define the Params and ParamsNodal struct.
 
     ################################################################################
     if test == false
-        println("Define outer boundary conditions")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    # set zero voltage ohmic contacts for each charge carrier at all outer boundaries.
-    set_contact!(ctsys, bregionAcceptor, Δu = 0.0)
-    set_contact!(ctsys, bregionDonor,    Δu = 0.0)
-
-    if test == false
-        println("*** done\n")
-    end
-    ################################################################################
-    if test == false
-        println("Define control parameters for Newton solver")
-    end
-    ################################################################################
-
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.damp_growth       = 1.21
-    control.max_iterations    = 250
-    control.tol_absolute      = 1.0e-14
-    control.tol_relative      = 1.0e-14
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-8
-    control.max_round         = 5
+    control           = SolverControl()
+    control.verbose   = verbose
+    control.abstol    = 1.0e-14
+    control.reltol    = 1.0e-14
+    control.tol_round = 1.0e-14
 
     if test == false
         println("*** done\n")
@@ -243,24 +224,20 @@ Define the Params and ParamsNodal struct.
     end
     ################################################################################
 
-    # initialize solution and starting vectors
-    initialGuess  = unknowns(ctsys)
-    solution      = unknowns(ctsys)
-
-    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess .= solution
+    # calculate equilibrium solution and as initial guess
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if plotting
         # set legend for plotting routines. Either you can use the predefined labels or write your own.
         label_solution, label_density, label_energy = set_plotting_labels(data)
 
         Plotter.figure()
-        plot_energies(Plotter,  grid, data, solution, "Equilibrium", label_energy)
+        plot_energies(Plotter,  ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Equilibrium", label_density)
+        plot_densities(Plotter, ctsys, solution, "Equilibrium", label_density)
         Plotter.figure()
-        plot_solution(Plotter,  grid, data, solution, "Equilibrium", label_solution)
+        plot_solution(Plotter,  ctsys, solution, "Equilibrium", label_solution)
         Plotter.figure()
     end
 
@@ -285,19 +262,29 @@ Set calculationType to OutOfEquilibrium for starting with respective simulation.
 
     for Δu in biasValues
 
+        if test == false
+            println("bias value: Δu  = ", Δu, " V")
+        end
+
         # set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
+        solution  = solve(ctsys; inival = inival, control = control)
+        inival   .= solution
 
-        initialGuess .= solution
+        # Note that the old way of solving will be soon removed (see current API changes in VoronoiFVM)
+````
 
+solve!(solution, inival, ctsys, control = control, tstep = Inf)
+inival .= solution
+
+````julia
         # get IV curve
-        factory = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
+        factory = TestFunctionFactory(ctsys)
 
         # testfunction zero in bregionAcceptor and one in bregionDonor
-        tf     = testfunction(factory, [bregionAcceptor], [bregionDonor])
-        I      = integrate(ctsys.fvmsys, tf, solution)
+        tf      = testfunction(factory, [bregionAcceptor], [bregionDonor])
+        I       = integrate(ctsys, tf, solution)
 
         push!(IV,  abs.(w_device * z_device * (I[iphin] + I[iphip])))
 
@@ -305,11 +292,11 @@ Set calculationType to OutOfEquilibrium for starting with respective simulation.
 
 
     if plotting # plot solution and IV curve
-        plot_energies(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])",  label_energy)
+        plot_energies(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])",  label_energy)
         Plotter.figure()
-        plot_solution(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])",  label_solution, plotGridpoints = true)
+        plot_solution(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])",  label_solution, plotGridpoints = true)
         Plotter.figure()
-        plot_densities(Plotter, grid, data, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
+        plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])", label_density,  plotGridpoints = true)
         Plotter.figure()
         plot_IV(Plotter, biasValues,IV, "Applied voltage Δu = $(biasValues[end])", plotGridpoints = true)
     end
