@@ -358,9 +358,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.abstol       = 1.0e-13
     control.reltol       = 1.0e-13
     control.tol_round    = 1.0e-13
-    control.damp_initial = 0.9
+    control.damp_initial = 0.5
     control.damp_growth  = 1.61 # >= 1
-    control.max_round    = 7
+    control.max_round    = 5
 
     if test == false
         println("*** done\n")
