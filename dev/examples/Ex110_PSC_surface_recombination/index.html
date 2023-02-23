@@ -338,17 +338,15 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     if test == false
-        println(&quot;Define control parameters for Newton solver&quot;)
+        println(&quot;Define control parameters for Solver&quot;)
     end
     ################################################################################
 
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-10
-    control.tol_relative      = 1.0e-10
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-10
+    control              = SolverControl()
+    control.verbose      = verbose
+    control.damp_initial = 0.9
+    control.damp_growth  = 1.61 # &gt;= 1
+    control.max_round    = 5
 
     if test == false
         println(&quot;*** done\n&quot;)
@@ -360,22 +358,8 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    control.damp_initial = 0.05
-    control.damp_growth  = 1.21 # &gt;= 1
-    control.max_round    = 5
-
-    # initialize solution and starting vectors
-    initialGuess         = unknowns(ctsys)
-    solution             = unknowns(ctsys)
-
-    solution             = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess        .= solution
-
-    if test == false
-        println(&quot;*** done\n&quot;)
-    end
-
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if test == false
         println(&quot;*** done\n&quot;)
@@ -389,10 +373,6 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # set calculationType to OutOfEquilibrium for starting with respective simulation.
     data.calculationType = OutOfEquilibrium
-
-    control.damp_initial = 0.5
-    control.damp_growth  = 1.21
-    control.max_round    = 5
 
     # there are different ways to control time stepping. Here we assume these primary data
     scanrate             = 1.0 * V/s
@@ -420,12 +400,11 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
             println(&quot;time value: Δt = $(t)&quot;)
         end
 
-        solve!(solution, initialGuess, ctsys, control = control, tstep = Δt)
-
-        initialGuess .= solution
+        solution = solve(ctsys, inival = inival, control = control, tstep = Δt)
+        inival   = solution
 
         # get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IV, current)
         push!(biasValues, Δu)
@@ -462,4 +441,4 @@ if test == false
     println(&quot;This message should show when this module is successfully recompiled.&quot;)
 end
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex109_Traps/">« GaAs diode: transient with traps (1D).</a><a class="docs-footer-nextpage" href="../Ex111_MoS2_withIons_BarrierLowering/">MoS2 with moving ions and Schottky Barrier Lowering. »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 2 February 2023 14:55">Thursday 2 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex109_Traps/">« GaAs diode: transient with traps (1D).</a><a class="docs-footer-nextpage" href="../Ex111_MoS2_withIons_BarrierLowering/">MoS2 with moving ions and Schottky Barrier Lowering. »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 23 February 2023 15:05">Thursday 23 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

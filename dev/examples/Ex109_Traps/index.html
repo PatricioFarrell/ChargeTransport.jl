@@ -224,18 +224,15 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     if test == false
-        println(&quot;Define control parameters for Newton solver&quot;)
+        println(&quot;Define control parameters for Solver&quot;)
     end
     ################################################################################
 
-    control                = NewtonControl()
+    control                = SolverControl()
     control.verbose        = verbose
-    control.tol_absolute   = 1.0e-10
-    control.tol_relative   = 1.0e-10
     control.tol_round      = 1.0e-4
     control.damp_initial   = 0.5
     control.damp_growth    = 1.61
-    control.max_iterations = 100
     control.max_round      = 3
 
     if test == false
@@ -248,13 +245,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # initialize solution and starting vectors
-    initialGuess          = unknowns(ctsys)
-    solution              = unknowns(ctsys)
-
     # solve thermodynamic equilibrium and update initial guess
-    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-    initialGuess         .= solution
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if test == false
         println(&quot;*** done\n&quot;)
@@ -306,9 +299,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
             println(&quot;increase generation with λ2 = $(data.λ2)&quot;)
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
-
-        initialGuess .= solution
+        solution = solve(ctsys, inival = inival, control = control)
+        inival   = solution
 
     end # generation loop
 
@@ -331,18 +323,18 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
-            println(&quot;time value: t = $(t)&quot;)
+            println(&quot;time value: t = $(t) s&quot;)
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+        solution = solve(ctsys, inival = inival, control = control, tstep = Δt)
 
         # get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IV, w_device * z_device * current)
         push!(biasValues, Δu)
 
-        initialGuess .= solution
+        inival   = solution
 
     end # bias loop
 
@@ -379,4 +371,4 @@ if test == false
     println(&quot;This message should show when the PIN module has successfully recompiled.&quot;)
 end
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex108_PSC_uniform_Generation/">« PSC device with uniform generation rate (1D).</a><a class="docs-footer-nextpage" href="../Ex110_PSC_surface_recombination/">PSC device with surface recombination (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 2 February 2023 14:55">Thursday 2 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex108_PSC_uniform_Generation/">« PSC device with uniform generation rate (1D).</a><a class="docs-footer-nextpage" href="../Ex110_PSC_surface_recombination/">PSC device with surface recombination (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 23 February 2023 15:05">Thursday 23 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -16,7 +16,7 @@ using Triangulate
 # It seems that this problem is common: https://discourse.julialang.org/t/could-not-load-library-librsvg-very-strange-error/21276
 using PyPlot
 
-function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true, unknown_storage=:sparse)
+function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
@@ -315,18 +315,14 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
     end
     ################################################################################
     if test == false
-        println(&quot;Define control parameters for Newton solver&quot;)
+        println(&quot;Define control parameters for Solver&quot;)
     end
     ################################################################################
 
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-10
-    control.tol_relative      = 1.0e-10
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-10
-    control.max_round         = 5
+    control           = SolverControl()
+    control.verbose   = verbose
+    control.maxiters  = 300
+    control.max_round = 5
 
     if test == false
         println(&quot;*** done\n&quot;)
@@ -338,13 +334,8 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
     end
     ################################################################################
 
-    # initialize solution and starting vectors
-    initialGuess  = unknowns(ctsys)
-    solution      = unknowns(ctsys)
-
-    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess .= solution
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if plotting # currently, plotting the solution was only tested with PyPlot.
         ipsi = data.index_psi
@@ -404,18 +395,18 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = true,
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
-            println(&quot;time value: t = $(t)&quot;)
+            println(&quot;time value: t = $(t) s&quot;)
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+        solution = solve(ctsys, inival = inival, control = control, tstep = Δt)
 
         # get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IV, current)
         push!(biasValues, Δu)
 
-        initialGuess .= solution
+        inival   = solution
     end # time loop
 
     if test == false
@@ -458,4 +449,4 @@ if test == false
     println(&quot;This message should show when this module is successfully recompiled.&quot;)
 end
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Non_RectangularGrid_2D/">« Example code for a 2D non rectangular grid.</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 2 February 2023 14:55">Thursday 2 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Non_RectangularGrid_2D/">« Example code for a 2D non rectangular grid.</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 23 February 2023 15:04">Thursday 23 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

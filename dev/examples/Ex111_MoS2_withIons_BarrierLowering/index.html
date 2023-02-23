@@ -196,19 +196,32 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     ################################################################################
     if test == false
-        println(&quot;Define control parameters for Newton solver&quot;)
+        println(&quot;Define control parameters for Solver&quot;)
     end
     ################################################################################
 
-    control                = NewtonControl()
-    control.verbose        = verbose
+    control              = SolverControl()
+    if verbose == true
+        control.verbose  = verbose
+    else
+        control.verbose  = &quot;eda&quot; # still print the time values
+    end
+    if test == true
+        control.verbose  = false # do not show time values in testing case
+    end
+    control.damp_initial = 0.9
+    control.damp_growth  = 1.61 # &gt;= 1
+    control.max_round    = 5
 
-    control.damp_initial   = 0.9
-    control.damp_growth    = 1.61 # &gt;= 1
-    control.max_round      = 20
-    control.tol_absolute   = 1.0e-9
-    control.tol_relative   = 1.0e-9
-    control.tol_round      = 1.0e-9
+    control.abstol       = 1.0e-9
+    control.reltol       = 1.0e-9
+    control.tol_round    = 1.0e-9
+
+    control.Δu_opt       = Inf
+    control.Δt           = 1.0e-4
+    control.Δt_min       = 1.0e-7
+    control.Δt_max       = 1.0e-2
+    control.Δt_grow      = 1.005
 
     if test == false
         println(&quot;*** done\n&quot;)
@@ -221,15 +234,15 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ################################################################################
 
     # initialize solution and starting vectors
-    solEQ          = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 0)
-    inival         = solEQ
-
-    label_solution, label_density, label_energy = set_plotting_labels(data)
-    label_density[iphin]   = &quot;\$ n_n\$&quot;;      label_density[iphip]   = &quot;\$ n_p\$&quot;
-    label_energy[1, iphix] = &quot;\$E_x-q\\psi\$&quot;; label_energy[2, iphix] = &quot;\$ - q \\varphi_x\$&quot;
-    label_density[iphix]   = &quot;\$ n_X\$&quot;;       label_solution[iphix]  = &quot;\$ \\varphi_x\$&quot;
+    solEQ  = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 0)
+    inival  = solEQ
 
     if plotting
+        label_solution, label_density, label_energy = set_plotting_labels(data)
+        label_density[iphin]   = &quot;\$ n_n\$&quot;;      label_density[iphip]   = &quot;\$ n_p\$&quot;
+        label_energy[1, iphix] = &quot;\$E_x-q\\psi\$&quot;; label_energy[2, iphix] = &quot;\$ - q \\varphi_x\$&quot;
+        label_density[iphix]   = &quot;\$ n_X\$&quot;;       label_solution[iphix]  = &quot;\$ \\varphi_x\$&quot;
+
         plot_densities(Plotter, ctsys, solEQ,&quot;Equilibrium&quot;, label_density)
         Plotter.legend()
         Plotter.figure()
@@ -249,23 +262,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     data.calculationType = OutOfEquilibrium
     IV                   = zeros(0) # for saving I-V data
 
-    control.Δu_opt         = Inf
-    control.max_round      = 5
-    control.damp_initial   = 0.1
-    control.damp_growth    = 1.61
-    control.tol_absolute   = 1.0e-9
-    control.tol_relative   = 1.0e-9
-    control.tol_round      = 1.0e-9
-    control.max_iterations = 500
-
-    control.Δt             = 1.0e-4
-    control.Δt_min         = 1.0e-7
-    control.Δt_max         = 1.0e-2
-    control.Δt_grow        = 1.005
-    if test == false
-        control.print_time = true
-    end
-
     sol = solve(ctsys, inival = inival, times=(0.0, endTime), control = control)
 
     if test == false
@@ -278,11 +274,10 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     tvalues       = sol.t
     number_tsteps = length(tvalues)
+    biasValues    = scanProtocol.(tvalues)
 
-    biasValues = scanProtocol.(tvalues)
-
-    factory = TestFunctionFactory(ctsys)
-    tf      = testfunction(factory, [bregionLeft], [bregionRight])
+    factory       = TestFunctionFactory(ctsys)
+    tf            = testfunction(factory, [bregionLeft], [bregionRight])
 
     push!(IV, 0.0)
     for istep = 2:number_tsteps
@@ -300,7 +295,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         push!(IV, current)
 
     end
-
 
     if plotting
         Plotter.figure()
@@ -327,4 +321,4 @@ function test()
 end
 
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex110_PSC_surface_recombination/">« PSC device with surface recombination (1D).</a><a class="docs-footer-nextpage" href="../Ex112_CIGS_WithTraps/">CIGS: stationary with traps and Schottky contacts. »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 2 February 2023 14:55">Thursday 2 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex110_PSC_surface_recombination/">« PSC device with surface recombination (1D).</a><a class="docs-footer-nextpage" href="../Ex112_CIGS_WithTraps/">CIGS: stationary with traps and Schottky contacts. »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 23 February 2023 15:05">Thursday 23 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
