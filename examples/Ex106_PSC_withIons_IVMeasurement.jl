@@ -208,10 +208,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     voltageAcceptor  = 1.2                  * V
 
     ## primary data for I-V scan protocol
-    scanrate             = 1.0 * V/s
-    number_tsteps        = 31
-    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend                 = endVoltage/scanrate
+    scanrate         = 1.0 * V/s
+    number_tsteps    = 31
+    endVoltage       = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend             = endVoltage/scanrate
 
     ## Define scan protocol function
     function linearScanProtocol(t)
@@ -357,20 +357,16 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     if test == false
-        println("Define control parameters for Newton solver")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-10
-    control.tol_relative      = 1.0e-10
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-10
-    control.max_round         = 5
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.61 # >= 1
+    control              = SolverControl()
+    control.verbose      = verbose
+    control.maxiters     = 300
+    control.max_round    = 5
+    control.damp_initial = 0.5
+    control.damp_growth  = 1.61 # >= 1
 
     if test == false
         println("*** done\n")
@@ -381,13 +377,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## initialize solution and starting vectors
-    initialGuess  = unknowns(ctsys)
-    solution      = unknowns(ctsys)
-
-    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess .= solution
+    ## calculate equilibrium solution and as initial guess
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if plotting
         plot_energies(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
@@ -424,20 +416,19 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
-            println("time value: t = $(t)")
+            println("time value: t = $(t) s")
         end
 
-        ## Solve time step problems with timestep Δt. initialGuess plays the role of the solution
+        ## Solve time step problems with timestep Δt. inival plays the role of the solution
         ## from last timestep
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
-
+        solution = solve(ctsys; inival = inival, control = control, tstep = Δt)
         ## get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IV, current)
         push!(biasValues, Δu)
 
-        initialGuess .= solution
+        inival = solution
 
     end # time loop
 

@@ -328,20 +328,16 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     if test == false
-        println("Define control parameters for Newton solver")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-10
-    control.tol_relative      = 1.0e-10
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-10
-    control.max_round         = 5
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.21 # >= 1
+    control              = SolverControl()
+    control.verbose      = verbose
+    control.maxiters     = 300
+    control.max_round    = 5
+    control.damp_initial = 0.5
+    control.damp_growth  = 1.21 # >= 1
 
     if test == false
         println("*** done\n")
@@ -353,13 +349,8 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## initialize solution and starting vectors
-    initialGuess  = unknowns(ctsys)
-    solution      = unknowns(ctsys)
-
-    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess .= solution
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
@@ -413,13 +404,12 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
         data.λ2   = LAMBDA[istep + 1]
 
         if test == false
-            println("increase generation with λ2 = $(data.λ2)")
-            println("time value: t = $(t)")
+            # println("increase generation with λ2 = $(data.λ2)")
+            println("time value: t = $(t) s")
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
-
-        initialGuess .= solution
+        solution = solve(ctsys, inival = inival, control = control, tstep = Δt)
+        inival   = solution
 
     end # time loop
 
@@ -446,15 +436,14 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
-            println("time value: t = $(t)")
+            println("time value: t = $(t) s")
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
-
-        initialGuess .= solution
+        solution = solve(ctsys, inival = inival, control = control, tstep = Δt)
+        inival   = solution
 
         ## get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IVReverse, current)
         push!(biasValuesReverse, Δu)
@@ -485,18 +474,18 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
-            println("time value: t = $(t)")
+            println("time value: t = $(t) s")
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+        solution = solve(ctsys, inival = inival, control = control, tstep = Δt)
 
         ## get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IVForward, current)
         push!(biasValuesForward, Δu)
 
-        initialGuess .= solution
+        inival = solution
 
 
     end # time loop

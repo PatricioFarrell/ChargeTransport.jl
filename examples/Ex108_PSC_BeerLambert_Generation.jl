@@ -342,24 +342,24 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     if test == false
-        println("Define control parameters for Newton solver")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-10
-    control.tol_relative      = 1.0e-10
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-10
-    control.max_round         = 5
-    control.damp_initial      = 0.5
-    control.damp_growth       = 1.21 # >= 1
-    control.Δt_max            = 5.0e-2
-    if test == false
-        control.print_time    = true
+    control              = SolverControl()
+    if verbose == true
+        control.verbose  = verbose
+    else
+        control.verbose  = "eda" # still print the time values
     end
+    if test == true
+        control.verbose  = false # do not show time values in testing case
+    end
+    control.maxiters     = 300
+    control.max_round    = 5
+    control.damp_initial = 0.5
+    control.damp_growth  = 1.21 # >= 1
+    control.Δt_max       = 5.0e-2
 
     if test == false
         println("*** done\n")
@@ -370,13 +370,9 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## initialize solution and starting vectors
-    initialGuess  = unknowns(ctsys)
-    solution      = unknowns(ctsys)
-
-    solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess .= solution
+    ## calculate equilibrium solution and as initial guess
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if test == false
         println("*** done\n")
@@ -409,9 +405,8 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
             println("increase generation with λ2 = $(data.λ2)")
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
-
-        initialGuess .= solution
+        solution = solve(ctsys, inival = inival, control = control)
+        inival   = solution
 
     end # generation loop
 
@@ -442,7 +437,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     ctsys.fvmsys.boundary_factors[iphia, bregionJunction2] = 0.0
     ctsys.fvmsys.boundary_values[iphia, bregionJunction2]  = 0.0
 
-    sol = solve(ctsys, inival = initialGuess, times=(0.0, tend), control = control)
+    sol = solve(ctsys, inival = inival, times=(0.0, tend), control = control)
 
     if plotting
 
@@ -463,9 +458,8 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    initialGuessReverse = sol(tend)
-
-    solReverse = solve(ctsys, inival = initialGuessReverse, times=(tend, 2 * tend), control = control)
+    inivalReverse = sol(tend)
+    solReverse    = solve(ctsys, inival = inivalReverse, times=(tend, 2 * tend), control = control)
 
     if test == false
         println("*** done\n")

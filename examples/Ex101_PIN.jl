@@ -252,17 +252,18 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     if test == false
-        println("Define control parameters for Newton solver")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 250
-    control.tol_absolute      = 1.0e-14
-    control.tol_relative      = 1.0e-14
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-8
+    control              = SolverControl()
+    control.verbose      = verbose
+    control.maxiters     = 50
+    control.abstol       = 1.0e-14
+    control.reltol       = 1.0e-14
+    control.tol_round    = 1.0e-8
+    control.damp_initial = 0.5
+    control.max_round    = 3
 
     if test == false
         println("*** done\n")
@@ -274,17 +275,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    control.damp_initial = 0.5
-    control.damp_growth  = 1.2 # >= 1
-    control.max_round    = 3
-
-    ## initialize solution and starting vectors
-    initialGuess         = unknowns(ctsys)
-    solution             = unknowns(ctsys)
-
-    solution             = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-
-    initialGuess        .= solution
+    ## calculate equilibrium solution and as initial guess
+    solution  = equilibrium_solve!(ctsys, control = control)
+    inival    = solution
 
     if test == false
         println("*** done\n")
@@ -305,14 +298,18 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     for Δu in biasValues
 
         if test == false
-            println("Δu  = ", Δu)
+            println("bias value: Δu = ", Δu, " V")
         end
+
         ## set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
+        solution  = solve(ctsys; inival = inival, control = control)
+        inival   .= solution
 
-        initialGuess .= solution
+        ## Note that the old way of solving will be soon removed (see current API changes in VoronoiFVM)
+        # solve!(solution, inival, ctsys, control = control, tstep = Inf)
+        # inival .= solution
 
         ## get I-V data
         current = get_current_val(ctsys, solution)

@@ -230,18 +230,15 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     if test == false
-        println("Define control parameters for Newton solver")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    control                = NewtonControl()
+    control                = SolverControl()
     control.verbose        = verbose
-    control.tol_absolute   = 1.0e-10
-    control.tol_relative   = 1.0e-10
     control.tol_round      = 1.0e-4
     control.damp_initial   = 0.5
     control.damp_growth    = 1.61
-    control.max_iterations = 100
     control.max_round      = 3
 
     if test == false
@@ -254,13 +251,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## initialize solution and starting vectors
-    initialGuess          = unknowns(ctsys)
-    solution              = unknowns(ctsys)
-
     ## solve thermodynamic equilibrium and update initial guess
-    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-    initialGuess         .= solution
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if test == false
         println("*** done\n")
@@ -315,9 +308,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
             println("increase generation with λ2 = $(data.λ2)")
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
-
-        initialGuess .= solution
+        solution = solve(ctsys, inival = inival, control = control)
+        inival   = solution
 
     end # generation loop
 
@@ -340,18 +332,18 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
-            println("time value: t = $(t)")
+            println("time value: t = $(t) s")
         end
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Δt)
+        solution = solve(ctsys, inival = inival, control = control, tstep = Δt)
 
         ## get I-V data
-        current = get_current_val(ctsys, solution, initialGuess, Δt)
+        current  = get_current_val(ctsys, solution, inival, Δt)
 
         push!(IV, w_device * z_device * current)
         push!(biasValues, Δu)
 
-        initialGuess .= solution
+        inival   = solution
 
     end # bias loop
 

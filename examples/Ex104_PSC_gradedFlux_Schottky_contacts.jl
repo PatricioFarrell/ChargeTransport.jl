@@ -353,17 +353,18 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
     if test == false
-        println("Define control parameters for Newton solver")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    control                   = NewtonControl()
-    control.verbose           = verbose
-    control.max_iterations    = 300
-    control.tol_absolute      = 1.0e-13
-    control.tol_relative      = 1.0e-13
-    control.handle_exceptions = true
-    control.tol_round         = 1.0e-13
+    control              = SolverControl()
+    control.verbose      = verbose
+    control.abstol       = 1.0e-13
+    control.reltol       = 1.0e-13
+    control.tol_round    = 1.0e-13
+    control.damp_initial = 0.9
+    control.damp_growth  = 1.61 # >= 1
+    control.max_round    = 7
 
     if test == false
         println("*** done\n")
@@ -374,15 +375,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    control.damp_initial  = 0.5
-    control.damp_growth   = 1.61 # >= 1
-    control.max_round     = 5
-
-    initialGuess          = unknowns(ctsys)
-    solution              = unknowns(ctsys)
-
-    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-    initialGuess         .= solution
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
@@ -406,24 +400,20 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     data.calculationType = OutOfEquilibrium
 
-    control.damp_initial = 0.9
-    control.damp_growth  = 1.61 # >= 1
-    control.max_round    = 7
-
-    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    biasValues = range(0, stop = maxBias, length = 25)
+    maxBias              = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    biasValues           = range(0, stop = maxBias, length = 25)
 
     for Δu in biasValues
+
         if test == false
-            println("Bias value: Δu = $(Δu)")
+            println("bias value: Δu = $(Δu)", " V")
         end
 
         ## set non equilibrium boundary conditions
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
-
-        initialGuess .= solution
+        solution = solve(ctsys; inival = inival, control = control)
+        inival   = solution
 
     end # bias loop
 

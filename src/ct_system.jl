@@ -1313,10 +1313,13 @@ enable_species!(ctsys::System, ispecies, regions)                    = VoronoiFV
 enable_boundary_species!(ctsys::System, ispecies, regions)           = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
 
 unknowns(ctsys::System)                                              = VoronoiFVM.unknowns(ctsys.fvmsys)
+# Solver Control and Newton Control are
 NewtonControl()                                                      = VoronoiFVM.NewtonControl()
+SolverControl()                                                      = VoronoiFVM.SolverControl()
 
-solve!(solution, initialGuess, ctsys, ;control=control, tstep=tstep) = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
 solve(ctsys::System; kwargs...)                                      = VoronoiFVM.solve(ctsys.fvmsys; kwargs...)
+## DA: This one will be deleted soon:
+solve!(solution, initialGuess, ctsys, ;control=control, tstep=tstep) = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
 
 TestFunctionFactory(ctsys::System)                                   = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
 integrate(ctsys::System, tf, solution, inival, Δt)                   = VoronoiFVM.integrate(ctsys.fvmsys, tf, solution, inival, Δt)
@@ -1363,16 +1366,14 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
 
     for i in eachindex(LAMBDA)
 
-        if control.verbose
+        if control.verbose =="n"
             println("λ1 = $(LAMBDA[i])")
         end
         ctsys.fvmsys.physics.data.λ1 = LAMBDA[i]
         try
-            solve!(sol, inival, ctsys, control = control, tstep=Inf)
+            sol = VoronoiFVM.solve(ctsys.fvmsys, inival = inival, control = control)
         catch
-            if (control.handle_exceptions)
-                error("try to adjust nonlinear_steps, currently set to $(nonlinear_steps) or adjust Newton control parameters.")
-            end
+            error("try to adjust nonlinear_steps, currently set to $(nonlinear_steps) or adjust Newton control parameters.")
         end
 
         inival = sol

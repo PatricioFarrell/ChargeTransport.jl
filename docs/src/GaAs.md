@@ -155,11 +155,11 @@ ctsys         = System(grid, data, unknown_storage=unknown_storage)
 ```
 
 ### Step 3: Solve the problem in equilibrium
-Solve the equilibrium. Note that `control` refers to the Newton control
+Solve the equilibrium. Note that `control` refers to the SolverControl
 parameters given in `VoronoiFVM`.
 ```julia
-solution      = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-initialGuess .= solution
+solution = equilibrium_solve!(ctsys, control = control)
+inival   = solution
 ```
 
 ### Step 4: Solve the problem for an applied bias
@@ -171,10 +171,14 @@ biasValues           = range(0, stop = maxBias, length = 32)
 
 for Δu in biasValues
     set_contact!(ctsys, bregionAcceptor, Δu = Δu) # non equilibrium bc
-    solve!(solution, initialGuess, ctsys, control = control, tstep = Inf)
-    initialGuess .= solution
+    solution  = solve(ctsys; inival = inival, control = control)
+    inival   .= solution
 end
 ```
+
+!!! note
+
+    To be consistent with the latest changes of VoronoiFVM, please do not use the solve!() function anymore. Otherwise, you will get deprecation warnings.
 
 ### Step 5: Postprocessing
 By adding the following line to the previous loop

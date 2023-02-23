@@ -30,7 +30,6 @@ julia> using Pkg
 julia> Pkg.add("ChargeTransport")
 ```
 
-```
 We recommend to have a look at the example files:
 
 ```@contents

@@ -101,8 +101,8 @@ for istep = 2:number_tsteps
     Δu = t * scanrate                    # applied voltage
     Δt = t - tvalues[istep-1]            # time step
     set_contact!(ctsys, bregionAcceptor, Δu = Δu)
-    solve!(solution, initialGuess, ctsys, control = control, tstep = Δt) # provide time step
-    initialGuess .= solution
+    solution = solve(ctsys, inival = inival, control = control, tstep = Δt) # provide time step
+    inival   = solution
 
 end
 ```
@@ -129,7 +129,7 @@ data = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunct
 This makes it possible to use the internal time solving method
 
 ```julia
-sol = solve(ctsys, inival = initialGuess, times=(0.0, tend), control = control)
+sol = solve(ctsys, inival = inival, times=(0.0, tend), control = control)
 ```
 
 ## Example 3: Illumination

@@ -216,19 +216,32 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     ################################################################################
     if test == false
-        println("Define control parameters for Newton solver")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    control                = NewtonControl()
-    control.verbose        = verbose
+    control              = SolverControl()
+    if verbose == true
+        control.verbose  = verbose
+    else
+        control.verbose  = "eda" # still print the time values
+    end
+    if test == true
+        control.verbose  = false # do not show time values in testing case
+    end
+    control.damp_initial = 0.9
+    control.damp_growth  = 1.61 # >= 1
+    control.max_round    = 5
 
-    control.damp_initial   = 0.9
-    control.damp_growth    = 1.61 # >= 1
-    control.max_round      = 20
-    control.tol_absolute   = 1.0e-9
-    control.tol_relative   = 1.0e-9
-    control.tol_round      = 1.0e-9
+    control.abstol       = 1.0e-9
+    control.reltol       = 1.0e-9
+    control.tol_round    = 1.0e-9
+
+    control.Δu_opt       = Inf
+    control.Δt           = 1.0e-4
+    control.Δt_min       = 1.0e-7
+    control.Δt_max       = 1.0e-2
+    control.Δt_grow      = 1.005
 
     if test == false
         println("*** done\n")
@@ -241,15 +254,15 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ################################################################################
 
     ## initialize solution and starting vectors
-    solEQ          = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 0)
-    inival         = solEQ
-
-    label_solution, label_density, label_energy = set_plotting_labels(data)
-    label_density[iphin]   = "\$ n_n\$";      label_density[iphip]   = "\$ n_p\$"
-    label_energy[1, iphix] = "\$E_x-q\\psi\$"; label_energy[2, iphix] = "\$ - q \\varphi_x\$"
-    label_density[iphix]   = "\$ n_X\$";       label_solution[iphix]  = "\$ \\varphi_x\$"
+    solEQ  = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 0)
+    inival  = solEQ
 
     if plotting
+        label_solution, label_density, label_energy = set_plotting_labels(data)
+        label_density[iphin]   = "\$ n_n\$";      label_density[iphip]   = "\$ n_p\$"
+        label_energy[1, iphix] = "\$E_x-q\\psi\$"; label_energy[2, iphix] = "\$ - q \\varphi_x\$"
+        label_density[iphix]   = "\$ n_X\$";       label_solution[iphix]  = "\$ \\varphi_x\$"
+
         plot_densities(Plotter, ctsys, solEQ,"Equilibrium", label_density)
         Plotter.legend()
         Plotter.figure()
@@ -269,23 +282,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     data.calculationType = OutOfEquilibrium
     IV                   = zeros(0) # for saving I-V data
 
-    control.Δu_opt         = Inf
-    control.max_round      = 5
-    control.damp_initial   = 0.1
-    control.damp_growth    = 1.61
-    control.tol_absolute   = 1.0e-9
-    control.tol_relative   = 1.0e-9
-    control.tol_round      = 1.0e-9
-    control.max_iterations = 500
-
-    control.Δt             = 1.0e-4
-    control.Δt_min         = 1.0e-7
-    control.Δt_max         = 1.0e-2
-    control.Δt_grow        = 1.005
-    if test == false
-        control.print_time = true
-    end
-
     sol = solve(ctsys, inival = inival, times=(0.0, endTime), control = control)
 
     if test == false
@@ -298,11 +294,10 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     tvalues       = sol.t
     number_tsteps = length(tvalues)
+    biasValues    = scanProtocol.(tvalues)
 
-    biasValues = scanProtocol.(tvalues)
-
-    factory = TestFunctionFactory(ctsys)
-    tf      = testfunction(factory, [bregionLeft], [bregionRight])
+    factory       = TestFunctionFactory(ctsys)
+    tf            = testfunction(factory, [bregionLeft], [bregionRight])
 
     push!(IV, 0.0)
     for istep = 2:number_tsteps
@@ -320,7 +315,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         push!(IV, current)
 
     end
-
 
     if plotting
         Plotter.figure()

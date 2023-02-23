@@ -74,7 +74,7 @@ export enable_trap_carrier!, add_trap_density_Poisson!
 export equilibrium_solve!
 export enable_species!, enable_boundary_species!
 export solve, solve!
-export unknowns, NewtonControl
+export unknowns, NewtonControl, SolverControl
 export TestFunctionFactory, integrate, testfunction
 
 export gridplot

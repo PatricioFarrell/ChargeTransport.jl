@@ -297,19 +297,17 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ################################################################################
     if test == false
-        println("Define control parameters for Newton solver")
+        println("Define control parameters for Solver")
     end
     ################################################################################
 
-    control                = NewtonControl()
-    control.verbose        = verbose
-    control.tol_absolute   = 1.0e-10
-    control.tol_relative   = 1.0e-10
-    control.tol_round      = 1.0e-7
-    control.damp_initial   = 0.5
-    control.damp_growth    = 1.2
-    control.max_iterations = 30
-    control.max_round      = 3
+    control              = SolverControl()
+    control.verbose      = verbose
+    control.tol_round    = 1.0e-7
+    control.damp_initial = 0.5
+    control.damp_growth  = 1.2
+    control.maxiters     = 30
+    control.max_round    = 3
 
     if test == false
         println("*** done\n")
@@ -321,12 +319,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## initialize starting vector
-    initialGuess          = unknowns(ctsys)
-
     ## solve thermodynamic equilibrium and update initial guess
-    solution              = equilibrium_solve!(ctsys, control = control, nonlinear_steps = 20)
-    initialGuess         .= solution
+    solution = equilibrium_solve!(ctsys, control = control)
+    inival   = solution
 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
@@ -372,12 +367,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         set_contact!(ctsys, bregionAcceptor, Δu = Δu)
 
         if test == false
-            println("bias: Δu = $(Δu)")
+            println("bias: Δu = $(Δu) V")
         end
 
         ## solve time step problems with timestep Δt
-        solve!(solution, initialGuess, ctsys, control  = control, tstep = Inf)
-        initialGuess .= solution
+        solution = solve(ctsys, inival = inival, control = control)
+        inival   = solution
 
         ## save IV data
         current = get_current_val(ctsys, solution)
