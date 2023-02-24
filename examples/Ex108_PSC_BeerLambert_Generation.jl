@@ -384,9 +384,6 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ctsys.data.calculationType = OutOfEquilibrium
-    ctsys.data.λ2              = 0.0
-
     # these values are needed for putting the generation slightly on
     I      = collect(20:-1:0.0)
     LAMBDA = 10 .^ (-I)

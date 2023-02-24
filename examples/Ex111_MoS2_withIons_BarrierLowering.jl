@@ -279,9 +279,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    data.calculationType = OutOfEquilibrium
-    IV                   = zeros(0) # for saving I-V data
-
     sol = solve(ctsys, inival = inival, times=(0.0, endTime), control = control)
 
     if test == false
@@ -291,6 +288,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ################################################################################
     #########  IV curve calculation
     ################################################################################
+
+    IV            = zeros(0) # for saving I-V data
 
     tvalues       = sol.t
     number_tsteps = length(tvalues)
@@ -305,7 +304,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         inival   = sol[istep-1]
         solution = sol[istep]
 
-        I       = integrate(ctsys, tf, solution, inival, Δt)
+        I        = integrate(ctsys, tf, solution, inival, Δt)
 
         current = 0.0
         for ii = 1:numberOfCarriers+1

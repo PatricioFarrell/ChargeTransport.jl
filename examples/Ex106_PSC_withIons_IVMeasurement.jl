@@ -397,14 +397,13 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("IV Measurement loop")
     end
     ################################################################################
-    data.calculationType = OutOfEquilibrium
 
     ## with fixed timestep sizes we can calculate the times a priori
-    tvalues              = range(0, stop = tend, length = number_tsteps)
+    tvalues    = range(0, stop = tend, length = number_tsteps)
 
     ## for saving I-V data
-    IV                   = zeros(0) # for IV values
-    biasValues           = zeros(0) # for bias values
+    IV         = zeros(0) # for IV values
+    biasValues = zeros(0) # for bias values
 
     for istep = 2:number_tsteps
 

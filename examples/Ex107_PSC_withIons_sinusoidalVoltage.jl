@@ -383,13 +383,11 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculationType = OutOfEquilibrium
-
     ## time mesh
-    number_tsteps        = 40
-    tvalues              = range(0, stop = endTime, length = number_tsteps)
+    number_tsteps = 40
+    tvalues       = range(0, stop = endTime, length = number_tsteps)
     ## for saving I-V data
-    IV                   = zeros(0) # for IV values
+    IV            = zeros(0) # for IV values
 
     for istep = 2:number_tsteps
 

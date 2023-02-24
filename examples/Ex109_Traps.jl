@@ -279,25 +279,23 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculationType = OutOfEquilibrium
-
     ## Scan rate and time steps
-    scanrate             = 1.0 * V/s
-    number_tsteps        = 25
-    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-
-    IV                   = zeros(0) # for IV values
-    biasValues           = zeros(0) # for bias values
-    tend                 = endVoltage/scanrate
+    scanrate      = 1.0 * V/s
+    number_tsteps = 25
+    endVoltage    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
 
     ## with fixed timestep sizes we can calculate the times
     ## a priori
-    tvalues              = range(0.0, stop = tend, length = number_tsteps)
-    Δt                   = tvalues[2] - tvalues[1]
+    tend          = endVoltage/scanrate
+    tvalues       = range(0.0, stop = tend, length = number_tsteps)
+    Δt            = tvalues[2] - tvalues[1]
 
     # these values are needed for putting the generation slightly on
-    I      = collect(20:-1:0.0)
-    LAMBDA = 10 .^ (-I)
+    I             = collect(20:-1:0.0)
+    LAMBDA        = 10 .^ (-I)
+
+    IV            = zeros(0) # for IV values
+    biasValues    = zeros(0) # for bias values
 
     for istep = 1:length(I)-1
 

@@ -376,20 +376,18 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculationType = OutOfEquilibrium
-
     ## primary data for I-V scan protocol
-    scanrate             = 0.04 * V/s
-    number_tsteps        = 31
-    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend                 = endVoltage/scanrate
+    scanrate      = 0.04 * V/s
+    number_tsteps = 31
+    endVoltage    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend          = endVoltage/scanrate
 
     ## with fixed timestep sizes we can calculate the times priori
-    tvalues              = range(0, stop = tend, length = number_tsteps)
+    tvalues       = range(0, stop = tend, length = number_tsteps)
 
     ## these values are needed for putting the generation slightly on
-    I      = collect(length(tvalues):-1:0.0)
-    LAMBDA = 10 .^ (-I)
+    I             = collect(length(tvalues):-1:0.0)
+    LAMBDA        = 10 .^ (-I)
 
     for istep = 2:number_tsteps
 

@@ -163,11 +163,10 @@ inival   = solution
 ```
 
 ### Step 4: Solve the problem for an applied bias
-Starting from the equilibrium solution, we increase the applied voltage. Note that it is important to set `OutOfEqulibrium`.
+Starting from the equilibrium solution, we increase the applied voltage.
 ```julia
-data.calculationType = OutOfEquilibrium
-maxBias              = voltageAcceptor # bias at acceptor boundary
-biasValues           = range(0, stop = maxBias, length = 32)
+maxBias    = voltageAcceptor # bias at acceptor boundary
+biasValues = range(0, stop = maxBias, length = 32)
 
 for Δu in biasValues
     set_contact!(ctsys, bregionAcceptor, Δu = Δu) # non equilibrium bc

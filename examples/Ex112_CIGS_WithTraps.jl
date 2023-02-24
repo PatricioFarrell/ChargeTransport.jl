@@ -185,7 +185,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
-    data.modelType                      = Stationary
+    data.modelType                      = Stationary # R = Rn = Rp, since the model type is stationary
     if AdditionalTrapSpecies
         data.F                          = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
     else
@@ -351,13 +351,11 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## set calculationType to OutOfEquilibrium for starting with respective simulation.
-    data.calculationType = OutOfEquilibrium      # Rn = Rp = R, since the model type is stationary
-    endVoltage           = voltageAcceptor       # final bias value
-    biasValues           = collect(range(0, stop = endVoltage, length = 52))
+    endVoltage      = voltageAcceptor       # final bias value
+    biasValues      = collect(range(0, stop = endVoltage, length = 52))
 
-    IV                   = zeros(0)
-    chargeDensities      = zeros(0)
+    IV              = zeros(0)
+    chargeDensities = zeros(0)
 
     for i in eachindex(biasValues)
 

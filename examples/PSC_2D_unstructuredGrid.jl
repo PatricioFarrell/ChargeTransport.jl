@@ -380,23 +380,21 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    data.calculationType = OutOfEquilibrium
-
     ## primary data for I-V scan protocol
-    scanrate             = 0.04 * V/s
-    number_tsteps        = 41
-    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend                 = endVoltage/scanrate
+    scanrate      = 0.04 * V/s
+    number_tsteps = 41
+    endVoltage    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+
 
     ## with fixed timestep sizes we can calculate the times a priori
-    tvalues              = range(0, stop = tend, length = number_tsteps)
-    numbertsteps         = length(tvalues)
+    tend          = endVoltage/scanrate
+    tvalues       = range(0, stop = tend, length = number_tsteps)
 
     ## for saving I-V data
-    IV                   = zeros(0) # for IV values
-    biasValues           = zeros(0) # for bias values
+    IV            = zeros(0) # for IV values
+    biasValues    = zeros(0) # for bias values
 
-    for istep = 2:numbertsteps
+    for istep = 2:number_tsteps
 
         t  = tvalues[istep]       # Actual time
         Δu = t * scanrate         # Applied voltage

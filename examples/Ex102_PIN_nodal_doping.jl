@@ -245,12 +245,9 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    # Set calculationType to OutOfEquilibrium for starting with respective simulation.
-    data.calculationType = OutOfEquilibrium
-
-    maxBias              = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    biasValues           = range(0, stop = maxBias, length = 41)
-    IV                   = zeros(0)
+    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    biasValues = range(0, stop = maxBias, length = 41)
+    IV         = zeros(0)
 
     for Δu in biasValues
 

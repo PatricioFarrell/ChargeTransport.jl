@@ -1397,6 +1397,9 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
         end
     end
 
+    # set now calculationType to outOfEquilibrium for further calculations
+    data.calculationType = OutOfEquilibrium
+
     # save changes on fvmsys of VoronoiFVM likewise in ctsys.data
     ctsys.data = ctsys.fvmsys.physics.data
 

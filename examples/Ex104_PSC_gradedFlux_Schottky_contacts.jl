@@ -398,10 +398,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculationType = OutOfEquilibrium
-
-    maxBias              = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    biasValues           = range(0, stop = maxBias, length = 25)
+    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    biasValues = range(0, stop = maxBias, length = 25)
 
     for Δu in biasValues
 
