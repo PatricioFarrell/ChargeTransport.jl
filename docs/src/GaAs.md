@@ -37,10 +37,10 @@ regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
 numberOfRegions         = length(regions)
 
 # boundary region numbers
+# Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
+# adding additional interior boundaries, continue with 3, 4, ...
 bregionAcceptor         = 1
 bregionDonor            = 2
-bregions                = [bregionAcceptor, bregionDonor]
-numberOfBoundaryRegions = length(bregions)
 
 # grid
 refinementfactor        = 2^(n-1)
@@ -108,15 +108,7 @@ params.UT                                           = (kB * params.temperature) 
 params.chargeNumbers[iphin]                         = -1
 params.chargeNumbers[iphip]                         =  1
 
-for ibreg in 1:numberOfBoundaryRegions   # boundary region data
-
-    params.bDensityOfStates[iphin, ibreg]           = Nc
-    params.bDensityOfStates[iphip, ibreg]           = Nv
-    params.bBandEdgeEnergy[iphin, ibreg]            = Ec
-    params.bBandEdgeEnergy[iphip, ibreg]            = Ev
-end
-
-for ireg in 1:numberOfRegions           # interior region data
+for ireg in 1:numberOfRegions           # region data
 
     params.dielectricConstant[ireg]                 = εr  * ε0
 
@@ -139,15 +131,11 @@ for ireg in 1:numberOfRegions           # interior region data
 
 end
 
-# interior doping
+# doping
 params.doping[iphin, regionDonor]                   = Nd
 params.doping[iphin, regionIntrinsic]               = ni
 params.doping[iphip, regionIntrinsic]               = 0.0
 params.doping[iphip, regionAcceptor]                = Na
-
-# boundary doping
-params.bDoping[iphin, bregionDonor]                 = Nd
-params.bDoping[iphip, bregionAcceptor]              = Na
 
 # Initialize a ChargeTransport struct
 data.params   = params

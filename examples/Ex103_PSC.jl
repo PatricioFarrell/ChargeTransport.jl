@@ -234,28 +234,14 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    params                                          = Params(grid, numberOfCarriers)
+    params                                              = Params(grid, numberOfCarriers)
 
-    params.temperature                              = T
-    params.UT                                       = (kB * params.temperature) / q
-    params.chargeNumbers[iphin]                     = -1
-    params.chargeNumbers[iphip]                     =  1
+    params.temperature                                  = T
+    params.UT                                           = (kB * params.temperature) / q
+    params.chargeNumbers[iphin]                         = -1
+    params.chargeNumbers[iphip]                         =  1
 
-    ## boundary region data
-    params.bDensityOfStates[iphin, bregionDonor]    = Nc_d
-    params.bDensityOfStates[iphip, bregionDonor]    = Nv_d
-
-    params.bDensityOfStates[iphin, bregionAcceptor] = Nc_a
-    params.bDensityOfStates[iphip, bregionAcceptor] = Nv_a
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]     = Ec_d
-    params.bBandEdgeEnergy[iphip, bregionDonor]     = Ev_d
-
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]  = Ec_a
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]  = Ev_a
-
-    ## interior region data
-    for ireg in 1:numberOfRegions
+    for ireg in 1:numberOfRegions ## region data
 
         params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
@@ -279,17 +265,13 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.recombinationAuger[iphip, ireg]          = Auger
     end
 
-    ## interior doping
-    params.doping[iphin, regionDonor]               = Nd
-    params.doping[iphip, regionIntrinsic]           = Ni_acceptor
-    params.doping[iphip, regionAcceptor]            = Na
+    ##  doping
+    params.doping[iphin, regionDonor]                   = Nd
+    params.doping[iphip, regionIntrinsic]               = Ni_acceptor
+    params.doping[iphip, regionAcceptor]                = Na
 
-    ## boundary doping
-    params.bDoping[iphip, bregionAcceptor]          = Na        # data.bDoping  = [Na  0.0;
-    params.bDoping[iphin, bregionDonor]             = Nd        #                  0.0  Nd]
-
-    data.params                                     = params
-    ctsys                                           = System(grid, data, unknown_storage=unknown_storage)
+    data.params                                         = params
+    ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
     ## print data
     if test == false

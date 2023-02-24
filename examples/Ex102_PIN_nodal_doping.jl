@@ -29,10 +29,10 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     numberOfRegions         = length(regions)
 
     ## boundary region numbers
+    # Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
+    # adding additional interior boundaries, continue with 3, 4, ...
     bregionAcceptor         = 1
     bregionDonor            = 2
-    bregions                = [bregionAcceptor, bregionDonor]
-    numberOfBoundaryRegions = length(bregions)
 
     h_pdoping               = 0.1    * μm
     h_intrinsic             = 0.1    * μm
@@ -140,15 +140,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
 
-    for ibreg in 1:numberOfBoundaryRegions  # boundary region data
-
-        params.bDensityOfStates[iphin, ibreg]           = Nc
-        params.bDensityOfStates[iphip, ibreg]           = Nv
-        params.bBandEdgeEnergy[iphin, ibreg]            = Ec
-        params.bBandEdgeEnergy[iphip, ibreg]            = Ev
-    end
-
-    for ireg in 1:numberOfRegions           # interior region data
+    for ireg in 1:numberOfRegions           # region data
 
         params.dielectricConstant[ireg]                 = εr * ε0
 

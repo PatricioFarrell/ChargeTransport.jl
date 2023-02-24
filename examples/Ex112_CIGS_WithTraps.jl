@@ -47,8 +47,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## boundary region numbers
     bregionDonor            = 1
     bregionAcceptor         = 2
-    bregions                = [bregionDonor, bregionAcceptor]
-    numberOfBoundaryRegions = length(bregions)
 
     ## grid
     refinementfactor        = 2^(n-1)
@@ -229,20 +227,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.chargeNumbers[iphit]                     =  zt
     end
 
-    for ibreg in 1:numberOfBoundaryRegions   # boundary region data
-        params.bDensityOfStates[iphin, ibreg]           = Nc
-        params.bDensityOfStates[iphip, ibreg]           = Nv
-        if AdditionalTrapSpecies
-            params.bDensityOfStates[iphit, ibreg]       = Nt
-            params.bBandEdgeEnergy[ iphit, ibreg]       = Et
-        end
-    end
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_ZnO
-    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_ZnO
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_CIGS
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_CIGS
-
     for ireg in 1:numberOfRegions           # interior region data
 
         params.dielectricConstant[ireg]                 = ε[ireg] * ε0
@@ -277,10 +261,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.doping[iphip, regionAcceptorLeft]            = Na
     params.doping[iphip, regionAcceptorTrap]            = Na
     params.doping[iphip, regionAcceptorRight]           = Na
-
-    ## boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd
-    params.bDoping[iphip, bregionAcceptor]              = Na
 
     ## values for the schottky contacts
     params.SchottkyBarrier[bregionAcceptor]             = barrier

@@ -42,8 +42,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## boundary region numbers
     bregionAcceptor         = 1
     bregionDonor            = 2
-    bregions                = [bregionAcceptor, bregionDonor]
-    numberOfBoundaryRegions = length(bregions)
 
     ## grid
     refinementfactor        = 2^(n-1)
@@ -174,17 +172,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.chargeNumbers[iphip]                         =  1
     params.chargeNumbers[iphit]                         = -1 # trap charge number determines whether hole or electron trap is used
 
-    for ibreg in 1:numberOfBoundaryRegions   # boundary region data
-
-        params.bDensityOfStates[iphin, ibreg]           = Nc
-        params.bDensityOfStates[iphip, ibreg]           = Nv
-        params.bDensityOfStates[iphit, ibreg]           = Nt
-        params.bBandEdgeEnergy[iphin, ibreg]            = Ec
-        params.bBandEdgeEnergy[iphip, ibreg]            = Ev
-        params.bBandEdgeEnergy[iphit, ibreg]            = Et
-    end
-
-    for ireg in 1:numberOfRegions           # interior region data
+    for ireg in 1:numberOfRegions           # region data
 
         params.dielectricConstant[ireg]                 = εr * ε0
 
@@ -216,10 +204,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.doping[iphin, regionIntrinsic]               = ni
     params.doping[iphip, regionIntrinsic]               = 0.0
     params.doping[iphip, regionAcceptor]                = Na
-
-    ## boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd
-    params.bDoping[iphip, bregionAcceptor]              = Na
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)

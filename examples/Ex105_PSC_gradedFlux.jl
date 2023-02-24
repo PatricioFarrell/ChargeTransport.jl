@@ -306,8 +306,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     paramsnodal.densityOfStates[iphip, :] = grading_parameter!(paramsnodal.densityOfStates[iphip, :],
                                                               coord, regionTransportLayers, regionJunctions, h,
                                                               heightLayers, lengthLayers, NV)
-    ## region dependent data
-    for ireg in 1:numberOfRegions
+
+    for ireg in 1:numberOfRegions  ## region dependent data
 
         ## mobility
         params.mobility[iphin, ireg]                    = μn[ireg]
@@ -325,14 +325,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     end
 
-    ## interior doping
+    ## doping
     params.doping[iphin, regionDonor]      = Nd
     params.doping[iphip, regionIntrinsic]  = Ni_acceptor
     params.doping[iphip, regionAcceptor]   = Na
-
-    ## boundary doping
-    params.bDoping[iphip, bregionAcceptor] = Na
-    params.bDoping[iphin, bregionDonor]    = Nd
 
     data.params                            = params
     data.paramsnodal                       = paramsnodal

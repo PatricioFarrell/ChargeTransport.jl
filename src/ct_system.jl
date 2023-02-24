@@ -1134,6 +1134,33 @@ function build_system(grid, data, unknown_storage, ::Type{ContQF})
     # enable lastly the electric potential on whole domain
     enable_species!(ctsys, data.index_psi, 1:data.params.numberOfRegions)
 
+    ######################################
+    # Fill in boundary parameters. Note the convention that left boundary = 1, right boundary = 2
+    # and that first region = 1, second region = 2
+    bregionLeft  = 1
+    bregionRight = 2
+    regionLeft   = 1
+    regionRight  = data.params.numberOfRegions
+
+    for icc in data.chargeCarrierList
+        if iszero(data.paramsnodal.densityOfStates[icc, :])
+            data.params.bDensityOfStates[icc, bregionLeft]  = data.params.densityOfStates[icc, regionLeft]
+            data.params.bDensityOfStates[icc, bregionRight] = data.params.densityOfStates[icc, regionRight]
+        end
+
+        if iszero(data.paramsnodal.bandEdgeEnergy[icc, :])
+            data.params.bBandEdgeEnergy[icc, bregionLeft]   = data.params.bandEdgeEnergy[icc, regionLeft]
+            data.params.bBandEdgeEnergy[icc, bregionRight]  = data.params.bandEdgeEnergy[icc, regionRight]
+        end
+
+        if iszero(data.paramsnodal.doping)
+            data.params.bDoping[icc, bregionLeft]           = data.params.doping[icc, regionLeft]
+            data.params.bDoping[icc, bregionRight]          = data.params.doping[icc, regionRight]
+        end
+
+    end
+
+    ######################################
     # add here additional electric potential and boundary species in case of Schottky
     # barrier lowering conditions
     if data.barrierLoweringInfo.BarrierLoweringOn == BarrierLoweringOn
@@ -1217,6 +1244,24 @@ function build_system(grid, data, unknown_storage, ::Type{DiscontQF})
     #########################################
 
     data.index_psi = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)
+
+
+    #########################################
+    # Fill in boundary parameters. Note the convention that left boundary = 1, right boundary = 2
+    # and that first region = 1, second region = 2
+    bregionLeft  = 1
+    bregionRight = 2
+    regionLeft   = 1
+    regionRight  = data.params.numberOfRegions
+    for icc in data.chargeCarrierList
+        data.params.bDensityOfStates[icc, bregionLeft]  = data.params.densityOfStates[icc, regionLeft]
+        data.params.bBandEdgeEnergy[icc, bregionLeft]   = data.params.bandEdgeEnergy[icc, regionLeft]
+
+        data.params.bDensityOfStates[icc, bregionRight] = data.params.densityOfStates[icc, regionRight]
+        data.params.bBandEdgeEnergy[icc, bregionRight]  = data.params.bandEdgeEnergy[icc, regionRight]
+
+    end
+
     #########################################
     # DA: Note that Schottky barrier lowering is for the discontinuous case not implemented yet.
 

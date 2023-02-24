@@ -33,6 +33,8 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfRegions  = length(regions)
 
     ## boundary region numbers
+    # Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
+    # adding additional interior boundaries, continue with 3, 4, ...
     bregionAcceptor  = 1
     bregionDonor     = 2
     bregionJunction1 = 3
@@ -287,19 +289,6 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.recombinationSRHTrapDensity[iphip, ireg]          = trap_density!(iphip, ireg, data, EI[ireg])
     end
 
-    ## outer boundary region data
-    params.bDensityOfStates[iphin, bregionAcceptor]              = Nc_a
-    params.bDensityOfStates[iphip, bregionAcceptor]              = Nv_a
-
-    params.bDensityOfStates[iphin, bregionDonor]                 = Nc_d
-    params.bDensityOfStates[iphip, bregionDonor]                 = Nv_d
-
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]               = Ec_a
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]               = Ev_a
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]                  = Ec_d
-    params.bBandEdgeEnergy[iphip, bregionDonor]                  = Ev_d
-
     ##############################################################
     ## inner boundary region data (we choose the intrinsic values)
     params.bDensityOfStates[iphin, bregionJunction1]             = Nc_i
@@ -333,9 +322,6 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.doping[iphin,  regionDonor]                           = Nd
     params.doping[iphip,  regionAcceptor]                        = Na
     params.doping[iphia,  regionIntrinsic]                       = C0
-    ## boundary doping
-    params.bDoping[iphin, bregionDonor]                          = Nd
-    params.bDoping[iphip, bregionAcceptor]                       = Na
 
     data.params                                                  = params
     ctsys                                                        = System(grid, data, unknown_storage=unknown_storage)

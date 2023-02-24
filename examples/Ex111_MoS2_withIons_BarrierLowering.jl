@@ -166,17 +166,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     params.chargeNumbers[iphip]                   =  1
     params.chargeNumbers[iphix]                   =  2
 
-    ## boundary region data
-    for ibreg in 1:length([bregionLeft bregionRight])  # boundary region data
-        params.bDensityOfStates[iphin, ibreg]     = Nc
-        params.bDensityOfStates[iphip, ibreg]     = Nv
-        params.bBandEdgeEnergy[iphin, ibreg]      = Ec
-        params.bBandEdgeEnergy[iphip, ibreg]      = Ev
-        params.bBandEdgeEnergy[iphix, ibreg]      = Ex
-        params.bDensityOfStates[iphix, ibreg]     = Nx
-    end
-
-    for ireg in 1:length([regionflake])           # interior region data
+    for ireg in 1:length([regionflake])           # region data
 
         params.dielectricConstant[ireg]           = εr * ε0
         params.dielectricConstantImageForce[ireg] = εi * ε0
@@ -202,10 +192,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     ## interior doping
     params.doping[iphin, regionflake]             = Nd
-
-    ## boundary doping
-    params.bDoping[iphin, bregionLeft]            = Nd
-    params.bDoping[iphin, bregionRight]           = Nd
 
     data.params                                   = params
     ctsys                                         = System(grid, data, unknown_storage=:sparse)
