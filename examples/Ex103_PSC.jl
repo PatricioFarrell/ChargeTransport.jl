@@ -26,60 +26,69 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## region numbers
-    regionDonor     = 1                           # n doped region
-    regionIntrinsic = 2                           # intrinsic region
-    regionAcceptor  = 3                           # p doped region
-    regions         = [regionDonor, regionIntrinsic, regionAcceptor]
-    numberOfRegions = length(regions)
+    regionDonor      = 1                           # n doped region
+    regionIntrinsic  = 2                           # intrinsic region
+    regionAcceptor   = 3                           # p doped region
+    regions          = [regionDonor, regionIntrinsic, regionAcceptor]
+    numberOfRegions  = length(regions)
 
     ## boundary region numbers
-    bregionDonor    = 1
-    bregionAcceptor = 2
+    bregionDonor     = 1
+    bregionAcceptor  = 2
+    bregionJunction1 = 3
+    bregionJunction2 = 4
 
-    h_ndoping       = 9.90e-6 * cm
-    h_intrinsic     = 4.00e-5 * cm + 2.0e-7 * cm # add 2.e-7 cm to this layer for agreement with grid of Driftfusion
-    h_pdoping       = 1.99e-5 * cm
+    h_ndoping        = 9.90e-6 * cm
+    h_intrinsic      = 4.00e-5 * cm + 2.0e-7 * cm # add 2.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_pdoping        = 1.99e-5 * cm
+    h_total          = h_ndoping + h_intrinsic + h_pdoping
 
-    x0              = 0.0 * cm
-    δ               = 2*n        # the larger, the finer the mesh
-    t               = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
-    k               = 1.5        # the closer to 1, the closer to the boundary geomspace works
+    x0               = 0.0 * cm
+    δ                = 2*n        # the larger, the finer the mesh
+    t                = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
+    k                = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    coord_n_u       = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
-    coord_n_g       = geomspace(h_ndoping/2,
-                                h_ndoping,
-                                h_ndoping/(1.0*δ),
-                                h_ndoping/(1.0*δ),
-                                tol=t)
-    coord_i_g1      = geomspace(h_ndoping,
-                                h_ndoping+h_intrinsic/k,
-                                h_intrinsic/(2.8*δ),
-                                h_intrinsic/(2.0*δ),
-                                tol=t)
-    coord_i_g2      = geomspace(h_ndoping+h_intrinsic/k,
-                                h_ndoping+h_intrinsic,
-                                h_intrinsic/(2.0*δ),
-                                h_intrinsic/(2.8*δ),
-                                tol=t)
-    coord_p_g       = geomspace(h_ndoping+h_intrinsic,
-                                h_ndoping+h_intrinsic+h_pdoping/2,
-                                h_pdoping/(1.6*δ),
-                                h_pdoping/(1.6*δ),
-                                tol=t)
-    coord_p_u       = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(1.3*δ)))
+    coord_n_u        = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
+    coord_n_g        = geomspace(h_ndoping/2,
+                                 h_ndoping,
+                                 h_ndoping/(1.0*δ),
+                                 h_ndoping/(1.0*δ),
+                                 tol=t)
+    coord_i_g1       = geomspace(h_ndoping,
+                                 h_ndoping+h_intrinsic/k,
+                                 h_intrinsic/(2.8*δ),
+                                 h_intrinsic/(2.0*δ),
+                                 tol=t)
+    coord_i_g2       = geomspace(h_ndoping+h_intrinsic/k,
+                                 h_ndoping+h_intrinsic,
+                                 h_intrinsic/(2.0*δ),
+                                 h_intrinsic/(2.8*δ),
+                                 tol=t)
+    coord_p_g        = geomspace(h_ndoping+h_intrinsic,
+                                 h_ndoping+h_intrinsic+h_pdoping/2,
+                                 h_pdoping/(1.6*δ),
+                                 h_pdoping/(1.6*δ),
+                                 tol=t)
+    coord_p_u        = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_total, step=h_pdoping/(1.3*δ)))
 
-    coord           = glue(coord_n_u, coord_n_g,  tol=10*t)
-    coord           = glue(coord,     coord_i_g1, tol=10*t)
-    coord           = glue(coord,     coord_i_g2, tol=10*t)
-    coord           = glue(coord,     coord_p_g,  tol=10*t)
-    coord           = glue(coord,     coord_p_u,  tol=10*t)
-    grid            = simplexgrid(coord)
+    coord            = glue(coord_n_u, coord_n_g,  tol=10*t)
+    coord            = glue(coord,     coord_i_g1, tol=10*t)
+    coord            = glue(coord,     coord_i_g2, tol=10*t)
+    coord            = glue(coord,     coord_p_g,  tol=10*t)
+    coord            = glue(coord,     coord_p_u,  tol=10*t)
+    grid             = simplexgrid(coord)
 
 
-    ## set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm],                [h_ndoping],                           regionDonor)     # n-doped region   = 1
-    cellmask!(grid, [h_ndoping],               [h_ndoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
-    cellmask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic + h_pdoping], regionAcceptor)  # p-doped region   = 3
+    ## set different regions in grid
+    cellmask!(grid, [0.0 * μm],                [h_ndoping],               regionDonor)       # n-doped region   = 1
+    cellmask!(grid, [h_ndoping],               [h_ndoping + h_intrinsic], regionIntrinsic)   # intrinsic region = 2
+    cellmask!(grid, [h_ndoping + h_intrinsic], [h_total],                 regionAcceptor)    # p-doped region   = 3
+
+    ## set different boundary regions
+    bfacemask!(grid, [0.0],                     [0.0],                     bregionDonor)     # outer left boundary
+    bfacemask!(grid, [h_total],                 [h_total],                 bregionAcceptor)  # outer right boundary
+    bfacemask!(grid, [h_ndoping],               [h_ndoping],               bregionJunction1) # first  inner interface
+    bfacemask!(grid, [h_ndoping + h_intrinsic], [h_ndoping + h_intrinsic], bregionJunction2) # second inner interface
 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)

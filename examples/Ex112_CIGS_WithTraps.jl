@@ -47,6 +47,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## boundary region numbers
     bregionDonor            = 1
     bregionAcceptor         = 2
+    bregionDALeft           = 3
+    bregionALeftATrap       = 4
+    bregionATrapARight      = 5
 
     ## grid
     refinementfactor        = 2^(n-1)
@@ -65,11 +68,15 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     grid                    = simplexgrid(coord)
 
-    ## set different regions in grid, doping profiles do not intersect
+    ## set different regions in grid
     cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor) # n doped
     cellmask!(grid, [h_ndoping], [h_ndoping + h_pdoping_left], regionAcceptorLeft) # p doped
     cellmask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left + h_pdoping_trap], regionAcceptorTrap) # p doped with traps
     cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_total], regionAcceptorRight) # p doped
+
+    bfacemask!(grid, [h_ndoping], [h_ndoping], bregionDALeft, tol = 1.0e-18)
+    bfacemask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left], bregionALeftATrap, tol = 1.0e-18)
+    bfacemask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap], bregionATrapARight, tol = 1.0e-18)
 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)

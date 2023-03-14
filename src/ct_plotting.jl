@@ -38,12 +38,13 @@ One input parameter is the boolean plotGridpoints which makes it possible to plo
 which indicate where the nodes are located.
 
 """
-function plot_densities(Plotter, ctsys, sol, title, label_density, ;plotGridpoints=false)
+function plot_densities(Plotter, ctsys, solution, title, label_density, ;plotGridpoints=false)
 
     Plotter.clf()
 
-    grid = ctsys.fvmsys.grid
-    data = ctsys.fvmsys.physics.data
+    grid            = ctsys.fvmsys.grid
+    data            = ctsys.fvmsys.physics.data
+    numberOfRegions = grid[NumCellRegions]
 
     if dim_space(grid) > 1
         error("plot_densities is so far only tested in 1D")
@@ -55,56 +56,30 @@ function plot_densities(Plotter, ctsys, sol, title, label_density, ;plotGridpoin
         marker = ""
     end
 
-    params         = data.params
-    colors         = ["green", "red", "gold", "purple", "orange"]
-
-    cellnodes      = grid[CellNodes]
-    cellregions    = grid[CellRegions]
-    coordinates    = grid[Coordinates]
+    params     = data.params
+    colors     = ["green", "red", "gold", "purple", "orange"]
 
     for icc in 1:params.numberOfCarriers
 
-        # first cell
-        u1         = sol[:, 1]
-        u2         = sol[:, 2]
-        ireg       = cellregions[1]
+        # grids = Array{ExtendableGrid, 1}(undef, numberOfRegions)
+        # nicc  = Array{Array{Float64, 1}, 1}(undef, numberOfRegions)
 
-        icc1       = compute_densities!(u1, data, 1, 1,    icc, false) # breg = 1 since we are on the left boundary
-        icc2       = compute_densities!(u2, data, 2, ireg, icc, true)
+        ## first region for label
+        label_icc = label_density[icc]
+        subg      = subgrid(grid, [1])
+        ncc       = get_density(solution, 1, ctsys, icc)
 
-        label_icc  = label_density[icc]
+        Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, label = label_icc, color = colors[icc], linewidth = 2)
 
-        # multiplying by 1.0e-6 gives us the densities in cm^(-3)
-        Plotter.semilogy([coordinates[1]./1, coordinates[2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, label = label_icc, color = colors[icc], linewidth = 2)
+        ## additional regions
+        for ireg in 2:numberOfRegions
+            subg = subgrid(grid, [ireg])
+            ncc  = get_density(solution, ireg, ctsys, icc)
 
-        for icell in 2:size(cellnodes,2) - 1
-            in_region = true
-            i1    = cellnodes[1,icell]
-            i2    = cellnodes[2,icell]
-            ireg  = cellregions[icell]
-
-            u1    = sol[:, i1]
-            u2    = sol[:, i2]
-
-            icc1  = compute_densities!(u1, data, i1, ireg, icc, in_region)
-            icc2  = compute_densities!(u2, data, i2, ireg, icc, in_region)
-
-            # multiplying by 1.0e-6 gives us the densities in cm^(-3)
-            Plotter.semilogy([coordinates[i1]./1, coordinates[i2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2)
+            ## Note that this implies a 1D plot, for multidimensional plots, you may work with
+            ## GridVisualize.jl or write your own code.
+            Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, color = colors[icc], linewidth = 2)
         end
-
-        # last cell
-        u1        = sol[:, end-1]
-        u2        = sol[:, end]
-        ireg      = cellregions[end]
-        node      = cellnodes[2, end]
-
-        icc1      = compute_densities!(u1, data, node-1, ireg, icc, true)
-        # breg = 2 since we are on the right boundary
-        icc2      = compute_densities!(u2, data, node, 2, icc, false)
-
-        # multiplying by 1.0e-6 gives us the densities in cm^(-3)
-        Plotter.semilogy([coordinates[node-1]./1, coordinates[node]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2)
 
     end
 

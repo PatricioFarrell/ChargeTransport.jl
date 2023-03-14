@@ -82,7 +82,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord            = glue(coord,     coord_p_u,  tol=10*t)
     grid             = ExtendableGrids.simplexgrid(coord)
 
-    ## set different regions in grid, doping profiles do not intersect
+    ## set different regions in grid
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)     # n-doped region   = 1
     cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
     cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)  # p-doped region   = 3
@@ -91,7 +91,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     bfacemask!(grid, [heightLayers[2]], [heightLayers[2]], bregionJunction2, tol = 1.0e-18)
 
     if plotting
-        gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -149,20 +149,20 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     NAnion             = [0.0,  Nanion, 0.0]
 
     ## mobilities
-    μn_d             = 3.89                    * (cm^2) / (V * s)
-    μp_d             = 3.89                    * (cm^2) / (V * s)
+    μn_d               = 3.89                    * (cm^2) / (V * s)
+    μp_d               = 3.89                    * (cm^2) / (V * s)
 
-    μn_i             = 6.62e1                  * (cm^2) / (V * s)
-    μp_i             = 6.62e1                  * (cm^2) / (V * s)
+    μn_i               = 6.62e1                  * (cm^2) / (V * s)
+    μp_i               = 6.62e1                  * (cm^2) / (V * s)
 
-    μa_i             = 3.93e-12                * (cm^2) / (V * s)
+    μa_i               = 3.93e-12                * (cm^2) / (V * s)
 
-    μn_a             = 3.89e-1                 * (cm^2) / (V * s)
-    μp_a             = 3.89e-1                 * (cm^2) / (V * s)
+    μn_a               = 3.89e-1                 * (cm^2) / (V * s)
+    μp_a               = 3.89e-1                 * (cm^2) / (V * s)
 
-    μn               = [μn_d, μn_i, μn_a]
-    μp               = [μp_d, μp_i, μp_a]
-    μa               = [0.0,  μa_i, 0.0 ]
+    μn                 = [μn_d, μn_i, μn_a]
+    μp                 = [μp_d, μp_i, μp_a]
+    μa                 = [0.0,  μa_i, 0.0 ]
 
     ## relative dielectric permittivity
     ε_d                = 10.0                  *  1.0
@@ -422,7 +422,6 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     sol = solve(ctsys, inival = inival, times=(0.0, tend), control = control)
 
     if plotting
-
         tsol = sol(tend)
         plot_densities(Plotter, ctsys, tsol, "Densities at end time", label_density)
         Plotter.legend()

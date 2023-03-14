@@ -42,11 +42,11 @@ We sketch the relevant parts here. First, we need to define two additional thin 
 
 ```julia
 # region numbers
-regionDonor            = 1       # n doped region
-regionJunction1        = 2
-regionIntrinsic        = 3       # intrinsic region
-regionJunction2        = 4
-regionAcceptor         = 5       # p doped region
+regionDonor     = 1       # n doped region
+regionJunction1 = 2
+regionIntrinsic = 3       # intrinsic region
+regionJunction2 = 4
+regionAcceptor  = 5       # p doped region
 ```
 which need to be taken into account by the initialization of the grid.
 

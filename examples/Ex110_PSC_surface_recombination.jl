@@ -80,7 +80,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord            = glue(coord,    coord_n_u,  tol=10*t)
     grid             = ExtendableGrids.simplexgrid(coord)
 
-    ## cellmask! for defining the subregions and assigning region number (doping profiles do not intersect)
+    ## cellmask! for defining the subregions and assigning region number
     cellmask!(grid, [0.0 * μm],                 [h_pdoping],                           regionAcceptor, tol = 1.0e-18)   # p-doped region   = 1
     cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic],             regionIntrinsic, tol = 1.0e-18)  # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic],  [h_pdoping + h_intrinsic + h_ndoping], regionDonor, tol = 1.0e-18)      # n-doped region   = 3
@@ -91,7 +91,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)  # second inner interface
 
     if plotting
-        GridVisualize.gridplot(grid, Plotter = Plotter)
+        GridVisualize.gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end

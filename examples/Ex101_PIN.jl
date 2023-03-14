@@ -35,36 +35,47 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## region numbers
-    regionAcceptor          = 1          # p doped region
-    regionIntrinsic         = 2          # intrinsic region
-    regionDonor             = 3          # n doped region
-    regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
-    numberOfRegions         = length(regions)
+    regionAcceptor   = 1          # p doped region
+    regionIntrinsic  = 2          # intrinsic region
+    regionDonor      = 3          # n doped region
+    regions          = [regionAcceptor, regionIntrinsic, regionDonor]
+    numberOfRegions  = length(regions)
 
     ## boundary region numbers
     # Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
     # adding additional interior boundaries, continue with 3, 4, ...
-    bregionAcceptor         = 1
-    bregionDonor            = 2
+    bregionAcceptor  = 1
+    bregionDonor     = 2
+    bregionJunction1 = 3
+    bregionJunction2 = 4
 
     ## grid
-    refinementfactor        = 2^(n-1)
-    h_pdoping               = 2.0    * μm
-    h_intrinsic             = 2.0    * μm
-    h_ndoping               = 2.0    * μm
-    w_device                = 0.5    * μm  # width of device
-    z_device                = 1.0e-4 * cm  # depth of device
-    coord                   = initialize_pin_grid(refinementfactor,
-                                                  h_pdoping,
-                                                  h_intrinsic,
-                                                  h_ndoping)
+    refinementfactor = 2^(n-1)
+    h_pdoping        = 2.0    * μm
+    h_intrinsic      = 2.0    * μm
+    h_ndoping        = 2.0    * μm
+    h_total          = h_pdoping + h_intrinsic + h_ndoping
+    w_device         = 0.5    * μm  # width of device
+    z_device         = 1.0e-4 * cm  # depth of device
+    coord            = initialize_pin_grid(refinementfactor,
+                                           h_pdoping,
+                                           h_intrinsic,
+                                           h_ndoping)
 
-    grid                    = simplexgrid(coord)
+    grid             = simplexgrid(coord)
 
     ## cellmask! for defining the subregions and assigning region number
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor)  # p-doped region = 1
     cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
+
+    ## bfacemask! for setting different boundary regions. At exterior boundaries they are
+    ## automatically set by ExtendableGridsjl. Thus, there the following two lines are actually
+    ## unneccesarry, but are only written for completeness.
+    bfacemask!(grid, [0.0],                     [0.0],                     bregionAcceptor)     # outer left boundary
+    bfacemask!(grid, [h_total],                 [h_total],                 bregionDonor)  # outer right boundary
+    bfacemask!(grid, [h_pdoping],               [h_pdoping],               bregionJunction1) # first  inner interface
+    bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic], bregionJunction2) # second inner interface
 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)

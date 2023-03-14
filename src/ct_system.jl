@@ -758,7 +758,6 @@ mutable struct Data{TFuncs<:Function, TContVol<:Function}
 end
 
 
-
 """
 $(TYPEDEF)
 
@@ -1495,75 +1494,6 @@ function get_current_val(ctsys, U)
     end
 
     return current
-
-end
-
-###########################################################
-###########################################################
-
-"""
-
-$(TYPEDSIGNATURES)
-
-For given potentials, compute corresponding densities. This function is needed
-for the method, plotting the densities.
-
-"""
-function compute_densities!(u, data, inode, region, icc, in_region::Bool)
-
-    params      = data.params
-    paramsnodal = data.paramsnodal
-
-    if in_region == false
-        (params.bDensityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode] ) * data.F[icc](etaFunction(u, data, inode, region, icc, in_region::Bool))
-    elseif in_region == true
-        (params.densityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode])* data.F[icc](etaFunction(u, data, inode, region, icc, in_region::Bool))
-    end
-
-end
-
-
-"""
-
-$(TYPEDSIGNATURES)
-
-For given potentials in vector form, compute corresponding vectorized densities.
-[Caution: this was not tested for multidimensions.]
-"""
-function compute_densities!(grid, data, sol)
-    params       = data.params
-
-    ipsi         = params.numberOfCarriers + 1
-    densities    = Array{Real,2}(undef, params.numberOfCarriers, size(sol, 2))
-
-    bfacenodes   = grid[BFaceNodes]
-    bfaceregions = grid[BFaceRegions]
-    cellRegions  = copy(grid[CellRegions])
-    cellRegions  = push!(cellRegions, grid[CellRegions][end]) #  enlarge region by final cell
-
-    if dim_space(grid) > 1
-        println("compute_densities! is so far only tested in 1D")
-    end
-
-    for icc in 1:params.numberOfCarriers
-
-        for node in 1:params.numberOfNodes
-            in_region = true
-            u         = sol[:, node]
-            region    = cellRegions[node]
-
-            if node in bfacenodes
-                in_region = false
-                indexNode = findall(x -> x == node, vec(bfacenodes))[1]  # we need to know which index the node has in bfacenodes
-                region    = bfaceregions[indexNode]                      # since the corresponding region number is at the same index
-            end
-
-            densities[icc, node] = compute_densities!(u, data, node, region, icc, in_region)
-        end
-
-    end
-
-    return densities
 
 end
 

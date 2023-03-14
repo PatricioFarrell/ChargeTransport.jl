@@ -35,11 +35,14 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## boundary region numbers
     bregionDonor     = 1
     bregionAcceptor  = 2
+    bregionJunction1 = 3
+    bregionJunction2 = 4
 
     ## grid
     h_ndoping        = 9.90e-6 * cm
     h_intrinsic      = 4.00e-5 * cm + 2.0e-7 * cm
     h_pdoping        = 1.99e-5 * cm
+    h_total          = h_ndoping + h_intrinsic + h_pdoping
     heightLayers     = [h_ndoping,
                         h_ndoping + h_intrinsic,
                         h_ndoping + h_intrinsic + h_pdoping]
@@ -79,13 +82,19 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord           = glue(coord,     coord_p_u,  tol=10*t)
     grid            = ExtendableGrids.simplexgrid(coord)
 
-    ## set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)     # n-doped region   = 1
-    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
-    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)  # p-doped region   = 3
+    ## set different regions in grid
+    cellmask!(grid,  [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)     # n-doped region   = 1
+    cellmask!(grid,  [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
+    cellmask!(grid,  [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)  # p-doped region   = 3
+
+    ## bfacemask! for setting different boundary regions
+    bfacemask!(grid, [0.0],             [0.0],             bregionDonor)     # outer left boundary
+    bfacemask!(grid, [h_total],         [h_total],         bregionAcceptor)  # outer right boundary
+    bfacemask!(grid, [heightLayers[1]], [heightLayers[1]], bregionJunction1) # first  inner interface
+    bfacemask!(grid, [heightLayers[2]], [heightLayers[2]], bregionJunction2) # second inner interface
 
     if plotting
-        gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end
