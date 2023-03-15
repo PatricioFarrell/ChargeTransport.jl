@@ -107,21 +107,16 @@ One input parameter is the boolean plotGridpoints which makes it possible to plo
 which indicate where the nodes are located.
 
 """
-function plot_energies(Plotter, ctsys, sol, title, label_energy, ;plotGridpoints=false)
+function plot_energies(Plotter, ctsys, solution, title, label_energy, ;plotGridpoints=false)
 
     Plotter.clf()
 
-    grid        = ctsys.fvmsys.grid
-    data        = ctsys.fvmsys.physics.data
-    params      = data.params
-    paramsnodal = data.paramsnodal
-    ipsi        = data.index_psi
-    cellnodes   = grid[CellNodes]
-    cellregions = grid[CellRegions]
-    coord       = grid[Coordinates]
+    grid  = ctsys.fvmsys.grid
+    data  = ctsys.fvmsys.physics.data
+    coord = grid[Coordinates]
 
     if length(coord[1]) != 1
-        println("plotEnergies is so far only implemented in 1D")
+        println("plot_energies is so far only implemented in 1D")
     end
 
     if plotGridpoints == true
@@ -134,41 +129,93 @@ function plot_energies(Plotter, ctsys, sol, title, label_energy, ;plotGridpoints
     linestyles     = ["-", ":", "--", "-.", "-"]
 
     for icc in data.electricCarrierList
-        # first cell
-        ireg         = cellregions[1]
-        E1           = params.bBandEdgeEnergy[icc, 1] + paramsnodal.bandEdgeEnergy[icc, 1] # left boundary
-        E2           = params.bandEdgeEnergy[icc, 1]  + paramsnodal.bandEdgeEnergy[icc, 2]
-        energy_icc1  = E1 - q * sol[ipsi, 1]
-        energy_icc2  = E2 - q * sol[ipsi, 2]
 
-        Plotter.plot([coord[1]./1, coord[2]./1], [energy_icc1, energy_icc2]./q, marker = marker, label = label_energy[1, icc], linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+        # grids = Array{ExtendableGrid, 1}(undef, numberOfRegions)
+        # nicc  = Array{Array{Float64, 1}, 1}(undef, numberOfRegions)
 
-        for icell in 2:size(cellnodes,2) - 1
-            i1          = cellnodes[1,icell]
-            i2          = cellnodes[2,icell]
-            ireg        = cellregions[icell]
+        ## first region for label
+        subg      = subgrid(grid, [1])
+        Ecc       = get_BEE(icc, 1, ctsys)
+        solpsi    = view(solution[data.index_psi, :], subg)
+        solcc     = view(solution[icc, :],            subg)
 
-            E1          = params.bandEdgeEnergy[icc, ireg] + paramsnodal.bandEdgeEnergy[icc, i1]
-            E2          = params.bandEdgeEnergy[icc, ireg] + paramsnodal.bandEdgeEnergy[icc, i2]
+        Plotter.plot(subg[Coordinates]',  Ecc./q .- solpsi, label = label_energy[1, icc], marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
 
-            energy_icc1 = E1 - q * sol[ipsi, i1]
-            energy_icc2 = E2 - q * sol[ipsi, i2]
+        Plotter.plot(subg[Coordinates]', -solcc,            label = label_energy[2, icc], marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
 
-            Plotter.plot([coord[i1]./1, coord[i2]./1], [energy_icc1, energy_icc2]./q, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+        ## additional regions
+        for ireg in 2:data.params.numberOfRegions
+            subg   = subgrid(grid, [ireg])
+            Ecc    = get_BEE(icc, ireg, ctsys)
+            solpsi = view(solution[data.index_psi, :], subg)
+            solcc  = view(solution[icc, :],            subg)
+
+            ## Note that this implies a 1D plot, for multidimensional plots, you may work with
+            ## GridVisualize.jl or write your own code.
+            Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+
+            Plotter.plot(subg[Coordinates]', - solcc, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
         end
 
-        ireg        = cellregions[end]
-        node        = cellnodes[2, end]
-        E1          = params.bandEdgeEnergy[icc, ireg] + paramsnodal.bandEdgeEnergy[icc, node-1]
-        E2          = params.bBandEdgeEnergy[icc, 2] + paramsnodal.bandEdgeEnergy[icc, end] # right boundary
-        energy_icc1 = E1 - q * sol[ipsi, end-1]
-        energy_icc2 = E2 - q * sol[ipsi, end]
+    end
 
-        Plotter.plot([coord[end-1]./1, coord[end]./1], [energy_icc1, energy_icc2]./q, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+    for iicc in data.ionicCarrierList
+        icc   = iicc.ionicCarrier
+        count = 0
 
-        Plotter.plot(coord[1,:]./1, - sol[icc,:], label = label_energy[2, icc], marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
+        for ireg in 1:data.params.numberOfRegions
+            if ireg ∈ iicc.regions
+                subg   = subgrid(grid, [ireg])
+                Ecc    = get_BEE(icc, ireg, ctsys)
+                solpsi = view(solution[data.index_psi, :], subg)
+                solcc  = view(solution[icc, :],            subg)
 
-   end
+                if count == 0
+                    label1 = label_energy[1, icc]
+                    label2 = label_energy[2, icc]
+                else
+                    label1 = ""
+                    label2 = ""
+                end
+                ## Note that this implies a 1D plot, for multidimensional plots, you may work with
+                ## GridVisualize.jl or write your own code.
+                Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, label = label1, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+
+                Plotter.plot(subg[Coordinates]', - solcc, label = label2, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
+
+                count = count + 1
+            end
+        end
+    end
+
+    for iicc in data.trapCarrierList
+        icc   = iicc.trapCarrier
+        count = 0
+
+        for ireg in 1:data.params.numberOfRegions
+            if ireg ∈ iicc.regions
+                subg   = subgrid(grid, [ireg])
+                Ecc    = get_BEE(icc, ireg, ctsys)
+                solpsi = view(solution[data.index_psi, :], subg)
+                solcc  = view(solution[icc, :],            subg)
+
+                if count == 0
+                    label1 = label_energy[1, icc]
+                    label2 = label_energy[2, icc]
+                else
+                    label1 = ""
+                    label2 = ""
+                end
+                ## Note that this implies a 1D plot, for multidimensional plots, you may work with
+                ## GridVisualize.jl or write your own code.
+                Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, label = label1, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+
+                Plotter.plot(subg[Coordinates]', - solcc, label = label2, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
+
+                count = count + 1
+            end
+        end
+    end
 
    Plotter.grid()
    Plotter.xlabel("space [\$m\$]")

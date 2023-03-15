@@ -1504,44 +1504,6 @@ end
 
 $(SIGNATURES)
 
-For given solution in vector form, compute corresponding vectorized band-edge energies and
-Fermi level. [Caution: this was not tested for multidimensions.]
-"""
-function compute_energies!(grid, data, sol)
-
-    params       = data.params
-    paramsnodal  = data.paramsnodal
-
-    ipsi         = params.numberOfCarriers + 1
-    energies     = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
-    fermiLevel   = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
-
-    cellregions  = grid[CellRegions]
-    cellregions  = push!(cellregions, cellregions[end])
-
-    for icc in 1:params.numberOfCarriers
-
-        # DA: potential bug. We need to distinguish between boundary and interior energies!
-        for inode in 1:params.numberOfNodes
-             E                      = params.bandEdgeEnergy[icc, cellregions[inode]] + paramsnodal.bandEdgeEnergy[icc, inode]
-             energies[icc, inode]   = E - q * sol[ipsi, inode]
-             fermiLevel[icc, inode] = -q * sol[icc, inode]
-        end
-
-    end
-
-    return energies, fermiLevel
-
-end
-
-
-###########################################################
-###########################################################
-
-"""
-
-$(SIGNATURES)
-
 For given bias vector and given IV vector this method calculates the open circuit voltage
 for solar cells under illumination.
 """
