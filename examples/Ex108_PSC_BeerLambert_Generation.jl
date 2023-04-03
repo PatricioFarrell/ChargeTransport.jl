@@ -216,7 +216,6 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## primary data for I-V scan protocol
     scanrate           = 0.4 * V/s
-    number_tsteps      = 101
     endVoltage         = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     tend               = endVoltage/scanrate
 
