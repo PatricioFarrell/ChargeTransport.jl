@@ -175,17 +175,7 @@ Apply zero voltage on left boundary and a linear scan protocol on right boundary
     params.chargeNumbers[iphip]                   =  1
     params.chargeNumbers[iphix]                   =  2
 
-    # boundary region data
-    for ibreg in 1:length([bregionLeft bregionRight])  # boundary region data
-        params.bDensityOfStates[iphin, ibreg]     = Nc
-        params.bDensityOfStates[iphip, ibreg]     = Nv
-        params.bBandEdgeEnergy[iphin, ibreg]      = Ec
-        params.bBandEdgeEnergy[iphip, ibreg]      = Ev
-        params.bBandEdgeEnergy[iphix, ibreg]      = Ex
-        params.bDensityOfStates[iphix, ibreg]     = Nx
-    end
-
-    for ireg in 1:length([regionflake])           # interior region data
+    for ireg in 1:length([regionflake])           # region data
 
         params.dielectricConstant[ireg]           = εr * ε0
         params.dielectricConstantImageForce[ireg] = εi * ε0
@@ -211,10 +201,6 @@ Apply zero voltage on left boundary and a linear scan protocol on right boundary
 
     # interior doping
     params.doping[iphin, regionflake]             = Nd
-
-    # boundary doping
-    params.bDoping[iphin, bregionLeft]            = Nd
-    params.bDoping[iphin, bregionRight]           = Nd
 
     data.params                                   = params
     ctsys                                         = System(grid, data, unknown_storage=:sparse)
@@ -268,9 +254,8 @@ Apply zero voltage on left boundary and a linear scan protocol on right boundary
 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
-        label_density[iphin]   = "\$ n_n\$";      label_density[iphip]   = "\$ n_p\$"
         label_energy[1, iphix] = "\$E_x-q\\psi\$"; label_energy[2, iphix] = "\$ - q \\varphi_x\$"
-        label_density[iphix]   = "\$ n_X\$";       label_solution[iphix]  = "\$ \\varphi_x\$"
+        label_density[iphix]   = "\$ n_x\$";       label_solution[iphix]  = "\$ \\varphi_x\$"
 
         plot_densities(Plotter, ctsys, solEQ,"Equilibrium", label_density)
         Plotter.legend()
@@ -278,6 +263,7 @@ Apply zero voltage on left boundary and a linear scan protocol on right boundary
         plot_solution(Plotter, ctsys, solEQ, "Equilibrium", label_solution)
     end
 
+    return
     if test == false
         println("*** done\n")
     end
@@ -288,9 +274,6 @@ Apply zero voltage on left boundary and a linear scan protocol on right boundary
     end
     ################################################################################
 
-    data.calculationType = OutOfEquilibrium
-    IV                   = zeros(0) # for saving I-V data
-
     sol = solve(ctsys, inival = inival, times=(0.0, endTime), control = control)
 
     if test == false
@@ -300,6 +283,8 @@ Apply zero voltage on left boundary and a linear scan protocol on right boundary
     ################################################################################
     #########  IV curve calculation
     ################################################################################
+
+    IV            = zeros(0) # for saving I-V data
 
     tvalues       = sol.t
     number_tsteps = length(tvalues)
@@ -314,7 +299,7 @@ Apply zero voltage on left boundary and a linear scan protocol on right boundary
         inival   = sol[istep-1]
         solution = sol[istep]
 
-        I       = integrate(ctsys, tf, solution, inival, Δt)
+        I        = integrate(ctsys, tf, solution, inival, Δt)
 
         current = 0.0
         for ii = 1:numberOfCarriers+1

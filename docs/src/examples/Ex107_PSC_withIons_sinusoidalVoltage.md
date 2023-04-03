@@ -25,48 +25,51 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     # region numbers
-    regionAcceptor  = 1                           # p doped region
-    regionIntrinsic = 2                           # intrinsic region
-    regionDonor     = 3                           # n doped region
-    regions         = [regionAcceptor, regionIntrinsic, regionDonor]
-    numberOfRegions = length(regions)
+    regionAcceptor   = 1                           # p doped region
+    regionIntrinsic  = 2                           # intrinsic region
+    regionDonor      = 3                           # n doped region
+    regions          = [regionAcceptor, regionIntrinsic, regionDonor]
+    numberOfRegions  = length(regions)
 
     # boundary region numbers
-    bregionAcceptor = 1
-    bregionDonor    = 2
+    bregionAcceptor  = 1
+    bregionDonor     = 2
+    bregionJunction1 = 3
+    bregionJunction2 = 4
 
     # grid
-    h_pdoping       = 3.00e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
-    h_intrinsic     = 3.00e-5 * cm
-    h_ndoping       = 8.50e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_pdoping        = 3.00e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_intrinsic      = 3.00e-5 * cm
+    h_ndoping        = 8.50e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
+    h_total          = h_pdoping + h_intrinsic + h_ndoping
 
-    x0              = 0.0 * cm
-    δ               = 4*n        # the larger, the finer the mesh
-    t               = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
-    k               = 1.5        # the closer to 1, the closer to the boundary geomspace works
+    x0               = 0.0 * cm
+    δ                = 4*n        # the larger, the finer the mesh
+    t                = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
+    k                = 1.5        # the closer to 1, the closer to the boundary geomspace works
 
-    coord_p_u       = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.6*δ)))
-    coord_p_g       = geomspace(h_pdoping/2,
-                                h_pdoping,
-                                h_pdoping/(0.8*δ),
-                                h_pdoping/(0.6*δ),
-                                tol=t)
-    coord_i_g1      = geomspace(h_pdoping,
-                                h_pdoping+h_intrinsic/k,
-                                h_intrinsic/(6.1*δ),
-                                h_intrinsic/(2.1*δ),
-                                tol=t)
-    coord_i_g2      = geomspace(h_pdoping+h_intrinsic/k,
-                                h_pdoping+h_intrinsic,
-                                h_intrinsic/(2.1*δ),
-                                h_intrinsic/(6.1*δ),
-                                tol=t)
-    coord_n_g       = geomspace(h_pdoping+h_intrinsic,
-                                h_pdoping+h_intrinsic+h_ndoping/2,
-                                h_ndoping/(1.5*δ),
-                                h_ndoping/(0.9*δ),
-                                tol=t)
-    coord_n_u       = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.5*δ)))
+    coord_p_u        = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.6*δ)))
+    coord_p_g        = geomspace(h_pdoping/2,
+                                 h_pdoping,
+                                 h_pdoping/(0.8*δ),
+                                 h_pdoping/(0.6*δ),
+                                 tol=t)
+    coord_i_g1       = geomspace(h_pdoping,
+                                 h_pdoping+h_intrinsic/k,
+                                 h_intrinsic/(6.1*δ),
+                                 h_intrinsic/(2.1*δ),
+                                 tol=t)
+    coord_i_g2       = geomspace(h_pdoping+h_intrinsic/k,
+                                 h_pdoping+h_intrinsic,
+                                 h_intrinsic/(2.1*δ),
+                                 h_intrinsic/(6.1*δ),
+                                 tol=t)
+    coord_n_g        = geomspace(h_pdoping+h_intrinsic,
+                                 h_pdoping+h_intrinsic+h_ndoping/2,
+                                 h_ndoping/(1.5*δ),
+                                 h_ndoping/(0.9*δ),
+                                 tol=t)
+    coord_n_u        = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.5*δ)))
 
     coord           = glue(coord_p_u, coord_p_g,  tol=10*t)
     coord           = glue(coord,     coord_i_g1, tol=10*t)
@@ -75,13 +78,17 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord           = glue(coord,     coord_n_u,  tol=10*t)
     grid            = simplexgrid(coord)
 
-    # set different regions in grid, doping profiles do not intersect
+    # set different regions in grid
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor, tol = 1.0e-18)  # n-doped region   = 1
     cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor, tol = 1.0e-18)     # p-doped region   = 3
 
+    # bfacemask! for setting different boundary regions
+    bfacemask!(grid, [h_pdoping],               [h_pdoping],               bregionJunction1) # first  inner interface
+    bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic], bregionJunction2) # second inner interface
+
     if plotting
-        gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -275,21 +282,7 @@ Apply zero voltage on left boundary and a predefined scan protocol on right boun
     params.chargeNumbers[iphip]                         =  1
     params.chargeNumbers[iphia]                         =  1
 
-    # boundary region data
-    params.bDensityOfStates[iphin, bregionDonor]        = Nc_d
-    params.bDensityOfStates[iphip, bregionDonor]        = Nv_d
-
-    params.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
-    params.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
-    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
-
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
-
-
-    for ireg in 1:numberOfRegions # interior region data
+    for ireg in 1:numberOfRegions # region data
 
         params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
@@ -317,14 +310,10 @@ Apply zero voltage on left boundary and a predefined scan protocol on right boun
 
     end
 
-    # interior doping
+    # doping
     params.doping[iphin, regionDonor]                   = Nd
     params.doping[iphia, regionIntrinsic]               = C0
     params.doping[iphip, regionAcceptor]                = Na
-
-    # boundary doping
-    params.bDoping[iphip, bregionAcceptor]              = Na
-    params.bDoping[iphin, bregionDonor]                 = Nd
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
@@ -366,7 +355,7 @@ Apply zero voltage on left boundary and a predefined scan protocol on right boun
 
         # add labels for anion vacancy
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"
-        label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
+        label_density[iphia]   = "\$ n_a \$";      label_solution[iphia]  = "\$ \\varphi_a\$"
 
         plot_energies(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
@@ -385,13 +374,11 @@ Apply zero voltage on left boundary and a predefined scan protocol on right boun
     end
     ################################################################################
 
-    data.calculationType = OutOfEquilibrium
-
     # time mesh
-    number_tsteps        = 40
-    tvalues              = range(0, stop = endTime, length = number_tsteps)
+    number_tsteps = 40
+    tvalues       = range(0, stop = endTime, length = number_tsteps)
     # for saving I-V data
-    IV                   = zeros(0) # for IV values
+    IV            = zeros(0) # for IV values
 
     for istep = 2:number_tsteps
 

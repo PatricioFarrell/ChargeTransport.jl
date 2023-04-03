@@ -42,6 +42,12 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     numberOfRegions  = length(regions)
 
     # boundary region numbers
+````
+
+Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
+adding additional interior boundaries, continue with 3, 4, ...
+
+````julia
     bregionAcceptor  = 1
     bregionDonor     = 2
     bregionJunction1 = 3
@@ -267,19 +273,6 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     params.chargeNumbers[iphip]                         =  1
     params.chargeNumbers[iphia]                         =  1
 
-    # boundary region data
-    params.bDensityOfStates[iphin, bregionDonor]        = Nc_d
-    params.bDensityOfStates[iphip, bregionDonor]        = Nv_d
-
-    params.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
-    params.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
-    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
-
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
-
     for ireg in 1:numberOfRegions # interior region data
 
         params.dielectricConstant[ireg]                 = ε[ireg] * ε0
@@ -310,10 +303,6 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     params.doping[iphin, regionDonor]                   = Nd
     params.doping[iphia, regionIntrinsic]               = C0
     params.doping[iphip, regionAcceptor]                = Na
-
-    # boundary doping
-    params.bDoping[iphip, bregionAcceptor]              = Na
-    params.bDoping[iphin, bregionDonor]                 = Nd
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
@@ -379,23 +368,21 @@ function main(Plotter = PyPlot, ;plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    data.calculationType = OutOfEquilibrium
-
     # primary data for I-V scan protocol
-    scanrate             = 0.04 * V/s
-    number_tsteps        = 41
-    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend                 = endVoltage/scanrate
+    scanrate      = 0.04 * V/s
+    number_tsteps = 41
+    endVoltage    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+
 
     # with fixed timestep sizes we can calculate the times a priori
-    tvalues              = range(0, stop = tend, length = number_tsteps)
-    numbertsteps         = length(tvalues)
+    tend          = endVoltage/scanrate
+    tvalues       = range(0, stop = tend, length = number_tsteps)
 
     # for saving I-V data
-    IV                   = zeros(0) # for IV values
-    biasValues           = zeros(0) # for bias values
+    IV            = zeros(0) # for IV values
+    biasValues    = zeros(0) # for bias values
 
-    for istep = 2:numbertsteps
+    for istep = 2:number_tsteps
 
         t  = tvalues[istep]       # Actual time
         Δu = t * scanrate         # Applied voltage

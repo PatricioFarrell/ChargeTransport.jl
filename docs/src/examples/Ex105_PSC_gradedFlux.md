@@ -66,6 +66,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     # boundary region numbers
     bregionDonor          = 1
     bregionAcceptor       = 2
+    bregionDJ1            = 3
+    bregionJ1I            = 4
+    bregionIJ2            = 5
+    bregionJ2A            = 6
 
     # grid
     h_ndoping             = 9.90e-6 * cm
@@ -73,6 +77,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     h_intrinsic           = 4.00e-5 * cm
     h_junction2           = 1.0e-7  * cm
     h_pdoping             = 1.99e-5 * cm
+    h_total               = h_ndoping + h_junction1 + h_intrinsic + h_junction2 + h_pdoping
     h                     = [h_ndoping, h_junction1, h_intrinsic, h_junction2, h_pdoping]
     heightLayers          = [h_ndoping,
                              h_ndoping + h_junction1,
@@ -108,15 +113,24 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfNodes         = length(coord)
     lengthLayers          = [1, length_n, length_j1, length_i, length_j2, numberOfNodes]
 
-    # set different regions in grid, doping profiles do not intersect
+    # set different regions in grid
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor)      # n-doped region   = 1
     cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionJunction1)  # first junction   = 2
     cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionIntrinsic)  # intrinsic region = 3
     cellmask!(grid, [heightLayers[3]], [heightLayers[4]], regionJunction2)  # sec. junction    = 4
     cellmask!(grid, [heightLayers[4]], [heightLayers[5]], regionAcceptor)   # p-doped region   = 5
+````
+
+inner interfaces
+
+````julia
+    bfacemask!(grid, [heightLayers[1]], [heightLayers[1]], bregionDJ1)
+    bfacemask!(grid, [heightLayers[2]], [heightLayers[2]], bregionJ1I)
+    bfacemask!(grid, [heightLayers[3]], [heightLayers[3]], bregionIJ2)
+    bfacemask!(grid, [heightLayers[4]], [heightLayers[4]], bregionJ2A)
 
     if plotting
-        gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -305,8 +319,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     paramsnodal.densityOfStates[iphip, :] = grading_parameter!(paramsnodal.densityOfStates[iphip, :],
                                                               coord, regionTransportLayers, regionJunctions, h,
                                                               heightLayers, lengthLayers, NV)
-    # region dependent data
-    for ireg in 1:numberOfRegions
+
+    for ireg in 1:numberOfRegions  ## region dependent data
 
         # mobility
         params.mobility[iphin, ireg]                    = μn[ireg]
@@ -324,14 +338,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     end
 
-    # interior doping
+    # doping
     params.doping[iphin, regionDonor]      = Nd
     params.doping[iphip, regionIntrinsic]  = Ni_acceptor
     params.doping[iphip, regionAcceptor]   = Na
-
-    # boundary doping
-    params.bDoping[iphip, bregionAcceptor] = Na
-    params.bDoping[iphin, bregionDonor]    = Nd
 
     data.params                            = params
     data.paramsnodal                       = paramsnodal
@@ -357,9 +367,9 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.abstol       = 1.0e-13
     control.reltol       = 1.0e-13
     control.tol_round    = 1.0e-13
-    control.damp_initial = 0.9
+    control.damp_initial = 0.5
     control.damp_growth  = 1.61 # >= 1
-    control.max_round    = 7
+    control.max_round    = 5
 
     if test == false
         println("*** done\n")
@@ -392,8 +402,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("Bias loop")
     end
     ################################################################################
-
-    data.calculationType = OutOfEquilibrium
 
     maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 13)
