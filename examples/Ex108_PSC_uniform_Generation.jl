@@ -344,7 +344,7 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         ## add labels for anion vacancy
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"
-        label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
+        label_density[iphia]   = "\$ n_a \$";      label_solution[iphia]  = "\$ \\varphi_a\$"
 
         plot_energies(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()

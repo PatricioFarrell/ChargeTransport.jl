@@ -396,7 +396,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         ## add labels for anion vacancy
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"; label_BEE[iphia] = "\$E_a\$"
-        label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
+        label_density[iphia]   = "\$ n_a \$";      label_solution[iphia]  = "\$ \\varphi_a\$"
 
         plot_densities(Plotter, ctsys, solution, "Initial condition", label_density)
         Plotter.legend()

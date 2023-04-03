@@ -19,11 +19,11 @@ function set_plotting_labels(data)
 
     ## for electrons
     label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"; label_BEE[iphin] = "\$E_c\$"
-    label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
+    label_density[iphin]   = "\$ n_n \$ ";              label_solution[iphin]  = "\$ \\varphi_n\$"
 
     ## for holes
     label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"; label_BEE[iphip] = "\$E_v\$"
-    label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
+    label_density[iphip]   = "\$ n_p \$";              label_solution[iphip]  = "\$ \\varphi_p\$"
 
 
     return label_solution, label_density, label_energy, label_BEE
@@ -89,7 +89,6 @@ function plot_densities(Plotter, ctsys, solution, title, label_density, ;plotGri
     Plotter.legend(fancybox = true, loc = "best", fontsize=11)
     Plotter.title(title)
     Plotter.tight_layout()
-    Plotter.pause(0.001)
 
 end
 

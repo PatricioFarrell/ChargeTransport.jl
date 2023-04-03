@@ -245,9 +245,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
-        label_density[iphin]   = "\$ n_n\$";      label_density[iphip]   = "\$ n_p\$"
         label_energy[1, iphix] = "\$E_x-q\\psi\$"; label_energy[2, iphix] = "\$ - q \\varphi_x\$"
-        label_density[iphix]   = "\$ n_X\$";       label_solution[iphix]  = "\$ \\varphi_x\$"
+        label_density[iphix]   = "\$ n_x\$";       label_solution[iphix]  = "\$ \\varphi_x\$"
 
         plot_densities(Plotter, ctsys, solEQ,"Equilibrium", label_density)
         Plotter.legend()
@@ -255,6 +254,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         plot_solution(Plotter, ctsys, solEQ, "Equilibrium", label_solution)
     end
 
+    return
     if test == false
         println("*** done\n")
     end
