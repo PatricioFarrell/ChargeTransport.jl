@@ -2,13 +2,14 @@
 # PSC device with graded interfaces & Ohmic contacts (1D).
 ([source code](SOURCE_URL))
 
-Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions. The simulations are
+Simulating a three layer PSC device Ti02| MAPI | spiro-OMeTAD without mobile ions. The simulations are
 performed out of equilibrium, stationary and with two junctions between perovskite layer and
 transport layers, to which we refer as graded interfaces. Hence, a graded flux discretization
 with space dependent band-edge energies and density of states is tested here.
 The difference here is that we adjusted the order of indexing the quasi Fermi potentials.
 
-The parameters can be found in Table S.13, https://arxiv.org/abs/2009.04384. Or here:
+The parameters are based on the default parameter set of Ionmonger (with minor adjustments),
+such that we can likewise compare with the software Driftfusion, see
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 =#
 

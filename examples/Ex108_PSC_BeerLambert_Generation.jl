@@ -3,12 +3,12 @@
 # PSC device with Beer-Lambert generation rate (1D).
 ([source code](SOURCE_URL))
 
-Simulating a three layer PSC device SiO2| MAPI | SiO2 with mobile ions where the ion vacancy
+Simulating a three layer PSC device Ti02| MAPI | spiro-OMeTAD with mobile ions where the ion vacancy
 accumulation is limited by the Fermi-Dirac integral of order -1. The simulations are performed
 out of equilibrium, time-dependent and with abrupt interfaces. A linear I-V measurement
 protocol is included and the corresponding solution vectors after the scan can be depicted.
 
-The parameters are the default parameters in IonMonger.
+The parameters are the default parameters in IonMonger (with minor adjustments).
 =#
 
 module Ex108_PSC_BeerLambert_Generation

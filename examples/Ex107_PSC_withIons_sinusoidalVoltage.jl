@@ -42,7 +42,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     h_pdoping        = 3.00e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
     h_intrinsic      = 3.00e-5 * cm
     h_ndoping        = 8.50e-6 * cm + 1.0e-7 *cm # add 1.e-7 cm to this layer for agreement with grid of Driftfusion
-    h_total          = h_pdoping + h_intrinsic + h_ndoping
 
     x0               = 0.0 * cm
     δ                = 4*n        # the larger, the finer the mesh

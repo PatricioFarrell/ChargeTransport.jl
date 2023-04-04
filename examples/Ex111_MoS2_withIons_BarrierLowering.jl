@@ -1,9 +1,10 @@
 
 #=
-# MoS2 with moving ions and Schottky Barrier Lowering.
+# MoS2 with moving defects and Schottky Barrier Lowering.
 ([source code](SOURCE_URL))
 
-Memristor simulation with additional moving ions and Schottky barrier lowering at the contacts.
+Memristor simulation with additional moving positively charged defects and
+Schottky barrier lowering at the contacts.
 =#
 
 
@@ -254,7 +255,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         plot_solution(Plotter, ctsys, solEQ, "Equilibrium", label_solution)
     end
 
-    return
     if test == false
         println("*** done\n")
     end

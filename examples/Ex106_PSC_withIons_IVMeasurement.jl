@@ -2,12 +2,13 @@
 # PSC device with ions and linear I-V scan protocol (1D).
 ([source code](SOURCE_URL))
 
-Simulating a three layer PSC device SiO2| MAPI | SiO2 with mobile ions where the ion vacancy
+Simulating a three layer PSC device Ti02| MAPI | spiro-OMeTAD with mobile ions where the ion vacancy
 accumulation is limited by the Fermi-Dirac integral of order -1. The simulations are performed
 out of equilibrium, time-dependent and with abrupt interfaces. A linear I-V measurement
 protocol is included and the corresponding solution vectors after the scan can be depicted.
 
-The parameters can be found in Table S.13, https://arxiv.org/abs/2009.04384. Or here:
+The parameters are based on the default parameter set of Ionmonger (with minor adjustments),
+such that we can likewise compare with the software Driftfusion, see
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 =#
 

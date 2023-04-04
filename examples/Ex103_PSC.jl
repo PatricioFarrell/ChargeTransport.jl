@@ -2,12 +2,12 @@
 # PSC device without mobile ions (1D).
 ([source code](SOURCE_URL))
 
-Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions and in stationary
+Simulating a three layer PSC device Ti02| MAPI | spiro-OMeTAD without mobile ions and in stationary
 state. We consider heterojunctions. The simulations are performed out of equilibrium and with
 abrupt interfaces. For simplicity, the generation is off.
 
-This simulation coincides with the one made in Section 4.3
-of Calado et al. (https://arxiv.org/abs/2009.04384) with the parameters in Table S.13. Or here:
+The parameters are based on the default parameter set of Ionmonger (with minor adjustments),
+such that we can likewise compare with the software Driftfusion, see
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 =#
 
@@ -191,9 +191,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     Auger            = 0.0
 
     ## doping
-    Nd               =   1.03e18             / (cm^3)
-    Na               =   1.03e18             / (cm^3)
-    Ni_acceptor      =   8.32e7              / (cm^3)
+    Nd               = 1.03e18             / (cm^3)
+    Na               = 1.03e18             / (cm^3)
+    Ni_acceptor      = 8.32e7              / (cm^3)
 
     ## contact voltage: we impose an applied voltage only on one boundary.
     ## At the other boundary the applied voltage is zero.
