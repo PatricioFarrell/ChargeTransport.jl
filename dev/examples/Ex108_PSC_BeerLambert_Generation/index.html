@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>PSC device with Beer-Lambert generation rate (1D). · ChargeTransport.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../general/">ChargeTransport.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../general/">ChargeTransport.jl – Simulating charge transport in semiconductors</a></li><li><a class="tocitem" href="../../backgroundinfo/">Mathematical drift-diffusion models</a></li><li><span class="tocitem">How to get started</span><ul><li><a class="tocitem" href="../../GeneralInformation/">Code overview</a></li><li><a class="tocitem" href="../../GaAs/">van Roosbroeck system</a></li><li><a class="tocitem" href="../../PSC/">Perovskite solar cell</a></li></ul></li><li><a class="tocitem" href="../../allindex/">Types, Constructors and Methods</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../Ex101_PIN/">GaAs diode (1D).</a></li><li><a class="tocitem" href="../Ex102_PIN_nodal_doping/">GaAs diode with spatially varying doping (1D).</a></li><li><a class="tocitem" href="../Ex103_PSC/">PSC device without mobile ions (1D).</a></li><li><a class="tocitem" href="../Ex104_PSC_gradedFlux_Schottky_contacts/">PSC device with graded interfaces &amp; Schottky contacts (1D).</a></li><li><a class="tocitem" href="../Ex105_PSC_gradedFlux/">PSC device with graded interfaces &amp; Ohmic contacts (1D).</a></li><li><a class="tocitem" href="../Ex106_PSC_withIons_IVMeasurement/">PSC device with ions and linear I-V scan protocol (1D).</a></li><li><a class="tocitem" href="../Ex107_PSC_withIons_sinusoidalVoltage/">PSC device with sinusoidal applied voltage (1D).</a></li><li class="is-active"><a class="tocitem" href>PSC device with Beer-Lambert generation rate (1D).</a></li><li><a class="tocitem" href="../Ex108_PSC_uniform_Generation/">PSC device with uniform generation rate (1D).</a></li><li><a class="tocitem" href="../Ex109_Traps/">GaAs diode: transient with traps (1D).</a></li><li><a class="tocitem" href="../Ex110_PSC_surface_recombination/">PSC device with surface recombination (1D).</a></li><li><a class="tocitem" href="../Ex111_MoS2_withIons_BarrierLowering/">MoS2 with moving ions and Schottky Barrier Lowering.</a></li><li><a class="tocitem" href="../Ex112_CIGS_WithTraps/">CIGS: stationary with traps and Schottky contacts.</a></li><li><a class="tocitem" href="../Ex201_PSC_tensorGrid/">PSC device on 2D domain (Tensor grid).</a></li><li><a class="tocitem" href="../Grid_3D/">Example code for a 3D grid.</a></li><li><a class="tocitem" href="../Non_RectangularGrid_2D/">Example code for a 2D non rectangular grid.</a></li><li><a class="tocitem" href="../PSC_2D_unstructuredGrid/">PSC device on 2D domain (unstructured grid).</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>PSC device with Beer-Lambert generation rate (1D).</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>PSC device with Beer-Lambert generation rate (1D).</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/PatricioFarrell/ChargeTransport.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="PSC-device-with-Beer-Lambert-generation-rate-(1D)."><a class="docs-heading-anchor" href="#PSC-device-with-Beer-Lambert-generation-rate-(1D).">PSC device with Beer-Lambert generation rate (1D).</a><a id="PSC-device-with-Beer-Lambert-generation-rate-(1D).-1"></a><a class="docs-heading-anchor-permalink" href="#PSC-device-with-Beer-Lambert-generation-rate-(1D)." title="Permalink"></a></h1><p>(<a href="https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx108_PSC_BeerLambert_Generation.jl">source code</a>)</p><p>Simulating a three layer PSC device SiO2| MAPI | SiO2 with mobile ions where the ion vacancy accumulation is limited by the Fermi-Dirac integral of order -1. The simulations are performed out of equilibrium, time-dependent and with abrupt interfaces. A linear I-V measurement protocol is included and the corresponding solution vectors after the scan can be depicted.</p><p>The parameters are the default parameters in IonMonger.</p><pre><code class="language-julia hljs">module Ex108_PSC_BeerLambert_Generation
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>PSC device with Beer-Lambert generation rate (1D). · ChargeTransport.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../general/">ChargeTransport.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../general/">ChargeTransport.jl – Simulating charge transport in semiconductors</a></li><li><a class="tocitem" href="../../backgroundinfo/">Mathematical drift-diffusion models</a></li><li><span class="tocitem">How to get started</span><ul><li><a class="tocitem" href="../../GeneralInformation/">Code overview</a></li><li><a class="tocitem" href="../../GaAs/">van Roosbroeck system</a></li><li><a class="tocitem" href="../../PSC/">Perovskite solar cell</a></li></ul></li><li><a class="tocitem" href="../../allindex/">Types, Constructors and Methods</a></li><li><span class="tocitem">Pluto Notebooks</span><ul><li><a class="tocitem" href="../../nbhtml/PSC_example/">PSC example</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../Ex101_PIN/">GaAs diode (1D).</a></li><li><a class="tocitem" href="../Ex102_PIN_nodal_doping/">GaAs diode with spatially varying doping (1D).</a></li><li><a class="tocitem" href="../Ex103_PSC/">PSC device without mobile ions (1D).</a></li><li><a class="tocitem" href="../Ex104_PSC_gradedFlux_Schottky_contacts/">PSC device with graded interfaces &amp; Schottky contacts (1D).</a></li><li><a class="tocitem" href="../Ex105_PSC_gradedFlux/">PSC device with graded interfaces &amp; Ohmic contacts (1D).</a></li><li><a class="tocitem" href="../Ex106_PSC_withIons_IVMeasurement/">PSC device with ions and linear I-V scan protocol (1D).</a></li><li><a class="tocitem" href="../Ex107_PSC_withIons_sinusoidalVoltage/">PSC device with sinusoidal applied voltage (1D).</a></li><li class="is-active"><a class="tocitem" href>PSC device with Beer-Lambert generation rate (1D).</a></li><li><a class="tocitem" href="../Ex108_PSC_uniform_Generation/">PSC device with uniform generation rate (1D).</a></li><li><a class="tocitem" href="../Ex109_Traps/">GaAs diode: transient with traps (1D).</a></li><li><a class="tocitem" href="../Ex110_PSC_surface_recombination/">PSC device with surface recombination (1D).</a></li><li><a class="tocitem" href="../Ex111_MoS2_withIons_BarrierLowering/">MoS2 with moving defects and Schottky Barrier Lowering.</a></li><li><a class="tocitem" href="../Ex112_CIGS_WithTraps/">CIGS: stationary with traps and Schottky contacts.</a></li><li><a class="tocitem" href="../Ex201_PSC_tensorGrid/">PSC device on 2D domain (Tensor grid).</a></li><li><a class="tocitem" href="../Grid_3D/">Example code for a 3D grid.</a></li><li><a class="tocitem" href="../Non_RectangularGrid_2D/">Example code for a 2D non rectangular grid.</a></li><li><a class="tocitem" href="../PSC_2D_unstructuredGrid/">PSC device on 2D domain (unstructured grid).</a></li><li><a class="tocitem" href="../PSC_3D/">Illustrative example of a three dimensional simulation.</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>PSC device with Beer-Lambert generation rate (1D).</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>PSC device with Beer-Lambert generation rate (1D).</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/PatricioFarrell/ChargeTransport.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="PSC-device-with-Beer-Lambert-generation-rate-(1D)."><a class="docs-heading-anchor" href="#PSC-device-with-Beer-Lambert-generation-rate-(1D).">PSC device with Beer-Lambert generation rate (1D).</a><a id="PSC-device-with-Beer-Lambert-generation-rate-(1D).-1"></a><a class="docs-heading-anchor-permalink" href="#PSC-device-with-Beer-Lambert-generation-rate-(1D)." title="Permalink"></a></h1><p>(<a href="https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx108_PSC_BeerLambert_Generation.jl">source code</a>)</p><p>Simulating a three layer PSC device Ti02| MAPI | spiro-OMeTAD with mobile ions where the ion vacancy accumulation is limited by the Fermi-Dirac integral of order -1. The simulations are performed out of equilibrium, time-dependent and with abrupt interfaces. A linear I-V measurement protocol is included and the corresponding solution vectors after the scan can be depicted.</p><p>The parameters are the default parameters in IonMonger (with minor adjustments).</p><pre><code class="language-julia hljs">module Ex108_PSC_BeerLambert_Generation
 
 using ChargeTransport
 using ExtendableGrids
@@ -19,8 +19,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     regions          = [regionDonor, regionIntrinsic, regionAcceptor]
     numberOfRegions  = length(regions)
 
-    # boundary region numbers
-    bregionDonor     = 1
+    # boundary region numbers</code></pre><p>Note that by convention we have 1 for the left boundary and 2 for the right boundary. If adding additional interior boundaries, continue with 3, 4, ...</p><pre><code class="language-julia hljs">    bregionDonor     = 1
     bregionAcceptor  = 2
     bregionJunction1 = 3
     bregionJunction2 = 4
@@ -68,7 +67,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord            = glue(coord,     coord_p_u,  tol=10*t)
     grid             = ExtendableGrids.simplexgrid(coord)
 
-    # set different regions in grid, doping profiles do not intersect
+    # set different regions in grid
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)     # n-doped region   = 1
     cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
     cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)  # p-doped region   = 3
@@ -77,7 +76,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     bfacemask!(grid, [heightLayers[2]], [heightLayers[2]], bregionJunction2, tol = 1.0e-18)
 
     if plotting
-        gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title(&quot;Grid&quot;)
         Plotter.figure()
     end
@@ -135,20 +134,20 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     NAnion             = [0.0,  Nanion, 0.0]
 
     # mobilities
-    μn_d             = 3.89                    * (cm^2) / (V * s)
-    μp_d             = 3.89                    * (cm^2) / (V * s)
+    μn_d               = 3.89                    * (cm^2) / (V * s)
+    μp_d               = 3.89                    * (cm^2) / (V * s)
 
-    μn_i             = 6.62e1                  * (cm^2) / (V * s)
-    μp_i             = 6.62e1                  * (cm^2) / (V * s)
+    μn_i               = 6.62e1                  * (cm^2) / (V * s)
+    μp_i               = 6.62e1                  * (cm^2) / (V * s)
 
-    μa_i             = 3.93e-12                * (cm^2) / (V * s)
+    μa_i               = 3.93e-12                * (cm^2) / (V * s)
 
-    μn_a             = 3.89e-1                 * (cm^2) / (V * s)
-    μp_a             = 3.89e-1                 * (cm^2) / (V * s)
+    μn_a               = 3.89e-1                 * (cm^2) / (V * s)
+    μp_a               = 3.89e-1                 * (cm^2) / (V * s)
 
-    μn               = [μn_d, μn_i, μn_a]
-    μp               = [μp_d, μp_i, μp_a]
-    μa               = [0.0,  μa_i, 0.0 ]
+    μn                 = [μn_d, μn_i, μn_a]
+    μp                 = [μp_d, μp_i, μp_a]
+    μa                 = [0.0,  μa_i, 0.0 ]
 
     # relative dielectric permittivity
     ε_d                = 10.0                  *  1.0
@@ -202,7 +201,6 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     # primary data for I-V scan protocol
     scanrate           = 0.4 * V/s
-    number_tsteps      = 101
     endVoltage         = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     tend               = endVoltage/scanrate
 
@@ -297,27 +295,10 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.generationAbsorption[ireg]               = absorption[ireg]
     end</code></pre><p>parameter which passes the shift information in the Beer-Lambert generation</p><pre><code class="language-julia hljs">    params.generationPeak                               = generationPeak
 
-    # boundary region data
-    params.bDensityOfStates[iphin, bregionDonor]        = Nc_d
-    params.bDensityOfStates[iphip, bregionDonor]        = Nv_d
-
-    params.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
-    params.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
-    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
-
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
-
     # interior doping
     params.doping[iphin, regionDonor]                   = Nd
     params.doping[iphia, regionIntrinsic]               = C0
     params.doping[iphip, regionAcceptor]                = Na
-
-    # boundary doping
-    params.bDoping[iphip, bregionAcceptor]              = Na
-    params.bDoping[iphin, bregionDonor]                 = Nd
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=:sparse)
@@ -367,10 +348,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     if test == false
         println(&quot;Loop for generation&quot;)
     end
-    ################################################################################
-
-    ctsys.data.calculationType = OutOfEquilibrium
-    ctsys.data.λ2              = 0.0</code></pre><p>these values are needed for putting the generation slightly on</p><pre><code class="language-julia hljs">    I      = collect(20:-1:0.0)
+    ################################################################################</code></pre><p>these values are needed for putting the generation slightly on</p><pre><code class="language-julia hljs">    I      = collect(20:-1:0.0)
     LAMBDA = 10 .^ (-I)
 
     # since the constant which represents the constant quasi Fermi potential of anion vacancies is undetermined, we need
@@ -397,7 +375,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         # add labels for anion vacancy
         label_energy[1, iphia] = &quot;\$E_a-q\\psi\$&quot;; label_energy[2, iphia] = &quot;\$ - q \\varphi_a\$&quot;; label_BEE[iphia] = &quot;\$E_a\$&quot;
-        label_density[iphia]   = &quot;a&quot;;              label_solution[iphia]  = &quot;\$ \\varphi_a\$&quot;
+        label_density[iphia]   = &quot;\$ n_a \$&quot;;      label_solution[iphia]  = &quot;\$ \\varphi_a\$&quot;
 
         plot_densities(Plotter, ctsys, solution, &quot;Initial condition&quot;, label_density)
         Plotter.legend()
@@ -422,7 +400,6 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     sol = solve(ctsys, inival = inival, times=(0.0, tend), control = control)
 
     if plotting
-
         tsol = sol(tend)
         plot_densities(Plotter, ctsys, tsol, &quot;Densities at end time&quot;, label_density)
         Plotter.legend()
@@ -560,4 +537,4 @@ if test == false
     println(&quot;This message should show when this module is successfully recompiled.&quot;)
 end
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex107_PSC_withIons_sinusoidalVoltage/">« PSC device with sinusoidal applied voltage (1D).</a><a class="docs-footer-nextpage" href="../Ex108_PSC_uniform_Generation/">PSC device with uniform generation rate (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 23 February 2023 16:00">Thursday 23 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex107_PSC_withIons_sinusoidalVoltage/">« PSC device with sinusoidal applied voltage (1D).</a><a class="docs-footer-nextpage" href="../Ex108_PSC_uniform_Generation/">PSC device with uniform generation rate (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Tuesday 4 April 2023 15:42">Tuesday 4 April 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
