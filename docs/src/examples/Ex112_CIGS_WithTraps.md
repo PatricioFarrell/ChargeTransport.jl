@@ -46,8 +46,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # boundary region numbers
     bregionDonor            = 1
     bregionAcceptor         = 2
-    bregions                = [bregionDonor, bregionAcceptor]
-    numberOfBoundaryRegions = length(bregions)
+    bregionDALeft           = 3
+    bregionALeftATrap       = 4
+    bregionATrapARight      = 5
 
     # grid
     refinementfactor        = 2^(n-1)
@@ -66,11 +67,15 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     grid                    = simplexgrid(coord)
 
-    # set different regions in grid, doping profiles do not intersect
+    # set different regions in grid
     cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor) # n doped
     cellmask!(grid, [h_ndoping], [h_ndoping + h_pdoping_left], regionAcceptorLeft) # p doped
     cellmask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left + h_pdoping_trap], regionAcceptorTrap) # p doped with traps
     cellmask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_total], regionAcceptorRight) # p doped
+
+    bfacemask!(grid, [h_ndoping], [h_ndoping], bregionDALeft, tol = 1.0e-18)
+    bfacemask!(grid, [h_ndoping + h_pdoping_left], [h_ndoping + h_pdoping_left], bregionALeftATrap, tol = 1.0e-18)
+    bfacemask!(grid, [h_ndoping + h_pdoping_left + h_pdoping_trap], [h_ndoping + h_pdoping_left + h_pdoping_trap], bregionATrapARight, tol = 1.0e-18)
 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
@@ -187,7 +192,7 @@ set the lifetime value high in all other regions, such that SRH recombination ca
 
     # initialize Data instance and fill in data
     data                                = Data(grid, numberOfCarriers)
-    data.modelType                      = Stationary
+    data.modelType                      = Stationary # R = Rn = Rp, since the model type is stationary
     if AdditionalTrapSpecies
         data.F                          = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
     else
@@ -231,20 +236,6 @@ set the lifetime value high in all other regions, such that SRH recombination ca
         params.chargeNumbers[iphit]                     =  zt
     end
 
-    for ibreg in 1:numberOfBoundaryRegions   # boundary region data
-        params.bDensityOfStates[iphin, ibreg]           = Nc
-        params.bDensityOfStates[iphip, ibreg]           = Nv
-        if AdditionalTrapSpecies
-            params.bDensityOfStates[iphit, ibreg]       = Nt
-            params.bBandEdgeEnergy[ iphit, ibreg]       = Et
-        end
-    end
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_ZnO
-    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_ZnO
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_CIGS
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_CIGS
-
     for ireg in 1:numberOfRegions           # interior region data
 
         params.dielectricConstant[ireg]                 = ε[ireg] * ε0
@@ -279,10 +270,6 @@ set the lifetime value high in all other regions, such that SRH recombination ca
     params.doping[iphip, regionAcceptorLeft]            = Na
     params.doping[iphip, regionAcceptorTrap]            = Na
     params.doping[iphip, regionAcceptorRight]           = Na
-
-    # boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd
-    params.bDoping[iphip, bregionAcceptor]              = Na
 
     # values for the schottky contacts
     params.SchottkyBarrier[bregionAcceptor]             = barrier
@@ -353,13 +340,11 @@ set the lifetime value high in all other regions, such that SRH recombination ca
     end
     ################################################################################
 
-    # set calculationType to OutOfEquilibrium for starting with respective simulation.
-    data.calculationType = OutOfEquilibrium      # Rn = Rp = R, since the model type is stationary
-    endVoltage           = voltageAcceptor       # final bias value
-    biasValues           = collect(range(0, stop = endVoltage, length = 52))
+    endVoltage      = voltageAcceptor       # final bias value
+    biasValues      = collect(range(0, stop = endVoltage, length = 52))
 
-    IV                   = zeros(0)
-    chargeDensities      = zeros(0)
+    IV              = zeros(0)
+    chargeDensities = zeros(0)
 
     for i in eachindex(biasValues)
 

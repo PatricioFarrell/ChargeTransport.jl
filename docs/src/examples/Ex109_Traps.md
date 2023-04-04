@@ -32,37 +32,41 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     # region numbers
-    regionAcceptor          = 1                           # p doped region
-    regionIntrinsic         = 2                           # intrinsic region
-    regionDonor             = 3                           # n doped region
-    regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
-    numberOfRegions         = length(regions)
+    regionAcceptor   = 1                           # p doped region
+    regionIntrinsic  = 2                           # intrinsic region
+    regionDonor      = 3                           # n doped region
+    regions          = [regionAcceptor, regionIntrinsic, regionDonor]
+    numberOfRegions  = length(regions)
 
     # boundary region numbers
-    bregionAcceptor         = 1
-    bregionDonor            = 2
-    bregions                = [bregionAcceptor, bregionDonor]
-    numberOfBoundaryRegions = length(bregions)
+    bregionAcceptor  = 1
+    bregionDonor     = 2
+    bregionJunction1 = 3
+    bregionJunction2 = 4
 
     # grid
-    refinementfactor        = 2^(n-1)
-    h_pdoping               = 2.0    * μm
-    h_intrinsic             = 2.0    * μm
-    h_ndoping               = 2.0    * μm
-    w_device                = 0.5    * μm  # width of device
-    z_device                = 1.0e-4 * cm  # depth of device
+    refinementfactor = 2^(n-1)
+    h_pdoping        = 2.0    * μm
+    h_intrinsic      = 2.0    * μm
+    h_ndoping        = 2.0    * μm
+    h_total          = h_pdoping + h_intrinsic + h_ndoping
+    w_device         = 0.5    * μm  # width of device
+    z_device         = 1.0e-4 * cm  # depth of device
 
-    coord                   = initialize_pin_grid(refinementfactor,
-                                                  h_pdoping,
-                                                  h_intrinsic,
-                                                  h_ndoping)
+    coord            = initialize_pin_grid(refinementfactor,
+                                           h_pdoping,
+                                           h_intrinsic,
+                                           h_ndoping)
 
-    grid                    = simplexgrid(coord)
+    grid             = simplexgrid(coord)
 
-    # set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm], [h_pdoping], regionAcceptor)                                        # p-doped
-    cellmask!(grid, [h_pdoping], [h_pdoping + h_intrinsic], regionIntrinsic)                        # intrinsic
-    cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)  # n-doped
+    # set different regions in grid
+    cellmask!(grid, [0.0 * μm],                 [h_pdoping],               regionAcceptor)  # p-doped
+    cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic], regionIntrinsic) # intrinsic
+    cellmask!(grid, [h_pdoping + h_intrinsic],  [h_total],                 regionDonor)     # n-doped
+
+    bfacemask!(grid, [h_pdoping],               [h_pdoping],               bregionJunction1, tol = 1.0e-18)
+    bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic], bregionJunction2, tol = 1.0e-18)
 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
@@ -173,17 +177,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.chargeNumbers[iphip]                         =  1
     params.chargeNumbers[iphit]                         = -1 # trap charge number determines whether hole or electron trap is used
 
-    for ibreg in 1:numberOfBoundaryRegions   # boundary region data
-
-        params.bDensityOfStates[iphin, ibreg]           = Nc
-        params.bDensityOfStates[iphip, ibreg]           = Nv
-        params.bDensityOfStates[iphit, ibreg]           = Nt
-        params.bBandEdgeEnergy[iphin, ibreg]            = Ec
-        params.bBandEdgeEnergy[iphip, ibreg]            = Ev
-        params.bBandEdgeEnergy[iphit, ibreg]            = Et
-    end
-
-    for ireg in 1:numberOfRegions           # interior region data
+    for ireg in 1:numberOfRegions           # region data
 
         params.dielectricConstant[ireg]                 = εr * ε0
 
@@ -215,10 +209,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.doping[iphin, regionIntrinsic]               = ni
     params.doping[iphip, regionIntrinsic]               = 0.0
     params.doping[iphip, regionAcceptor]                = Na
-
-    # boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd
-    params.bDoping[iphip, bregionAcceptor]              = Na
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
@@ -278,28 +268,26 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    data.calculationType = OutOfEquilibrium
-
     # Scan rate and time steps
-    scanrate             = 1.0 * V/s
-    number_tsteps        = 25
-    endVoltage           = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-
-    IV                   = zeros(0) # for IV values
-    biasValues           = zeros(0) # for bias values
-    tend                 = endVoltage/scanrate
+    scanrate      = 1.0 * V/s
+    number_tsteps = 25
+    endVoltage    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
 
     # with fixed timestep sizes we can calculate the times
     # a priori
-    tvalues              = range(0.0, stop = tend, length = number_tsteps)
-    Δt                   = tvalues[2] - tvalues[1]
+    tend          = endVoltage/scanrate
+    tvalues       = range(0.0, stop = tend, length = number_tsteps)
+    Δt            = tvalues[2] - tvalues[1]
 ````
 
 these values are needed for putting the generation slightly on
 
 ````julia
-    I      = collect(20:-1:0.0)
-    LAMBDA = 10 .^ (-I)
+    I             = collect(20:-1:0.0)
+    LAMBDA        = 10 .^ (-I)
+
+    IV            = zeros(0) # for IV values
+    biasValues    = zeros(0) # for bias values
 
     for istep = 1:length(I)-1
 

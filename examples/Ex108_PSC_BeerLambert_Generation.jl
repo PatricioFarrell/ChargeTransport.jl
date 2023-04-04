@@ -3,12 +3,12 @@
 # PSC device with Beer-Lambert generation rate (1D).
 ([source code](SOURCE_URL))
 
-Simulating a three layer PSC device SiO2| MAPI | SiO2 with mobile ions where the ion vacancy
+Simulating a three layer PSC device Ti02| MAPI | spiro-OMeTAD with mobile ions where the ion vacancy
 accumulation is limited by the Fermi-Dirac integral of order -1. The simulations are performed
 out of equilibrium, time-dependent and with abrupt interfaces. A linear I-V measurement
 protocol is included and the corresponding solution vectors after the scan can be depicted.
 
-The parameters are the default parameters in IonMonger.
+The parameters are the default parameters in IonMonger (with minor adjustments).
 =#
 
 module Ex108_PSC_BeerLambert_Generation
@@ -32,6 +32,8 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfRegions  = length(regions)
 
     ## boundary region numbers
+    # Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
+    # adding additional interior boundaries, continue with 3, 4, ...
     bregionDonor     = 1
     bregionAcceptor  = 2
     bregionJunction1 = 3
@@ -80,7 +82,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord            = glue(coord,     coord_p_u,  tol=10*t)
     grid             = ExtendableGrids.simplexgrid(coord)
 
-    ## set different regions in grid, doping profiles do not intersect
+    ## set different regions in grid
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)     # n-doped region   = 1
     cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
     cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)  # p-doped region   = 3
@@ -89,7 +91,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     bfacemask!(grid, [heightLayers[2]], [heightLayers[2]], bregionJunction2, tol = 1.0e-18)
 
     if plotting
-        gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -147,20 +149,20 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     NAnion             = [0.0,  Nanion, 0.0]
 
     ## mobilities
-    μn_d             = 3.89                    * (cm^2) / (V * s)
-    μp_d             = 3.89                    * (cm^2) / (V * s)
+    μn_d               = 3.89                    * (cm^2) / (V * s)
+    μp_d               = 3.89                    * (cm^2) / (V * s)
 
-    μn_i             = 6.62e1                  * (cm^2) / (V * s)
-    μp_i             = 6.62e1                  * (cm^2) / (V * s)
+    μn_i               = 6.62e1                  * (cm^2) / (V * s)
+    μp_i               = 6.62e1                  * (cm^2) / (V * s)
 
-    μa_i             = 3.93e-12                * (cm^2) / (V * s)
+    μa_i               = 3.93e-12                * (cm^2) / (V * s)
 
-    μn_a             = 3.89e-1                 * (cm^2) / (V * s)
-    μp_a             = 3.89e-1                 * (cm^2) / (V * s)
+    μn_a               = 3.89e-1                 * (cm^2) / (V * s)
+    μp_a               = 3.89e-1                 * (cm^2) / (V * s)
 
-    μn               = [μn_d, μn_i, μn_a]
-    μp               = [μp_d, μp_i, μp_a]
-    μa               = [0.0,  μa_i, 0.0 ]
+    μn                 = [μn_d, μn_i, μn_a]
+    μp                 = [μp_d, μp_i, μp_a]
+    μa                 = [0.0,  μa_i, 0.0 ]
 
     ## relative dielectric permittivity
     ε_d                = 10.0                  *  1.0
@@ -214,7 +216,6 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## primary data for I-V scan protocol
     scanrate           = 0.4 * V/s
-    number_tsteps      = 101
     endVoltage         = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     tend               = endVoltage/scanrate
 
@@ -312,27 +313,10 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     # parameter which passes the shift information in the Beer-Lambert generation
     params.generationPeak                               = generationPeak
 
-    ## boundary region data
-    params.bDensityOfStates[iphin, bregionDonor]        = Nc_d
-    params.bDensityOfStates[iphip, bregionDonor]        = Nv_d
-
-    params.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
-    params.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
-    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
-
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
-
     ## interior doping
     params.doping[iphin, regionDonor]                   = Nd
     params.doping[iphia, regionIntrinsic]               = C0
     params.doping[iphip, regionAcceptor]                = Na
-
-    ## boundary doping
-    params.bDoping[iphip, bregionAcceptor]              = Na
-    params.bDoping[iphin, bregionDonor]                 = Nd
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=:sparse)
@@ -384,9 +368,6 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ctsys.data.calculationType = OutOfEquilibrium
-    ctsys.data.λ2              = 0.0
-
     # these values are needed for putting the generation slightly on
     I      = collect(20:-1:0.0)
     LAMBDA = 10 .^ (-I)
@@ -415,7 +396,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         ## add labels for anion vacancy
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"; label_BEE[iphia] = "\$E_a\$"
-        label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
+        label_density[iphia]   = "\$ n_a \$";      label_solution[iphia]  = "\$ \\varphi_a\$"
 
         plot_densities(Plotter, ctsys, solution, "Initial condition", label_density)
         Plotter.legend()
@@ -440,7 +421,6 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     sol = solve(ctsys, inival = inival, times=(0.0, tend), control = control)
 
     if plotting
-
         tsol = sol(tend)
         plot_densities(Plotter, ctsys, tsol, "Densities at end time", label_density)
         Plotter.legend()

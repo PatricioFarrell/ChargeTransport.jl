@@ -35,36 +35,47 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## region numbers
-    regionAcceptor          = 1          # p doped region
-    regionIntrinsic         = 2          # intrinsic region
-    regionDonor             = 3          # n doped region
-    regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
-    numberOfRegions         = length(regions)
+    regionAcceptor   = 1          # p doped region
+    regionIntrinsic  = 2          # intrinsic region
+    regionDonor      = 3          # n doped region
+    regions          = [regionAcceptor, regionIntrinsic, regionDonor]
+    numberOfRegions  = length(regions)
 
     ## boundary region numbers
-    bregionAcceptor         = 1
-    bregionDonor            = 2
-    bregions                = [bregionAcceptor, bregionDonor]
-    numberOfBoundaryRegions = length(bregions)
+    # Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
+    # adding additional interior boundaries, continue with 3, 4, ...
+    bregionAcceptor  = 1
+    bregionDonor     = 2
+    bregionJunction1 = 3
+    bregionJunction2 = 4
 
     ## grid
-    refinementfactor        = 2^(n-1)
-    h_pdoping               = 2.0    * μm
-    h_intrinsic             = 2.0    * μm
-    h_ndoping               = 2.0    * μm
-    w_device                = 0.5    * μm  # width of device
-    z_device                = 1.0e-4 * cm  # depth of device
-    coord                   = initialize_pin_grid(refinementfactor,
-                                                  h_pdoping,
-                                                  h_intrinsic,
-                                                  h_ndoping)
+    refinementfactor = 2^(n-1)
+    h_pdoping        = 2.0    * μm
+    h_intrinsic      = 2.0    * μm
+    h_ndoping        = 2.0    * μm
+    h_total          = h_pdoping + h_intrinsic + h_ndoping
+    w_device         = 0.5    * μm  # width of device
+    z_device         = 1.0e-4 * cm  # depth of device
+    coord            = initialize_pin_grid(refinementfactor,
+                                           h_pdoping,
+                                           h_intrinsic,
+                                           h_ndoping)
 
-    grid                    = simplexgrid(coord)
+    grid             = simplexgrid(coord)
 
     ## cellmask! for defining the subregions and assigning region number
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor)  # p-doped region = 1
     cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic) # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor)     # n-doped region = 3
+
+    ## bfacemask! for setting different boundary regions. At exterior boundaries they are
+    ## automatically set by ExtendableGridsjl. Thus, there the following two lines are actually
+    ## unneccesarry, but are only written for completeness.
+    bfacemask!(grid, [0.0],                     [0.0],                     bregionAcceptor)     # outer left boundary
+    bfacemask!(grid, [h_total],                 [h_total],                 bregionDonor)  # outer right boundary
+    bfacemask!(grid, [h_pdoping],               [h_pdoping],               bregionJunction1) # first  inner interface
+    bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic], bregionJunction2) # second inner interface
 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
@@ -175,14 +186,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
 
-    for ibreg in 1:numberOfBoundaryRegions  # boundary region data
-        params.bDensityOfStates[iphin, ibreg]           = Nc
-        params.bDensityOfStates[iphip, ibreg]           = Nv
-        params.bBandEdgeEnergy[iphin, ibreg]            = Ec
-        params.bBandEdgeEnergy[iphip, ibreg]            = Ev
-    end
-
-    for ireg in 1:numberOfRegions           # interior region data
+    for ireg in 1:numberOfRegions # region data
 
         params.dielectricConstant[ireg]                 = εr * ε0
 
@@ -205,15 +209,10 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     end
 
-    ## interior doping
+    ## doping
     params.doping[iphin, regionDonor]                   = Nd     # data.doping   = [0.0  Na;
-    params.doping[iphin, regionIntrinsic]               = ni     #                  ni   0.0;
-    params.doping[iphip, regionIntrinsic]               = 0.0    #                  Nd  0.0]
-    params.doping[iphip, regionAcceptor]                = Na
-
-    ## boundary doping
-    params.bDoping[iphin, bregionDonor]                 = Nd     # data.bDoping  = [0.0  Na;
-    params.bDoping[iphip, bregionAcceptor]              = Na     #                  Nd  0.0]
+    params.doping[iphin, regionIntrinsic]               = ni     #                  ni  0.0;
+    params.doping[iphip, regionAcceptor]                = Na     #                  Nd  0.0]
 
     # Region dependent params is now a substruct of data which is again a substruct of the
     # system and will be parsed in next step.
@@ -288,12 +287,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    # Set calculationType to OutOfEquilibrium for starting with respective simulation.
-    data.calculationType = OutOfEquilibrium
-
-    maxBias              = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    biasValues           = range(0, stop = maxBias, length = 32)
-    IV                   = zeros(0)
+    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    biasValues = range(0, stop = maxBias, length = 32)
+    IV         = zeros(0)
 
     for Δu in biasValues
 

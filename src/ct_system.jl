@@ -758,7 +758,6 @@ mutable struct Data{TFuncs<:Function, TContVol<:Function}
 end
 
 
-
 """
 $(TYPEDEF)
 
@@ -1134,6 +1133,33 @@ function build_system(grid, data, unknown_storage, ::Type{ContQF})
     # enable lastly the electric potential on whole domain
     enable_species!(ctsys, data.index_psi, 1:data.params.numberOfRegions)
 
+    ######################################
+    # Fill in boundary parameters. Note the convention that left boundary = 1, right boundary = 2
+    # and that first region = 1, second region = 2
+    bregionLeft  = 1
+    bregionRight = 2
+    regionLeft   = 1
+    regionRight  = data.params.numberOfRegions
+
+    for icc in data.chargeCarrierList
+        if iszero(data.paramsnodal.densityOfStates[icc, :])
+            data.params.bDensityOfStates[icc, bregionLeft]  = data.params.densityOfStates[icc, regionLeft]
+            data.params.bDensityOfStates[icc, bregionRight] = data.params.densityOfStates[icc, regionRight]
+        end
+
+        if iszero(data.paramsnodal.bandEdgeEnergy[icc, :])
+            data.params.bBandEdgeEnergy[icc, bregionLeft]   = data.params.bandEdgeEnergy[icc, regionLeft]
+            data.params.bBandEdgeEnergy[icc, bregionRight]  = data.params.bandEdgeEnergy[icc, regionRight]
+        end
+
+        if iszero(data.paramsnodal.doping)
+            data.params.bDoping[icc, bregionLeft]           = data.params.doping[icc, regionLeft]
+            data.params.bDoping[icc, bregionRight]          = data.params.doping[icc, regionRight]
+        end
+
+    end
+
+    ######################################
     # add here additional electric potential and boundary species in case of Schottky
     # barrier lowering conditions
     if data.barrierLoweringInfo.BarrierLoweringOn == BarrierLoweringOn
@@ -1217,6 +1243,24 @@ function build_system(grid, data, unknown_storage, ::Type{DiscontQF})
     #########################################
 
     data.index_psi = ContinuousQuantity(fvmsys, 1:data.params.numberOfRegions)
+
+
+    #########################################
+    # Fill in boundary parameters. Note the convention that left boundary = 1, right boundary = 2
+    # and that first region = 1, second region = 2
+    bregionLeft  = 1
+    bregionRight = 2
+    regionLeft   = 1
+    regionRight  = data.params.numberOfRegions
+    for icc in data.chargeCarrierList
+        data.params.bDensityOfStates[icc, bregionLeft]  = data.params.densityOfStates[icc, regionLeft]
+        data.params.bBandEdgeEnergy[icc, bregionLeft]   = data.params.bandEdgeEnergy[icc, regionLeft]
+
+        data.params.bDensityOfStates[icc, bregionRight] = data.params.densityOfStates[icc, regionRight]
+        data.params.bBandEdgeEnergy[icc, bregionRight]  = data.params.bandEdgeEnergy[icc, regionRight]
+
+    end
+
     #########################################
     # DA: Note that Schottky barrier lowering is for the discontinuous case not implemented yet.
 
@@ -1397,6 +1441,9 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
         end
     end
 
+    # set now calculationType to outOfEquilibrium for further calculations
+    data.calculationType = OutOfEquilibrium
+
     # save changes on fvmsys of VoronoiFVM likewise in ctsys.data
     ctsys.data = ctsys.fvmsys.physics.data
 
@@ -1449,113 +1496,6 @@ function get_current_val(ctsys, U)
     return current
 
 end
-
-###########################################################
-###########################################################
-
-"""
-
-$(TYPEDSIGNATURES)
-
-For given potentials, compute corresponding densities. This function is needed
-for the method, plotting the densities.
-
-"""
-function compute_densities!(u, data, inode, region, icc, in_region::Bool)
-
-    params      = data.params
-    paramsnodal = data.paramsnodal
-
-    if in_region == false
-        (params.bDensityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode] ) * data.F[icc](etaFunction(u, data, inode, region, icc, in_region::Bool))
-    elseif in_region == true
-        (params.densityOfStates[icc, region] + paramsnodal.densityOfStates[icc, inode])* data.F[icc](etaFunction(u, data, inode, region, icc, in_region::Bool))
-    end
-
-end
-
-
-"""
-
-$(TYPEDSIGNATURES)
-
-For given potentials in vector form, compute corresponding vectorized densities.
-[Caution: this was not tested for multidimensions.]
-"""
-function compute_densities!(grid, data, sol)
-    params       = data.params
-
-    ipsi         = params.numberOfCarriers + 1
-    densities    = Array{Real,2}(undef, params.numberOfCarriers, size(sol, 2))
-
-    bfacenodes   = grid[BFaceNodes]
-    bfaceregions = grid[BFaceRegions]
-    cellRegions  = copy(grid[CellRegions])
-    cellRegions  = push!(cellRegions, grid[CellRegions][end]) #  enlarge region by final cell
-
-    if dim_space(grid) > 1
-        println("compute_densities! is so far only tested in 1D")
-    end
-
-    for icc in 1:params.numberOfCarriers
-
-        for node in 1:params.numberOfNodes
-            in_region = true
-            u         = sol[:, node]
-            region    = cellRegions[node]
-
-            if node in bfacenodes
-                in_region = false
-                indexNode = findall(x -> x == node, vec(bfacenodes))[1]  # we need to know which index the node has in bfacenodes
-                region    = bfaceregions[indexNode]                      # since the corresponding region number is at the same index
-            end
-
-            densities[icc, node] = compute_densities!(u, data, node, region, icc, in_region)
-        end
-
-    end
-
-    return densities
-
-end
-
-###########################################################
-###########################################################
-
-"""
-
-$(SIGNATURES)
-
-For given solution in vector form, compute corresponding vectorized band-edge energies and
-Fermi level. [Caution: this was not tested for multidimensions.]
-"""
-function compute_energies!(grid, data, sol)
-
-    params       = data.params
-    paramsnodal  = data.paramsnodal
-
-    ipsi         = params.numberOfCarriers + 1
-    energies     = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
-    fermiLevel   = Array{Real,2}(undef, data.numberOfCarriers, size(sol, 2))
-
-    cellregions  = grid[CellRegions]
-    cellregions  = push!(cellregions, cellregions[end])
-
-    for icc in 1:params.numberOfCarriers
-
-        # DA: potential bug. We need to distinguish between boundary and interior energies!
-        for inode in 1:params.numberOfNodes
-             E                      = params.bandEdgeEnergy[icc, cellregions[inode]] + paramsnodal.bandEdgeEnergy[icc, inode]
-             energies[icc, inode]   = E - q * sol[ipsi, inode]
-             fermiLevel[icc, inode] = -q * sol[icc, inode]
-        end
-
-    end
-
-    return energies, fermiLevel
-
-end
-
 
 ###########################################################
 ###########################################################

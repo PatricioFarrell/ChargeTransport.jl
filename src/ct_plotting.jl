@@ -19,11 +19,11 @@ function set_plotting_labels(data)
 
     ## for electrons
     label_energy[1, iphin] = "\$E_c-q\\psi\$"; label_energy[2, iphin] = "\$ - q \\varphi_n\$"; label_BEE[iphin] = "\$E_c\$"
-    label_density[iphin]   = "n";              label_solution[iphin]  = "\$ \\varphi_n\$"
+    label_density[iphin]   = "\$ n_n \$ ";              label_solution[iphin]  = "\$ \\varphi_n\$"
 
     ## for holes
     label_energy[1, iphip] = "\$E_v-q\\psi\$"; label_energy[2, iphip] = "\$ - q \\varphi_p\$"; label_BEE[iphip] = "\$E_v\$"
-    label_density[iphip]   = "p";              label_solution[iphip]  = "\$ \\varphi_p\$"
+    label_density[iphip]   = "\$ n_p \$";              label_solution[iphip]  = "\$ \\varphi_p\$"
 
 
     return label_solution, label_density, label_energy, label_BEE
@@ -38,12 +38,13 @@ One input parameter is the boolean plotGridpoints which makes it possible to plo
 which indicate where the nodes are located.
 
 """
-function plot_densities(Plotter, ctsys, sol, title, label_density, ;plotGridpoints=false)
+function plot_densities(Plotter, ctsys, solution, title, label_density, ;plotGridpoints=false)
 
     Plotter.clf()
 
-    grid = ctsys.fvmsys.grid
-    data = ctsys.fvmsys.physics.data
+    grid            = ctsys.fvmsys.grid
+    data            = ctsys.fvmsys.physics.data
+    numberOfRegions = grid[NumCellRegions]
 
     if dim_space(grid) > 1
         error("plot_densities is so far only tested in 1D")
@@ -55,56 +56,30 @@ function plot_densities(Plotter, ctsys, sol, title, label_density, ;plotGridpoin
         marker = ""
     end
 
-    params         = data.params
-    colors         = ["green", "red", "gold", "purple", "orange"]
-
-    cellnodes      = grid[CellNodes]
-    cellregions    = grid[CellRegions]
-    coordinates    = grid[Coordinates]
+    params     = data.params
+    colors     = ["green", "red", "gold", "purple", "orange"]
 
     for icc in 1:params.numberOfCarriers
 
-        # first cell
-        u1         = sol[:, 1]
-        u2         = sol[:, 2]
-        ireg       = cellregions[1]
+        # grids = Array{ExtendableGrid, 1}(undef, numberOfRegions)
+        # nicc  = Array{Array{Float64, 1}, 1}(undef, numberOfRegions)
 
-        icc1       = compute_densities!(u1, data, 1, 1,    icc, false) # breg = 1 since we are on the left boundary
-        icc2       = compute_densities!(u2, data, 2, ireg, icc, true)
+        ## first region for label
+        label_icc = label_density[icc]
+        subg      = subgrid(grid, [1])
+        ncc       = get_density(solution, 1, ctsys, icc)
 
-        label_icc  = label_density[icc]
+        Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, label = label_icc, color = colors[icc], linewidth = 2)
 
-        # multiplying by 1.0e-6 gives us the densities in cm^(-3)
-        Plotter.semilogy([coordinates[1]./1, coordinates[2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, label = label_icc, color = colors[icc], linewidth = 2)
+        ## additional regions
+        for ireg in 2:numberOfRegions
+            subg = subgrid(grid, [ireg])
+            ncc  = get_density(solution, ireg, ctsys, icc)
 
-        for icell in 2:size(cellnodes,2) - 1
-            in_region = true
-            i1    = cellnodes[1,icell]
-            i2    = cellnodes[2,icell]
-            ireg  = cellregions[icell]
-
-            u1    = sol[:, i1]
-            u2    = sol[:, i2]
-
-            icc1  = compute_densities!(u1, data, i1, ireg, icc, in_region)
-            icc2  = compute_densities!(u2, data, i2, ireg, icc, in_region)
-
-            # multiplying by 1.0e-6 gives us the densities in cm^(-3)
-            Plotter.semilogy([coordinates[i1]./1, coordinates[i2]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2)
+            ## Note that this implies a 1D plot, for multidimensional plots, you may work with
+            ## GridVisualize.jl or write your own code.
+            Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, color = colors[icc], linewidth = 2)
         end
-
-        # last cell
-        u1        = sol[:, end-1]
-        u2        = sol[:, end]
-        ireg      = cellregions[end]
-        node      = cellnodes[2, end]
-
-        icc1      = compute_densities!(u1, data, node-1, ireg, icc, true)
-        # breg = 2 since we are on the right boundary
-        icc2      = compute_densities!(u2, data, node, 2, icc, false)
-
-        # multiplying by 1.0e-6 gives us the densities in cm^(-3)
-        Plotter.semilogy([coordinates[node-1]./1, coordinates[node]./1], 1.0e-6 .*[icc1, icc2], marker = marker, color = colors[icc], linewidth = 2)
 
     end
 
@@ -114,7 +89,6 @@ function plot_densities(Plotter, ctsys, sol, title, label_density, ;plotGridpoin
     Plotter.legend(fancybox = true, loc = "best", fontsize=11)
     Plotter.title(title)
     Plotter.tight_layout()
-    Plotter.pause(0.001)
 
 end
 
@@ -132,21 +106,16 @@ One input parameter is the boolean plotGridpoints which makes it possible to plo
 which indicate where the nodes are located.
 
 """
-function plot_energies(Plotter, ctsys, sol, title, label_energy, ;plotGridpoints=false)
+function plot_energies(Plotter, ctsys, solution, title, label_energy, ;plotGridpoints=false)
 
     Plotter.clf()
 
-    grid        = ctsys.fvmsys.grid
-    data        = ctsys.fvmsys.physics.data
-    params      = data.params
-    paramsnodal = data.paramsnodal
-    ipsi        = data.index_psi
-    cellnodes   = grid[CellNodes]
-    cellregions = grid[CellRegions]
-    coord       = grid[Coordinates]
+    grid  = ctsys.fvmsys.grid
+    data  = ctsys.fvmsys.physics.data
+    coord = grid[Coordinates]
 
     if length(coord[1]) != 1
-        println("plotEnergies is so far only implemented in 1D")
+        println("plot_energies is so far only implemented in 1D")
     end
 
     if plotGridpoints == true
@@ -159,41 +128,93 @@ function plot_energies(Plotter, ctsys, sol, title, label_energy, ;plotGridpoints
     linestyles     = ["-", ":", "--", "-.", "-"]
 
     for icc in data.electricCarrierList
-        # first cell
-        ireg         = cellregions[1]
-        E1           = params.bBandEdgeEnergy[icc, 1] + paramsnodal.bandEdgeEnergy[icc, 1] # left boundary
-        E2           = params.bandEdgeEnergy[icc, 1]  + paramsnodal.bandEdgeEnergy[icc, 2]
-        energy_icc1  = E1 - q * sol[ipsi, 1]
-        energy_icc2  = E2 - q * sol[ipsi, 2]
 
-        Plotter.plot([coord[1]./1, coord[2]./1], [energy_icc1, energy_icc2]./q, marker = marker, label = label_energy[1, icc], linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+        # grids = Array{ExtendableGrid, 1}(undef, numberOfRegions)
+        # nicc  = Array{Array{Float64, 1}, 1}(undef, numberOfRegions)
 
-        for icell in 2:size(cellnodes,2) - 1
-            i1          = cellnodes[1,icell]
-            i2          = cellnodes[2,icell]
-            ireg        = cellregions[icell]
+        ## first region for label
+        subg      = subgrid(grid, [1])
+        Ecc       = get_BEE(icc, 1, ctsys)
+        solpsi    = view(solution[data.index_psi, :], subg)
+        solcc     = view(solution[icc, :],            subg)
 
-            E1          = params.bandEdgeEnergy[icc, ireg] + paramsnodal.bandEdgeEnergy[icc, i1]
-            E2          = params.bandEdgeEnergy[icc, ireg] + paramsnodal.bandEdgeEnergy[icc, i2]
+        Plotter.plot(subg[Coordinates]',  Ecc./q .- solpsi, label = label_energy[1, icc], marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
 
-            energy_icc1 = E1 - q * sol[ipsi, i1]
-            energy_icc2 = E2 - q * sol[ipsi, i2]
+        Plotter.plot(subg[Coordinates]', -solcc,            label = label_energy[2, icc], marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
 
-            Plotter.plot([coord[i1]./1, coord[i2]./1], [energy_icc1, energy_icc2]./q, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+        ## additional regions
+        for ireg in 2:data.params.numberOfRegions
+            subg   = subgrid(grid, [ireg])
+            Ecc    = get_BEE(icc, ireg, ctsys)
+            solpsi = view(solution[data.index_psi, :], subg)
+            solcc  = view(solution[icc, :],            subg)
+
+            ## Note that this implies a 1D plot, for multidimensional plots, you may work with
+            ## GridVisualize.jl or write your own code.
+            Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+
+            Plotter.plot(subg[Coordinates]', - solcc, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
         end
 
-        ireg        = cellregions[end]
-        node        = cellnodes[2, end]
-        E1          = params.bandEdgeEnergy[icc, ireg] + paramsnodal.bandEdgeEnergy[icc, node-1]
-        E2          = params.bBandEdgeEnergy[icc, 2] + paramsnodal.bandEdgeEnergy[icc, end] # right boundary
-        energy_icc1 = E1 - q * sol[ipsi, end-1]
-        energy_icc2 = E2 - q * sol[ipsi, end]
+    end
 
-        Plotter.plot([coord[end-1]./1, coord[end]./1], [energy_icc1, energy_icc2]./q, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+    for iicc in data.ionicCarrierList
+        icc   = iicc.ionicCarrier
+        count = 0
 
-        Plotter.plot(coord[1,:]./1, - sol[icc,:], label = label_energy[2, icc], marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
+        for ireg in 1:data.params.numberOfRegions
+            if ireg ∈ iicc.regions
+                subg   = subgrid(grid, [ireg])
+                Ecc    = get_BEE(icc, ireg, ctsys)
+                solpsi = view(solution[data.index_psi, :], subg)
+                solcc  = view(solution[icc, :],            subg)
 
-   end
+                if count == 0
+                    label1 = label_energy[1, icc]
+                    label2 = label_energy[2, icc]
+                else
+                    label1 = ""
+                    label2 = ""
+                end
+                ## Note that this implies a 1D plot, for multidimensional plots, you may work with
+                ## GridVisualize.jl or write your own code.
+                Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, label = label1, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+
+                Plotter.plot(subg[Coordinates]', - solcc, label = label2, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
+
+                count = count + 1
+            end
+        end
+    end
+
+    for iicc in data.trapCarrierList
+        icc   = iicc.trapCarrier
+        count = 0
+
+        for ireg in 1:data.params.numberOfRegions
+            if ireg ∈ iicc.regions
+                subg   = subgrid(grid, [ireg])
+                Ecc    = get_BEE(icc, ireg, ctsys)
+                solpsi = view(solution[data.index_psi, :], subg)
+                solcc  = view(solution[icc, :],            subg)
+
+                if count == 0
+                    label1 = label_energy[1, icc]
+                    label2 = label_energy[2, icc]
+                else
+                    label1 = ""
+                    label2 = ""
+                end
+                ## Note that this implies a 1D plot, for multidimensional plots, you may work with
+                ## GridVisualize.jl or write your own code.
+                Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, label = label1, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+
+                Plotter.plot(subg[Coordinates]', - solcc, label = label2, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
+
+                count = count + 1
+            end
+        end
+    end
 
    Plotter.grid()
    Plotter.xlabel("space [\$m\$]")

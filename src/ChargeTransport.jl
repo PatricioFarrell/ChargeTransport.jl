@@ -59,6 +59,7 @@ export BarrierLoweringOn, BarrierLoweringOff
 
 include("ct_physics.jl")
 
+export get_BEE, get_DOS, etaFunction, get_density
 export breaction!, bstorage!, reaction!, storage!, flux!
 export zeroVoltage
 ##################################################################
@@ -80,7 +81,6 @@ export TestFunctionFactory, integrate, testfunction
 export gridplot
 
 export set_contact!
-export compute_densities!, compute_energies!
 export compute_open_circuit_voltage
 export electroNeutralSolution!, print_jacobi
 export show_params, trap_density!
@@ -93,6 +93,5 @@ include("ct_plotting.jl")
 export set_plotting_labels
 export plot_densities, plot_energies, plot_doping, plot_electroNeutralSolutionBoltzmann
 export plot_solution, plot_IV
-
 
 end # module

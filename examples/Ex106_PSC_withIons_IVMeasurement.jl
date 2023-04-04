@@ -2,12 +2,13 @@
 # PSC device with ions and linear I-V scan protocol (1D).
 ([source code](SOURCE_URL))
 
-Simulating a three layer PSC device SiO2| MAPI | SiO2 with mobile ions where the ion vacancy
+Simulating a three layer PSC device Ti02| MAPI | spiro-OMeTAD with mobile ions where the ion vacancy
 accumulation is limited by the Fermi-Dirac integral of order -1. The simulations are performed
 out of equilibrium, time-dependent and with abrupt interfaces. A linear I-V measurement
 protocol is included and the corresponding solution vectors after the scan can be depicted.
 
-The parameters can be found in Table S.13, https://arxiv.org/abs/2009.04384. Or here:
+The parameters are based on the default parameter set of Ionmonger (with minor adjustments),
+such that we can likewise compare with the software Driftfusion, see
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 =#
 
@@ -35,11 +36,14 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## boundary region numbers
     bregionDonor     = 1
     bregionAcceptor  = 2
+    bregionJunction1 = 3
+    bregionJunction2 = 4
 
     ## grid
     h_ndoping        = 9.90e-6 * cm
     h_intrinsic      = 4.00e-5 * cm + 2.0e-7 * cm
     h_pdoping        = 1.99e-5 * cm
+    h_total          = h_ndoping + h_intrinsic + h_pdoping
     heightLayers     = [h_ndoping,
                         h_ndoping + h_intrinsic,
                         h_ndoping + h_intrinsic + h_pdoping]
@@ -79,13 +83,19 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord           = glue(coord,     coord_p_u,  tol=10*t)
     grid            = ExtendableGrids.simplexgrid(coord)
 
-    ## set different regions in grid, doping profiles do not intersect
-    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)     # n-doped region   = 1
-    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
-    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)  # p-doped region   = 3
+    ## set different regions in grid
+    cellmask!(grid,  [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)     # n-doped region   = 1
+    cellmask!(grid,  [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
+    cellmask!(grid,  [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)  # p-doped region   = 3
+
+    ## bfacemask! for setting different boundary regions
+    bfacemask!(grid, [0.0],             [0.0],             bregionDonor)     # outer left boundary
+    bfacemask!(grid, [h_total],         [h_total],         bregionAcceptor)  # outer right boundary
+    bfacemask!(grid, [heightLayers[1]], [heightLayers[1]], bregionJunction1) # first  inner interface
+    bfacemask!(grid, [heightLayers[2]], [heightLayers[2]], bregionJunction2) # second inner interface
 
     if plotting
-        gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -282,7 +292,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.chargeNumbers[iphip]                         =  1
     params.chargeNumbers[iphia]                         =  1
 
-    for ireg in 1:numberOfRegions # interior region data
+    for ireg in 1:numberOfRegions # region data
 
         params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
@@ -309,27 +319,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.recombinationAuger[iphip, ireg]          = Auger
     end
 
-    ## boundary region data
-    params.bDensityOfStates[iphin, bregionDonor]        = Nc_d
-    params.bDensityOfStates[iphip, bregionDonor]        = Nv_d
-
-    params.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
-    params.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
-    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
-
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
-
-    ## interior doping
+    ## doping
     params.doping[iphin, regionDonor]                   = Nd
     params.doping[iphia, regionIntrinsic]               = C0
     params.doping[iphip, regionAcceptor]                = Na
-
-    ## boundary doping
-    params.bDoping[iphip, bregionAcceptor]              = Na
-    params.bDoping[iphin, bregionDonor]                 = Nd
 
     data.params                                         = params
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
@@ -347,7 +340,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         ## add labels for anion vacancy
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"; label_BEE[iphia] = "\$E_a\$"
-        label_density[iphia]   = "a";              label_solution[iphia]  = "\$ \\varphi_a\$"
+        label_density[iphia]   = "\$ n_a \$";      label_solution[iphia]  = "\$ \\varphi_a\$"
 
         plot_energies(Plotter, ctsys, label_BEE)
         Plotter.figure()
@@ -397,14 +390,13 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("IV Measurement loop")
     end
     ################################################################################
-    data.calculationType = OutOfEquilibrium
 
     ## with fixed timestep sizes we can calculate the times a priori
-    tvalues              = range(0, stop = tend, length = number_tsteps)
+    tvalues    = range(0, stop = tend, length = number_tsteps)
 
     ## for saving I-V data
-    IV                   = zeros(0) # for IV values
-    biasValues           = zeros(0) # for bias values
+    IV         = zeros(0) # for IV values
+    biasValues = zeros(0) # for bias values
 
     for istep = 2:number_tsteps
 

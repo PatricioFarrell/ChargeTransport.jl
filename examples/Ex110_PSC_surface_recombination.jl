@@ -33,6 +33,8 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfRegions  = length(regions)
 
     ## boundary region numbers
+    # Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
+    # adding additional interior boundaries, continue with 3, 4, ...
     bregionAcceptor  = 1
     bregionDonor     = 2
     bregionJunction1 = 3
@@ -78,7 +80,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     coord            = glue(coord,    coord_n_u,  tol=10*t)
     grid             = ExtendableGrids.simplexgrid(coord)
 
-    ## cellmask! for defining the subregions and assigning region number (doping profiles do not intersect)
+    ## cellmask! for defining the subregions and assigning region number
     cellmask!(grid, [0.0 * μm],                 [h_pdoping],                           regionAcceptor, tol = 1.0e-18)   # p-doped region   = 1
     cellmask!(grid, [h_pdoping],                [h_pdoping + h_intrinsic],             regionIntrinsic, tol = 1.0e-18)  # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic],  [h_pdoping + h_intrinsic + h_ndoping], regionDonor, tol = 1.0e-18)      # n-doped region   = 3
@@ -89,7 +91,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)  # second inner interface
 
     if plotting
-        GridVisualize.gridplot(grid, Plotter = Plotter)
+        GridVisualize.gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -287,19 +289,6 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
         params.recombinationSRHTrapDensity[iphip, ireg]          = trap_density!(iphip, ireg, data, EI[ireg])
     end
 
-    ## outer boundary region data
-    params.bDensityOfStates[iphin, bregionAcceptor]              = Nc_a
-    params.bDensityOfStates[iphip, bregionAcceptor]              = Nv_a
-
-    params.bDensityOfStates[iphin, bregionDonor]                 = Nc_d
-    params.bDensityOfStates[iphip, bregionDonor]                 = Nv_d
-
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]               = Ec_a
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]               = Ev_a
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]                  = Ec_d
-    params.bBandEdgeEnergy[iphip, bregionDonor]                  = Ev_d
-
     ##############################################################
     ## inner boundary region data (we choose the intrinsic values)
     params.bDensityOfStates[iphin, bregionJunction1]             = Nc_i
@@ -333,9 +322,6 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     params.doping[iphin,  regionDonor]                           = Nd
     params.doping[iphip,  regionAcceptor]                        = Na
     params.doping[iphia,  regionIntrinsic]                       = C0
-    ## boundary doping
-    params.bDoping[iphin, bregionDonor]                          = Nd
-    params.bDoping[iphip, bregionAcceptor]                       = Na
 
     data.params                                                  = params
     ctsys                                                        = System(grid, data, unknown_storage=unknown_storage)
@@ -383,21 +369,18 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     end
     ################################################################################
 
-    ## set calculationType to OutOfEquilibrium for starting with respective simulation.
-    data.calculationType = OutOfEquilibrium
-
     ## there are different ways to control time stepping. Here we assume these primary data
-    scanrate             = 1.0 * V/s
-    ntsteps              = 31
-    vend                 = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    tend                 = vend/scanrate
+    scanrate   = 1.0 * V/s
+    ntsteps    = 31
+    vend       = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    tend       = vend/scanrate
 
     ## with fixed timestep sizes we can calculate the times a priori
-    tvalues              = range(0, stop = tend, length = ntsteps)
+    tvalues    = range(0, stop = tend, length = ntsteps)
 
     ## for saving I-V data
-    IV                   = zeros(0) # for IV values
-    biasValues           = zeros(0) # for bias values
+    IV         = zeros(0) # for IV values
+    biasValues = zeros(0) # for bias values
 
     for istep = 2:ntsteps
 
@@ -423,7 +406,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 
         if plotting
             label_solution = Array{String, 1}(undef, numberOfCarriers)
-            label_solution[iphin]  = "\$ \\varphi_n\$"; label_solution[iphip]  = "\$ \\varphi_p\$"; label_solution[iphia]  = "\$ \\varphi_a\$"
+            label_solution[iphia]  = "\$ \\varphi_a\$"
 
             PyPlot.clf()
             plot_solution(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(Δu); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_solution)

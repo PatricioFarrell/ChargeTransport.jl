@@ -4,7 +4,7 @@ ChargeTransport.jl -- Simulating charge transport in semiconductors
 [![Build status](https://github.com/PatricioFarrell/ChargeTransport.jl/workflows/linux-macos-windows/badge.svg)](https://github.com/PatricioFarrell/ChargeTransport.jl/actions)
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://PatricioFarrell.github.io/ChargeTransport.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://PatricioFarrell.github.io/ChargeTransport.jl/dev)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6275688.svg)](https://doi.org/10.5281/zenodo.6275688)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6257906.svg)](https://doi.org/10.5281/zenodo.6257906)
 
 
 `ChargeTransport.jl` simulates charge transport in semiconductors. To this end, it discretizes
@@ -20,7 +20,10 @@ the semiconductor drift-diffusion equations via the Voronoi finite volume method
 - thermodynamically consistent, physics preserving numerical methods
 - different charge carrier statistics per species (Boltzmann, Blakemore, Fermi-Dirac)
 
-`ChargeTransport.jl` is a free software. For research purposes you may use it under the terms of the GNU Affero General Public License (AGPL). As a company you may contact any of the authors directly to obtain a commercial license. If you use this package in your work, please cite it according to [CITATION.bib](https://raw.githubusercontent.com/PatricioFarrell/ChargeTransport.jl/master/CITATION.bib)
+`ChargeTransport.jl` is a free software. For research purposes you may use it under the terms of the GNU Affero General Public License (AGPL). As a company you may contact any of the authors directly to obtain a commercial license. If you use this package in your work, please cite it according to [CITATION.bib](https://raw.githubusercontent.com/PatricioFarrell/ChargeTransport.jl/master/CITATION.bib).
+
+
+![](docs/src/images/example_3d.gif)
 
 ### The following papers rely on `ChargeTransport.jl`
 

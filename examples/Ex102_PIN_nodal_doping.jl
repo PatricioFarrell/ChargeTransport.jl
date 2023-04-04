@@ -22,36 +22,45 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     ################################################################################
 
     ## region numbers
-    regionAcceptor          = 1                           # p doped region
-    regionIntrinsic         = 2                           # intrinsic region
-    regionDonor             = 3                           # n doped region
-    regions                 = [regionAcceptor, regionIntrinsic, regionDonor]
-    numberOfRegions         = length(regions)
+    regionAcceptor   = 1          # p doped region
+    regionIntrinsic  = 2          # intrinsic region
+    regionDonor      = 3          # n doped region
+    regions          = [regionAcceptor, regionIntrinsic, regionDonor]
+    numberOfRegions  = length(regions)
 
     ## boundary region numbers
-    bregionAcceptor         = 1
-    bregionDonor            = 2
-    bregions                = [bregionAcceptor, bregionDonor]
-    numberOfBoundaryRegions = length(bregions)
+    # Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
+    # adding additional interior boundaries, continue with 3, 4, ...
+    bregionAcceptor  = 1
+    bregionDonor     = 2
+    bregionJunction1 = 3
+    bregionJunction2 = 4
 
-    h_pdoping               = 0.1    * μm
-    h_intrinsic             = 0.1    * μm
-    h_ndoping               = 0.1    * μm
-    w_device                = 0.1    * μm  # width of device
-    z_device                = 1.0e-5 * cm  # depth of device
+    h_pdoping        = 0.1    * μm
+    h_intrinsic      = 0.1    * μm
+    h_ndoping        = 0.1    * μm
+    h_total          = h_pdoping + h_intrinsic + h_ndoping
+    w_device         = 0.1    * μm  # width of device
+    z_device         = 1.0e-5 * cm  # depth of device
 
-    coord                   = range(0.0, stop = h_ndoping + h_intrinsic + h_pdoping, length = 25)
-    coord                   = collect(coord)
-    grid                    = simplexgrid(coord)
-    numberOfNodes           = length(coord)
+    coord            = range(0.0, stop = h_ndoping + h_intrinsic + h_pdoping, length = 25)
+    coord            = collect(coord)
+    grid             = simplexgrid(coord)
+    numberOfNodes    = length(coord)
 
     ## set different regions in grid
     cellmask!(grid, [0.0 * μm],                [h_pdoping],                           regionAcceptor,  tol = 1.0e-15)    # p-doped region = 1
     cellmask!(grid, [h_pdoping],               [h_pdoping + h_intrinsic],             regionIntrinsic, tol = 1.0e-15)    # intrinsic region = 2
     cellmask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic + h_ndoping], regionDonor,     tol = 1.0e-15)    # n-doped region = 3
 
+    ## bfacemask! for setting different boundary regions
+    bfacemask!(grid, [0.0],                     [0.0],                     bregionAcceptor)     # outer left boundary
+    bfacemask!(grid, [h_total],                 [h_total],                 bregionDonor)  # outer right boundary
+    bfacemask!(grid, [h_pdoping],               [h_pdoping],               bregionJunction1) # first  inner interface
+    bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic], bregionJunction2) # second inner interface
+
     if plotting
-        gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
     end
 
@@ -140,15 +149,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     params.chargeNumbers[iphin]                         = -1
     params.chargeNumbers[iphip]                         =  1
 
-    for ibreg in 1:numberOfBoundaryRegions  # boundary region data
-
-        params.bDensityOfStates[iphin, ibreg]           = Nc
-        params.bDensityOfStates[iphip, ibreg]           = Nv
-        params.bBandEdgeEnergy[iphin, ibreg]            = Ec
-        params.bBandEdgeEnergy[iphip, ibreg]            = Ev
-    end
-
-    for ireg in 1:numberOfRegions           # interior region data
+    for ireg in 1:numberOfRegions           # region data
 
         params.dielectricConstant[ireg]                 = εr * ε0
 
@@ -245,12 +246,9 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
     ################################################################################
 
-    # Set calculationType to OutOfEquilibrium for starting with respective simulation.
-    data.calculationType = OutOfEquilibrium
-
-    maxBias              = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-    biasValues           = range(0, stop = maxBias, length = 41)
-    IV                   = zeros(0)
+    maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+    biasValues = range(0, stop = maxBias, length = 41)
+    IV         = zeros(0)
 
     for Δu in biasValues
 

@@ -2,13 +2,14 @@
 # PSC device with graded interfaces & Ohmic contacts (1D).
 ([source code](SOURCE_URL))
 
-Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions. The simulations are
+Simulating a three layer PSC device Ti02| MAPI | spiro-OMeTAD without mobile ions. The simulations are
 performed out of equilibrium, stationary and with two junctions between perovskite layer and
 transport layers, to which we refer as graded interfaces. Hence, a graded flux discretization
 with space dependent band-edge energies and density of states is tested here.
 The difference here is that we adjusted the order of indexing the quasi Fermi potentials.
 
-The parameters can be found in Table S.13, https://arxiv.org/abs/2009.04384. Or here:
+The parameters are based on the default parameter set of Ionmonger (with minor adjustments),
+such that we can likewise compare with the software Driftfusion, see
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 =#
 
@@ -67,6 +68,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## boundary region numbers
     bregionDonor          = 1
     bregionAcceptor       = 2
+    bregionDJ1            = 3
+    bregionJ1I            = 4
+    bregionIJ2            = 5
+    bregionJ2A            = 6
 
     ## grid
     h_ndoping             = 9.90e-6 * cm
@@ -74,6 +79,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     h_intrinsic           = 4.00e-5 * cm
     h_junction2           = 1.0e-7  * cm
     h_pdoping             = 1.99e-5 * cm
+    h_total               = h_ndoping + h_junction1 + h_intrinsic + h_junction2 + h_pdoping
     h                     = [h_ndoping, h_junction1, h_intrinsic, h_junction2, h_pdoping]
     heightLayers          = [h_ndoping,
                              h_ndoping + h_junction1,
@@ -109,15 +115,21 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfNodes         = length(coord)
     lengthLayers          = [1, length_n, length_j1, length_i, length_j2, numberOfNodes]
 
-    ## set different regions in grid, doping profiles do not intersect
+    ## set different regions in grid
     cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor)      # n-doped region   = 1
     cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionJunction1)  # first junction   = 2
     cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionIntrinsic)  # intrinsic region = 3
     cellmask!(grid, [heightLayers[3]], [heightLayers[4]], regionJunction2)  # sec. junction    = 4
     cellmask!(grid, [heightLayers[4]], [heightLayers[5]], regionAcceptor)   # p-doped region   = 5
 
+    # inner interfaces
+    bfacemask!(grid, [heightLayers[1]], [heightLayers[1]], bregionDJ1)
+    bfacemask!(grid, [heightLayers[2]], [heightLayers[2]], bregionJ1I)
+    bfacemask!(grid, [heightLayers[3]], [heightLayers[3]], bregionIJ2)
+    bfacemask!(grid, [heightLayers[4]], [heightLayers[4]], bregionJ2A)
+
     if plotting
-        gridplot(grid, Plotter = Plotter)
+        gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -306,8 +318,8 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     paramsnodal.densityOfStates[iphip, :] = grading_parameter!(paramsnodal.densityOfStates[iphip, :],
                                                               coord, regionTransportLayers, regionJunctions, h,
                                                               heightLayers, lengthLayers, NV)
-    ## region dependent data
-    for ireg in 1:numberOfRegions
+
+    for ireg in 1:numberOfRegions  ## region dependent data
 
         ## mobility
         params.mobility[iphin, ireg]                    = μn[ireg]
@@ -325,14 +337,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     end
 
-    ## interior doping
+    ## doping
     params.doping[iphin, regionDonor]      = Nd
     params.doping[iphip, regionIntrinsic]  = Ni_acceptor
     params.doping[iphip, regionAcceptor]   = Na
-
-    ## boundary doping
-    params.bDoping[iphip, bregionAcceptor] = Na
-    params.bDoping[iphin, bregionDonor]    = Nd
 
     data.params                            = params
     data.paramsnodal                       = paramsnodal
@@ -393,8 +401,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("Bias loop")
     end
     ################################################################################
-
-    data.calculationType = OutOfEquilibrium
 
     maxBias    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
     biasValues = range(0, stop = maxBias, length = 13)

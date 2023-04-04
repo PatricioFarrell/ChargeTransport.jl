@@ -3,7 +3,7 @@
 ([source code](SOURCE_URL))
 
 This code provides an unstructured grid for a three-dimensional domain with an additional
-hole within the the device. The grid is produced with TetGen.jl.
+quadratic hole within the device. The grid is produced with TetGen.jl.
 =#
 
 
@@ -19,7 +19,6 @@ using GLMakie
 
 function main(;Plotter = GLMakie, plotting = true) # plotting is currently only tested with GLMakie and PyPlot
 
-    cm       = 0.01
     builder3d=let
 
         b=SimplexGridBuilder(Generator=TetGen)
