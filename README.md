@@ -22,6 +22,9 @@ the semiconductor drift-diffusion equations via the Voronoi finite volume method
 
 `ChargeTransport.jl` is a free software. For research purposes you may use it under the terms of the GNU Affero General Public License (AGPL). As a company you may contact any of the authors directly to obtain a commercial license. If you use this package in your work, please cite it according to [CITATION.bib](https://raw.githubusercontent.com/PatricioFarrell/ChargeTransport.jl/master/CITATION.bib).
 
+
+![](docs/src/images/example_3d.gif)
+
 ### The following papers rely on `ChargeTransport.jl`
 
 [1.] D. Abdel, P. Farrell and J. Fuhrmann. [Assessing the quality of the excess chemical potential flux scheme for degenerate semiconductor device simulation.](https://link.springer.com/article/10.1007/s11082-021-02803-4) Optical and Quantum Electronics 53 (163) (2021).
