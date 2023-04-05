@@ -32,8 +32,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfRegions = length(regions)
 
     ## boundary region numbers
-    # Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
-    # adding additional interior boundaries, continue with 3, 4, ...
+    ## Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
+    ## adding additional interior boundaries, continue with 3, 4, ...
     bregionAcceptor = 1
     bregionDonor    = 2
     bregionNoFlux   = 3
