@@ -19,6 +19,9 @@ end
 begin
 	ENV["PYTHON"] = "" # if empty, create own Conda environment for Julia
 	ENV["MPLBACKEND"]="Agg" # for matplotlib
+    using Conda
+	Conda.add("matplotlib")
+
 	using ChargeTransport
 	using ExtendableGrids
 	using PyPlot
@@ -27,7 +30,7 @@ end
 
 # ╔═╡ 39e1f60f-cd7a-49b5-b569-b3321f68c2ac
 md"""
-# Interactive 1D perovskite solar cell example. 
+# Interactive 1D perovskite solar cell example.
 """
 
 # ╔═╡ 6511e625-2af2-44c9-bc5c-d24e08109c3f
@@ -132,7 +135,7 @@ For illustrative purposes we use a one-dimensional non-uniform grid with $(lengt
 
 We assume ohmic contacts on both sides of the boundary and the voltage is applied at the right acceptor boundary.
 
-""" 
+"""
 
 # ╔═╡ febcc48f-82ae-408a-b6a8-74cf3c76f61a
 md"""
@@ -169,7 +172,7 @@ begin
 
 	# solar cell area
 	area             = 0.1 * m * 0.1 *m
-	
+
 	 ## set indices of the quasi Fermi potentials
     iphin            = 1 # electron quasi Fermi potential
     iphip            = 2 # hole quasi Fermi potential
@@ -181,7 +184,7 @@ begin
 	zn               = -1
 	zp               =  1
 	za               =  1
-	
+
     ## temperature
     T                = 298.0                 *  K
 
@@ -196,7 +199,7 @@ begin
 
     Ec_a             = -3.4                  *  eV
     Ev_a             = -5.1                  *  eV
-    
+
     EC               = [Ec_d, Ec_i, Ec_a]
     EV               = [Ev_d, Ev_i, Ev_a]
     EA               = [0.0,  Ea_i,  0.0]
@@ -243,14 +246,14 @@ begin
     Nd               = 1.00e18               / (cm^3)
     Na               = 1.00e18               / (cm^3)
     C0               = 1.6e19                / (cm^3)
-	
+
 	UT               = kB * T / q
 	nothing;
 end
 
 # ╔═╡ c19b9329-1c9e-4ab3-8216-ff50dcb89e19
 md"""
-## Bulk recombination 
+## Bulk recombination
 """
 
 # ╔═╡ 2a43a7a8-b930-4fca-bf50-90220a3bb431
@@ -382,7 +385,7 @@ md"""
 
 # ╔═╡ bb4e474b-2028-4982-b202-3b22aa08c9d1
 md"""
-There are currently two methods implemented: a uniform photogeneration rate and a Beer-Lambert photogeneration rate. In this example we use the latter one. 
+There are currently two methods implemented: a uniform photogeneration rate and a Beer-Lambert photogeneration rate. In this example we use the latter one.
 
 We plan to extend the software so that optical simulation rates can be read in. Get in touch with one of the authors if you're interested.
 """
@@ -402,7 +405,7 @@ begin
     generation_d       = 0.0
 
     generation_uniform = [generation_a, generation_i, generation_d]
-	
+
 	nothing;
 end
 
@@ -410,7 +413,7 @@ end
 begin
 	function BeerLambert(ctsys, ireg, node)
 		params = ctsys.fvmsys.physics.data.params
-		
+
 		params.generationIncidentPhotonFlux[ireg] .* params.generationAbsorption[ireg] .* exp.( - params.invertedIllumination .* params.generationAbsorption[ireg] .* (node' .- params.generationPeak))
 	end
 	nothing;
@@ -445,7 +448,7 @@ begin
                                                      bulk_recomb_radiative = false,
                                                      bulk_recomb_SRH = false)
 	end
-    
+
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
     data.generationModel               = GenerationBeerLambert
@@ -497,7 +500,7 @@ begin
 
 	# parameter which passes the shift information in the Beer-Lambert generation
     params.generationPeak                 = generationPeak
-	
+
     ## interior doping
     params.doping[iphin, regionDonor]     = Nd
     params.doping[iphia, regionIntrinsic] = C0
@@ -643,9 +646,9 @@ begin
 
 	md"""
 	Plot the concentrations and band-edge energies at a given time (in seconds)
-	
+
 	$(@bind printTime  Slider(totalTime, default=0.0,show_value=true))
-	
+
 	"""
 end
 
@@ -688,14 +691,14 @@ begin
 
     IncidentLightPowerDens = 1000.0 * W/m^2 # for one sun
 
-    efficiency             = bias[indexPD] * -IV[indexPD]  / (IncidentLightPowerDens * area) * 100 
+    efficiency             = bias[indexPD] * -IV[indexPD]  / (IncidentLightPowerDens * area) * 100
     fillfactor             = (bias[indexPD] * -IV[indexPD]) / (-IV[1] * open_circuit) * 100
 
 
 	PyPlot.clf()
 	PyPlot.plot(biasValues[2:end], -IV*(area*cm)*1.0e3, linewidth = 5, label = "forward")
 	PyPlot.plot(biasValuesReverse[2:end], -IVReverse*(area*cm)*1.0e3, linestyle = ":", linewidth = 5, label = "reverse")
-	
+
 	#PyPlot.plot(biasValues[2:end], powerDensity*(area*cm)*1.0e3, linewidth = 3, label = "power density", linestyle = ":", color = "gray")
 	PyPlot.grid()
 	PyPlot.legend()
@@ -703,7 +706,7 @@ begin
 	PyPlot.ylabel("current density [Acm\$^{-2} \$]")
 	PyPlot.gcf()
 
-	
+
 end
 
 # ╔═╡ ce3423b6-8005-49da-b7c6-2e16e0675740
@@ -720,53 +723,53 @@ The efficiency  is $efficiency %.
 
 # ╔═╡ 557b00c2-6a4b-4071-ba90-99b275dcadd8
 begin
-	
+
 	function plot_densities2(Plotter, ctsys, solution, title, label_density, ;plotGridpoints=false)
-	
+
 	    Plotter.clf()
-	
+
 	    grid            = ctsys.fvmsys.grid
 	    data            = ctsys.fvmsys.physics.data
 	    numberOfRegions = grid[NumCellRegions]
-	
+
 	    if dim_space(grid) > 1
 	        error("plot_densities is so far only tested in 1D")
 	    end
-	
+
 	    if plotGridpoints == true
 	        marker = "o"
 	    else
 	        marker = ""
 	    end
-	
+
 	    params     = data.params
 	    colors     = ["green", "red", "gold", "purple", "orange"]
-	
+
 		subplot(211)
 	    for icc in data.electricCarrierList
-	
+
 	        # grids = Array{ExtendableGrid, 1}(undef, numberOfRegions)
 	        # nicc  = Array{Array{Float64, 1}, 1}(undef, numberOfRegions)
-	
+
 	        ## first region for label
 	        label_icc = label_density[icc]
 	        subg      = subgrid(grid, [1])
 	        ncc       = get_density(solution, 1, ctsys, icc)
-	
+
 	        Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, label = label_icc, color = colors[icc], linewidth = 2)
-	
+
 	        ## additional regions
 	        for ireg in 2:numberOfRegions
 	            subg = subgrid(grid, [ireg])
 	            ncc  = get_density(solution, ireg, ctsys, icc)
-	
+
 	            ## Note that this implies a 1D plot, for multidimensional plots, you may work with
 	            ## GridVisualize.jl or write your own code.
 	            Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, color = colors[icc], linewidth = 2)
 	        end
-	
+
 	    end
-	
+
 	    Plotter.grid()
 	    Plotter.xlabel("space [\$m\$]")
 	    Plotter.ylabel("density [\$\\frac{1}{cm^3}\$]")
@@ -777,19 +780,19 @@ begin
 		####################################################################
 		subplot(212)
 	    icc = iphia
-	
+
 		## first region for label
 		label_icc = label_density[icc]
 		subg      = subgrid(grid, [1])
 		ncc       = get_density(solution, 1, ctsys, icc)
-	
+
 		Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, label = label_icc, color = colors[icc], linewidth = 2)
-	
+
 		## additional regions
 		for ireg in 2:numberOfRegions
 			subg = subgrid(grid, [ireg])
 			ncc  = get_density(solution, ireg, ctsys, icc)
-	
+
 			## Note that this implies a 1D plot, for multidimensional plots, you may work with
 			## GridVisualize.jl or write your own code.
 			Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, color = colors[icc], linewidth = 2)
@@ -800,7 +803,7 @@ begin
 		PyPlot.ylim(1.0e19, 2.5e19)
 		PyPlot.tight_layout()
 	    Plotter.legend(fancybox = true, loc = "best", fontsize=11)
-	
+
 	end
 	nothing;
 end
@@ -821,68 +824,68 @@ end
 # ╔═╡ f80b1946-73cb-448e-80a8-9e4770b50c79
 begin
 	function plot_energies2(Plotter, ctsys, solution, title, label_energy, ;plotGridpoints=false)
-	
+
 	    Plotter.clf()
-	
+
 	    grid  = ctsys.fvmsys.grid
 	    data  = ctsys.fvmsys.physics.data
 	    coord = grid[Coordinates]
-	
+
 	    if length(coord[1]) != 1
 	        println("plot_energies is so far only implemented in 1D")
 	    end
-	
+
 	    if plotGridpoints == true
 	        marker = "o"
 	    else
 	        marker = ""
 	    end
-	
+
 	    colors         = ["green", "red", "gold", "purple", "orange"]
 	    linestyles     = ["-", ":", "--", "-.", "-"]
-	
+
 	    for icc in data.electricCarrierList
-	
+
 	        # grids = Array{ExtendableGrid, 1}(undef, numberOfRegions)
 	        # nicc  = Array{Array{Float64, 1}, 1}(undef, numberOfRegions)
-	
+
 	        ## first region for label
 	        subg      = subgrid(grid, [1])
 	        Ecc       = get_BEE(icc, 1, ctsys)
 	        solpsi    = view(solution[data.index_psi, :], subg)
 	        solcc     = view(solution[icc, :],            subg)
-	
+
 	        Plotter.plot(subg[Coordinates]',  Ecc./q .- solpsi, label = label_energy[1, icc], marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
-	
+
 	        Plotter.plot(subg[Coordinates]', -solcc,            label = label_energy[2, icc], marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
-	
+
 	        ## additional regions
 	        for ireg in 2:data.params.numberOfRegions
 	            subg   = subgrid(grid, [ireg])
 	            Ecc    = get_BEE(icc, ireg, ctsys)
 	            solpsi = view(solution[data.index_psi, :], subg)
 	            solcc  = view(solution[icc, :],            subg)
-	
+
 	            ## Note that this implies a 1D plot, for multidimensional plots, you may work with
 	            ## GridVisualize.jl or write your own code.
 	            Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
-	
+
 	            Plotter.plot(subg[Coordinates]', - solcc, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
 	        end
-	
+
 	    end
-	
+
 	    for iicc in data.ionicCarrierList
 	        icc   = iicc.ionicCarrier
 	        count = 0
-	
+
 	        for ireg in 1:data.params.numberOfRegions
 	            if ireg ∈ iicc.regions
 	                subg   = subgrid(grid, [ireg])
 	                Ecc    = get_BEE(icc, ireg, ctsys)
 	                solpsi = view(solution[data.index_psi, :], subg)
 	                solcc  = view(solution[icc, :],            subg)
-	
+
 	                if count == 0
 	                    label1 = label_energy[1, icc]
 	                    label2 = label_energy[2, icc]
@@ -893,21 +896,21 @@ begin
 	                ## Note that this implies a 1D plot, for multidimensional plots, you may work with
 	                ## GridVisualize.jl or write your own code.
 	                Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, label = label1, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
-	
+
 	                Plotter.plot(subg[Coordinates]', - solcc, label = label2, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
-	
+
 	                count = count + 1
 	            end
 	        end
 	    end
-	
+
 	   Plotter.grid()
 	   Plotter.xlabel("space [\$m\$]")
 	   Plotter.ylabel("energies [\$eV\$]")
 	   Plotter.legend(fancybox = true, loc = "best")
 	   Plotter.title(title)
 	   #Plotter.ylim(-1.8, 1.7)
-	
+
 	end
 	nothing;
 
@@ -936,7 +939,7 @@ begin
     OpenCircuitVec = zeros(0)
     EfficiencyVec  = zeros(0)
     EgTest         = 1.3:0.05:2.1
-	
+
     for Eg in EgTest
 
         Ev_iNew = Ec_i - Eg * eV
@@ -995,7 +998,7 @@ begin
         local open_circuit      = compute_open_circuit_voltage(bias, IV)
         local IncLightPowerDens = 1000.0 * W/m^2 # for one sun
 
-    	local efficiency        = bias[indexPD] * IV[indexPD] / (IncLightPowerDens * area) * 100 
+    	local efficiency        = bias[indexPD] * IV[indexPD] / (IncLightPowerDens * area) * 100
     	local fillfactor        = (bias[indexPD] * IV[indexPD]) / (IV[1] * open_circuit) * 100
 
         push!(FillfactorVec, fillfactor)
@@ -1008,7 +1011,7 @@ end
 # ╔═╡ ccf30353-f057-47ad-8e69-e12ef4e01c00
 begin
 	PyPlot.clf()
-	
+
 	PyPlot.subplot(311)
 	PyPlot.plot(EgTest', EfficiencyVec, marker ="o")
 	PyPlot.grid()
@@ -1028,7 +1031,7 @@ begin
 	PyPlot.xlabel("band gap (perovskite) [eV]")
 	PyPlot.ylabel("Fill factor [%]")
 	PyPlot.gcf()
-	
+
 
 end
 
