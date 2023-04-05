@@ -5,7 +5,7 @@ In both of the following examples, we solve the van Roosbroeck equations, a syst
 
 ```math
 \begin{aligned}
-	- \nabla \cdot (\varepsilon_s \nabla \psi) &= q \Big( (p(\psi, \varphi_p) - N_A ) - (n(\psi, \varphi_n) - N_D) \Big),\\
+	- \nabla \cdot (\varepsilon_s \nabla \psi) &= q \Big( (p(\psi, \varphi_p) - C_p ) - (n(\psi, \varphi_n) - C_n) \Big),\\
 	q \partial_t n(\psi, \varphi_n) -\nabla \cdot \mathbf{j}_n &= -qR(n,p), \\
 	q \partial_t p(\psi, \varphi_p) + \nabla \cdot \mathbf{j}_p &= -qR(n,p).
 \end{aligned}

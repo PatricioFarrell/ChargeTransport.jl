@@ -9,7 +9,7 @@ $\psi$.
 The underlying PDEs are given by
 ```math
 \begin{aligned}
-	- \nabla \cdot (\varepsilon_s \nabla \psi) &= q \Big( (p(\psi, \varphi_p) - N_A ) - (n(\psi, \varphi_n) - N_D) \Big),\\
+	- \nabla \cdot (\varepsilon_s \nabla \psi) &= q \Big( (p(\psi, \varphi_p) - C_p ) - (n(\psi, \varphi_n) - C_n) \Big),\\
 	q \partial_t n(\psi, \varphi_n) - \nabla \cdot \mathbf{j}_n &= q\Bigl(G(\mathbf{x}) - R(n,p) \Bigr), \\
 	q \partial_t p(\psi, \varphi_p) + \nabla \cdot \mathbf{j}_p &= \Bigl(G(\mathbf{x}) - R(n,p) \Bigr),
 \end{aligned}
@@ -18,7 +18,7 @@ for
 $\mathbf{x} \in \mathbf{\Omega}_{\text{HTL}} \cup  \mathbf{\Omega}_{\text{ETL}} $, $t \in [0, t_F]$. In the middle, intrinsic region ($ \mathbf{x} \in \mathbf{\Omega}_{\text{intr}} $), we have
 ```math
 \begin{aligned}
-	- \nabla \cdot (\varepsilon_s \nabla \psi) &= q \Big( p(\psi, \varphi_p)  - n(\psi, \varphi_n) + a(\psi, \varphi_a) - C_0 \Big),\\
+	- \nabla \cdot (\varepsilon_s \nabla \psi) &= q \Big( p(\psi, \varphi_p)  - n(\psi, \varphi_n) + a(\psi, \varphi_a) - C_a \Big),\\
 q \partial_t n(\psi, \varphi_n)	- \nabla \cdot \mathbf{j}_n &= \Bigl(G(\mathbf{x}) - R(n,p) \Bigr), \\
 	q \partial_t p(\psi, \varphi_p) + \nabla \cdot \mathbf{j}_p &= \Bigl(G(\mathbf{x}) - R(n,p) \Bigr),\\
 	q \partial_t a(\psi, \varphi_a) + \nabla \cdot \mathbf{j}_a &= 0,
