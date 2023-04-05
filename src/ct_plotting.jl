@@ -222,7 +222,6 @@ function plot_energies(Plotter, ctsys, solution, title, label_energy, ;plotGridp
    Plotter.legend(fancybox = true, loc = "best")
    Plotter.title(title)
    Plotter.tight_layout()
-   Plotter.pause(1.0e-5)
 
 end
 
