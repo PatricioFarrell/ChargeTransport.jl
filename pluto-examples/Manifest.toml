@@ -1,1059 +1,8 @@
-### A Pluto.jl notebook ###
-# v0.19.22
-
-using Markdown
-using InteractiveUtils
-
-# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
-macro bind(def, element)
-    quote
-        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
-        local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
-        el
-    end
-end
-
-# ╔═╡ b0138526-c79e-11ec-041a-156b0dfee367
-# Load required packages.
-begin
-	ENV["PYTHON"] = "" # if empty, create own Conda environment for Julia
-	ENV["MPLBACKEND"]="Agg" # for matplotlib
-	using ChargeTransport
-	using ExtendableGrids
-	using PyPlot
-	using PlutoUI
-end
-
-# ╔═╡ 39e1f60f-cd7a-49b5-b569-b3321f68c2ac
-md"""
-# Interactive 1D perovskite solar cell example. 
-"""
-
-# ╔═╡ 6511e625-2af2-44c9-bc5c-d24e08109c3f
-TableOfContents(; aside = false,depth=5)
-
-# ╔═╡ 997e8130-8e2d-45f6-a6b9-5ed78782d2b0
-md"""
-The purpose of this notebook is to provide a user-friendly and interactive introduction to investigating solar cell device behavior using Chargetransport.jl.
-General information on the drift-diffusion charge transport model can be found in the [package documentation](https://patriciofarrell.github.io/ChargeTransport.jl/stable/PSC/) or in [this publication](https://www.sciencedirect.com/science/article/abs/pii/S0013468621009865?via%3Dihub).
-
-It is possible to generalize to different
-- dimensions
-- material compositions and layer configurations
-- contact and scan protocol types
-- ...
-"""
-
-# ╔═╡ 1284fff2-af76-4d53-9444-233bde7cfaa9
-md"""
-# Device set-up
-"""
-
-# ╔═╡ 18823ee0-988d-459c-b340-7dfed6092b22
-begin
-
-	n                = 8
-    ################################################################################
-    ## region numbers
-    regionDonor      = 1                           # n doped region
-    regionIntrinsic  = 2                           # intrinsic region
-    regionAcceptor   = 3                           # p doped region
-    regions          = [regionDonor, regionIntrinsic, regionAcceptor]
-    numberOfRegions  = length(regions)
-
-    ## boundary region numbers
-    # By convention we have 1 for the left boundary and 2 for the right boundary. If
-    # adding additional interior boundaries, continue with 3, 4, ...
-    bregionDonor     = 1
-    bregionAcceptor  = 2
-    bregionJunction1 = 3
-    bregionJunction2 = 4
-
-    ## grid
-    h_ndoping        = 1.00e-5 * cm
-    h_intrinsic      = 4.00e-5 * cm
-    h_pdoping        = 2.00e-5 * cm
-    heightLayers     = [h_ndoping,
-                        h_ndoping + h_intrinsic,
-                        h_ndoping + h_intrinsic + h_pdoping]
-
-    x0               = 0.0 * cm
-    δ                = 4*n        # the larger, the finer the mesh
-    t                = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
-    k                = 1.5        # the closer to 1, the closer to the boundary geomspace
-
-    coord_n_u        = collect(range(x0, h_ndoping/2, step=h_ndoping/(0.8*δ)))
-    coord_n_g        = geomspace(h_ndoping/2,
-                                 h_ndoping,
-                                 h_ndoping/(0.7*δ),
-                                 h_ndoping/(1.1*δ),
-                                 tol=t)
-    coord_i_g1       = geomspace(h_ndoping,
-                                 h_ndoping+h_intrinsic/k,
-                                 h_intrinsic/(2.8*δ),
-                                 h_intrinsic/(2.1*δ),
-                                 tol=t)
-    coord_i_g2       = geomspace(h_ndoping+h_intrinsic/k,
-                                 h_ndoping+h_intrinsic,
-                                 h_intrinsic/(2.1*δ),
-                                 h_intrinsic/(2.8*δ),
-                                 tol=t)
-    coord_p_g        = geomspace(h_ndoping+h_intrinsic,
-                                 h_ndoping+h_intrinsic+h_pdoping/2,
-                                 h_pdoping/(1.6*δ),
-                                 h_pdoping/(1.6*δ),
-                                 tol=t)
-    coord_p_u        = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(1.3*δ)))
-
-    coord            = glue(coord_n_u, coord_n_g,  tol=10*t)
-    coord            = glue(coord,     coord_i_g1, tol=10*t)
-    coord            = glue(coord,     coord_i_g2, tol=10*t)
-    coord            = glue(coord,     coord_p_g,  tol=10*t)
-    coord            = glue(coord,     coord_p_u,  tol=10*t)
-    grid             = ExtendableGrids.simplexgrid(coord)
-
-    ## set different regions in grid
-    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)     # n-doped region   = 1
-    cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
-    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)  # p-doped region   = 3
-
-    bfacemask!(grid, [heightLayers[1]], [heightLayers[1]], bregionJunction1, tol = 1.0e-18)
-    bfacemask!(grid, [heightLayers[2]], [heightLayers[2]], bregionJunction2, tol = 1.0e-18)
-
-	gridplot(grid, Plotter = PyPlot, legend=:lt)
-end
-
-# ╔═╡ c0f9f418-0c3b-428f-bd5b-e4d3d1ab9be2
-md"""
-For illustrative purposes we use a one-dimensional non-uniform grid with $(length(coord)) number of nodes. The used parameters are estimated, but represent the following set-up (n-i-p):
-
-                            Ti02 | MAPI | spiro-OMeTAD.
-
-We assume ohmic contacts on both sides of the boundary and the voltage is applied at the right acceptor boundary.
-
-""" 
-
-# ╔═╡ febcc48f-82ae-408a-b6a8-74cf3c76f61a
-md"""
-## Used parameter set
-"""
-
-# ╔═╡ 2d0bfda7-c23d-45b0-b3db-2000f1a291c3
-md"""
-We consider the device at a constant temperature T = 298 K with the following parameters for electrons, holes and anion vacancies. We assume that the device has an area of 0.1m x 0.1m.
-"""
-
-# ╔═╡ 3685ff11-b2f1-4fc1-bde6-723bf59ca57f
-md"""
-| physical quantity |   $\quad$symbol$\quad$   |    $\quad$ETL$\quad$    | $\quad$intrinsic$\quad$ |    $\quad$HTL$\quad$    |   $\quad$unit$\quad$   |
-|-------------------|--------------------------|-------------------------|------------------------------------|-------------------------|------------------------|
-|  layer thickness  |                 | 1.0xe-5 | 4.00e-5|  2.0e-5 |  cm  |
-|  conduction band-edge energy| $E_c$ | -4.0     | -3.7  | -3.4     | eV  |
-|  valence band-edge energy|    $E_v$ | -5.8     | -5.4  | -5.1     | eV  |
-|  conduction band-edge DOS|  $N_c$   | 5.0e19   | 8.1e19  | 5.0e19 | $1/\text{cm}^3$  |
-|  valence band-edge DOS|    $N_v$    | 5.0e19  | 5.8e19  | 5.0e19  | $1/\text{cm}^3$  |
-|  max vacancy concentration|    $N_x$    | --  | 1.0e21  | --  | $1/\text{cm}^3$  |
-|  electron mobility|  $\mu_n$   | 3.89   | 6.62e1  | 3.89e-1 | $\text{cm}^2/(Vs)$  |
-|  hole mobility|    $\mu_p$    | 3.89  | 6.62e1  | 3.89e-1  | $\text{cm}^2/(Vs)$  |
-|  vacancy mobility|    $\mu_a$    | --  | 3.93e-12  | --  | $\text{cm}^2/(Vs)$  |
-|  electric permittivity|    $\varepsilon_r$ | 10.0  | 24.1  | 3.0  |  |
-| donor doping density|    $C_n$    | 1.0e18  | --  | --  | $1/\text{cm}^3$ |
-| acceptor doping density|    $C_p$    | --  | --  | 1.0e18  | $1/\text{cm}^3$ |
-| average vacancy density|    $C_a$    | --  | 1.6e19  | --  | $1/\text{cm}^3$ |
-"""
-
-
-# ╔═╡ c72f9732-4fb3-485f-93e2-14999307d513
-begin
-
-	# solar cell area
-	area             = 0.1 * m * 0.1 *m
-	
-	 ## set indices of the quasi Fermi potentials
-    iphin            = 1 # electron quasi Fermi potential
-    iphip            = 2 # hole quasi Fermi potential
-    iphia            = 3 # anion vacancy quasi Fermi potential
-
-    numberOfCarriers = 3 # electrons, holes and anion vacancies
-
-	## charge numbers
-	zn               = -1
-	zp               =  1
-	za               =  1
-	
-    ## temperature
-    T                = 298.0                 *  K
-
-    ## band edge energies
-    Ec_d             = -4.0                  *  eV
-    Ev_d             = -5.8                  *  eV
-
-	Ec_i             = -3.7                  *  eV
-    Eg               =  1.7                  *  eV
-    Ev_i             =  Ec_i - Eg
-	Ea_i             = -4.45                 *  eV
-
-    Ec_a             = -3.4                  *  eV
-    Ev_a             = -5.1                  *  eV
-    
-    EC               = [Ec_d, Ec_i, Ec_a]
-    EV               = [Ev_d, Ev_i, Ev_a]
-    EA               = [0.0,  Ea_i,  0.0]
-
-    ## effective densities of state
-    Nc_d             = 5.0e19                / (cm^3)
-    Nv_d             = 5.0e19                / (cm^3)
-
-    Nc_i             = 8.1e18                / (cm^3)
-    Nv_i             = 5.8e18                / (cm^3)
-	Nanion           = 1.0e21                / (cm^3)
-
-    Nc_a             = 5.0e19                / (cm^3)
-    Nv_a             = 5.0e19                / (cm^3)
-
-    NC               = [Nc_d, Nc_i,  Nc_a]
-    NV               = [Nv_d, Nv_i,  Nv_a]
-    NAnion           = [0.0,  Nanion, 0.0]
-
-    ## mobilities
-    μn_d             = 3.89                    * (cm^2) / (V * s)
-    μp_d             = 3.89                    * (cm^2) / (V * s)
-
-    μn_i             = 6.62e1                  * (cm^2) / (V * s)
-    μp_i             = 6.62e1                  * (cm^2) / (V * s)
-
-    μa_i             = 3.93e-12                * (cm^2) / (V * s)
-
-    μn_a             = 3.89e-1                 * (cm^2) / (V * s)
-    μp_a             = 3.89e-1                 * (cm^2) / (V * s)
-
-    μn               = [μn_d, μn_i, μn_a]
-    μp               = [μp_d, μp_i, μp_a]
-    μa               = [0.0,  μa_i, 0.0 ]
-
-    ## relative dielectric permittivity
-    ε_d              = 10.0                  *  1.0
-    ε_i              = 24.1                  *  1.0
-    ε_a              = 3.0                   *  1.0
-
-    ε                = [ε_d, ε_i, ε_a]
-
-    ## doping
-    Nd               = 1.00e18               / (cm^3)
-    Na               = 1.00e18               / (cm^3)
-    C0               = 1.6e19                / (cm^3)
-	
-	UT               = kB * T / q
-	nothing;
-end
-
-# ╔═╡ c19b9329-1c9e-4ab3-8216-ff50dcb89e19
-md"""
-## Bulk recombination 
-"""
-
-# ╔═╡ 2a43a7a8-b930-4fca-bf50-90220a3bb431
-md"""
-You have the option of turning the bulk recombination on or off.
-"""
-
-# ╔═╡ 5f0c398c-f389-4355-9f0e-6710c2b819a0
-md"""
-	Turn bulk recombination $(@bind isBulkRecoOn Select(["true" => "on", "false" => "off"], default="true")).
-	"""
-
-# ╔═╡ 004e4101-dbf3-4527-bfb8-47da01c70182
-md"""
-If turned on, we use the following predefined parameters.
-"""
-
-# ╔═╡ 66de390b-d0fd-48c4-93d4-50cb7bfc50cd
-md"""
-| physical quantity |   $\quad$symbol$\quad$   |    $\quad$HTL$\quad$    | $\quad$intrinsic$\quad$ |    $\quad$ETL$\quad$    |   $\quad$unit$\quad$   |
-|-------------------|--------------------------|-------------------------|------------------------------------|-------------------------|------------------------|
-| radiative recomb | $r_0$   | 6.3e-11 | 3.6e-12|  6.8e-11 |  $\text{cm}^3/s$  |
-| lifetime, electron | $\tau_n$   | 1.0e-6 | 1.0e-7|  1.0e-6 | s  |
-| lifetime, hole | $\tau_p$   | 1.0e-6 | 1.0e-7|  1.0e-6 | s  |
-| SRH trap energy | $E_\tau$   | -4.05 | -4.6 |  -5.0 | eV  |
-"""
-
-# ╔═╡ b0df6373-8d11-4581-9e42-62e3aee6c869
-begin
-
-    ## radiative recombination
-    r0_a  = 6.3e-11               * cm^3 / s
-    r0_i  = 3.6e-12               * cm^3 / s
-    r0_d  = 6.8e-11               * cm^3 / s
-
-    r0    = [r0_a, r0_i, r0_d]
-
-    ## life times and trap densities
-    τn_a  = 1.0e-6                * s
-    τp_a  = 1.0e-6                * s
-
-    τn_i  = 1.0e-7                * s
-    τp_i  = 1.0e-7                * s
-    τn_d  = τn_a
-    τp_d  = τp_a
-
-    τn    = [τn_a, τn_i, τn_d]
-    τp    = [τp_a, τp_i, τp_d]
-
-    ## SRH trap energies (needed for calculation of trap_density! (SRH))
-    Ei_a  = -4.05                 * eV
-    Ei_i  = -4.60                 * eV
-    Ei_d  = -5.00                 * eV
-
-    EI    = [Ei_a, Ei_i, Ei_d]
-    ## Auger recombination
-    Auger = 0.0
-
-	nothing;
-
-end
-
-# ╔═╡ 61155934-83a1-40ea-805e-2607fd8f9cd2
-md"""
-## Simulated scan protocol
-"""
-
-# ╔═╡ 380c5124-bd09-421f-9590-416400624374
-md"""
-For simplicity, we use a linear forward and backward scan protocol, where you can vary the scan rate. In general, you can use any function you want (preconditioning, sinusoidal signal, ...) as long as you do not have convergence issues of course.
-"""
-
-# ╔═╡ c0177ece-44e4-4431-abd6-4f28a8037d26
-begin
-	scanRateSlide = 0.2:0.1:0.8
-	nothing;
-end
-
-# ╔═╡ afcc0f3b-47aa-4418-aead-67202fc56119
-md"""
-Adjust the scanrate (in V/s) $(@bind scanrate  Slider(scanRateSlide, default=0.4,show_value=true))
-
-"""
-
-# ╔═╡ 719df739-d611-4855-870c-64dc82444538
-begin
-	## primary data for I-V scan protocol
-    voltageAcceptor = 1.2 * V         # contact voltage
-    endVoltage      = voltageAcceptor # bias goes until the given voltage
-    tend            = endVoltage/scanrate
-
-    ## Define scan protocol function
-    function scanProtocol(t)
-
-        if    0.0 <= t  && t <= tend
-            biasVal = 0.0 + scanrate * t
-        elseif  t > tend  && t <= 2*tend
-            biasVal = scanrate * tend .+ scanrate * (tend - t)
-        else
-            biasVal = 0.0
-        end
-
-        return biasVal
-
-    end
-
-    const contactVoltageFunction = [zeroVoltage, scanProtocol]
-
-	nothing;
-
-end
-
-# ╔═╡ 110f405e-7a3a-4385-82ef-9a1c3886bc98
-begin
-	PyPlot.clf()
-	tPlot = 0.0:0.01:2*tend
-	PyPlot.plot(tPlot, scanProtocol.(tPlot))
-	PyPlot.xlabel("time [s]")
-    PyPlot.ylabel("applied voltage [V]")
-	PyPlot.grid()
-	PyPlot.gcf()
-end
-
-
-# ╔═╡ c305fbd9-79ff-4ea3-8011-b07246f767c6
-md"""
-## Photogeneration based on Beer-Lambert
-"""
-
-# ╔═╡ bb4e474b-2028-4982-b202-3b22aa08c9d1
-md"""
-There are currently two methods implemented: a uniform photogeneration rate and a Beer-Lambert photogeneration rate. In this example we use the latter one. 
-
-We plan to extend the software so that optical simulation rates can be read in. Get in touch with one of the authors if you're interested.
-"""
-
-# ╔═╡ 5573ea85-8bbb-411f-97b2-ef1e46981060
-begin
-	## generation Beer Lambert
-    photonflux_i       = 1.5e19                / (m^2 * s)
-    absorption_i       = 1.3e7                 / m
-    incidentPhotonFlux = [0.0, photonflux_i, 0.0]
-    absorption         = [0.0, absorption_i, 0.0]
-    generationPeak     = h_ndoping
-
-	## generation uniform
-    generation_a       = 0.0
-    generation_i       = 8.2e20               / (cm^3 * s)
-    generation_d       = 0.0
-
-    generation_uniform = [generation_a, generation_i, generation_d]
-	
-	nothing;
-end
-
-# ╔═╡ 29d920d6-ac56-4cb1-83a3-741ee6c876ae
-begin
-	function BeerLambert(ctsys, ireg, node)
-		params = ctsys.fvmsys.physics.data.params
-		
-		params.generationIncidentPhotonFlux[ireg] .* params.generationAbsorption[ireg] .* exp.( - params.invertedIllumination .* params.generationAbsorption[ireg] .* (node' .- params.generationPeak))
-	end
-	nothing;
-end
-
-# ╔═╡ 850bfa1a-4326-4aa3-97d2-c21d4ac2ba11
-md"""
-## Finite volume discretization
-"""
-
-# ╔═╡ 2b785f7b-4a96-4785-993b-ee7bbf6b0533
-md"""
-Using this predefined information, a finite volume discretization scheme is created for the model.
-
-The solutions and the respective I-V characteristics are calculated with help of [VoronoiFVM.jl](https://github.com/j-fu/VoronoiFVM.jl).
-"""
-
-# ╔═╡ c00b33f1-8722-49e9-93b3-3703c5d0efb7
-begin
-	## Initialize Data instance and fill in predefined data
-    data                   = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunction)
-    data.modelType         = Transient
-    data.F                 = [Boltzmann, Boltzmann, FermiDiracMinusOne]
-	if isBulkRecoOn == "true"
-		data.bulkRecombination = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                     bulk_recomb_Auger = false,
-                                                     bulk_recomb_radiative = true,
-                                                     bulk_recomb_SRH = true)
-	elseif isBulkRecoOn == "false"
-		data.bulkRecombination = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                     bulk_recomb_Auger = false,
-                                                     bulk_recomb_radiative = false,
-                                                     bulk_recomb_SRH = false)
-	end
-    
-    data.boundaryType[bregionAcceptor] = OhmicContact
-    data.boundaryType[bregionDonor]    = OhmicContact
-    data.generationModel               = GenerationBeerLambert
-    data.fluxApproximation            .= ExcessChemicalPotential
-
-    enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
-	###############################################################################
-	###############################################################################
-	params = Params(grid, numberOfCarriers)
-
-    params.temperature              = T
-    params.UT                       = (kB * params.temperature) / q
-    params.chargeNumbers[iphin]     = zn
-    params.chargeNumbers[iphip]     = zp
-    params.chargeNumbers[iphia]     = za
-
-    for ireg in 1:numberOfRegions # interior region data
-
-        params.dielectricConstant[ireg]                 = ε[ireg] * ε0
-
-        ## effective DOS, band edge energy and mobilities
-        params.densityOfStates[iphin, ireg]             = NC[ireg]
-        params.densityOfStates[iphip, ireg]             = NV[ireg]
-        params.densityOfStates[iphia, ireg]             = NAnion[ireg]
-
-        params.bandEdgeEnergy[iphin, ireg]              = EC[ireg]
-        params.bandEdgeEnergy[iphip, ireg]              = EV[ireg]
-        params.bandEdgeEnergy[iphia, ireg]              = EA[ireg]
-
-        params.mobility[iphin, ireg]                    = μn[ireg]
-        params.mobility[iphip, ireg]                    = μp[ireg]
-        params.mobility[iphia, ireg]                    = μa[ireg]
-
-		## recombination parameters
-        params.recombinationRadiative[ireg]             = r0[ireg]
-        params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
-        params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
-        params.recombinationSRHTrapDensity[iphin, ireg] = trap_density!(iphin, ireg, data, EI[ireg])
-        params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, data, EI[ireg])
-        params.recombinationAuger[iphin, ireg]          = Auger
-        params.recombinationAuger[iphip, ireg]          = Auger
-
-        ## generation parameters
-		params.generationUniform[ireg]                  = generation_uniform[ireg]
-        params.generationIncidentPhotonFlux[ireg]       = incidentPhotonFlux[ireg]
-        params.generationAbsorption[ireg]               = absorption[ireg]
-
-    end
-
-	# parameter which passes the shift information in the Beer-Lambert generation
-    params.generationPeak                 = generationPeak
-	
-    ## interior doping
-    params.doping[iphin, regionDonor]     = Nd
-    params.doping[iphia, regionIntrinsic] = C0
-    params.doping[iphip, regionAcceptor]  = Na
-
-	#########################################################################
-
-	data.params = params
-    ctsys       = System(grid, data, unknown_storage=:sparse)
-	# otherwise there is a print in the terminal.
-	nothing;
-
-end
-
-# ╔═╡ 6f76b5cd-65a2-499c-a0be-0f3a0916e70c
-begin
-	PyPlot.clf()
-
-	for ireg = 1:numberOfRegions
-		subg = subgrid(grid, [ireg])
-		PyPlot.plot(subg[Coordinates]', BeerLambert(ctsys, ireg, subg[Coordinates]), label = "region $ireg")
-	end
-	PyPlot.legend()
-	PyPlot.grid()
-	PyPlot.xlabel("space [\$m\$]")
-    PyPlot.ylabel("photogeneration [\$\\frac{1}{cm^3s}\$]")
-	PyPlot.gcf()
-end
-
-# ╔═╡ ab8d4426-9eda-4bab-a68c-1475042321db
-begin
-    control              = SolverControl()
-    control.maxiters     = 300
-	control.verbose      = ""
-    control.max_round    = 5
-    control.damp_initial = 0.5
-    control.damp_growth  = 1.21 # >= 1
-    control.Δt_max       = 5.0e-2
-	nothing;
-end
-
-# ╔═╡ d6e4a543-d2e5-42a2-91af-1cf8b4d4632d
-begin
-	## calculate equilibrium solution and as initial guess
-    solution = equilibrium_solve!(ctsys, control = control)
-    inival   = solution
-	#############################################################
-	# these values are needed for putting the generation slightly on
-    I      = collect(20:-1:0.0)
-    LAMBDA = 10 .^ (-I)
-
-    ## since the constant which represents the constant quasi Fermi potential of anion vacancies is undetermined, we need to fix it in the bias loop,
-    ## since we have no applied bias. Otherwise we get convergence errors
-    ctsys.fvmsys.boundary_factors[iphia, bregionJunction2] = 1.0e30
-    ctsys.fvmsys.boundary_values[iphia, bregionJunction2]  = 0.0
-
-    for istep = 1:length(I)-1
-
-        ## turn slowly generation on
-        ctsys.data.λ2   = LAMBDA[istep + 1]
-
-        solution = solve(ctsys, inival = inival, control = control)
-        inival   = solution
-
-    end # generation loop
-	#############################################################
-	## put here back the homogenous Neumann boundary conditions.
-    ctsys.fvmsys.boundary_factors[iphia, bregionJunction2] = 0.0
-    ctsys.fvmsys.boundary_values[iphia, bregionJunction2]  = 0.0
-
-    sol = solve(ctsys, inival = inival, times=(0.0, tend), control = control)
-	#############################################################
-	inivalReverse = sol(tend)
-    solReverse    = solve(ctsys, inival = inivalReverse, times=(tend, 2 * tend), control = control)
-	nothing;
-
-end
-
-# ╔═╡ 9fa7dc02-4913-4b6e-a96d-0d73ccfee302
-begin
-	factory       = TestFunctionFactory(ctsys)
-    tf            = testfunction(factory, [bregionDonor], [bregionAcceptor])
-
-    tvalues       = sol.t
-    number_tsteps = length(tvalues)
-    biasValues    = scanProtocol.(tvalues)
-    IV            = zeros(0)
-
-    for istep = 2:number_tsteps
-        Δt       = tvalues[istep] - tvalues[istep-1] # Time step size
-        inival   = sol[istep-1]
-        solution = sol[istep]
-
-        I        = integrate(ctsys, tf, solution, inival, Δt)
-
-        current = 0.0
-        for ii = 1:numberOfCarriers+1
-            current = current + I[ii]
-        end
-
-        push!(IV, current)
-
-    end
-
-    tvaluesReverse       = solReverse.t
-    number_tstepsReverse = length(tvaluesReverse)
-    biasValuesReverse    = scanProtocol.(tvaluesReverse)
-    IVReverse            = zeros(0)
-
-    for istep = 2:number_tstepsReverse
-        Δt       = tvaluesReverse[istep] - tvaluesReverse[istep-1] # Time step size
-        inival   = solReverse[istep-1]
-        solution = solReverse[istep]
-
-        I        = integrate(ctsys, tf, solution, inival, Δt)
-
-        current = 0.0
-        for ii = 1:numberOfCarriers+1
-            current = current + I[ii]
-        end
-
-        push!(IVReverse, current)
-
-    end
-
-end
-
-# ╔═╡ 9b20814b-7f00-49da-ad83-63f1612d2f27
-md"""
-# Visualization of results
-"""
-
-# ╔═╡ 4a4ce5d2-c248-4d88-b4de-ba42f244e0e5
-md"""
-Once the finite volume system is solved, we can postprocess the solution. Here, the charge concentrations of electrons, holes and anion vacancies as well as the band-edges can be shown with respect to time. Further, forward and backward I-V characteristics are visualized.
-"""
-
-# ╔═╡ 09f362b4-a226-4b4e-8253-a6e87d979777
-begin
-	totalTime = glue(tvalues, tvaluesReverse)
-	totalBias = scanProtocol.(totalTime)
-
-
-	md"""
-	Plot the concentrations and band-edge energies at a given time (in seconds)
-	
-	$(@bind printTime  Slider(totalTime, default=0.0,show_value=true))
-	
-	"""
-end
-
-# ╔═╡ 3f40a78e-4b2e-4863-8404-75157d562459
-begin
-	indexPrintTime = findall(x->x==printTime, totalTime);
-	printBias      = totalBias[indexPrintTime][1];
-	nothing
-end
-
-# ╔═╡ 8dbd2c62-eae3-4857-8de7-8829554a847a
-md"""
-The corresponding voltage is Δu = $(printBias) V.
-"""
-
-# ╔═╡ 01fdd92e-4033-4701-a5d4-7012c7c6c063
-begin
-	label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
-
-	## DA: Delete this once in main branch
-	label_density[iphin]   = "\$ n_n \$"
-	label_density[iphip]   = "\$ n_p \$"
-	## add labels for anion vacancy
-	label_energy[1, iphia] = "\$E_a-q\\psi\$"
-	label_energy[2, iphia] = "\$ - q \\varphi_a\$"
-	label_BEE[iphia]       = "\$E_a\$"
-	label_density[iphia]   = "\$ n_a \$"
-	label_solution[iphia]  = "\$ \\varphi_a\$";
-	nothing
-end
-
-# ╔═╡ 26255f99-1a36-43bf-b6f6-01cfa1e1c396
-begin
-	bias                   = biasValues[2:end]
-
-    powerDensity           = bias .* (-IV)           # power density function
-    MaxPD, indexPD         = findmax(powerDensity)
-
-    open_circuit           = compute_open_circuit_voltage(bias, -IV)
-
-    IncidentLightPowerDens = 1000.0 * W/m^2 # for one sun
-
-    efficiency             = bias[indexPD] * -IV[indexPD]  / (IncidentLightPowerDens * area) * 100 
-    fillfactor             = (bias[indexPD] * -IV[indexPD]) / (-IV[1] * open_circuit) * 100
-
-
-	PyPlot.clf()
-	PyPlot.plot(biasValues[2:end], -IV*(area*cm)*1.0e3, linewidth = 5, label = "forward")
-	PyPlot.plot(biasValuesReverse[2:end], -IVReverse*(area*cm)*1.0e3, linestyle = ":", linewidth = 5, label = "reverse")
-	
-	#PyPlot.plot(biasValues[2:end], powerDensity*(area*cm)*1.0e3, linewidth = 3, label = "power density", linestyle = ":", color = "gray")
-	PyPlot.grid()
-	PyPlot.legend()
-	PyPlot.xlabel("applied bias [V]")
-	PyPlot.ylabel("current density [Acm\$^{-2} \$]")
-	PyPlot.gcf()
-
-	
-end
-
-# ╔═╡ ce3423b6-8005-49da-b7c6-2e16e0675740
-md"""
-In case of 1 Sun and an solar cell area of 0.1m x 0.1m we receive the following values.
-
-The open circuit voltage is $open_circuit V.
-
-The fill factor is $fillfactor %.
-
-The efficiency  is $efficiency %.
-
-"""
-
-# ╔═╡ 557b00c2-6a4b-4071-ba90-99b275dcadd8
-begin
-	
-	function plot_densities2(Plotter, ctsys, solution, title, label_density, ;plotGridpoints=false)
-	
-	    Plotter.clf()
-	
-	    grid            = ctsys.fvmsys.grid
-	    data            = ctsys.fvmsys.physics.data
-	    numberOfRegions = grid[NumCellRegions]
-	
-	    if dim_space(grid) > 1
-	        error("plot_densities is so far only tested in 1D")
-	    end
-	
-	    if plotGridpoints == true
-	        marker = "o"
-	    else
-	        marker = ""
-	    end
-	
-	    params     = data.params
-	    colors     = ["green", "red", "gold", "purple", "orange"]
-	
-		subplot(211)
-	    for icc in data.electricCarrierList
-	
-	        # grids = Array{ExtendableGrid, 1}(undef, numberOfRegions)
-	        # nicc  = Array{Array{Float64, 1}, 1}(undef, numberOfRegions)
-	
-	        ## first region for label
-	        label_icc = label_density[icc]
-	        subg      = subgrid(grid, [1])
-	        ncc       = get_density(solution, 1, ctsys, icc)
-	
-	        Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, label = label_icc, color = colors[icc], linewidth = 2)
-	
-	        ## additional regions
-	        for ireg in 2:numberOfRegions
-	            subg = subgrid(grid, [ireg])
-	            ncc  = get_density(solution, ireg, ctsys, icc)
-	
-	            ## Note that this implies a 1D plot, for multidimensional plots, you may work with
-	            ## GridVisualize.jl or write your own code.
-	            Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, color = colors[icc], linewidth = 2)
-	        end
-	
-	    end
-	
-	    Plotter.grid()
-	    Plotter.xlabel("space [\$m\$]")
-	    Plotter.ylabel("density [\$\\frac{1}{cm^3}\$]")
-	    Plotter.legend(fancybox = true, loc = "best", fontsize=11)
-		PyPlot.ylim(2.0e-6, 1.0e19)
-		PyPlot.tight_layout()
-		Plotter.title(title)
-		####################################################################
-		subplot(212)
-	    icc = iphia
-	
-		## first region for label
-		label_icc = label_density[icc]
-		subg      = subgrid(grid, [1])
-		ncc       = get_density(solution, 1, ctsys, icc)
-	
-		Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, label = label_icc, color = colors[icc], linewidth = 2)
-	
-		## additional regions
-		for ireg in 2:numberOfRegions
-			subg = subgrid(grid, [ireg])
-			ncc  = get_density(solution, ireg, ctsys, icc)
-	
-			## Note that this implies a 1D plot, for multidimensional plots, you may work with
-			## GridVisualize.jl or write your own code.
-			Plotter.semilogy(subg[Coordinates]', 1.0e-6 .*ncc, marker = marker, color = colors[icc], linewidth = 2)
-		end
-	    Plotter.grid()
-	    Plotter.xlabel("space [\$m\$]")
-	    Plotter.ylabel("density [\$\\frac{1}{cm^3}\$]")
-		PyPlot.ylim(1.0e19, 2.5e19)
-		PyPlot.tight_layout()
-	    Plotter.legend(fancybox = true, loc = "best", fontsize=11)
-	
-	end
-	nothing;
-end
-
-# ╔═╡ c13bb60b-b07c-4c56-b4f5-1fccbb194bb4
-begin
-	title = "Time value = $(printTime) s; bias value = $(printBias) V"
-	if printTime <= tend
-		printSol = sol(printTime)
-	else
-		printSol = solReverse(printTime)
-	end
-	PyPlot.clf()
-	plot_densities2(PyPlot, ctsys, printSol, title, label_density, ;plotGridpoints=false)
-	PyPlot.gcf()
-end
-
-# ╔═╡ f80b1946-73cb-448e-80a8-9e4770b50c79
-begin
-	function plot_energies2(Plotter, ctsys, solution, title, label_energy, ;plotGridpoints=false)
-	
-	    Plotter.clf()
-	
-	    grid  = ctsys.fvmsys.grid
-	    data  = ctsys.fvmsys.physics.data
-	    coord = grid[Coordinates]
-	
-	    if length(coord[1]) != 1
-	        println("plot_energies is so far only implemented in 1D")
-	    end
-	
-	    if plotGridpoints == true
-	        marker = "o"
-	    else
-	        marker = ""
-	    end
-	
-	    colors         = ["green", "red", "gold", "purple", "orange"]
-	    linestyles     = ["-", ":", "--", "-.", "-"]
-	
-	    for icc in data.electricCarrierList
-	
-	        # grids = Array{ExtendableGrid, 1}(undef, numberOfRegions)
-	        # nicc  = Array{Array{Float64, 1}, 1}(undef, numberOfRegions)
-	
-	        ## first region for label
-	        subg      = subgrid(grid, [1])
-	        Ecc       = get_BEE(icc, 1, ctsys)
-	        solpsi    = view(solution[data.index_psi, :], subg)
-	        solcc     = view(solution[icc, :],            subg)
-	
-	        Plotter.plot(subg[Coordinates]',  Ecc./q .- solpsi, label = label_energy[1, icc], marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
-	
-	        Plotter.plot(subg[Coordinates]', -solcc,            label = label_energy[2, icc], marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
-	
-	        ## additional regions
-	        for ireg in 2:data.params.numberOfRegions
-	            subg   = subgrid(grid, [ireg])
-	            Ecc    = get_BEE(icc, ireg, ctsys)
-	            solpsi = view(solution[data.index_psi, :], subg)
-	            solcc  = view(solution[icc, :],            subg)
-	
-	            ## Note that this implies a 1D plot, for multidimensional plots, you may work with
-	            ## GridVisualize.jl or write your own code.
-	            Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
-	
-	            Plotter.plot(subg[Coordinates]', - solcc, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
-	        end
-	
-	    end
-	
-	    for iicc in data.ionicCarrierList
-	        icc   = iicc.ionicCarrier
-	        count = 0
-	
-	        for ireg in 1:data.params.numberOfRegions
-	            if ireg ∈ iicc.regions
-	                subg   = subgrid(grid, [ireg])
-	                Ecc    = get_BEE(icc, ireg, ctsys)
-	                solpsi = view(solution[data.index_psi, :], subg)
-	                solcc  = view(solution[icc, :],            subg)
-	
-	                if count == 0
-	                    label1 = label_energy[1, icc]
-	                    label2 = label_energy[2, icc]
-	                else
-	                    label1 = ""
-	                    label2 = ""
-	                end
-	                ## Note that this implies a 1D plot, for multidimensional plots, you may work with
-	                ## GridVisualize.jl or write your own code.
-	                Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, label = label1, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
-	
-	                Plotter.plot(subg[Coordinates]', - solcc, label = label2, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
-	
-	                count = count + 1
-	            end
-	        end
-	    end
-	
-	   Plotter.grid()
-	   Plotter.xlabel("space [\$m\$]")
-	   Plotter.ylabel("energies [\$eV\$]")
-	   Plotter.legend(fancybox = true, loc = "best")
-	   Plotter.title(title)
-	   #Plotter.ylim(-1.8, 1.7)
-	
-	end
-	nothing;
-
-end
-
-# ╔═╡ c5800a83-a57c-4eb0-9b6c-3c30266d0e3b
-begin
-	PyPlot.clf()
-	plot_energies2(PyPlot, ctsys, printSol, "", label_energy)
-	PyPlot.gcf()
-end
-
-# ╔═╡ 633ed076-9123-4989-b7e0-3ee078d1a7e0
-md"""
-# Parameter study example
-"""
-
-# ╔═╡ a6e14180-7eeb-48e7-afd2-8a147b32d870
-md"""
-Parameter studies can also be done with ChargeTransport.jl. For instance, we can find out how the band gap in the perovskite layer affects the fill factor, the open circuit voltage, and the power conversion efficiency.
-"""
-
-# ╔═╡ d03cb3b7-2d90-4ee3-842d-54d55e32db07
-begin
-	FillfactorVec  = zeros(0)
-    OpenCircuitVec = zeros(0)
-    EfficiencyVec  = zeros(0)
-    EgTest         = 1.3:0.05:2.1
-	
-    for Eg in EgTest
-
-        Ev_iNew = Ec_i - Eg * eV
-        ctsys.fvmsys.physics.data.params.bandEdgeEnergy[iphip, regionIntrinsic] = Ev_iNew
-
-		## calculate equilibrium solution and as initial guess
-        local solution = equilibrium_solve!(ctsys, control = control)
-        local inival   = solution
-
-        #######################################################################
-        ctsys.fvmsys.boundary_factors[iphia, bregionJunction2] = 1.0e30
-        ctsys.fvmsys.boundary_values[iphia, bregionJunction2]  = 0.0
-
-        for istep = 1:length(I)-1
-
-            ## turn slowly generation on
-            ctsys.data.λ2 = LAMBDA[istep + 1]
-            solution      = solve(ctsys, inival = inival, control = control)
-            inival        = solution
-
-        end # generation loop
-
-        ## put here back the homogenous Neumann boundary conditions.
-        ctsys.fvmsys.boundary_factors[iphia, bregionJunction2] = 0.0
-        ctsys.fvmsys.boundary_values[iphia, bregionJunction2]  = 0.0
-
-        local sol = solve(ctsys, inival = inival, times=(0.0, tend), control = control)
-		###########################################################################
-
-        local tvalues       = sol.t
-        local number_tsteps = length(tvalues)
-        local biasValues    = scanProtocol.(tvalues)
-        local IV            = zeros(0)
-
-        for istep = 2:number_tsteps
-            Δt       = tvalues[istep] - tvalues[istep-1] # Time step size
-            inival   = sol[istep-1]
-            solution = sol[istep]
-
-            local I  = integrate(ctsys, tf, solution, inival, Δt)
-
-            current = 0.0
-            for ii = 1:numberOfCarriers+1
-                current = current + I[ii]
-            end
-
-            push!(IV, current)
-
-        end
-		###########################################################################
-
-        local bias              = biasValues[2:end]
-        local IV                = -IV
-        local powerDensity      = bias .* (IV)           # power density function
-        local MaxPD, indexPD    = findmax(powerDensity)
-        local open_circuit      = compute_open_circuit_voltage(bias, IV)
-        local IncLightPowerDens = 1000.0 * W/m^2 # for one sun
-
-    	local efficiency        = bias[indexPD] * IV[indexPD] / (IncLightPowerDens * area) * 100 
-    	local fillfactor        = (bias[indexPD] * IV[indexPD]) / (IV[1] * open_circuit) * 100
-
-        push!(FillfactorVec, fillfactor)
-        push!(OpenCircuitVec, open_circuit)
-        push!(EfficiencyVec, efficiency)
-
-    end # loop Eg
-end
-
-# ╔═╡ ccf30353-f057-47ad-8e69-e12ef4e01c00
-begin
-	PyPlot.clf()
-	
-	PyPlot.subplot(311)
-	PyPlot.plot(EgTest', EfficiencyVec, marker ="o")
-	PyPlot.grid()
-	PyPlot.xlabel("band gap (perovskite) [eV]")
-	PyPlot.ylabel("efficiency \$ \\eta \$ [%]")
-	PyPlot.tight_layout()
-
-	PyPlot.subplot(312)
-	PyPlot.plot(EgTest', OpenCircuitVec, marker ="o")
-	PyPlot.grid()
-	PyPlot.xlabel("band gap (perovskite) [eV]")
-	PyPlot.ylabel("open circuit voltage [V]")
-
-	PyPlot.subplot(313)
-	PyPlot.plot(EgTest', FillfactorVec, marker ="o")
-	PyPlot.grid()
-	PyPlot.xlabel("band gap (perovskite) [eV]")
-	PyPlot.ylabel("Fill factor [%]")
-	PyPlot.gcf()
-	
-
-end
-
-# ╔═╡ 00000000-0000-0000-0000-000000000001
-PLUTO_PROJECT_TOML_CONTENTS = """
-[deps]
-ChargeTransport = "25c3eafe-d88c-11e9-3031-f396758f002a"
-ExtendableGrids = "cfc395e8-590f-11e8-1f13-43a2532b2fa8"
-PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
-
-[compat]
-ChargeTransport = "~0.2.4"
-ExtendableGrids = "~0.9.17"
-PlutoUI = "~0.7.50"
-PyPlot = "~2.11.1"
-"""
-
-# ╔═╡ 00000000-0000-0000-0000-000000000002
-PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
 julia_version = "1.8.3"
 manifest_format = "2.0"
-project_hash = "cdf202dbd48208756d306748203c73c476de0717"
+project_hash = "529fffa0a248eb236e44f6bd414ae87f9a5d787c"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "e6103228c92462a331003248fa31f00dcf41c577"
@@ -1065,12 +14,6 @@ deps = ["GroupsCore", "InteractiveUtils", "LinearAlgebra", "MacroTools", "Markdo
 git-tree-sha1 = "a69dbe3b376ace7d9eebe2db43216e8b52ba6da9"
 uuid = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
 version = "0.29.2"
-
-[[deps.AbstractPlutoDingetjes]]
-deps = ["Pkg"]
-git-tree-sha1 = "8eaf9f1b4921132a4cff3f36a1d9ba923b14a481"
-uuid = "6e696c72-6542-2067-7265-42206c756150"
-version = "1.1.4"
 
 [[deps.AbstractTrees]]
 git-tree-sha1 = "faa260e4cb5aba097a73fab382dd4b5819d8ec8c"
@@ -1133,6 +76,11 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 git-tree-sha1 = "fe4f8c5ee7f76f2198d5c2a06d3961c249cce7bd"
 uuid = "e2ed5e7c-b2de-5872-ae92-c73ca462fb04"
 version = "0.1.4"
+
+[[deps.BitFlags]]
+git-tree-sha1 = "43b1a4a8f797c1cddadf60499a8a077d4af2cd2d"
+uuid = "d1d4a3ce-64b1-5f1a-9ba4-7e7e69966f35"
+version = "0.1.7"
 
 [[deps.BitTwiddlingConvenienceFunctions]]
 deps = ["Static"]
@@ -1243,6 +191,12 @@ deps = ["Downloads", "JSON", "VersionParsing"]
 git-tree-sha1 = "e32a90da027ca45d84678b826fffd3110bb3fc90"
 uuid = "8f4d0f93-b110-5947-807f-2305c1781a2d"
 version = "1.8.0"
+
+[[deps.Configurations]]
+deps = ["ExproniconLite", "OrderedCollections", "TOML"]
+git-tree-sha1 = "62a7c76dbad02fdfdaa53608104edf760938c4ca"
+uuid = "5218b696-f38b-4ac9-8b61-a12ec717816d"
+version = "0.17.4"
 
 [[deps.ConstructionBase]]
 deps = ["LinearAlgebra"]
@@ -1355,6 +309,12 @@ git-tree-sha1 = "c1d06d129da9f55715c6c212866f5b1bddc5fa00"
 uuid = "e2ba6199-217a-4e67-a87a-7c52f15ade04"
 version = "0.1.9"
 
+[[deps.ExproniconLite]]
+deps = ["Pkg", "TOML"]
+git-tree-sha1 = "c2eb763acf6e13e75595e0737a07a0bec0ce2147"
+uuid = "55351af7-c7e9-48d6-89ff-24e801d99491"
+version = "0.7.11"
+
 [[deps.ExtendableGrids]]
 deps = ["AbstractTrees", "Dates", "DocStringExtensions", "ElasticArrays", "InteractiveUtils", "LinearAlgebra", "Printf", "Random", "SparseArrays", "StaticArrays", "Test", "WriteVTK"]
 git-tree-sha1 = "2921bf0ffab4c8b7eda6a36c7b06a0dde6df0137"
@@ -1432,6 +392,12 @@ version = "0.1.3"
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
+[[deps.FuzzyCompletions]]
+deps = ["REPL"]
+git-tree-sha1 = "e16dd964b4dfaebcded16b2af32f05e235b354be"
+uuid = "fb4132e2-a121-4a70-b8a1-d5b831dcdcc2"
+version = "0.5.1"
+
 [[deps.GPUArraysCore]]
 deps = ["Adapt"]
 git-tree-sha1 = "1cd7f0af1aa58abc02ea1d872953a97359cb87fa"
@@ -1480,6 +446,12 @@ git-tree-sha1 = "9e1a5e9f3b81ad6a5c613d181664a0efc6fe6dd7"
 uuid = "d5909c97-4eac-4ecc-a3dc-fdd0858a4120"
 version = "0.4.0"
 
+[[deps.HTTP]]
+deps = ["Base64", "CodecZlib", "Dates", "IniFile", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
+git-tree-sha1 = "37e4657cd56b11abe3d10cd4a1ec5fbdb4180263"
+uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+version = "1.7.4"
+
 [[deps.HostCPUFeatures]]
 deps = ["BitTwiddlingConvenienceFunctions", "IfElse", "Libdl", "Static"]
 git-tree-sha1 = "734fd90dd2f920a2f1921d5388dcebe805b262dc"
@@ -1491,12 +463,6 @@ deps = ["DualNumbers", "LinearAlgebra", "OpenLibm_jll", "SpecialFunctions"]
 git-tree-sha1 = "d926e9c297ef4607866e8ef5df41cde1a642917f"
 uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 version = "0.3.14"
-
-[[deps.Hyperscript]]
-deps = ["Test"]
-git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
-uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
-version = "0.0.4"
 
 [[deps.HypertextLiteral]]
 deps = ["Tricks"]
@@ -1510,12 +476,6 @@ git-tree-sha1 = "b007cfc7f9bee9a958992d2301e9c5b63f332a90"
 uuid = "88f59080-6952-5380-9ea5-54057fb9a43f"
 version = "0.2.0"
 
-[[deps.IOCapture]]
-deps = ["Logging", "Random"]
-git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
-uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
-version = "0.2.2"
-
 [[deps.IfElse]]
 git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
 uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
@@ -1525,6 +485,11 @@ version = "0.1.1"
 git-tree-sha1 = "5cd07aab533df5170988219191dfad0519391428"
 uuid = "d25df0c9-e2be-5dd7-82c8-3ad0b3e990b9"
 version = "0.1.3"
+
+[[deps.IniFile]]
+git-tree-sha1 = "f550e6e32074c939295eb5ea6de31849ac2c9625"
+uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
+version = "0.5.1"
 
 [[deps.IntegerMathUtils]]
 git-tree-sha1 = "f366daebdfb079fd1fe4e3d560f99a0c892e15bc"
@@ -1638,6 +603,11 @@ git-tree-sha1 = "88b8f66b604da079a627b6fb2860d3704a6729a1"
 uuid = "10f19ff3-798f-405d-979b-55457f8fc047"
 version = "0.1.14"
 
+[[deps.LazilyInitializedFields]]
+git-tree-sha1 = "410fe4739a4b092f2ffe36fcb0dcc3ab12648ce1"
+uuid = "0e77f7df-68c5-4e49-93ce-4cd80f5598bf"
+version = "1.2.1"
+
 [[deps.Lazy]]
 deps = ["MacroTools"]
 git-tree-sha1 = "1370f8202dac30758f3c345f9909b97f53d87d3f"
@@ -1697,6 +667,12 @@ version = "0.3.23"
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
+[[deps.LoggingExtras]]
+deps = ["Dates", "Logging"]
+git-tree-sha1 = "cedb76b37bc5a6c702ade66be44f831fa23c681e"
+uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
+version = "1.0.0"
+
 [[deps.LoopVectorization]]
 deps = ["ArrayInterface", "ArrayInterfaceCore", "CPUSummary", "ChainRulesCore", "CloseOpenIntervals", "DocStringExtensions", "ForwardDiff", "HostCPUFeatures", "IfElse", "LayoutPointers", "LinearAlgebra", "OffsetArrays", "PolyesterWeave", "SIMDTypes", "SLEEFPirates", "SnoopPrecompile", "SpecialFunctions", "Static", "StaticArrayInterface", "ThreadingUtilities", "UnPack", "VectorizationBase"]
 git-tree-sha1 = "a282dbdbc2860134d6809acd951543ce359bcf15"
@@ -1723,6 +699,12 @@ version = "0.1.8"
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
+[[deps.MbedTLS]]
+deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "Random", "Sockets"]
+git-tree-sha1 = "03a9b9718f5682ecb107ac9f7308991db4ce395b"
+uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
+version = "1.1.7"
+
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
@@ -1740,6 +722,12 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 version = "2022.2.1"
+
+[[deps.MsgPack]]
+deps = ["Serialization"]
+git-tree-sha1 = "fc8c15ca848b902015bd4a745d350f02cf791c2a"
+uuid = "99f44e22-a591-53d1-9472-aa23ef4bd671"
+version = "1.2.0"
 
 [[deps.MultivariatePolynomials]]
 deps = ["ChainRulesCore", "DataStructures", "LinearAlgebra", "MutableArithmetics"]
@@ -1784,6 +772,18 @@ deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
 version = "0.8.1+0"
 
+[[deps.OpenSSL]]
+deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
+git-tree-sha1 = "6503b77492fd7fcb9379bf73cd31035670e3c509"
+uuid = "4d8831e6-92b7-49fb-bdf8-b643e874388c"
+version = "1.3.3"
+
+[[deps.OpenSSL_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "9ff31d101d987eb9d66bd8b176ac7c277beccd09"
+uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
+version = "1.1.20+0"
+
 [[deps.OpenSpecFun_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "13652491f6856acfd2db29360e1bbcd4565d04f1"
@@ -1818,11 +818,11 @@ git-tree-sha1 = "f6cf8e7944e50901594838951729a1861e668cb8"
 uuid = "eebad327-c553-4316-9ea0-9fa01ccd7688"
 version = "0.3.2"
 
-[[deps.PlutoUI]]
-deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
-git-tree-sha1 = "5bb5129fdd62a2bbbe17c2756932259acf467386"
-uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-version = "0.7.50"
+[[deps.Pluto]]
+deps = ["Base64", "Configurations", "Dates", "Distributed", "FileWatching", "FuzzyCompletions", "HTTP", "HypertextLiteral", "InteractiveUtils", "Logging", "MIMEs", "Markdown", "MsgPack", "Pkg", "PrecompileSignatures", "REPL", "RegistryInstances", "RelocatableFolders", "SnoopPrecompile", "Sockets", "TOML", "Tables", "URIs", "UUIDs"]
+git-tree-sha1 = "0ee5bd226e5b95e2232229f7c4a97309ccd8158b"
+uuid = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
+version = "0.19.22"
 
 [[deps.Polyester]]
 deps = ["ArrayInterface", "BitTwiddlingConvenienceFunctions", "CPUSummary", "IfElse", "ManualMemory", "PolyesterWeave", "Requires", "Static", "StaticArrayInterface", "StrideArraysCore", "ThreadingUtilities"]
@@ -1841,6 +841,11 @@ deps = ["Adapt", "ArrayInterface", "ForwardDiff", "Requires"]
 git-tree-sha1 = "f739b1b3cc7b9949af3b35089931f2b58c289163"
 uuid = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
 version = "0.4.12"
+
+[[deps.PrecompileSignatures]]
+git-tree-sha1 = "18ef344185f25ee9d51d80e179f8dad33dc48eb1"
+uuid = "91cefc8d-f054-46dc-8f8c-26e11d7c5411"
+version = "3.0.3"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -1919,6 +924,18 @@ git-tree-sha1 = "45e428421666073eab6f2da5c9d310d99bb12f9b"
 uuid = "189a3867-3050-52da-a836-e630ba90ab69"
 version = "1.2.2"
 
+[[deps.RegistryInstances]]
+deps = ["LazilyInitializedFields", "Pkg", "TOML", "Tar"]
+git-tree-sha1 = "ffd19052caf598b8653b99404058fce14828be51"
+uuid = "2792f1a3-b283-48e8-9a74-f99dce5104f3"
+version = "0.1.0"
+
+[[deps.RelocatableFolders]]
+deps = ["SHA", "Scratch"]
+git-tree-sha1 = "90bc7a7c96410424509e4263e277e43250c05691"
+uuid = "05181044-ff0b-4ac5-8273-598c1e38db00"
+version = "1.0.0"
+
 [[deps.Requires]]
 deps = ["UUIDs"]
 git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
@@ -1976,6 +993,12 @@ git-tree-sha1 = "e61e48ef909375203092a6e83508c8416df55a83"
 uuid = "c0aeaf25-5076-4817-a8d5-81caf7dfa961"
 version = "0.2.0"
 
+[[deps.Scratch]]
+deps = ["Dates"]
+git-tree-sha1 = "30449ee12237627992a99d5e30ae63e4d78cd24a"
+uuid = "6c6a2e73-6563-6170-7368-637461726353"
+version = "1.2.0"
+
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
@@ -1988,6 +1011,11 @@ version = "1.1.1"
 [[deps.SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
 uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
+
+[[deps.SimpleBufferStream]]
+git-tree-sha1 = "874e8867b33a00e784c8a7e4b60afe9e037b74e1"
+uuid = "777ac1f9-54b0-4bf8-805c-2214025038e7"
+version = "1.1.0"
 
 [[deps.SimpleTraits]]
 deps = ["InteractiveUtils", "MacroTools"]
@@ -2272,58 +1300,3 @@ version = "1.48.0+0"
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 version = "17.4.0+0"
-"""
-
-# ╔═╡ Cell order:
-# ╟─39e1f60f-cd7a-49b5-b569-b3321f68c2ac
-# ╠═b0138526-c79e-11ec-041a-156b0dfee367
-# ╟─6511e625-2af2-44c9-bc5c-d24e08109c3f
-# ╟─997e8130-8e2d-45f6-a6b9-5ed78782d2b0
-# ╟─1284fff2-af76-4d53-9444-233bde7cfaa9
-# ╟─c0f9f418-0c3b-428f-bd5b-e4d3d1ab9be2
-# ╟─18823ee0-988d-459c-b340-7dfed6092b22
-# ╟─febcc48f-82ae-408a-b6a8-74cf3c76f61a
-# ╟─2d0bfda7-c23d-45b0-b3db-2000f1a291c3
-# ╟─3685ff11-b2f1-4fc1-bde6-723bf59ca57f
-# ╟─c72f9732-4fb3-485f-93e2-14999307d513
-# ╟─c19b9329-1c9e-4ab3-8216-ff50dcb89e19
-# ╟─2a43a7a8-b930-4fca-bf50-90220a3bb431
-# ╟─5f0c398c-f389-4355-9f0e-6710c2b819a0
-# ╟─004e4101-dbf3-4527-bfb8-47da01c70182
-# ╟─66de390b-d0fd-48c4-93d4-50cb7bfc50cd
-# ╟─b0df6373-8d11-4581-9e42-62e3aee6c869
-# ╟─61155934-83a1-40ea-805e-2607fd8f9cd2
-# ╟─380c5124-bd09-421f-9590-416400624374
-# ╟─c0177ece-44e4-4431-abd6-4f28a8037d26
-# ╟─afcc0f3b-47aa-4418-aead-67202fc56119
-# ╟─110f405e-7a3a-4385-82ef-9a1c3886bc98
-# ╟─719df739-d611-4855-870c-64dc82444538
-# ╟─c305fbd9-79ff-4ea3-8011-b07246f767c6
-# ╟─bb4e474b-2028-4982-b202-3b22aa08c9d1
-# ╟─6f76b5cd-65a2-499c-a0be-0f3a0916e70c
-# ╟─5573ea85-8bbb-411f-97b2-ef1e46981060
-# ╟─29d920d6-ac56-4cb1-83a3-741ee6c876ae
-# ╟─850bfa1a-4326-4aa3-97d2-c21d4ac2ba11
-# ╟─2b785f7b-4a96-4785-993b-ee7bbf6b0533
-# ╟─c00b33f1-8722-49e9-93b3-3703c5d0efb7
-# ╟─ab8d4426-9eda-4bab-a68c-1475042321db
-# ╟─d6e4a543-d2e5-42a2-91af-1cf8b4d4632d
-# ╟─9fa7dc02-4913-4b6e-a96d-0d73ccfee302
-# ╟─9b20814b-7f00-49da-ad83-63f1612d2f27
-# ╟─4a4ce5d2-c248-4d88-b4de-ba42f244e0e5
-# ╟─3f40a78e-4b2e-4863-8404-75157d562459
-# ╟─c13bb60b-b07c-4c56-b4f5-1fccbb194bb4
-# ╟─09f362b4-a226-4b4e-8253-a6e87d979777
-# ╟─8dbd2c62-eae3-4857-8de7-8829554a847a
-# ╟─01fdd92e-4033-4701-a5d4-7012c7c6c063
-# ╟─c5800a83-a57c-4eb0-9b6c-3c30266d0e3b
-# ╟─26255f99-1a36-43bf-b6f6-01cfa1e1c396
-# ╟─ce3423b6-8005-49da-b7c6-2e16e0675740
-# ╟─557b00c2-6a4b-4071-ba90-99b275dcadd8
-# ╟─f80b1946-73cb-448e-80a8-9e4770b50c79
-# ╟─633ed076-9123-4989-b7e0-3ee078d1a7e0
-# ╟─a6e14180-7eeb-48e7-afd2-8a147b32d870
-# ╟─ccf30353-f057-47ad-8e69-e12ef4e01c00
-# ╟─d03cb3b7-2d90-4ee3-842d-54d55e32db07
-# ╟─00000000-0000-0000-0000-000000000001
-# ╟─00000000-0000-0000-0000-000000000002
