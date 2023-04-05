@@ -23,9 +23,7 @@ the semiconductor drift-diffusion equations via the Voronoi finite volume method
 `ChargeTransport.jl` is a free software. For research purposes you may use it under the terms of the GNU Affero General Public License (AGPL). As a company you may contact any of the authors directly to obtain a commercial license. If you use this package in your work, please cite it according to [CITATION.bib](https://raw.githubusercontent.com/PatricioFarrell/ChargeTransport.jl/master/CITATION.bib).
 
 
-<img src="docs/src/images/2D-unstructured-grid.png" width="307" height="273" >
-<img src="docs/src/images/electric-potential.png" width="307" height="273" >
-
+<img src="docs/src/images/2D-example.png" >
 
 ![](docs/src/images/example_3d.gif)
 
