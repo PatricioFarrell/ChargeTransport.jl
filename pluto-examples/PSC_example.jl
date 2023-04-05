@@ -17,6 +17,7 @@ end
 # ╔═╡ b0138526-c79e-11ec-041a-156b0dfee367
 # Load required packages.
 begin
+	using Pkg
 	ENV["PYTHON"] = "" # if empty, create own Conda environment for Julia
     using PyCall
     using Conda
@@ -27,6 +28,7 @@ begin
 	using ExtendableGrids
 	using PyPlot
 	using PlutoUI
+	#Pkg.resolve()
 end
 
 # ╔═╡ 39e1f60f-cd7a-49b5-b569-b3321f68c2ac
@@ -1040,14 +1042,19 @@ end
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 ChargeTransport = "25c3eafe-d88c-11e9-3031-f396758f002a"
+Conda = "8f4d0f93-b110-5947-807f-2305c1781a2d"
 ExtendableGrids = "cfc395e8-590f-11e8-1f13-43a2532b2fa8"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 
 [compat]
 ChargeTransport = "~0.2.4"
+Conda = "~1.8.0"
 ExtendableGrids = "~0.9.17"
 PlutoUI = "~0.7.50"
+PyCall = "~1.95.1"
 PyPlot = "~2.11.1"
 """
 
@@ -1057,7 +1064,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.3"
 manifest_format = "2.0"
-project_hash = "cdf202dbd48208756d306748203c73c476de0717"
+project_hash = "fda3f9befe69ed1f83fdb9232f7def6d736fb174"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "e6103228c92462a331003248fa31f00dcf41c577"
