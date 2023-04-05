@@ -18,10 +18,11 @@ end
 # Load required packages.
 begin
 	ENV["PYTHON"] = "" # if empty, create own Conda environment for Julia
-	ENV["MPLBACKEND"]="Agg" # for matplotlib
+    using PyCall
     using Conda
-	Conda.add("matplotlib")
-
+    Pkg.build("PyCall");
+	Conda.add("matplotlib");
+    pyimport("matplotlib");
 	using ChargeTransport
 	using ExtendableGrids
 	using PyPlot
