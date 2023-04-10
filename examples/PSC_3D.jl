@@ -92,7 +92,7 @@ function main(;Plotter = GLMakie, plotting = false, test = false, verbose = fals
     bfacemask!(grid3D, [0.0, 0.0, width],  [h_total, height, width], bregionNoFlux)
 
     if plotting == true # plotting is currently only tested with GLMakie and PyPlot
-        vis    = GridVisualizer(Plotter = Plotter, resolution=(1500,1500), layout=(2,2))
+        vis    = GridVisualizer(Plotter = Plotter, resolution=(1500,1500), layout=(3,2))
         gridplot!(vis[1,1], grid1D)
         if Plotter == PyPlot
             gridplot!(vis[1,2], grid3D, linewidth=0.5, xplanes=[5.5e-7], zplanes=[1.5e-7])
@@ -321,28 +321,25 @@ function main(;Plotter = GLMakie, plotting = false, test = false, verbose = fals
         scalarplot!(vis[2,1], grid1D, sol1D[ipsi, :]; color=:blue, linewidth = 5, xlabel = "space [m]", ylabel = "potential [V]", title = "Electric potential (1D)")
         scalarplot!(vis[2,2], grid3D, sol3D[ipsi, :]; scene3d=:Axis3, levels = 4, levelalpha = 0.9, outlinealpha = 0.00, xplanes = collect(range(0.0, stop = h_total, length = 100)), title = "Electric potential (3D)")
 
-        ## DA: We have a problem that logarithmic scaling of the colorbar is not working in 3D ....
-        # grids1D    = Array{typeof(grid1D), 1}(undef, numberOfRegions)
-        # densityn1D = Array{typeof(sol1D[iphin, :]), 1}(undef, numberOfRegions)
+        grids1D    = Array{typeof(grid1D), 1}(undef, numberOfRegions)
+        densityn1D = Array{typeof(sol1D[iphin, :]), 1}(undef, numberOfRegions)
 
-        # grids3D    = Array{typeof(grid3D), 1}(undef, numberOfRegions)
-        # densityn3D = Array{typeof(sol3D[iphin, :]), 1}(undef, numberOfRegions)
-        # logDens3D  = Array{typeof(sol3D[iphin, :]), 1}(undef, numberOfRegions)
+        grids3D    = Array{typeof(grid3D), 1}(undef, numberOfRegions)
+        densityn3D = Array{typeof(sol3D[iphin, :]), 1}(undef, numberOfRegions)
+        logDens3D  = Array{typeof(sol3D[iphin, :]), 1}(undef, numberOfRegions)
 
-        # for ireg in 1:numberOfRegions
-        #     grids1D[ireg]    = subgrid(grid1D, [ireg])
-        #     densityn1D[ireg] = get_density(sol1D, ireg, ctsys1D, iphin)
-        #     #############################################################
-        #     grids3D[ireg]    = subgrid(grid3D, [ireg])
-        #     densityn3D[ireg] = get_density(sol3D, ireg, ctsys3D, iphin)
-        #     logDens3D[ireg]  = log.(densityn3D[ireg])
-        # end
+        for ireg in 1:numberOfRegions
+            grids1D[ireg]    = subgrid(grid1D, [ireg])
+            densityn1D[ireg] = get_density(sol1D, ireg, ctsys1D, iphin)
+            #############################################################
+            grids3D[ireg]    = subgrid(grid3D, [ireg])
+            densityn3D[ireg] = get_density(sol3D, ireg, ctsys3D, iphin)
+            logDens3D[ireg]  = log.(densityn3D[ireg])
+        end
 
-        # scalarplot!(vis[2,1], grids1D, grid1D, densityn1D; color=:green, linewidth = 5, yscale=:log, xlabel = "space [m]", ylabel = "density [m\$^{-3}\$]", title = "Electron concentration (1D)")
-        # scalarplot!(vis[2,2], grids3D, grid3D, densityn3D; scene3d=:Axis3, levels = 4, levelalpha = 0.9, outlinealpha = 0.00, xplanes = collect(range(0.0, stop = h_total, length = 100)), title = "Electron concentration (3D)")
+        scalarplot!(vis[3,1], grids1D, grid1D, densityn1D; color=:green, linewidth = 5, yscale=:log, xlabel = "space [m]", ylabel = "density [m\$^{-3}\$]", title = "Electron concentration (1D)")
+        scalarplot!(vis[3,2], grids3D, grid3D, densityn3D; scene3d=:Axis3, levels = 4, levelalpha = 0.9, outlinealpha = 0.00, xplanes = collect(range(0.0, stop = h_total, length = 100)), title = "Electron concentration (3D)")
     end
-
-    return vis, grids3D, grid3D, densityn3D
 
     if test == false
         println("*** done\n")
