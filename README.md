@@ -36,3 +36,6 @@ the semiconductor drift-diffusion equations via the Voronoi finite volume method
 [3.] D. Abdel, C. Chainais-Hillairet, P. Farrell and M. Herda. [Numerical analysis of a finite volume scheme for charge transport in perovskite solar cells.](https://doi.org/10.48550/arXiv.2209.07934) preprint (2022).
 
 [4.] D. Abdel, N. E. Courtier and P. Farrell. [Volume exclusion effects in perovskite charge transport modeling.](https://doi.org/10.20347/WIAS.PREPRINT.2965) preprint (2022).
+
+[5.] B. Spetzler, D. Abdel, F. Schwierz, M. Ziegler and P. Farrell. [The role of mobile point defects in two-dimensional memristive devices.](
+https://doi.org/10.48550/arXiv.2304.06527) preprint (2023).
