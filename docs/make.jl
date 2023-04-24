@@ -54,7 +54,7 @@ example_md_dir = joinpath(@__DIR__, "src", "examples")
 for example_source in readdir(example_jl_dir)
     base, ext = splitext(example_source)
     if ext == ".jl"
-        source_url = "https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examples" * example_source
+        source_url = "https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examples/" * example_source
         preprocess(buffer) = replace_source_url(buffer, source_url) |> hashify_block_comments
         Literate.markdown(joinpath(@__DIR__, "..", "examples", example_source),
             example_md_dir,
@@ -89,7 +89,7 @@ for notebook in notebookjl
 base = split(notebook, ".")[1]
 mdstring = """
             ##### [$(base).jl](@id $(base))
-            [Download](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master//pluto-examples/$(notebook))
+            [Download](https://github.com/PatricioFarrell/ChargeTransport.jl/blob/master/pluto-examples/$(notebook))
             this [Pluto.jl](https://github.com/fonsp/Pluto.jl) notebook.
             ```@raw html
             <iframe style="height:20000px" width="100%" src="../$(base).html"> </iframe>
