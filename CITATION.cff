@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: "ChargeTransport.jl -- Simulating charge transport in semiconductors"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - given-names: Dilara
+    family-names: Abdel
+    email: dilara.abdel@wias-berlin.de
+    affiliation: Weierstrass Institute Berlin
+    orcid: 'https://orcid.org/0000-0003-3477-7881'
+  - given-names: Patricio
+    family-names: Farrell
+    email: patricio.farrell@wias-berlin.de
+    affiliation: Weierstrass Institute Berlin
+    orcid: 'https://orcid.org/0000-0001-9969-6615'
+  - given-names: Jürgen
+    family-names: Fuhrmann
+    email: juergen.fuhrmann@wias-berlin.de
+    affiliation: Weierstrass Institute Berlin
+    orcid: 'https://orcid.org/0000-0003-4432-2434'
+doi: "10.5281/zenodo.7802105}"
+license: AGPL-3.0
+repository-code: "https://github.com/PatricioFarrell/ChargeTransport.jl"
