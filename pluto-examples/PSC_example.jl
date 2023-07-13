@@ -18,12 +18,12 @@ end
 # Load required packages.
 begin
 	using Pkg
-	ENV["PYTHON"] = "" # if empty, create own Conda environment for Julia
-    using PyCall
-    using Conda
-    Pkg.build("PyCall");
-	Conda.add("matplotlib");
-    pyimport("matplotlib");
+	#ENV["PYTHON"] = "" # if empty, create own Conda environment for Julia
+    #using PyCall
+    #using Conda
+    #Pkg.build("PyCall");
+	#Conda.add("matplotlib");
+    #pyimport("matplotlib");
 	using ChargeTransport
 	using ExtendableGrids
 	using PyPlot
@@ -683,6 +683,11 @@ begin
 	nothing
 end
 
+# ╔═╡ 882f0ca5-e937-41c4-820b-23eae12e7c19
+md"""
+## IV curves
+"""
+
 # ╔═╡ 26255f99-1a36-43bf-b6f6-01cfa1e1c396
 begin
 	bias                   = biasValues[2:end]
@@ -706,6 +711,7 @@ begin
 	PyPlot.grid()
 	PyPlot.legend()
 	PyPlot.xlabel("applied bias [V]")
+	PyPlot.ylim(-0.2, 0.28)
 	PyPlot.ylabel("current density [Acm\$^{-2} \$]")
 	PyPlot.gcf()
 
@@ -1042,19 +1048,15 @@ end
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 ChargeTransport = "25c3eafe-d88c-11e9-3031-f396758f002a"
-Conda = "8f4d0f93-b110-5947-807f-2305c1781a2d"
 ExtendableGrids = "cfc395e8-590f-11e8-1f13-43a2532b2fa8"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 
 [compat]
 ChargeTransport = "~0.2.4"
-Conda = "~1.8.0"
 ExtendableGrids = "~0.9.17"
 PlutoUI = "~0.7.50"
-PyCall = "~1.95.1"
 PyPlot = "~2.11.1"
 """
 
@@ -1064,7 +1066,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.3"
 manifest_format = "2.0"
-project_hash = "fda3f9befe69ed1f83fdb9232f7def6d736fb174"
+project_hash = "760fa544de395d94671bd1a702aeeb6c4ec561ef"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "e6103228c92462a331003248fa31f00dcf41c577"
@@ -2287,7 +2289,7 @@ version = "17.4.0+0"
 
 # ╔═╡ Cell order:
 # ╟─39e1f60f-cd7a-49b5-b569-b3321f68c2ac
-# ╠═b0138526-c79e-11ec-041a-156b0dfee367
+# ╟─b0138526-c79e-11ec-041a-156b0dfee367
 # ╟─6511e625-2af2-44c9-bc5c-d24e08109c3f
 # ╟─997e8130-8e2d-45f6-a6b9-5ed78782d2b0
 # ╟─1284fff2-af76-4d53-9444-233bde7cfaa9
@@ -2328,6 +2330,7 @@ version = "17.4.0+0"
 # ╟─8dbd2c62-eae3-4857-8de7-8829554a847a
 # ╟─01fdd92e-4033-4701-a5d4-7012c7c6c063
 # ╟─c5800a83-a57c-4eb0-9b6c-3c30266d0e3b
+# ╟─882f0ca5-e937-41c4-820b-23eae12e7c19
 # ╟─26255f99-1a36-43bf-b6f6-01cfa1e1c396
 # ╟─ce3423b6-8005-49da-b7c6-2e16e0675740
 # ╟─557b00c2-6a4b-4071-ba90-99b275dcadd8
