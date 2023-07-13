@@ -194,7 +194,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     control.verbose   = verbose
     control.abstol    = 1.0e-14
     control.reltol    = 1.0e-14
-    control.tol_round = 1.0e-14
+    control.max_round = 5
 
     if test == false
         println(&quot;*** done\n&quot;)
@@ -220,7 +220,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         plot_densities(Plotter, ctsys, solution, &quot;Equilibrium&quot;, label_density)
         Plotter.figure()
         plot_solution(Plotter,  ctsys, solution, &quot;Equilibrium&quot;, label_solution)
-        Plotter.figure()
     end
 
     if test == false
@@ -261,6 +260,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
 
     if plotting # plot solution and IV curve
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, &quot;Applied voltage Δu = $(biasValues[end])&quot;,  label_energy)
         Plotter.figure()
         plot_solution(Plotter, ctsys, solution, &quot;Applied voltage Δu = $(biasValues[end])&quot;,  label_solution, plotGridpoints = true)
@@ -276,7 +276,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 end #  main
 
 function test()
-    testval = 1.4676876302354516
+    testval = 1.4676876548796856
     main(test = true, unknown_storage=:dense) ≈ testval &amp;&amp; main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
@@ -284,4 +284,4 @@ if test == false
     println(&quot;This message should show when the PIN module is successfully recompiled.&quot;)
 end
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex101_PIN/">« GaAs diode (1D).</a><a class="docs-footer-nextpage" href="../Ex103_PSC/">PSC device without mobile ions (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 24 April 2023 11:02">Monday 24 April 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex101_PIN/">« GaAs diode (1D).</a><a class="docs-footer-nextpage" href="../Ex103_PSC/">PSC device without mobile ions (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Thursday 13 July 2023 13:24">Thursday 13 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
