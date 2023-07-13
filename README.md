@@ -20,7 +20,7 @@ the semiconductor drift-diffusion equations via the Voronoi finite volume method
 - thermodynamically consistent, physics preserving numerical methods
 - different charge carrier statistics per species (Boltzmann, Blakemore, Fermi-Dirac)
 
-`ChargeTransport.jl` is a free software. For research purposes you may use it under the terms of the GNU Affero General Public License (AGPL). As a company you may contact any of the authors directly to obtain a commercial license. If you use this package in your work, please cite it according to [CITATION.bib](https://raw.githubusercontent.com/PatricioFarrell/ChargeTransport.jl/master/CITATION.bib).
+`ChargeTransport.jl` is a free software. For research purposes you may use it under the terms of the GNU Affero General Public License (AGPL). As a company you may contact any of the authors directly to obtain a commercial license. If you use this package in your work, you can download the citation information in the "About" section.
 
 
 <img src="docs/src/images/2D-example.png" >
@@ -33,9 +33,8 @@ the semiconductor drift-diffusion equations via the Voronoi finite volume method
 
 [2.] D. Abdel, P. Vágner, J. Fuhrmann and P. Farrell. [Modelling charge transport in perovskite solar cells: Potential-based and limiting ion depletion.](https://www.sciencedirect.com/science/article/abs/pii/S0013468621009865) Electrochimica Acta 390 (2021).
 
-[3.] D. Abdel, C. Chainais-Hillairet, P. Farrell and M. Herda. [Numerical analysis of a finite volume scheme for charge transport in perovskite solar cells.](https://doi.org/10.48550/arXiv.2209.07934) preprint (2022).
+[3.] D. Abdel, C. Chainais-Hillairet, P. Farrell and M. Herda. [Numerical analysis of a finite volume scheme for charge transport in perovskite solar cells.](https://doi.org/10.1093/imanum/drad034) IMA Journal of Numerical Analysis (2023).
 
-[4.] D. Abdel, N. E. Courtier and P. Farrell. [Volume exclusion effects in perovskite charge transport modeling.](https://doi.org/10.20347/WIAS.PREPRINT.2965) preprint (2022).
+[4.] D. Abdel, N. E. Courtier and P. Farrell. [Volume exclusion effects in perovskite charge transport modeling.](https://doi.org/10.20347/WIAS.PREPRINT.2965) Optical and Quantum Electronics (accepted) (2023).
 
-[5.] B. Spetzler, D. Abdel, F. Schwierz, M. Ziegler and P. Farrell. [The role of mobile point defects in two-dimensional memristive devices.](
-https://doi.org/10.48550/arXiv.2304.06527) preprint (2023).
+[5.] B. Spetzler, D. Abdel, F. Schwierz, M. Ziegler and P. Farrell. [The role of mobile point defects in two-dimensional memristive devices.](https://doi.org/10.48550/arXiv.2304.06527) preprint (2023).
