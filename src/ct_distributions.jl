@@ -101,10 +101,6 @@ function plotDistributions(;Plotter=nothing)
 
     Plotter.close()
 
-    rcParams = Plotter.PyDict(Plotter.matplotlib."rcParams")
-    rcParams["font.size"] = 12
-    rcParams["font.sans-serif"] = "Arial"
-
     x = -5:0.1:700;
 
     Plotter.semilogy(x, FermiDiracOneHalfBednarczyk.(x), label="\$F_{1/2}  \$ (Bednarczyk)");
@@ -118,6 +114,7 @@ function plotDistributions(;Plotter=nothing)
     Plotter.ylabel("\$\\mathcal{F}(\\eta)\$")
     Plotter.title("Distributions")
     Plotter.legend()
+    Plotter.grid()
 
     Plotter.show();
 end
@@ -128,34 +125,31 @@ $(TYPEDSIGNATURES)
 
 Plot diffusion enhancements.
 """
-function plotDiffusionEnhancements()
+function plotDiffusionEnhancements(;Plotter=nothing)
 
-    PyPlot.close()
-
-    rcParams = PyPlot.PyDict(PyPlot.matplotlib."rcParams")
-    rcParams["font.size"] = 12
-    rcParams["font.sans-serif"] = "Arial"
+    Plotter.close()
 
     x = -5:0.01:10;
 
     f = ChargeTransport.FermiDiracOneHalfBednarczyk; df = x -> ForwardDiff.derivative(f,x)
-    PyPlot.semilogy(x, f.(x)./df.(x), label="\$F_{1/2}\$");
+    Plotter.semilogy(x, f.(x)./df.(x), label="\$F_{1/2}\$");
 
     f = ChargeTransport.Boltzmann; df = x -> ForwardDiff.derivative(f,x)
-    PyPlot.semilogy(x, f.(x)./df.(x), label="Boltzmann");
+    Plotter.semilogy(x, f.(x)./df.(x), label="Boltzmann");
 
     f = ChargeTransport.Blakemore; df = x -> ForwardDiff.derivative(f,x)
-    PyPlot.semilogy(x, f.(x)./df.(x), label="Blakemore (\$\\gamma=0.27\$)");
+    Plotter.semilogy(x, f.(x)./df.(x), label="Blakemore (\$\\gamma=0.27\$)");
 
     f = ChargeTransport.degenerateLimit; df = x -> ForwardDiff.derivative(f,x)
-    PyPlot.semilogy(x, f.(x)./df.(x), label="degenerate limit");
+    Plotter.semilogy(x, f.(x)./df.(x), label="degenerate limit");
 
-    PyPlot.xlabel("\$\\eta\$")
-    PyPlot.ylabel("\$g(\\eta)\$")
-    PyPlot.title("Diffusion Enhancements")
-    PyPlot.legend()
+    Plotter.xlabel("\$\\eta\$")
+    Plotter.ylabel("\$g(\\eta)\$")
+    Plotter.title("Diffusion Enhancements")
+    Plotter.legend()
+    Plotter.grid()
 
-    PyPlot.show();
+    Plotter.show();
 end
 
 
