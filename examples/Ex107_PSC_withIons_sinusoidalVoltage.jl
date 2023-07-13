@@ -90,7 +90,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -354,6 +353,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"
         label_density[iphia]   = "\$ n_a \$";      label_solution[iphia]  = "\$ \\varphi_a\$"
 
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
@@ -411,6 +411,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## res = [biasValues IV];
 
     if plotting
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution,"Final time \$ t \$ = $(endTime); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
@@ -426,7 +427,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -1.185468188743152
+    testval = -1.1854681746733549
     main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

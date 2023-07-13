@@ -353,7 +353,7 @@ end # main
 
 
 function test()
-    testval = -2.221100737029875
+    testval = -2.221100727126597
     main(test = true) ≈ testval
 end
 

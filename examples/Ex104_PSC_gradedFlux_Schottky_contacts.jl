@@ -133,7 +133,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -391,12 +390,12 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
 
+        Plotter.figure()
         plot_energies(Plotter,  ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution, "Equilibrium", label_density)
         Plotter.figure()
         plot_solution(Plotter,  ctsys, solution, "Equilibrium", label_solution)
-        Plotter.figure()
     end
 
     if test == false
@@ -427,6 +426,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## plotting
     if plotting
+        Plotter.figure()
         plot_energies(Plotter,  ctsys, solution, "Applied voltage Δu = $maxBias", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $maxBias", label_density)
@@ -444,7 +444,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval= 0.11725154137942578
+    testval = 0.11725155336652363
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

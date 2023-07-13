@@ -80,7 +80,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -241,12 +240,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
 
         psi0 = electroNeutralSolution!(ctsys)
+        PyPlot.figure()
         plot_energies(Plotter, ctsys, label_BEE)
         Plotter.figure()
         plot_doping(Plotter, ctsys, label_density)
         Plotter.figure()
         plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=true)
-        Plotter.figure()
         println("*** done\n")
     end
     ################################################################################
@@ -320,6 +319,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## plot solution and IV curve
     if plotting
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution,  "Applied voltage Δu = $(biasValues[end])", label_energy,   plotGridpoints = false)
         Plotter.figure()
         plot_solution(Plotter, ctsys, solution,  "Applied voltage Δu = $(biasValues[end])", label_solution, plotGridpoints = true)
@@ -339,7 +339,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = 1.5068426773059806
+    testval = 1.5068426833371802
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

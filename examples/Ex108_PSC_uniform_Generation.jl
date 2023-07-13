@@ -90,7 +90,6 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -346,6 +345,7 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"
         label_density[iphia]   = "\$ n_a \$";      label_solution[iphia]  = "\$ \\varphi_a\$"
 
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
@@ -482,8 +482,8 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
     ##resForward = [biasValuesForward IVForward]
 
     if plotting
-        Plotter.figure()
 
+        Plotter.figure()
         plot_densities(Plotter, ctsys, solution, "\$ \\Delta u = $(biasValuesForward[end])\$; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$", label_density)
         ## ###############
         Plotter.figure()
@@ -494,9 +494,10 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.plot(biasValuesForward, IVForward.*(cm^2), label = "forward",  linewidth= 3, linestyle="--", color="red")
         Plotter.plot(biasValuesReverse, IVReverse.*(cm^2), label = "reverse",  linewidth= 3, linestyle="--", color="blue")
         Plotter.legend()
+        PyPlot.grid()
         Plotter.xlabel("Applied Voltage [V]")
         Plotter.ylabel("current density [A \$ cm^{-2}\$ ]")
-        Plotter.title("\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (without internal BC)")
+        Plotter.title("\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ ")
         Plotter.tight_layout()
     end
 
@@ -506,7 +507,7 @@ function main(;n = 4, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -0.5580791486006006
+    testval = -0.5580791721211548
     main(test = true, unknown_storage=:sparse) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

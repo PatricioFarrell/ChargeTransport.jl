@@ -425,6 +425,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## ################
         Plotter.figure()
         Plotter.plot(biasValues, IV.*(cm)^2/height, label = "\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (without internal BC)",  linewidth= 3, linestyle="--", color="red")
+        PyPlot.grid()
         Plotter.title("Forward; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ ")
         Plotter.ylabel("total current [A]") #
         Plotter.xlabel("Applied Voltage [V]")
@@ -440,7 +441,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -4.067614136332431
+    testval = -4.06761414245041
     main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

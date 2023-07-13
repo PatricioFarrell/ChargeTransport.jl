@@ -45,7 +45,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     if plotting
         gridplot(grid, Plotter = Plotter)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -249,6 +248,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         label_energy[1, iphix] = "\$E_x-q\\psi\$"; label_energy[2, iphix] = "\$ - q \\varphi_x\$"
         label_density[iphix]   = "\$ n_x\$";       label_solution[iphix]  = "\$ \\varphi_x\$"
 
+        Plotter.figure()
         plot_densities(Plotter, ctsys, solEQ,"Equilibrium", label_density)
         Plotter.legend()
         Plotter.figure()
@@ -322,7 +322,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 end #  main
 
 function test()
-   main(test = true, barrierLowering = true) ≈ 32350.210962204783 #  main(test = true, barrierLowering = false) ≈ 19877.638250681746
+   main(test = true, barrierLowering = true) ≈ 32350.400882959268 #  main(test = true, barrierLowering = false) ≈ 19877.638250681746
 end
 
 

@@ -208,7 +208,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     control.verbose   = verbose
     control.abstol    = 1.0e-14
     control.reltol    = 1.0e-14
-    control.tol_round = 1.0e-14
+    control.max_round = 5
 
     if test == false
         println("*** done\n")
@@ -234,7 +234,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
         plot_densities(Plotter, ctsys, solution, "Equilibrium", label_density)
         Plotter.figure()
         plot_solution(Plotter,  ctsys, solution, "Equilibrium", label_solution)
-        Plotter.figure()
     end
 
     if test == false
@@ -279,6 +278,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
 
     if plotting # plot solution and IV curve
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])",  label_energy)
         Plotter.figure()
         plot_solution(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])",  label_solution, plotGridpoints = true)
@@ -294,7 +294,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 end #  main
 
 function test()
-    testval = 1.4676876302354516
+    testval = 1.4676876548796856
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

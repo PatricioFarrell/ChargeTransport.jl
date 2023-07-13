@@ -93,7 +93,6 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -398,8 +397,8 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"; label_BEE[iphia] = "\$E_a\$"
         label_density[iphia]   = "\$ n_a \$";      label_solution[iphia]  = "\$ \\varphi_a\$"
 
+        Plotter.figure()
         plot_densities(Plotter, ctsys, solution, "Initial condition", label_density)
-        Plotter.legend()
         Plotter.figure()
         plot_solution(Plotter, ctsys, solution, "Initial condition", label_solution)
     end
@@ -422,8 +421,8 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     if plotting
         tsol = sol(tend)
+        Plotter.figure()
         plot_densities(Plotter, ctsys, tsol, "Densities at end time", label_density)
-        Plotter.legend()
         Plotter.figure()
         plot_solution(Plotter, ctsys, tsol, "Solution at end time", label_solution)
     end
@@ -550,7 +549,7 @@ function main(;n = 8, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -1.0976590711344825
+    testval = -1.0976590528629204
     main(test = true) ≈ testval
 end
 

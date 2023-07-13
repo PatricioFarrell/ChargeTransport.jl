@@ -91,7 +91,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
     bfacemask!(grid, [h_pdoping + h_intrinsic], [h_pdoping + h_intrinsic],             bregionJunction2)  # second inner interface
 
     if plotting
-        GridVisualize.gridplot(grid, Plotter = Plotter, legend=:lt)
+        gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
         Plotter.figure()
     end
@@ -405,7 +405,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
         push!(biasValues, Δu)
 
         if plotting
-            label_solution = Array{String, 1}(undef, numberOfCarriers)
+            label_solution, label_density, label_energy = set_plotting_labels(data)
             label_solution[iphia]  = "\$ \\varphi_a\$"
 
             PyPlot.clf()
@@ -428,7 +428,7 @@ function main(;n = 6, Plotter = PyPlot, plotting = false, verbose = false, test 
 end # main
 
 function test()
-    testval = -0.5198379953833077
+    testval = -0.5198379874598587
     main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

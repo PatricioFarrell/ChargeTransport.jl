@@ -97,7 +97,6 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -342,10 +341,10 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphia] = "\$E_a-q\\psi\$"; label_energy[2, iphia] = "\$ - q \\varphi_a\$"; label_BEE[iphia] = "\$E_a\$"
         label_density[iphia]   = "\$ n_a \$";      label_solution[iphia]  = "\$ \\varphi_a\$"
 
+        Plotter.figure()
         plot_energies(Plotter, ctsys, label_BEE)
         Plotter.figure()
         plot_doping(Plotter, ctsys, label_density)
-        Plotter.figure()
         println("*** done\n")
     end
     ################################################################################
@@ -375,6 +374,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     inival   = solution
 
     if plotting
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution,"Equilibrium; \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
@@ -432,6 +432,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## res = [biasValues IV];
 
     if plotting
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution,"bias \$\\Delta u\$ = $(endVoltage); \$E_a\$ =$(textEa)eV; \$N_a\$ =$textNa\$\\mathrm{cm}^{⁻3} \$", label_density)
@@ -446,7 +447,7 @@ function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -0.6305710078001884
+    testval = -0.6305710167794802
     main(test = true, unknown_storage=:dense) ≈ testval  && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

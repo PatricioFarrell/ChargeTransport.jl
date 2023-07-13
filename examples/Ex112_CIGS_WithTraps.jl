@@ -82,7 +82,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -321,12 +320,12 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         end
 
         ## ##### set legend for plotting routines #####
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution,"Equilibrium", label_density)
         Plotter.figure()
         plot_solution(Plotter, ctsys, solution, "Equilibrium", label_solution)
-        Plotter.figure()
     end
 
     if test == false
@@ -375,6 +374,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## plot solution and IV curve
     if plotting
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage) V", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution,"bias \$\\Delta u\$ = $(endVoltage) V", label_density)
@@ -403,8 +403,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval                  = 1.484831267714751
-    testvalAdditionalSpecies = 1.1334257666192746
+    testval                  = 1.484831264268335
+    testvalAdditionalSpecies = 1.1334257649339574
 
     main(test = true, AdditionalTrapSpecies = false) ≈ testval && main(test = true, AdditionalTrapSpecies = true) ≈ testvalAdditionalSpecies
 end
