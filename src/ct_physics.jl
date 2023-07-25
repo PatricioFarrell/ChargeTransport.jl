@@ -257,6 +257,25 @@ function get_density(sol, ireg::Int64, ctsys, icc::QType)
     return Ncc .* data.F[icc].(eta)
 
 end
+
+
+"""
+$(TYPEDSIGNATURES)
+
+The densities for given potentials  ``\\varphi_\\alpha``
+and ``\\psi``
+
+"""
+function get_density(sol, data, icc, ireg, ;inode)
+
+    N   = data.params.densityOfStates[icc, ireg]
+    E   = data.params.bandEdgeEnergy[icc, ireg]
+    z   = data.params.chargeNumbers[icc]
+
+    eta = etaFunction(sol[data.index_psi, inode], sol[icc, inode], data.params.UT, E, z)
+
+    return N .* data.F[icc].(eta)
+end
 ###########################################################
 ###########################################################
 
