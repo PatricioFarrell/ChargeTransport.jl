@@ -18,6 +18,6 @@ authors:
     email: juergen.fuhrmann@wias-berlin.de
     affiliation: Weierstrass Institute Berlin
     orcid: 'https://orcid.org/0000-0003-4432-2434'
-doi: "10.5281/zenodo.7802105"
+doi: "10.5281/zenodo.6257906"
 license: AGPL-3.0
 repository-code: "https://github.com/PatricioFarrell/ChargeTransport.jl"
