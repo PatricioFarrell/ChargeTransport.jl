@@ -1357,12 +1357,9 @@ enable_species!(ctsys::System, ispecies, regions)                    = VoronoiFV
 enable_boundary_species!(ctsys::System, ispecies, regions)           = VoronoiFVM.enable_boundary_species!(ctsys.fvmsys, ispecies, regions)
 
 unknowns(ctsys::System)                                              = VoronoiFVM.unknowns(ctsys.fvmsys)
-# Solver Control and Newton Control are
-NewtonControl()                                                      = VoronoiFVM.NewtonControl()
-SolverControl()                                                      = VoronoiFVM.SolverControl()
 
 solve(ctsys::System; kwargs...)                                      = VoronoiFVM.solve(ctsys.fvmsys; kwargs...)
-## DA: This one will be deleted soon:
+## DA: This one will be deleted soon (in VoronoiFVM):
 solve!(solution, initialGuess, ctsys, ;control=control, tstep=tstep) = VoronoiFVM.solve!(solution, initialGuess, ctsys.fvmsys, control=control, tstep=tstep)
 
 TestFunctionFactory(ctsys::System)                                   = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
@@ -1370,6 +1367,23 @@ integrate(ctsys::System, tf, solution, inival, Δt)                   = VoronoiF
 integrate(ctsys::System, tf, solution)                               = VoronoiFVM.integrate(ctsys.fvmsys, tf, solution)
 testfunction(factory::VoronoiFVM.TestFunctionFactory, bc0, bc1)      = VoronoiFVM.testfunction(factory::VoronoiFVM.TestFunctionFactory, bc0, bc1)
 
+
+# Solver Control and Newton Control are the same
+function NewtonControl()
+
+    control                   = VoronoiFVM.SolverControl()
+    control.handle_exceptions = true # put by default handle exceptions to true
+
+    return control
+end
+
+function SolverControl()
+
+    control                   = VoronoiFVM.SolverControl()
+    control.handle_exceptions = true # put by default handle exceptions to true
+
+    return control
+end
 ###########################################################
 ###########################################################
 
@@ -1406,7 +1420,9 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
     # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
     I      = collect(nonlinear_steps:-1:0.0)
     LAMBDA = 10 .^ (-I)
-    prepend!(LAMBDA, 0.0)
+    if ctsys.fvmsys.physics.data.boundaryType[1] != SchottkyBarrierLowering
+        prepend!(LAMBDA, 0.0)
+    end
 
     for i in eachindex(LAMBDA)
 
