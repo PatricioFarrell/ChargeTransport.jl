@@ -1349,6 +1349,14 @@ function __set_contact!(ctsys, ibreg, Δu, ::Type{OhmicContact})
 
 end
 
+
+function __set_contact!(ctsys, ibreg, Δu, ::Type{MixedOhmicSchottkyContact})
+
+    ctsys.fvmsys.physics.data.params.contactVoltage[ibreg] = Δu
+    ctsys.data.params.contactVoltage[ibreg]                = Δu
+
+end
+
 ###########################################################
 ###########################################################
 # Wrappers for methods of VoronoiFVM

@@ -35,7 +35,7 @@ export QType
 export QFModelType, DiscontQF, ContQF
 
 export OuterBoundaryModelType, OuterBoundaryModelType, InterfaceModelType
-export OhmicContact, SchottkyContact, SchottkyBarrierLowering
+export OhmicContact, SchottkyContact, SchottkyBarrierLowering, MixedOhmicSchottkyContact
 export InterfaceNone, InterfaceRecombination
 
 export ModelType, Transient, Stationary

@@ -313,11 +313,11 @@ assuming a bipolar semiconductor. In general, we have for some given charge numb
 
 where ``C_\\alpha`` corresponds to some doping w.r.t. the species ``\\alpha``.
 
-The boundary conditions for the charge carriers are set in the main file. Hence,
+The boundary conditions for electrons and holes are dirichlet conditions, where
 
-``f[n_\\alpha] = 0```
+`` \\varphi_{\\alpha} = U```
 
-for all charge carriers ``\\alpha``.
+with ``U`` as an applied voltage.
 """
 function breaction!(f, u, bnode, data, ::Type{OhmicContact})
 
@@ -439,6 +439,42 @@ function breaction!(f, u, bnode, data, ::Type{SchottkyContact})
 
 end
 
+###########################################################################
+###########################################################################
+"""
+$(TYPEDSIGNATURES)
+A mixed Schottky-Ohmic boundary type condition, where we impose on the electric potential (Schottky)
+
+``\\psi = - \\phi_S/q + U, ``
+
+with  ``\\phi_S`` as given value (non-negative Schottky barrier) and ``U`` to the applied voltage. The quantitity ``\\phi_S`` needs to be specified in the main file.
+For eletrons and holes we assume the following (Ohmic)
+
+`` \\varphi_{\\alpha} = U``.
+"""
+
+function breaction!(f, u, bnode, data, ::Type{MixedOhmicSchottkyContact})
+
+    iphin     = data.bulkRecombination.iphin # integer index of φ_n
+    iphip     = data.bulkRecombination.iphip # integer index of φ_p
+    ipsiIndex = length(data.chargeCarrierList) + 1 # This is necessary, since passing something other than an Integer in boundary_dirichlet!() causes allocations
+
+    params    = data.params
+    Ec        = params.bBandEdgeEnergy[iphin, bnode.region]
+    Δu        = params.contactVoltage[bnode.region] + data.contactVoltageFunction[bnode.region](bnode.time)
+
+
+    # electric potential BC
+    boundary_dirichlet!(f, u, bnode, species=ipsiIndex, region=bnode.region, value=(- (params.SchottkyBarrier[bnode.region]  - Ec)/q) + Δu)
+
+    # electrons and holes boundary condition
+    boundary_dirichlet!(f, u, bnode, species = iphin, region=bnode.region, value=Δu)
+    boundary_dirichlet!(f, u, bnode, species = iphip, region=bnode.region, value=Δu)
+
+end
+
+###########################################################################
+###########################################################################
 
 """
 $(TYPEDSIGNATURES)
