@@ -178,9 +178,9 @@ function plot_energies(Plotter, ctsys, solution, title, label_energy, ;plotGridp
                 end
                 ## Note that this implies a 1D plot, for multidimensional plots, you may work with
                 ## GridVisualize.jl or write your own code.
-                Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, label = label1, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+                Plotter.plot(subg[Coordinates]', data.params.chargeNumbers[icc] .* (solpsi .- Ecc./q), label = label1, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
 
-                Plotter.plot(subg[Coordinates]', - solcc, label = label2, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
+                Plotter.plot(subg[Coordinates]', data.params.chargeNumbers[icc].* solcc, label = label2, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
 
                 count = count + 1
             end
@@ -207,9 +207,9 @@ function plot_energies(Plotter, ctsys, solution, title, label_energy, ;plotGridp
                 end
                 ## Note that this implies a 1D plot, for multidimensional plots, you may work with
                 ## GridVisualize.jl or write your own code.
-                Plotter.plot(subg[Coordinates]', Ecc./q .- solpsi, label = label1, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
+                Plotter.plot(subg[Coordinates]', data.params.chargeNumbers[icc] .* (solpsi .- Ecc./q), label = label1, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[1])
 
-                Plotter.plot(subg[Coordinates]', - solcc, label = label2, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
+                Plotter.plot(subg[Coordinates]', data.params.chargeNumbers[icc].* solcc, label = label2, marker = marker, linewidth = 2, color = colors[icc], linestyle = linestyles[2])
 
                 count = count + 1
             end
