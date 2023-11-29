@@ -62,6 +62,7 @@ include("ct_physics.jl")
 export get_BEE, get_DOS, etaFunction, get_density
 export breaction!, bstorage!, reaction!, storage!, flux!
 export zeroVoltage
+export BeerLambert
 ##################################################################
 
 include("ct_system.jl")

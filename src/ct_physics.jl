@@ -951,11 +951,24 @@ function generation(data, ireg, node, ::Type{GenerationBeerLambert})
 
     params = data.params
 
-    return data.λ2 * params.generationIncidentPhotonFlux[ireg] * params.generationAbsorption[ireg] * exp( - params.invertedIllumination * params.generationAbsorption[ireg] * (node - params.generationPeak))
+    return data.λ2 .* params.generationIncidentPhotonFlux[ireg] .* params.generationAbsorption[ireg] .* exp.( - params.invertedIllumination .* params.generationAbsorption[ireg] .* (node .- params.generationPeak))
 
 end
 
 generation(data, ireg, node, ::Type{GenerationNone}) = 0.0
+
+"""
+$(SIGNATURES)
+Beer-Lambert function for the visualization of this type of photogeneration profile.
+"""
+
+function BeerLambert(ctsys, ireg, node)
+
+    data = ctsys.fvmsys.physics.data
+
+    generation(data, ireg, node, GenerationBeerLambert)
+
+end
 
 ##########################################################
 ##########################################################
