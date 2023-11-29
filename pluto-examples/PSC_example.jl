@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.22
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -56,6 +56,16 @@ md"""
 # Device set-up
 """
 
+# ╔═╡ c0f9f418-0c3b-428f-bd5b-e4d3d1ab9be2
+md"""
+For illustrative purposes we use a one-dimensional non-uniform grid. The used parameters are estimated, but represent the following set-up (n-i-p):
+
+                            Ti02 | MAPI | spiro-OMeTAD.
+
+We assume ohmic contacts on both sides of the boundary and the voltage is applied at the right acceptor boundary.
+
+"""
+
 # ╔═╡ 18823ee0-988d-459c-b340-7dfed6092b22
 begin
 
@@ -93,24 +103,24 @@ begin
     coord_n_g        = geomspace(h_ndoping/2,
                                  h_ndoping,
                                  h_ndoping/(0.7*δ),
-                                 h_ndoping/(1.1*δ),
+                                 h_ndoping/(1.0*δ),
                                  tol=t)
     coord_i_g1       = geomspace(h_ndoping,
                                  h_ndoping+h_intrinsic/k,
-                                 h_intrinsic/(2.8*δ),
-                                 h_intrinsic/(2.1*δ),
+                                 h_intrinsic/(2.6*δ),
+                                 h_intrinsic/(1.8*δ),
                                  tol=t)
     coord_i_g2       = geomspace(h_ndoping+h_intrinsic/k,
                                  h_ndoping+h_intrinsic,
-                                 h_intrinsic/(2.1*δ),
-                                 h_intrinsic/(2.8*δ),
+                                 h_intrinsic/(1.8*δ),
+                                 h_intrinsic/(2.6*δ),
                                  tol=t)
     coord_p_g        = geomspace(h_ndoping+h_intrinsic,
                                  h_ndoping+h_intrinsic+h_pdoping/2,
-                                 h_pdoping/(1.6*δ),
-                                 h_pdoping/(1.6*δ),
+                                 h_pdoping/(1.4*δ),
+                                 h_pdoping/(0.9*δ),
                                  tol=t)
-    coord_p_u        = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(1.3*δ)))
+    coord_p_u        = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(1.1*δ)))
 
     coord            = glue(coord_n_u, coord_n_g,  tol=10*t)
     coord            = glue(coord,     coord_i_g1, tol=10*t)
@@ -130,13 +140,9 @@ begin
 	gridplot(grid, Plotter = PyPlot, legend=:lt)
 end
 
-# ╔═╡ c0f9f418-0c3b-428f-bd5b-e4d3d1ab9be2
+# ╔═╡ bb701b88-6a76-4e77-ad81-a776ebfa5ec4
 md"""
-For illustrative purposes we use a one-dimensional non-uniform grid with $(length(coord)) number of nodes. The used parameters are estimated, but represent the following set-up (n-i-p):
-
-                            Ti02 | MAPI | spiro-OMeTAD.
-
-We assume ohmic contacts on both sides of the boundary and the voltage is applied at the right acceptor boundary.
+In total, we have $(length(coord)) number of nodes.
 
 """
 
@@ -149,26 +155,6 @@ md"""
 md"""
 We consider the device at a constant temperature T = 298 K with the following parameters for electrons, holes and anion vacancies. We assume that the device has an area of 0.1m x 0.1m.
 """
-
-# ╔═╡ 3685ff11-b2f1-4fc1-bde6-723bf59ca57f
-md"""
-| physical quantity |   $\quad$symbol$\quad$   |    $\quad$ETL$\quad$    | $\quad$intrinsic$\quad$ |    $\quad$HTL$\quad$    |   $\quad$unit$\quad$   |
-|-------------------|--------------------------|-------------------------|------------------------------------|-------------------------|------------------------|
-|  layer thickness  |                 | 1.0xe-5 | 4.00e-5|  2.0e-5 |  cm  |
-|  conduction band-edge energy| $E_c$ | -4.0     | -3.7  | -3.4     | eV  |
-|  valence band-edge energy|    $E_v$ | -5.8     | -5.4  | -5.1     | eV  |
-|  conduction band-edge DOS|  $N_c$   | 5.0e19   | 8.1e19  | 5.0e19 | $1/\text{cm}^3$  |
-|  valence band-edge DOS|    $N_v$    | 5.0e19  | 5.8e19  | 5.0e19  | $1/\text{cm}^3$  |
-|  max vacancy concentration|    $N_x$    | --  | 1.0e21  | --  | $1/\text{cm}^3$  |
-|  electron mobility|  $\mu_n$   | 3.89   | 6.62e1  | 3.89e-1 | $\text{cm}^2/(Vs)$  |
-|  hole mobility|    $\mu_p$    | 3.89  | 6.62e1  | 3.89e-1  | $\text{cm}^2/(Vs)$  |
-|  vacancy mobility|    $\mu_a$    | --  | 3.93e-12  | --  | $\text{cm}^2/(Vs)$  |
-|  electric permittivity|    $\varepsilon_r$ | 10.0  | 24.1  | 3.0  |  |
-| donor doping density|    $C_n$    | 1.0e18  | --  | --  | $1/\text{cm}^3$ |
-| acceptor doping density|    $C_p$    | --  | --  | 1.0e18  | $1/\text{cm}^3$ |
-| average vacancy density|    $C_a$    | --  | 1.6e19  | --  | $1/\text{cm}^3$ |
-"""
-
 
 # ╔═╡ c72f9732-4fb3-485f-93e2-14999307d513
 begin
@@ -249,10 +235,31 @@ begin
     Nd               = 1.00e18               / (cm^3)
     Na               = 1.00e18               / (cm^3)
     C0               = 1.6e19                / (cm^3)
+	C                = [Nd, C0, Na]
 
 	UT               = kB * T / q
 	nothing;
 end
+
+# ╔═╡ 3685ff11-b2f1-4fc1-bde6-723bf59ca57f
+md"""
+| physical quantity |   $\quad$symbol$\quad$   |    $\quad$ETL$\quad$    | $\quad$intrinsic$\quad$ |    $\quad$HTL$\quad$    |   $\quad$unit$\quad$   |
+|-------------------|--------------------------|-------------------------|------------------------------------|-------------------------|------------------------|
+|  layer thickness  |                 | $((h_ndoping)/nm) | $((h_intrinsic)/nm) |  $((h_pdoping)/nm) |  nm  |
+|  conduction band-edge energy| $E_c$ | $(EC[1]/q)     | $(EC[2]/q)   | $(EC[3]/q)     | eV  |
+|  valence band-edge energy|    $E_v$ | $(EV[1]/q)     | $(EV[2]/q)   | $(EV[3]/q)      | eV  |
+|  conduction band-edge DOS|  $N_c$   | $(NC[1]*cm^3)   | $(NC[2]*cm^3)   | $(NC[3]*cm^3)  | $1/\text{cm}^3$  |
+|  valence band-edge DOS|    $N_v$    | $(NV[1]*cm^3)   | $(NV[2]*cm^3) | $(NV[3]*cm^3)  | $1/\text{cm}^3$  |
+|  max vacancy concentration|    $N_x$    | --  | $(Nanion*cm^3)  | --  | $1/\text{cm}^3$  |
+|  electron mobility|  $\mu_n$   | $(μn[1]/cm^2)   | $(μn[2]/cm^2)  | $(μn[3]/cm^2)  | $\text{cm}^2/(Vs)$  |
+|  hole mobility|    $\mu_p$    | $(μp[1]/cm^2)   | $(μp[2]/cm^2)   | $(μp[3]/cm^2)   | $\text{cm}^2/(Vs)$  |
+|  vacancy mobility|    $\mu_a$    | --  | $(μa[2]/cm^2)  | --  | $\text{cm}^2/(Vs)$  |
+|  electric permittivity|    $\varepsilon_r$ | $(ε[1])  | $(ε[2])  |$(ε[3])   |  |
+| donor doping density|    $C_n$    | $(C[1]*cm^3)  | --  | --  | $1/\text{cm}^3$ |
+| acceptor doping density|    $C_p$    | --  | --  | $(C[3]*cm^3)  | $1/\text{cm}^3$ |
+| average vacancy density|    $C_a$    | --  | $(C[2]*cm^3)  | --  | $1/\text{cm}^3$ |
+"""
+
 
 # ╔═╡ c19b9329-1c9e-4ab3-8216-ff50dcb89e19
 md"""
@@ -274,50 +281,49 @@ md"""
 If turned on, we use the following predefined parameters.
 """
 
-# ╔═╡ 66de390b-d0fd-48c4-93d4-50cb7bfc50cd
-md"""
-| physical quantity |   $\quad$symbol$\quad$   |    $\quad$HTL$\quad$    | $\quad$intrinsic$\quad$ |    $\quad$ETL$\quad$    |   $\quad$unit$\quad$   |
-|-------------------|--------------------------|-------------------------|------------------------------------|-------------------------|------------------------|
-| radiative recomb | $r_0$   | 6.3e-11 | 3.6e-12|  6.8e-11 |  $\text{cm}^3/s$  |
-| lifetime, electron | $\tau_n$   | 1.0e-6 | 1.0e-7|  1.0e-6 | s  |
-| lifetime, hole | $\tau_p$   | 1.0e-6 | 1.0e-7|  1.0e-6 | s  |
-| SRH trap energy | $E_\tau$   | -4.05 | -4.6 |  -5.0 | eV  |
-"""
-
 # ╔═╡ b0df6373-8d11-4581-9e42-62e3aee6c869
 begin
 
     ## radiative recombination
+	r0_d  = 6.8e-11               * cm^3 / s
+	r0_i  = 3.6e-12               * cm^3 / s
     r0_a  = 6.3e-11               * cm^3 / s
-    r0_i  = 3.6e-12               * cm^3 / s
-    r0_d  = 6.8e-11               * cm^3 / s
-
-    r0    = [r0_a, r0_i, r0_d]
+    
+    r0    = [r0_d, r0_i, r0_a]
 
     ## life times and trap densities
-    τn_a  = 1.0e-6                * s
-    τp_a  = 1.0e-6                * s
+    τn_d  = 1.0e-6                * s
+    τp_d  = 1.0e-6                * s
 
     τn_i  = 1.0e-7                * s
     τp_i  = 1.0e-7                * s
-    τn_d  = τn_a
-    τp_d  = τp_a
+    τn_a  = τn_d
+    τp_a  = τp_d
 
-    τn    = [τn_a, τn_i, τn_d]
-    τp    = [τp_a, τp_i, τp_d]
+    τn    = [τn_d, τn_i, τn_a]
+    τp    = [τp_d, τp_i, τp_a]
 
-    ## SRH trap energies (needed for calculation of trap_density! (SRH))
-    Ei_a  = -4.05                 * eV
-    Ei_i  = -4.60                 * eV
-    Ei_d  = -5.00                 * eV
-
-    EI    = [Ei_a, Ei_i, Ei_d]
+	## reference densities
+	nτ    = [7.93786e8, 6.15383e9, 6.01793e14] ./ (m^3)
+	pτ    = [1.81784e12  2.1087e11 1.14747e8] ./ (m^3)
+	
     ## Auger recombination
     Auger = 0.0
 
 	nothing;
 
 end
+
+# ╔═╡ 66de390b-d0fd-48c4-93d4-50cb7bfc50cd
+md"""
+| physical quantity |   $\quad$symbol$\quad$   |    $\quad$ETL$\quad$    | $\quad$intrinsic$\quad$ |    $\quad$HTL$\quad$    |   $\quad$unit$\quad$   |
+|-------------------|--------------------------|-------------------------|------------------------------------|-------------------------|------------------------|
+| radiative recomb | $r_0$   | $(r0[1]/cm^3) | $(r0[2]/cm^3) |  $(r0[3]/cm^3) |  $\text{cm}^3/s$  |
+| lifetime, electron | $\tau_n$   | $(τn[1]) | $(τn[2])|  $(τn[3]) | s  |
+| lifetime, hole | $\tau_p$   | $(τp[1]) | $(τp[2])|  $(τp[3]) | s  |
+| reference dens, electron | $n_{\tau,n}$   | $(nτ[1]) | $(nτ[2])|  $(nτ[3]) | $1/\text{m}^3$   |
+| reference dens, hole | $n_{\tau,p}$   | $(pτ[1]) | $(pτ[2])|  $(pτ[3]) | $1/\text{m}^3$   |
+"""
 
 # ╔═╡ 61155934-83a1-40ea-805e-2607fd8f9cd2
 md"""
@@ -489,8 +495,8 @@ begin
         params.recombinationRadiative[ireg]             = r0[ireg]
         params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
         params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
-        params.recombinationSRHTrapDensity[iphin, ireg] = trap_density!(iphin, ireg, data, EI[ireg])
-        params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, data, EI[ireg])
+        params.recombinationSRHTrapDensity[iphin, ireg] = nτ[ireg]
+        params.recombinationSRHTrapDensity[iphip, ireg] = pτ[ireg]
         params.recombinationAuger[iphin, ireg]          = Auger
         params.recombinationAuger[iphip, ireg]          = Auger
 
@@ -1064,7 +1070,7 @@ PyPlot = "~2.11.1"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.8.3"
+julia_version = "1.9.4"
 manifest_format = "2.0"
 project_hash = "760fa544de395d94671bd1a702aeeb6c4ec561ef"
 
@@ -1095,6 +1101,10 @@ deps = ["LinearAlgebra", "Requires"]
 git-tree-sha1 = "cc37d689f599e8df4f464b2fa3870ff7db7492ef"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 version = "3.6.1"
+weakdeps = ["StaticArrays"]
+
+    [deps.Adapt.extensions]
+    AdaptStaticArraysExt = "StaticArrays"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -1111,6 +1121,22 @@ deps = ["Adapt", "LinearAlgebra", "Requires", "SnoopPrecompile", "SparseArrays",
 git-tree-sha1 = "38911c7737e123b28182d89027f4216cfc8a9da7"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
 version = "7.4.3"
+
+    [deps.ArrayInterface.extensions]
+    ArrayInterfaceBandedMatricesExt = "BandedMatrices"
+    ArrayInterfaceBlockBandedMatricesExt = "BlockBandedMatrices"
+    ArrayInterfaceCUDAExt = "CUDA"
+    ArrayInterfaceGPUArraysCoreExt = "GPUArraysCore"
+    ArrayInterfaceStaticArraysCoreExt = "StaticArraysCore"
+    ArrayInterfaceTrackerExt = "Tracker"
+
+    [deps.ArrayInterface.weakdeps]
+    BandedMatrices = "aae01518-5342-5314-be14-df237901396f"
+    BlockBandedMatrices = "ffab5731-97b5-5995-9138-79e8c1846df0"
+    CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+    GPUArraysCore = "46192b85-c4d5-4398-a991-12ede77f4527"
+    StaticArraysCore = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
+    Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
 
 [[deps.ArrayInterfaceCore]]
 deps = ["LinearAlgebra", "SnoopPrecompile", "SparseArrays", "SuiteSparse"]
@@ -1172,10 +1198,14 @@ uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 version = "1.15.7"
 
 [[deps.ChangesOfVariables]]
-deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
+deps = ["LinearAlgebra", "Test"]
 git-tree-sha1 = "485193efd2176b88e6622a39a246f8c5b600e74e"
 uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
 version = "0.1.6"
+weakdeps = ["ChainRulesCore"]
+
+    [deps.ChangesOfVariables.extensions]
+    ChangesOfVariablesChainRulesCoreExt = "ChainRulesCore"
 
 [[deps.ChargeTransport]]
 deps = ["DocStringExtensions", "ExtendableGrids", "ForwardDiff", "GridVisualize", "Interpolations", "Printf", "PyPlot", "Roots", "SparseArrays", "Test", "VoronoiFVM"]
@@ -1236,15 +1266,19 @@ uuid = "bbf7d656-a473-5ed7-a52c-81e309532950"
 version = "0.3.0"
 
 [[deps.Compat]]
-deps = ["Dates", "LinearAlgebra", "UUIDs"]
+deps = ["UUIDs"]
 git-tree-sha1 = "7a60c856b9fa189eb34f5f8a6f6b5529b7942957"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
 version = "4.6.1"
+weakdeps = ["Dates", "LinearAlgebra"]
+
+    [deps.Compat.extensions]
+    CompatLinearAlgebraExt = "LinearAlgebra"
 
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "0.5.2+0"
+version = "1.0.5+0"
 
 [[deps.CompositeTypes]]
 git-tree-sha1 = "02d2316b7ffceff992f3096ae48c7829a8aa0638"
@@ -1262,6 +1296,11 @@ deps = ["LinearAlgebra"]
 git-tree-sha1 = "89a9db8d28102b094992472d333674bd1a83ce2a"
 uuid = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
 version = "1.5.1"
+weakdeps = ["IntervalSets", "StaticArrays"]
+
+    [deps.ConstructionBase.extensions]
+    IntervalSetsExt = "IntervalSets"
+    StaticArraysExt = "StaticArrays"
 
 [[deps.CpuId]]
 deps = ["Markdown"]
@@ -1312,10 +1351,15 @@ deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[deps.Distributions]]
-deps = ["ChainRulesCore", "DensityInterface", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns", "Test"]
+deps = ["FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns", "Test"]
 git-tree-sha1 = "13027f188d26206b9e7b863036f87d2f2e7d013a"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
 version = "0.25.87"
+weakdeps = ["ChainRulesCore", "DensityInterface"]
+
+    [deps.Distributions.extensions]
+    DistributionsChainRulesCoreExt = "ChainRulesCore"
+    DistributionsDensityInterfaceExt = "DensityInterface"
 
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
@@ -1425,10 +1469,14 @@ uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
 version = "0.4.2"
 
 [[deps.ForwardDiff]]
-deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions", "StaticArrays"]
+deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions"]
 git-tree-sha1 = "00e252f4d706b3d55a8863432e742bf5717b498d"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
 version = "0.10.35"
+weakdeps = ["StaticArrays"]
+
+    [deps.ForwardDiff.extensions]
+    ForwardDiffStaticArraysExt = "StaticArrays"
 
 [[deps.FunctionWrappers]]
 git-tree-sha1 = "d62485945ce5ae9c0c48f124a84998d755bae00e"
@@ -1660,12 +1708,12 @@ version = "0.15.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
+version = "0.6.4"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
+version = "8.4.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -1674,7 +1722,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
+version = "1.11.0+1"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1692,7 +1740,7 @@ uuid = "9c8b4983-aa76-5018-a973-4c85ecc9e179"
 version = "0.9.0"
 
 [[deps.LinearAlgebra]]
-deps = ["Libdl", "libblastrampoline_jll"]
+deps = ["Libdl", "OpenBLAS_jll", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LinearSolve]]
@@ -1701,20 +1749,37 @@ git-tree-sha1 = "1d3e720d603557d697fedc036bd1af43fe7b3474"
 uuid = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
 version = "1.41.1"
 
+    [deps.LinearSolve.extensions]
+    LinearSolveHYPRE = "HYPRE"
+
+    [deps.LinearSolve.weakdeps]
+    HYPRE = "b5ffcf37-a2bd-41ab-a3da-4bd9bc8ad771"
+
 [[deps.LogExpFunctions]]
-deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
+deps = ["DocStringExtensions", "IrrationalConstants", "LinearAlgebra"]
 git-tree-sha1 = "0a1b7c2863e44523180fdb3146534e265a91870b"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
 version = "0.3.23"
+weakdeps = ["ChainRulesCore", "ChangesOfVariables", "InverseFunctions"]
+
+    [deps.LogExpFunctions.extensions]
+    LogExpFunctionsChainRulesCoreExt = "ChainRulesCore"
+    LogExpFunctionsChangesOfVariablesExt = "ChangesOfVariables"
+    LogExpFunctionsInverseFunctionsExt = "InverseFunctions"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[deps.LoopVectorization]]
-deps = ["ArrayInterface", "ArrayInterfaceCore", "CPUSummary", "ChainRulesCore", "CloseOpenIntervals", "DocStringExtensions", "ForwardDiff", "HostCPUFeatures", "IfElse", "LayoutPointers", "LinearAlgebra", "OffsetArrays", "PolyesterWeave", "SIMDTypes", "SLEEFPirates", "SnoopPrecompile", "SpecialFunctions", "Static", "StaticArrayInterface", "ThreadingUtilities", "UnPack", "VectorizationBase"]
+deps = ["ArrayInterface", "ArrayInterfaceCore", "CPUSummary", "CloseOpenIntervals", "DocStringExtensions", "HostCPUFeatures", "IfElse", "LayoutPointers", "LinearAlgebra", "OffsetArrays", "PolyesterWeave", "SIMDTypes", "SLEEFPirates", "SnoopPrecompile", "Static", "StaticArrayInterface", "ThreadingUtilities", "UnPack", "VectorizationBase"]
 git-tree-sha1 = "a282dbdbc2860134d6809acd951543ce359bcf15"
 uuid = "bdcacae8-1622-11e9-2a5c-532679323890"
 version = "0.12.155"
+weakdeps = ["ChainRulesCore", "ForwardDiff", "SpecialFunctions"]
+
+    [deps.LoopVectorization.extensions]
+    ForwardDiffExt = ["ChainRulesCore", "ForwardDiff"]
+    SpecialFunctionsExt = "SpecialFunctions"
 
 [[deps.MIMEs]]
 git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
@@ -1739,7 +1804,7 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
-version = "2.28.0+0"
+version = "2.28.2+0"
 
 [[deps.Missings]]
 deps = ["DataAPI"]
@@ -1752,7 +1817,7 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2022.2.1"
+version = "2022.10.11"
 
 [[deps.MultivariatePolynomials]]
 deps = ["ChainRulesCore", "DataStructures", "LinearAlgebra", "MutableArithmetics"]
@@ -1790,7 +1855,7 @@ version = "1.12.9"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.20+0"
+version = "0.3.21+4"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1821,9 +1886,9 @@ uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
 version = "2.5.8"
 
 [[deps.Pkg]]
-deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
+deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.8.0"
+version = "1.9.2"
 
 [[deps.PkgVersion]]
 deps = ["Pkg"]
@@ -1854,6 +1919,12 @@ deps = ["Adapt", "ArrayInterface", "ForwardDiff", "Requires"]
 git-tree-sha1 = "f739b1b3cc7b9949af3b35089931f2b58c289163"
 uuid = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
 version = "0.4.12"
+
+    [deps.PreallocationTools.extensions]
+    PreallocationToolsReverseDiffExt = "ReverseDiff"
+
+    [deps.PreallocationTools.weakdeps]
+    ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -1921,6 +1992,16 @@ git-tree-sha1 = "140cddd2c457e4ebb0cdc7c2fd14a7fbfbdf206e"
 uuid = "731186ca-8d62-57ce-b412-fbd966d074cd"
 version = "2.38.3"
 
+    [deps.RecursiveArrayTools.extensions]
+    RecursiveArrayToolsMeasurementsExt = "Measurements"
+    RecursiveArrayToolsTrackerExt = "Tracker"
+    RecursiveArrayToolsZygoteExt = "Zygote"
+
+    [deps.RecursiveArrayTools.weakdeps]
+    Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
+    Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
+    Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+
 [[deps.RecursiveFactorization]]
 deps = ["LinearAlgebra", "LoopVectorization", "Polyester", "SnoopPrecompile", "StrideArraysCore", "TriangularSolve"]
 git-tree-sha1 = "9088515ad915c99026beb5436d0a09cd8c18163e"
@@ -1955,6 +2036,10 @@ deps = ["ChainRulesCore", "CommonSolve", "Printf", "Setfield"]
 git-tree-sha1 = "b45deea4566988994ebb8fb80aa438a295995a6e"
 uuid = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
 version = "2.0.10"
+weakdeps = ["ForwardDiff"]
+
+    [deps.Roots.extensions]
+    RootsForwardDiffExt = "ForwardDiff"
 
 [[deps.RuntimeGeneratedFunctions]]
 deps = ["ExprTools", "SHA", "Serialization"]
@@ -2024,7 +2109,7 @@ uuid = "a2af1166-a08f-5f64-846c-94a0d3cef48c"
 version = "1.1.0"
 
 [[deps.SparseArrays]]
-deps = ["LinearAlgebra", "Random"]
+deps = ["Libdl", "LinearAlgebra", "Random", "Serialization", "SuiteSparse_jll"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[deps.SparseDiffTools]]
@@ -2033,6 +2118,12 @@ git-tree-sha1 = "aa5b879ce5fcd8adb0c069d93fa2567d9b68b448"
 uuid = "47a9eef4-7e08-11e9-0b38-333d64bd3804"
 version = "2.0.0"
 
+    [deps.SparseDiffTools.extensions]
+    SparseDiffToolsZygote = "Zygote"
+
+    [deps.SparseDiffTools.weakdeps]
+    Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+
 [[deps.Sparspak]]
 deps = ["Libdl", "LinearAlgebra", "Logging", "OffsetArrays", "Printf", "SparseArrays", "Test"]
 git-tree-sha1 = "342cf4b449c299d8d1ceaf00b7a49f4fbc7940e7"
@@ -2040,10 +2131,14 @@ uuid = "e56a9233-b9d6-4f03-8d0f-1825330902ac"
 version = "0.3.9"
 
 [[deps.SpecialFunctions]]
-deps = ["ChainRulesCore", "IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
+deps = ["IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
 git-tree-sha1 = "ef28127915f4229c971eb43f3fc075dd3fe91880"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "2.2.0"
+weakdeps = ["ChainRulesCore"]
+
+    [deps.SpecialFunctions.extensions]
+    SpecialFunctionsChainRulesCoreExt = "ChainRulesCore"
 
 [[deps.Static]]
 deps = ["IfElse"]
@@ -2056,6 +2151,11 @@ deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "Requires", "Snoo
 git-tree-sha1 = "fd5f417fd7e103c121b0a0b4a6902f03991111f4"
 uuid = "0d7ed370-da01-4f52-bd93-41d350b8b718"
 version = "1.3.0"
+weakdeps = ["OffsetArrays", "StaticArrays"]
+
+    [deps.StaticArrayInterface.extensions]
+    StaticArrayInterfaceOffsetArraysExt = "OffsetArrays"
+    StaticArrayInterfaceStaticArraysExt = "StaticArrays"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "Random", "StaticArraysCore", "Statistics"]
@@ -2071,6 +2171,7 @@ version = "1.4.0"
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+version = "1.9.0"
 
 [[deps.StatsAPI]]
 deps = ["LinearAlgebra"]
@@ -2085,10 +2186,15 @@ uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.33.21"
 
 [[deps.StatsFuns]]
-deps = ["ChainRulesCore", "HypergeometricFunctions", "InverseFunctions", "IrrationalConstants", "LogExpFunctions", "Reexport", "Rmath", "SpecialFunctions"]
+deps = ["HypergeometricFunctions", "IrrationalConstants", "LogExpFunctions", "Reexport", "Rmath", "SpecialFunctions"]
 git-tree-sha1 = "f625d686d5a88bcd2b15cd81f18f98186fdc0c9a"
 uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 version = "1.3.0"
+weakdeps = ["ChainRulesCore", "InverseFunctions"]
+
+    [deps.StatsFuns.extensions]
+    StatsFunsChainRulesCoreExt = "ChainRulesCore"
+    StatsFunsInverseFunctionsExt = "InverseFunctions"
 
 [[deps.StrideArraysCore]]
 deps = ["ArrayInterface", "CloseOpenIntervals", "IfElse", "LayoutPointers", "ManualMemory", "SIMDTypes", "Static", "StaticArrayInterface", "ThreadingUtilities"]
@@ -2109,7 +2215,7 @@ uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 [[deps.SuiteSparse_jll]]
 deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
-version = "5.10.1+0"
+version = "5.10.1+6"
 
 [[deps.SymbolicIndexingInterface]]
 deps = ["DocStringExtensions"]
@@ -2132,7 +2238,7 @@ version = "5.2.0"
 [[deps.TOML]]
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
-version = "1.0.0"
+version = "1.0.3"
 
 [[deps.TableTraits]]
 deps = ["IteratorInterfaceExtensions"]
@@ -2149,7 +2255,7 @@ version = "1.10.1"
 [[deps.Tar]]
 deps = ["ArgTools", "SHA"]
 uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
-version = "1.10.1"
+version = "1.10.0"
 
 [[deps.TensorCore]]
 deps = ["LinearAlgebra"]
@@ -2269,17 +2375,17 @@ version = "2.10.3+0"
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.12+3"
+version = "1.2.13+0"
 
 [[deps.libblastrampoline_jll]]
-deps = ["Artifacts", "Libdl", "OpenBLAS_jll"]
+deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.1.1+0"
+version = "5.8.0+0"
 
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
+version = "1.52.0+1"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -2289,23 +2395,24 @@ version = "17.4.0+0"
 
 # ╔═╡ Cell order:
 # ╟─39e1f60f-cd7a-49b5-b569-b3321f68c2ac
-# ╟─b0138526-c79e-11ec-041a-156b0dfee367
+# ╠═b0138526-c79e-11ec-041a-156b0dfee367
 # ╟─6511e625-2af2-44c9-bc5c-d24e08109c3f
 # ╟─997e8130-8e2d-45f6-a6b9-5ed78782d2b0
 # ╟─1284fff2-af76-4d53-9444-233bde7cfaa9
 # ╟─c0f9f418-0c3b-428f-bd5b-e4d3d1ab9be2
+# ╟─bb701b88-6a76-4e77-ad81-a776ebfa5ec4
 # ╟─18823ee0-988d-459c-b340-7dfed6092b22
 # ╟─febcc48f-82ae-408a-b6a8-74cf3c76f61a
 # ╟─2d0bfda7-c23d-45b0-b3db-2000f1a291c3
-# ╟─3685ff11-b2f1-4fc1-bde6-723bf59ca57f
-# ╟─c72f9732-4fb3-485f-93e2-14999307d513
+# ╠═3685ff11-b2f1-4fc1-bde6-723bf59ca57f
+# ╠═c72f9732-4fb3-485f-93e2-14999307d513
 # ╟─c19b9329-1c9e-4ab3-8216-ff50dcb89e19
 # ╟─2a43a7a8-b930-4fca-bf50-90220a3bb431
 # ╟─5f0c398c-f389-4355-9f0e-6710c2b819a0
 # ╟─004e4101-dbf3-4527-bfb8-47da01c70182
-# ╟─66de390b-d0fd-48c4-93d4-50cb7bfc50cd
-# ╟─b0df6373-8d11-4581-9e42-62e3aee6c869
-# ╟─61155934-83a1-40ea-805e-2607fd8f9cd2
+# ╠═66de390b-d0fd-48c4-93d4-50cb7bfc50cd
+# ╠═b0df6373-8d11-4581-9e42-62e3aee6c869
+# ╠═61155934-83a1-40ea-805e-2607fd8f9cd2
 # ╟─380c5124-bd09-421f-9590-416400624374
 # ╟─c0177ece-44e4-4431-abd6-4f28a8037d26
 # ╟─afcc0f3b-47aa-4418-aead-67202fc56119
@@ -2313,15 +2420,15 @@ version = "17.4.0+0"
 # ╟─719df739-d611-4855-870c-64dc82444538
 # ╟─c305fbd9-79ff-4ea3-8011-b07246f767c6
 # ╟─bb4e474b-2028-4982-b202-3b22aa08c9d1
-# ╟─6f76b5cd-65a2-499c-a0be-0f3a0916e70c
+# ╠═6f76b5cd-65a2-499c-a0be-0f3a0916e70c
 # ╟─5573ea85-8bbb-411f-97b2-ef1e46981060
-# ╟─29d920d6-ac56-4cb1-83a3-741ee6c876ae
+# ╠═29d920d6-ac56-4cb1-83a3-741ee6c876ae
 # ╟─850bfa1a-4326-4aa3-97d2-c21d4ac2ba11
 # ╟─2b785f7b-4a96-4785-993b-ee7bbf6b0533
-# ╟─c00b33f1-8722-49e9-93b3-3703c5d0efb7
-# ╟─ab8d4426-9eda-4bab-a68c-1475042321db
-# ╟─d6e4a543-d2e5-42a2-91af-1cf8b4d4632d
-# ╟─9fa7dc02-4913-4b6e-a96d-0d73ccfee302
+# ╠═c00b33f1-8722-49e9-93b3-3703c5d0efb7
+# ╠═ab8d4426-9eda-4bab-a68c-1475042321db
+# ╠═d6e4a543-d2e5-42a2-91af-1cf8b4d4632d
+# ╠═9fa7dc02-4913-4b6e-a96d-0d73ccfee302
 # ╟─9b20814b-7f00-49da-ad83-63f1612d2f27
 # ╟─4a4ce5d2-c248-4d88-b4de-ba42f244e0e5
 # ╟─3f40a78e-4b2e-4863-8404-75157d562459
