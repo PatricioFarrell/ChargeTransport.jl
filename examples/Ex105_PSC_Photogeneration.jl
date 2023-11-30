@@ -9,7 +9,7 @@ ion vacancy accumulation is limited by the Fermi-Dirac integral of order -1.
 We perform a linear scan protocol and try out different photogeneration rates.
 =#
 
-module Ex105_PSC_Photogeneration
+module Ex104_PSC_Photogeneration
 
 using ChargeTransport
 using ExtendableGrids
@@ -126,7 +126,7 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     ## Initialize Data instance and fill in predefined data
     data                               = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunction)
     data.modelType                     = Transient
-    data.F                             = [Boltzmann, Boltzmann, FermiDiracMinusOne]
+    data.F                             = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
     data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                  bulk_recomb_Auger = false,
@@ -452,7 +452,7 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -1.0556898496629423; testvalUniform =-1.061947078067938
+    testval = -1.055694909603636; testvalUniform =-1.0619520059630208
     main(test = true, uniformGeneration = false) ≈ testval && main(test = true, uniformGeneration = true) ≈ testvalUniform
 end
 
