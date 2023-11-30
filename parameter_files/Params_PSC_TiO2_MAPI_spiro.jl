@@ -46,7 +46,7 @@ const zp                 = 1
 const za                 = 1
 
 ## temperature
-const T                  = 300.0                          *  K
+const T                  = 298.0                          *  K
 
 ## band edge energies
 const En                 = [-4.0, -3.7, -3.4]            .*  eV
@@ -79,10 +79,13 @@ const τp                 = [1.0e100, 3.0e-7, 1.0e100]    .* s
 const EI                 = [-5.0, -4.55, -4.1]           .* eV
 
 ## generation
-const incidentPhotonFlux = [0.0, 1.4e21, 0.0]            ./ (m^2 * s)
+const incidentPhotonFlux = [0.0, 9.4e20, 0.0]            ./ (m^2 * s)
 const absorption         = [0.0, 1.3e7, 0.0]             ./ m
+const generationPeak     = h_ndoping
+
+const generation_uniform = [0.0, 2.64e27, 0.0]           ./ (m^3 * s)
 
 ## doping
-const Cn                 = 1.0e24                        / (m^3)
-const Cp                 = 1.0e24                        / (m^3)
+const Cn                 = 1.0e24                         / (m^3)
+const Cp                 = 1.0e24                         / (m^3)
 const Ca                 = 1.6e25                         / (m^3)
