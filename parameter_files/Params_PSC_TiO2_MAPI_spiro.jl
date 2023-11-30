@@ -83,7 +83,7 @@ const incidentPhotonFlux = [0.0, 9.4e20, 0.0]            ./ (m^2 * s)
 const absorption         = [0.0, 1.3e7, 0.0]             ./ m
 const generationPeak     = h_ndoping
 
-const generation_uniform = [0.0, 2.64e27, 0.0]           ./ (m^3 * s)
+const generation_uniform = [0.0, 2.5e27, 0.0]           ./ (m^3 * s)
 
 ## doping
 const Cn                 = 1.0e24                         / (m^3)

@@ -16,8 +16,8 @@ using ExtendableGrids
 using PyPlot
 
 function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test = false,
-    parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_Pedot.jl", # choose the parameter file
-    uniformGeneration = true) # you can choose between uniform and non-uniform generation profiles
+    parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl", # choose the parameter file
+    uniformGeneration = false) # you can choose between uniform and non-uniform generation profiles
 
     Plotter.close("all")
 
@@ -452,7 +452,7 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -1.0551869268069287; testvalUniform =-1.061520820678457
+    testval = -1.0556898496629423; testvalUniform =-1.061947078067938
     main(test = true, uniformGeneration = false) ≈ testval && main(test = true, uniformGeneration = true) ≈ testvalUniform
 end
 

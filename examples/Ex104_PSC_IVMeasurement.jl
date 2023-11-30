@@ -12,14 +12,14 @@ and the I-V curve after the scan can be depicted.
 
 =#
 
-module Ex104_PSC_withIons_IVMeasurement
+module Ex104_PSC_IVMeasurement
 
 using ChargeTransport
 using ExtendableGrids
 using PyPlot
 
 function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false,
-    parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_Pedot.jl", # choose the parameter file
+    parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl", # choose the parameter file
     otherScanProtocol = false) # you can choose between two scan protocols
 
     PyPlot.close("all")
@@ -342,7 +342,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -0.6303495739805314; testvalOther = -1.1235908924948814
+    testval = -0.6302819608784171; testvalOther = -1.123710261723505
     main(test = true, otherScanProtocol = false) ≈ testval && main(test = true, otherScanProtocol = true) ≈ testvalOther
 end
 

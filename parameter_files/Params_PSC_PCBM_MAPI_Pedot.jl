@@ -10,31 +10,31 @@
 
 ########## charge carriers ##########
 
-iphin              = 1 # electron quasi Fermi potential
-iphip              = 2 # hole quasi Fermi potential
-iphia              = 3
-numberOfCarriers   = 3 # electrons, holes and anion vacancies
+const iphin              = 1 # electron quasi Fermi potential
+const iphip              = 2 # hole quasi Fermi potential
+const iphia              = 3
+const numberOfCarriers   = 3 # electrons, holes and anion vacancies
 
 ########## device geometry ##########
 
 # region numbers
-regionDonor        = 1
-regionIntrinsic    = 2
-regionAcceptor     = 3
-regions            = [regionDonor, regionIntrinsic, regionAcceptor]
-numberOfRegions    = length(regions)
+const regionDonor        = 1
+const regionIntrinsic    = 2
+const regionAcceptor     = 3
+const regions            = [regionDonor, regionIntrinsic, regionAcceptor]
+const numberOfRegions    = length(regions)
 
 # boundary region numbers
-bregionDonor       = 1
-bregionAcceptor    = 2
-bregionJ1          = 3
-bregionJ2          = 4
+const bregionDonor       = 1
+const bregionAcceptor    = 2
+const bregionJ1          = 3
+const bregionJ2          = 4
 
 ## length domains
-h_ndoping          = 60.0  * nm
-h_intrinsic        = 300.0 * nm
-h_pdoping          = 50.0  * nm
-h_total            = h_ndoping + h_intrinsic + h_pdoping
+const h_ndoping          = 60.0  * nm
+const h_intrinsic        = 300.0 * nm
+const h_pdoping          = 50.0  * nm
+const h_total            = h_ndoping + h_intrinsic + h_pdoping
 const heightLayers       = [h_ndoping,
                             h_ndoping + h_intrinsic,
                             h_ndoping + h_intrinsic + h_pdoping]
