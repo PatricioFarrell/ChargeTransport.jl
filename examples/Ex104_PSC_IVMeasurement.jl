@@ -12,7 +12,7 @@ and the I-V curve after the scan can be depicted.
 
 =#
 
-module Ex104_PSC_IVMeasurement
+module Ex103_PSC_IVMeasurement
 
 using ChargeTransport
 using ExtendableGrids
