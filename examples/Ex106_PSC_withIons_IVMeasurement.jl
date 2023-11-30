@@ -1,5 +1,5 @@
 #=
-# PSC device with ions and linear I-V scan protocol (1D).
+# PSC device with ions and different I-V scan protocols (1D).
 ([source code](SOURCE_URL))
 
 Simulating a three layer PSC device Ti02| MAPI | spiro-OMeTAD with mobile ions where
@@ -12,7 +12,7 @@ and the I-V curve after the scan can be depicted.
 
 =#
 
-module Ex106_PSC_withIons_IVMeasurement
+module Ex104_PSC_withIons_IVMeasurement
 
 using ChargeTransport
 using ExtendableGrids
