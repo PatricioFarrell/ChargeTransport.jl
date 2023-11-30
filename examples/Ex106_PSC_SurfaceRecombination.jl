@@ -8,7 +8,7 @@ Here, the surface recombination at internal boundaries is tested.
 
 =#
 
-module Ex106_PSC_surface_recombination
+module Ex106_PSC_SurfaceRecombination
 
 using ChargeTransport
 using ExtendableGrids
