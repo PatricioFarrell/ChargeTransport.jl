@@ -930,8 +930,7 @@ $(SIGNATURES)
 Compute trap densities for a given trap energy.
 [Currently, only done for the Boltzmann statistics and for region dependent parameters.]
 """
-function trap_density!(icc, ireg, data, Et)
-    params      = data.params
+function trap_density!(icc, ireg, params, Et)
 
     params.densityOfStates[icc, ireg] * exp( params.chargeNumbers[icc] * (params.bandEdgeEnergy[icc, ireg] - Et) / (kB * params.temperature))
 end
