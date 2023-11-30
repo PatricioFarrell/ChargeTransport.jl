@@ -6,7 +6,6 @@ This code provides an unstructured grid for a three-dimensional domain with an a
 quadratic hole within the device. The grid is produced with TetGen.jl.
 =#
 
-
 module Grid_3D
 
 using ExtendableGrids
@@ -24,101 +23,101 @@ function main(;Plotter = GLMakie, plotting = true) # plotting is currently only 
         b=SimplexGridBuilder(Generator=TetGen)
 
         ## region numbers
-        regionDonor      = 1                           # n doped region
-        regionIntrinsic  = 2                           # intrinsic region
-        regionAcceptor   = 3                           # p doped region
+        regionDonor     = 1                           # n doped region
+        regionIntrinsic = 2                           # intrinsic region
+        regionAcceptor  = 3                           # p doped region
 
         ## boundary region numbers
-        bregionDonor     = 1
-        bregionAcceptor  = 2
-        bregionJunction1 = 3
-        bregionJunction2 = 4
-        bregionNoFlux    = 5
+        bregionDonor    = 1
+        bregionAcceptor = 2
+        bregionJ1       = 3
+        bregionJ2       = 4
+        bregionNoFlux   = 5
 
         ## grid
-        h_ndoping        = 9.90e-6 * cm
-        h_intrinsic      = 4.00e-5 * cm + 2.0e-7 * cm
-        h_pdoping        = 1.99e-5 * cm
-        height           = 3.00e-5 * cm
-        width            = 3.00e-5 * cm
+        h_ndoping       = 9.90e-6 * cm
+        h_intrinsic     = 4.00e-5 * cm + 2.0e-7 * cm
+        h_pdoping       = 1.99e-5 * cm
+        height          = 3.00e-5 * cm
+        width           = 3.00e-5 * cm
 
         ## lower area (nregion)
-        Area1length_0    = point!(b, 0.0, 0.0, 0.0)
-        Area1length_n    = point!(b, h_ndoping, 0.0, 0.0)
-        Area1width_n     = point!(b, h_ndoping, width, 0)
-        Area1width_0     = point!(b, 0, width, 0)
+        Area1length_0   = point!(b, 0.0, 0.0, 0.0)
+        Area1length_n   = point!(b, h_ndoping, 0.0, 0.0)
+        Area1width_n    = point!(b, h_ndoping, width, 0)
+        Area1width_0    = point!(b, 0, width, 0)
 
         ## upper area (nregion)
-        Area2length_0    = point!(b, 0.0, 0.0, height)
-        Area2length_n    = point!(b, h_ndoping, 0.0, height)
-        Area2height_n    = point!(b, h_ndoping, width, height)
-        Area2height_0    = point!(b, 0, width, height)
+        Area2length_0   = point!(b, 0.0, 0.0, height)
+        Area2length_n   = point!(b, h_ndoping, 0.0, height)
+        Area2height_n   = point!(b, h_ndoping, width, height)
+        Area2height_0   = point!(b, 0, width, height)
 
         ## lower area (iregion)
-        Area1length_ni   = point!(b, h_ndoping + h_intrinsic, 0.0, 0.0)
-        Area1width_ni    = point!(b, h_ndoping + h_intrinsic, width, 0)
+        Area1length_ni  = point!(b, h_ndoping + h_intrinsic, 0.0, 0.0)
+        Area1width_ni   = point!(b, h_ndoping + h_intrinsic, width, 0)
         ## upper area (iregion)
-        Area2length_ni   = point!(b, h_ndoping + h_intrinsic, 0.0, height)
-        Area2height_ni   = point!(b, h_ndoping + h_intrinsic, width, height)
+        Area2length_ni  = point!(b, h_ndoping + h_intrinsic, 0.0, height)
+        Area2height_ni  = point!(b, h_ndoping + h_intrinsic, width, height)
 
         ## lower area (pregion)
-        Area1length_nip  = point!(b, h_ndoping + h_intrinsic + h_pdoping, 0.0, 0.0)
-        Area1width_nip   = point!(b, h_ndoping + h_intrinsic + h_pdoping, width, 0)
+        Area1length_nip = point!(b, h_ndoping + h_intrinsic + h_pdoping, 0.0, 0.0)
+        Area1width_nip  = point!(b, h_ndoping + h_intrinsic + h_pdoping, width, 0)
         ## upper area (pregion)
-        Area2length_nip  = point!(b, h_ndoping + h_intrinsic + h_pdoping, 0.0, height)
-        Area2height_nip  = point!(b, h_ndoping + h_intrinsic + h_pdoping, width, height)
+        Area2length_nip = point!(b, h_ndoping + h_intrinsic + h_pdoping, 0.0, height)
+        Area2height_nip = point!(b, h_ndoping + h_intrinsic + h_pdoping, width, height)
 
         ## n-region
         facetregion!(b, bregionNoFlux) # surface below
-        facet!(b,Area1length_0 ,Area1length_n ,Area1width_n ,Area1width_0)
+        facet!(b, Area1length_0, Area1length_n, Area1width_n, Area1width_0)
         facetregion!(b, bregionNoFlux) # surface up
-        facet!(b,Area2length_0 ,Area2length_n ,Area2height_n ,Area2height_0)
+        facet!(b, Area2length_0, Area2length_n, Area2height_n, Area2height_0)
         facetregion!(b, bregionNoFlux) # surface front
-        facet!(b,Area1length_0 ,Area1length_n ,Area2length_n ,Area2length_0)
+        facet!(b, Area1length_0, Area1length_n ,Area2length_n, Area2length_0)
         facetregion!(b, bregionNoFlux) # surface back
-        facet!(b,Area1width_n ,Area1width_0 ,Area2height_0 ,Area2height_n)
+        facet!(b, Area1width_n, Area1width_0, Area2height_0, Area2height_n)
 
         ## i-region
         facetregion!(b, bregionNoFlux) # surface below
-        facet!(b,Area1length_n ,Area1length_ni ,Area1width_ni ,Area1width_n)
+        facet!(b, Area1length_n, Area1length_ni, Area1width_ni, Area1width_n)
         facetregion!(b, bregionNoFlux) # surface up
-        facet!(b,Area2length_n ,Area2length_ni ,Area2height_ni ,Area2height_n)
+        facet!(b, Area2length_n, Area2length_ni, Area2height_ni, Area2height_n)
         facetregion!(b, bregionNoFlux) # surface front
-        facet!(b,Area1length_n ,Area1length_ni ,Area2length_ni ,Area2length_n)
+        facet!(b, Area1length_n, Area1length_ni, Area2length_ni, Area2length_n)
         facetregion!(b, bregionNoFlux) # surface back
-        facet!(b,Area1width_ni ,Area1width_n ,Area2height_n ,Area2height_ni)
+        facet!(b, Area1width_ni, Area1width_n, Area2height_n, Area2height_ni)
 
         ## p-region
         facetregion!(b, bregionNoFlux) # untere Oberfläche
-        facet!(b,Area1length_ni ,Area1length_nip ,Area1width_nip ,Area1width_ni)
+        facet!(b, Area1length_ni, Area1length_nip, Area1width_nip, Area1width_ni)
         facetregion!(b, bregionNoFlux) # surface up
-        facet!(b,Area2length_ni ,Area2length_nip ,Area2height_nip ,Area2height_ni)
+        facet!(b, Area2length_ni, Area2length_nip, Area2height_nip, Area2height_ni)
         facetregion!(b, bregionNoFlux) # surface front
-        facet!(b,Area1length_ni ,Area1length_nip ,Area2length_nip ,Area2length_ni)
+        facet!(b, Area1length_ni, Area1length_nip, Area2length_nip, Area2length_ni)
         facetregion!(b, bregionNoFlux) # surface back
-        facet!(b,Area1width_nip ,Area1width_ni ,Area2height_ni ,Area2height_nip)
+        facet!(b, Area1width_nip, Area1width_ni, Area2height_ni, Area2height_nip)
 
         ## inner interfaces
-        facetregion!(b,bregionJunction1) # inner interface n/i
-        facet!(b,Area1length_n ,Area1width_n ,Area2height_n ,Area2length_n)
-        facetregion!(b,bregionJunction2) # inner interface i/n
-        facet!(b,Area1length_ni ,Area1width_ni ,Area2height_ni ,Area2length_ni)
+        facetregion!(b, bregionJ1) # inner interface n/i
+        facet!(b, Area1length_n, Area1width_n, Area2height_n, Area2length_n)
+        facetregion!(b, bregionJ2) # inner interface i/n
+        facet!(b, Area1length_ni, Area1width_ni, Area2height_ni, Area2length_ni)
 
-        facetregion!(b,bregionDonor) # metalinterface left
-        facet!(b,Area1width_0 ,Area1length_0 ,Area2length_0 ,Area2height_0)
-        facetregion!(b,bregionAcceptor) # metalinterface right
-        facet!(b,Area1width_nip ,Area1length_nip ,Area2length_nip ,Area2height_nip)
+        facetregion!(b, bregionDonor) # metalinterface left
+        facet!(b, Area1width_0, Area1length_0, Area2length_0, Area2height_0)
+        facetregion!(b, bregionAcceptor) # metalinterface right
+        facet!(b, Area1width_nip, Area1length_nip, Area2length_nip, Area2height_nip)
 
         distance = 8.0e-6*cm
 
-        hp1=point!(b,h_ndoping + h_intrinsic/2 - distance ,width/2 - distance, height/2 - distance)
-        hp2=point!(b,h_ndoping + h_intrinsic/2 + distance ,width/2 - distance, height/2 - distance)
-        hp3=point!(b,h_ndoping + h_intrinsic/2 + distance ,width/2 + distance, height/2 - distance)
-        hp4=point!(b,h_ndoping + h_intrinsic/2 - distance, width/2 + distance, height/2 - distance)
-        hp5=point!(b,h_ndoping + h_intrinsic/2 - distance, width/2 - distance, height/2 + distance)
-        hp6=point!(b,h_ndoping + h_intrinsic/2 + distance, width/2 - distance, height/2 + distance)
-        hp7=point!(b,h_ndoping + h_intrinsic/2 + distance, width/2 + distance, height/2 + distance)
-        hp8=point!(b,h_ndoping + h_intrinsic/2 - distance, width/2 + distance, height/2 + distance)
+        hp1 = point!(b,h_ndoping + h_intrinsic/2 - distance ,width/2 - distance, height/2 - distance)
+        hp2 = point!(b,h_ndoping + h_intrinsic/2 + distance ,width/2 - distance, height/2 - distance)
+        hp3 = point!(b,h_ndoping + h_intrinsic/2 + distance ,width/2 + distance, height/2 - distance)
+        hp4 = point!(b,h_ndoping + h_intrinsic/2 - distance, width/2 + distance, height/2 - distance)
+        hp5 = point!(b,h_ndoping + h_intrinsic/2 - distance, width/2 - distance, height/2 + distance)
+        hp6 = point!(b,h_ndoping + h_intrinsic/2 + distance, width/2 - distance, height/2 + distance)
+        hp7 = point!(b,h_ndoping + h_intrinsic/2 + distance, width/2 + distance, height/2 + distance)
+        hp8 = point!(b,h_ndoping + h_intrinsic/2 - distance, width/2 + distance, height/2 + distance)
 
         facetregion!(b,6)
         facet!(b, hp1, hp2, hp3, hp4)
