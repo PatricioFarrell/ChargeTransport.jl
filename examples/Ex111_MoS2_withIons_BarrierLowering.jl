@@ -8,7 +8,7 @@ Schottky barrier lowering at the contacts.
 =#
 
 
-module Ex111_MoS2_withIons_BarrierLowering
+module Ex107_MoS2_withIons_BarrierLowering
 
 using ChargeTransport
 using ExtendableGrids
@@ -60,7 +60,6 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     iphin            = 1 # electron quasi Fermi potential
     iphip            = 2 # hole quasi Fermi potential
     iphix            = 3
-    ipsi             = 4
 
     numberOfCarriers = 3 # electrons, holes and ions
 
@@ -225,9 +224,9 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 
     control.Δu_opt       = Inf
     control.Δt           = 1.0e-4
-    control.Δt_min       = 1.0e-7
-    control.Δt_max       = 1.0e-2
-    control.Δt_grow      = 1.005
+    control.Δt_min       = 1.0e-5
+    control.Δt_max       = 5.0e-2
+    control.Δt_grow      = 1.05
 
     if test == false
         println("*** done\n")
@@ -322,7 +321,7 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
 end #  main
 
 function test()
-   main(test = true, barrierLowering = true) ≈ 32350.400882959268 #  main(test = true, barrierLowering = false) ≈ 19877.638250681746
+   main(test = true, barrierLowering = true) ≈ 3025.4497810975327
 end
 
 
