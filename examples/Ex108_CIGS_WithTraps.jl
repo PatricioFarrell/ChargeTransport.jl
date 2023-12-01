@@ -6,7 +6,7 @@ Simulating stationary charge transport for CIGS with hole traps and mixed Schott
 contact conditions. Assume that SRH recombination only happens within a small regime.
 =#
 
-module Ex112_CIGS_WithTraps
+module Ex108_CIGS_WithTraps
 
 using ChargeTransport
 using ExtendableGrids
@@ -38,36 +38,36 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## region numbers
-    regionDonor             = 1                           # n doped region
-    regionAcceptorLeft      = 2                           # p doped region
-    regionAcceptorTrap      = 3                           # p doped region with trap
-    regionAcceptorRight     = 4                           # p doped region
-    regions                 = [regionDonor, regionAcceptorLeft, regionAcceptorTrap, regionAcceptorRight]
-    numberOfRegions         = length(regions)
+    regionDonor          = 1                           # n doped region
+    regionAcceptorLeft   = 2                           # p doped region
+    regionAcceptorTrap   = 3                           # p doped region with trap
+    regionAcceptorRight  = 4                           # p doped region
+    regions              = [regionDonor, regionAcceptorLeft, regionAcceptorTrap, regionAcceptorRight]
+    numberOfRegions      = length(regions)
 
     ## boundary region numbers
-    bregionDonor            = 1
-    bregionAcceptor         = 2
-    bregionDALeft           = 3
-    bregionALeftATrap       = 4
-    bregionATrapARight      = 5
+    bregionDonor         = 1
+    bregionAcceptor      = 2
+    bregionDALeft        = 3
+    bregionALeftATrap    = 4
+    bregionATrapARight   = 5
 
     ## grid
-    refinementfactor        = 2^(n-1)
-    h_ndoping               = 0.5    * μm
-    h_pdoping_left          = 1.0    * μm
-    h_pdoping_trap          = 0.1    * μm
-    h_pdoing_right          = 1.0    * μm
-    w_device                = 0.5    * μm  # width of device
-    z_device                = 1.0e-4 * cm  # depth of device
-    h_total                 = h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right
-    coord                   = initialize_pin_grid(refinementfactor,
-                                                  h_ndoping,
-                                                  h_pdoping_left,
-                                                  h_pdoping_trap,
-                                                  h_pdoing_right)
+    refinementfactor     = 2^(n-1)
+    h_ndoping            = 0.5    * μm
+    h_pdoping_left       = 1.0    * μm
+    h_pdoping_trap       = 0.1    * μm
+    h_pdoing_right       = 1.0    * μm
+    w_device             = 0.5    * μm  # width of device
+    z_device             = 1.0e-4 * cm  # depth of device
+    h_total              = h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right
+    coord                = initialize_pin_grid(refinementfactor,
+                                               h_ndoping,
+                                               h_pdoping_left,
+                                               h_pdoping_trap,
+                                               h_pdoing_right)
 
-    grid                    = simplexgrid(coord)
+    grid                 = simplexgrid(coord)
 
     ## set different regions in grid
     cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor) # n doped

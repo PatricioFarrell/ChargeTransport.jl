@@ -241,11 +241,18 @@ Abstract type for no generation model.
 """
 abstract type GenerationNone end
 
+"""
+$(TYPEDEF)
+Abstract type for user defined generation.
+"""
+abstract type GenerationUserDefined end
+
 ##########################################################
 """
 Possible types for generation model.
 """
-const GenerationModelType = Union{Type{GenerationUniform}, Type{GenerationBeerLambert}, Type{GenerationNone}}
+const GenerationModelType = Union{Type{GenerationUniform}, Type{GenerationBeerLambert},
+                                  Type{GenerationNone}, Type{GenerationUserDefined}}
 
 
 ##########################################################

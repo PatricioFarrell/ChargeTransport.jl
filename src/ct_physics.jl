@@ -764,7 +764,7 @@ end
 
 function addGeneration!(f, u, node, data)
 
-    generationTerm = generation(data, node.region, node.coord[node.index], data.generationModel)
+    generationTerm = generation(data, node, data.generationModel)
 
     for icc ∈ data.electricCarrierList
         icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used and depicted here
@@ -930,32 +930,57 @@ $(SIGNATURES)
 Compute trap densities for a given trap energy.
 [Currently, only done for the Boltzmann statistics and for region dependent parameters.]
 """
-function trap_density!(icc, ireg, data, Et)
-    params      = data.params
+function trap_density!(icc, ireg, params, Et)
 
     params.densityOfStates[icc, ireg] * exp( params.chargeNumbers[icc] * (params.bandEdgeEnergy[icc, ireg] - Et) / (kB * params.temperature))
 end
 
 # The generation rate ``G``, which occurs in the right-hand side of the
 # continuity equations with a uniform generation rate.
-function generation(data, ireg, node, ::Type{GenerationUniform})
+function generation(data, node, ::Type{GenerationUniform})
 
-    return data.λ2 * data.params.generationUniform[ireg]
+    return data.λ2 * data.params.generationUniform[node.region]
 end
 
 
 # The generation rate ``G``, which occurs in the right-hand side of the
 # continuity equations obeying the Beer-Lambert law.
 # only works in 1D till now; adjust node, when multidimensions
-function generation(data, ireg, node, ::Type{GenerationBeerLambert})
+function generation(data, node, ::Type{GenerationBeerLambert})
 
     params = data.params
+    ireg   = node.region
+    node   = node.coord[node.index]
 
-    return data.λ2 * params.generationIncidentPhotonFlux[ireg] * params.generationAbsorption[ireg] * exp( - params.invertedIllumination * params.generationAbsorption[ireg] * (node - params.generationPeak))
+    return data.λ2 .* params.generationIncidentPhotonFlux[ireg] .* params.generationAbsorption[ireg] .* exp.( - params.invertedIllumination .* params.generationAbsorption[ireg] .* (node .- params.generationPeak))
 
 end
 
-generation(data, ireg, node, ::Type{GenerationNone}) = 0.0
+
+# The generation rate ``G``, which occurs in the right-hand side of the
+# continuity equations with a user defined generation rate.
+# only works in 1D till now; adjust node, when multidimensions
+function generation(data, node, ::Type{GenerationUserDefined})
+
+    return data.λ2 .* data.generationData[node.index]
+
+end
+
+generation(data, node, ::Type{GenerationNone}) = 0.0
+
+"""
+$(SIGNATURES)
+Beer-Lambert function for the visualization of this type of photogeneration profile.
+"""
+
+function BeerLambert(ctsys, ireg, node)
+
+    data = ctsys.fvmsys.physics.data
+    params = data.params
+
+    params.generationIncidentPhotonFlux[ireg] .* params.generationAbsorption[ireg] .* exp.( - params.invertedIllumination .* params.generationAbsorption[ireg] .* (node .- params.generationPeak))
+
+end
 
 ##########################################################
 ##########################################################

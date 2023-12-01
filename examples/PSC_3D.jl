@@ -21,36 +21,33 @@ using GLMakie
 using PyPlot
 
 # We strongly emphasize to use GLMakie for the visualization here.
-function main(;Plotter = GLMakie, plotting = false, test = false, verbose = false)
+function main(;Plotter = GLMakie, plotting = false, test = false, verbose = false,
+              parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl", # choose the parameter file
+             )
 
-     ################################################################################
+    PyPlot.close("all")
+
+    ################################################################################
+    if test == false
+        println("Define physical parameters and model")
+    end
+    ################################################################################
+
+    include(parameter_file) # include the parameter file we specified
+
+    bregionNoFlux = 5
+    height        = 2.00e-5 * cm
+    width         = 3.00e-5 * cm
+
+    if test == false
+        println("*** done\n")
+    end
+
+    ################################################################################
      if test == false
         println("Set up grid and regions for 1D and 3D")
     end
     ################################################################################
-
-    ## region numbers
-    regionDonor      = 1                           # n doped region
-    regionIntrinsic  = 2                           # intrinsic region
-    regionAcceptor   = 3                           # p doped region
-    regions          = [regionDonor, regionIntrinsic, regionAcceptor]
-    numberOfRegions  = length(regions)
-
-    ## boundary region numbers
-    bregionDonor     = 1
-    bregionAcceptor  = 2
-    bregionJunction1 = 3
-    bregionJunction2 = 4
-    bregionNoFlux    = 5
-
-    ## grid
-    h_ndoping        = 1.00e-5 * cm
-    h_intrinsic      = 4.00e-5 * cm
-    h_pdoping        = 2.00e-5 * cm
-    h_total          = h_ndoping + h_intrinsic + h_pdoping
-    heightLayers     = [h_ndoping, h_ndoping + h_intrinsic, h_ndoping + h_intrinsic + h_pdoping]
-    height           = 2.00e-5 * cm
-    width            = 3.00e-5 * cm
 
     ## 1D Grid
     n                = 10
@@ -65,8 +62,8 @@ function main(;Plotter = GLMakie, plotting = false, test = false, verbose = fals
     cellmask!(grid1D, [h_ndoping],                [h_ndoping + h_intrinsic], regionIntrinsic, tol = 1.0e-18)
     cellmask!(grid1D, [h_ndoping + h_intrinsic],  [h_total],                 regionAcceptor, tol = 1.0e-18)
 
-    bfacemask!(grid1D, [heightLayers[1]], [heightLayers[1]], bregionJunction1) # first  inner interface
-    bfacemask!(grid1D, [heightLayers[2]], [heightLayers[2]], bregionJunction2) # second inner interface
+    bfacemask!(grid1D, [heightLayers[1]], [heightLayers[1]], bregionJ1) # first  inner interface
+    bfacemask!(grid1D, [heightLayers[2]], [heightLayers[2]], bregionJ2) # second inner interface
 
     ## 3D Grid
     coord_height     = collect(range(0.0, stop = height, length = n))
@@ -82,8 +79,8 @@ function main(;Plotter = GLMakie, plotting = false, test = false, verbose = fals
     bfacemask!(grid3D, [h_total, 0.0, 0.0], [h_total, height, width], bregionAcceptor) # BregionNumber = 2
 
     ## interior interfaces
-    bfacemask!(grid3D, [heightLayers[1], 0.0, 0.0], [heightLayers[1], height, width], bregionJunction1) # first  inner interface
-    bfacemask!(grid3D, [heightLayers[2], 0.0, 0.0], [heightLayers[2], height, width], bregionJunction2) # second inner interface
+    bfacemask!(grid3D, [heightLayers[1], 0.0, 0.0], [heightLayers[1], height, width], bregionJ1) # first  inner interface
+    bfacemask!(grid3D, [heightLayers[2], 0.0, 0.0], [heightLayers[2], height, width], bregionJ2) # second inner interface
 
     ## outer no flux interfaces
     bfacemask!(grid3D, [0.0, 0.0, 0.0],    [h_total, 0.0, width],    bregionNoFlux)
@@ -106,95 +103,6 @@ function main(;Plotter = GLMakie, plotting = false, test = false, verbose = fals
     end
 
     ################################################################################
-     if test == false
-        println("Define physical parameters and model")
-    end
-    ################################################################################
-
-    ## set indices of the quasi Fermi potentials
-    iphin            = 1 # electron quasi Fermi potential
-    iphip            = 2 # hole quasi Fermi potential
-    iphia            = 3 # anion vacancy quasi Fermi potential
-    numberOfCarriers = 3 # electrons, holes and anion vacancies
-
-    ipsi             = 4
-
-    ## temperature
-    T                = 300.0                 *  K
-
-    ## band edge energies
-    Ec_d             = -4.0                  *  eV
-    Ev_d             = -5.8                  *  eV
-
-    Ec_i             = -3.7                  *  eV
-    Ev_i             = -5.4                  *  eV
-
-    Ec_a             = -3.4                  *  eV
-    Ev_a             = -5.1                  *  eV
-    Ea_i             = -4.45                 *  eV
-
-    EC               = [Ec_d, Ec_i, Ec_a]
-    EV               = [Ev_d, Ev_i, Ev_a]
-    EA               = [0.0,  Ea_i,  0.0]
-
-    ## effective densities of state
-    Nc_d             = 5.0e19                / (cm^3)
-    Nv_d             = 5.0e19                / (cm^3)
-
-    Nc_i             = 8.1e18                / (cm^3)
-    Nv_i             = 5.8e18                / (cm^3)
-    Nanion           = 1.0e21                / (cm^3)
-
-    Nc_a             = 5.0e19                / (cm^3)
-    Nv_a             = 5.0e19                / (cm^3)
-
-    NC               = [Nc_d, Nc_i,  Nc_a]
-    NV               = [Nv_d, Nv_i,  Nv_a]
-    NAnion           = [0.0,  Nanion, 0.0]
-
-    ## relative dielectric permittivity
-    ε_d              = 10.0                  *  1.0
-    ε_i              = 24.1                  *  1.0
-    ε_a              = 3.0                   *  1.0
-
-    ε                = [ε_d, ε_i, ε_a]
-
-    ## radiative recombination
-    r0_d             = 0.0e+0               * cm^3 / s
-    r0_i             = 1.0e-12              * cm^3 / s
-    r0_a             = 0.0e+0               * cm^3 / s
-
-    r0               = [r0_d, r0_i, r0_a]
-
-    ## life times and trap densities
-    τn_d             = 1.0e100              * s
-    τp_d             = 1.0e100              * s
-
-    τn_i             = 3.0e-10              * s
-    τp_i             = 3.0e-8               * s
-    τn_a             = τn_d
-    τp_a             = τp_d
-
-    τn               = [τn_d, τn_i, τn_a]
-    τp               = [τp_d, τp_i, τp_a]
-
-    ## SRH trap energies
-    Ei_d             = -5.0                 * eV
-    Ei_i             = -4.55                * eV
-    Ei_a             = -4.1                 * eV
-
-    EI               = [Ei_d, Ei_i, Ei_a]
-
-    ## doping
-    Nd               = 1.03e18              / (cm^3)
-    Na               = 1.03e18              / (cm^3)
-    C0               = 1.6e19               / (cm^3)
-
-    if test == false
-        println("*** done\n")
-    end
-
-    ################################################################################
        if test == false
         println("Define System and fill in information about model")
     end
@@ -204,7 +112,7 @@ function main(;Plotter = GLMakie, plotting = false, test = false, verbose = fals
     ## Note that we define the data struct with respect to the three-dimensional grid, since we also defined there the outer no flux boundary conditions.
     data                               = Data(grid3D, numberOfCarriers)
     data.modelType                     = Transient
-    data.F                             = [Boltzmann, Boltzmann, FermiDiracMinusOne]
+    data.F                             = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
     data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
                                                                  bulk_recomb_Auger = false,
                                                                  bulk_recomb_radiative = true,
@@ -230,58 +138,43 @@ function main(;Plotter = GLMakie, plotting = false, test = false, verbose = fals
 
     params.temperature                                  = T
     params.UT                                           = (kB * params.temperature) / q
-    params.chargeNumbers[iphin]                         = -1
-    params.chargeNumbers[iphip]                         =  1
-    params.chargeNumbers[iphia]                         =  1
+    params.chargeNumbers[iphin]                         = zn
+    params.chargeNumbers[iphip]                         = zp
+    params.chargeNumbers[iphia]                         = za
 
     for ireg in 1:numberOfRegions # interior region data
 
         params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
         ## effective DOS, band edge energy and mobilities
-        params.densityOfStates[iphin, ireg]             = NC[ireg]
-        params.densityOfStates[iphip, ireg]             = NV[ireg]
-        params.densityOfStates[iphia, ireg]             = NAnion[ireg]
+        params.densityOfStates[iphin, ireg]             = Nn[ireg]
+        params.densityOfStates[iphip, ireg]             = Np[ireg]
+        params.densityOfStates[iphia, ireg]             = Na[ireg]
 
-        params.bandEdgeEnergy[iphin, ireg]              = EC[ireg]
-        params.bandEdgeEnergy[iphip, ireg]              = EV[ireg]
-        params.bandEdgeEnergy[iphia, ireg]              = EA[ireg]
+        params.bandEdgeEnergy[iphin, ireg]              = En[ireg]
+        params.bandEdgeEnergy[iphip, ireg]              = Ep[ireg]
+        params.bandEdgeEnergy[iphia, ireg]              = Ea[ireg]
 
         ## recombination parameters
         params.recombinationRadiative[ireg]             = r0[ireg]
         params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
         params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
-        params.recombinationSRHTrapDensity[iphin, ireg] = trap_density!(iphin, ireg, data, EI[ireg])
-        params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, data, EI[ireg])
+        params.recombinationSRHTrapDensity[iphin, ireg] = trap_density!(iphin, ireg, params, EI[ireg])
+        params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, params, EI[ireg])
     end
 
-    ## boundary region data
-    params.bDensityOfStates[iphin, bregionDonor]        = Nc_d
-    params.bDensityOfStates[iphip, bregionDonor]        = Nv_d
-
-    params.bDensityOfStates[iphin, bregionAcceptor]     = Nc_a
-    params.bDensityOfStates[iphip, bregionAcceptor]     = Nv_a
-
-    params.bBandEdgeEnergy[iphin, bregionDonor]         = Ec_d
-    params.bBandEdgeEnergy[iphip, bregionDonor]         = Ev_d
-
-    params.bBandEdgeEnergy[iphin, bregionAcceptor]      = Ec_a
-    params.bBandEdgeEnergy[iphip, bregionAcceptor]      = Ev_a
-
     ## interior doping
-    params.doping[iphin, regionDonor]                   = Nd
-    params.doping[iphia, regionIntrinsic]               = C0
-    params.doping[iphip, regionAcceptor]                = Na
-
-    ## boundary doping
-    params.bDoping[iphip, bregionAcceptor]              = Na
-    params.bDoping[iphin, bregionDonor]                 = Nd
+    params.doping[iphin, regionDonor]                   = Cn
+    params.doping[iphia, regionIntrinsic]               = Ca
+    params.doping[iphip, regionAcceptor]                = Cp
 
     data.params                                         = params
     ctsys1D                                             = System(grid1D, data, unknown_storage=:sparse)
 
     data.params                                         = params
     ctsys3D                                             = System(grid3D, data, unknown_storage=:sparse)
+
+    ipsi = data.index_psi
 
     if test == false
         show_params(ctsys1D)
@@ -337,7 +230,7 @@ function main(;Plotter = GLMakie, plotting = false, test = false, verbose = fals
             logDens3D[ireg]  = log.(densityn3D[ireg])
         end
 
-        scalarplot!(vis[3,1], grids1D, grid1D, densityn1D; color=:green, linewidth = 5, yscale=:log, xlabel = "space [m]", ylabel = "density [m\$^{-3}\$]", title = "Electron concentration (1D)")
+        scalarplot!(vis[3,1], grids1D, grid1D, densityn1D; color=:green, linewidth = 5, yscale=:log, xlabel = "space [m]", ylabel = "density [\$\\frac{1}{m^3}\$]", title = "Electron concentration (1D)")
         scalarplot!(vis[3,2], grids3D, grid3D, densityn3D; scene3d=:Axis3, levels = 4, levelalpha = 0.9, outlinealpha = 0.00, xplanes = collect(range(0.0, stop = h_total, length = 100)), title = "Electron concentration (3D)")
     end
 
@@ -353,7 +246,7 @@ end # main
 
 
 function test()
-    testval = -2.221100727126597
+    testval = -2.2213072819274533
     main(test = true) ≈ testval
 end
 

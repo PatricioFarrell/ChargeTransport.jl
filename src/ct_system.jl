@@ -585,7 +585,7 @@ but also all physical parameters for a drift-diffusion simulation of a semicondu
 $(TYPEDFIELDS)
 
 """
-mutable struct Data{TFuncs<:Function, TContVol<:Function}
+mutable struct Data{TFuncs<:Function, TVoltageFunc<:Function, TGenerationData<:Union{Array{Float64, 1}, Array{Float64, 2}, Array{Float64, 3}, Function} }
 
     ###############################################################
     ####                   model information                   ####
@@ -612,13 +612,19 @@ mutable struct Data{TFuncs<:Function, TContVol<:Function}
     An array containing predefined functions for the applied bias in dependance of time
     at each outer boundary.
     """
-    contactVoltageFunction       ::  Array{TContVol, 1}
+    contactVoltageFunction       ::  Array{TVoltageFunc, 1}
 
     """
     A struct containing information concerning the bulk recombination model.
     """
     bulkRecombination            ::  BulkRecombination
 
+    """
+    A function/Array containing the user-specific photogeneration rate. It can be a function
+    which is specified in the user example or an array which is read in and calculatd with,
+    e.g., an external software.
+    """
+    generationData               ::  TGenerationData
     ###############################################################
     ####        Information on present charge carriers         ####
     ###############################################################
@@ -628,30 +634,30 @@ mutable struct Data{TFuncs<:Function, TContVol<:Function}
     discontinuous. This is needed for building the AbstractQuantities which handle the
     indices of charge carriers on different regions.
     """
-    isContinuous                 :: Array{Bool, 1}
+    isContinuous                 ::  Array{Bool, 1}
 
     """
     This list stores all charge carriers with the correct type needed for VoronoiFVM.
     """
-    chargeCarrierList            :: Array{QType, 1}
+    chargeCarrierList            ::  Array{QType, 1}
 
 
     """
     This list stores all electric carrier indices, i.e. the one of electrons and holes.
     """
-    electricCarrierList          :: Array{Int64, 1}
+    electricCarrierList          ::  Array{Int64, 1}
 
     """
     This list contains all defined ionic carriers as a struct of Type IonicCarrier with
     all needed information on the ionic carriers (can be either ions or ion vacancies).
     """
-    ionicCarrierList             :: Array{IonicCarrier, 1}
+    ionicCarrierList             ::  Array{IonicCarrier, 1}
 
     """
     This list contains all defined trap carriers for the SRH recombination
     as a struct of Type TrapCarrier with all needed information on the trap carriers.
     """
-    trapCarrierList              :: Array{TrapCarrier, 1}
+    trapCarrierList              ::  Array{TrapCarrier, 1}
 
     """
     A struct which contains auxiliary trap values for the stationary setting.
@@ -662,12 +668,12 @@ mutable struct Data{TFuncs<:Function, TContVol<:Function}
     This variable stores the index of the electric potential. Based on the user choice we have
     with this new type the opportunity to simulate discontinuous unknowns.
     """
-    index_psi                    :: QType
+    index_psi                    ::  QType
 
     """
     This is a struct containing all information necessary to simulate Schottky Barrier Lowering.
     """
-    barrierLoweringInfo          :: BarrierLoweringSpecies
+    barrierLoweringInfo          ::  BarrierLoweringSpecies
 
     ###############################################################
     ####                 Numerics information                  ####
@@ -753,7 +759,7 @@ mutable struct Data{TFuncs<:Function, TContVol<:Function}
     paramsnodal                  :: ParamsNodal
 
     ###############################################################
-    Data{TFuncs, TContVol}() where {TFuncs, TContVol} = new()
+    Data{TFuncs, TVoltageFunc, TGenerationData}() where {TFuncs, TVoltageFunc, TGenerationData} = new()
 
 end
 
@@ -923,18 +929,23 @@ including the physical parameters, but also some numerical information
 are located.
 
 """
-function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage, zeroVoltage], statfunctions::Type{TFuncs}=StandardFuncSet) where TFuncs
+function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage, zeroVoltage], generationData = [0.0], statfunctions::Type{TFuncs}=StandardFuncSet) where TFuncs
 
     numberOfBoundaryRegions                    = grid[NumBFaceRegions]
 
     ###############################################################
-    TypeContVol                                = Union{}
+    # save the type of the inserted contact voltage function
+    TypeVoltageFunc                            = Union{}
 
     for ii in eachindex(contactVoltageFunction)
-        TypeContVol = Union{TypeContVol, typeof(contactVoltageFunction[ii])}
+        TypeVoltageFunc = Union{TypeVoltageFunc, typeof(contactVoltageFunction[ii])}
     end
 
-    data                                       = Data{TFuncs, TypeContVol}()
+    # save the type of generation data
+    TypeGenerationData                         = typeof(generationData)
+
+    # construct a data struct
+    data                                       = Data{TFuncs, TypeVoltageFunc, TypeGenerationData}()
 
     ###############################################################
     ####                   model information                   ####
@@ -944,6 +955,7 @@ function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage, zer
     data.qFModel                               = ContQF
     data.boundaryType                          = BoundaryModelType[InterfaceNone for i = 1:numberOfBoundaryRegions]
     data.contactVoltageFunction                = contactVoltageFunction
+    data.generationData                        = generationData
 
     # bulkRecombination is a struct holding the input information
     data.bulkRecombination                     = set_bulk_recombination(iphin = 1, iphip = 2,

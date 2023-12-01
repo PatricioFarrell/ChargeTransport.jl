@@ -15,6 +15,7 @@ using PyPlot
 
 function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
+    Plotter.close("all")
     ################################################################################
     if test == false
         println("Set up grid and regions")
