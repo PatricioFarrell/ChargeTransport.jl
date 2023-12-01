@@ -585,7 +585,7 @@ but also all physical parameters for a drift-diffusion simulation of a semicondu
 $(TYPEDFIELDS)
 
 """
-mutable struct Data{TFuncs<:Function, TContVol<:Function}
+mutable struct Data{TFuncs<:Function, TVoltageFunc<:Function}
 
     ###############################################################
     ####                   model information                   ####
@@ -612,7 +612,7 @@ mutable struct Data{TFuncs<:Function, TContVol<:Function}
     An array containing predefined functions for the applied bias in dependance of time
     at each outer boundary.
     """
-    contactVoltageFunction       ::  Array{TContVol, 1}
+    contactVoltageFunction       ::  Array{TVoltageFunc, 1}
 
     """
     A struct containing information concerning the bulk recombination model.
@@ -753,7 +753,7 @@ mutable struct Data{TFuncs<:Function, TContVol<:Function}
     paramsnodal                  :: ParamsNodal
 
     ###############################################################
-    Data{TFuncs, TContVol}() where {TFuncs, TContVol} = new()
+    Data{TFuncs, TVoltageFunc}() where {TFuncs, TVoltageFunc} = new()
 
 end
 
@@ -928,13 +928,14 @@ function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage, zer
     numberOfBoundaryRegions                    = grid[NumBFaceRegions]
 
     ###############################################################
-    TypeContVol                                = Union{}
+    # save the type of the inserted contact voltage function
+    TypeVoltageFunc                            = Union{}
 
     for ii in eachindex(contactVoltageFunction)
-        TypeContVol = Union{TypeContVol, typeof(contactVoltageFunction[ii])}
+        TypeVoltageFunc = Union{TypeVoltageFunc, typeof(contactVoltageFunction[ii])}
     end
 
-    data                                       = Data{TFuncs, TypeContVol}()
+    data                                       = Data{TFuncs, TypeVoltageFunc}()
 
     ###############################################################
     ####                   model information                   ####
