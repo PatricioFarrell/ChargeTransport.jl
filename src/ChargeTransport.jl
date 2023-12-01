@@ -52,7 +52,7 @@ export SRHTrapsTransient, SRHTrapsStationary
 export AuxModelSRHType, SRH2SpeciesPresentTrapDens
 
 export GenerationModelType
-export GenerationNone, GenerationBeerLambert, GenerationUniform
+export GenerationNone, GenerationBeerLambert, GenerationUniform, GenerationUserDefined
 export BarrierLoweringType
 export BarrierLoweringOn, BarrierLoweringOff
 ##################################################################

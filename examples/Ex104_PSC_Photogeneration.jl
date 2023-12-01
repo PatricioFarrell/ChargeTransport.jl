@@ -16,8 +16,10 @@ using ExtendableGrids
 using PyPlot
 
 function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test = false,
-    parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl", # choose the parameter file
-    uniformGeneration = false) # you can choose between uniform and non-uniform generation profiles
+              ########################
+              parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl", # choose the parameter file
+              ########################
+              userdefinedGeneration = false) # you can choose between predefined and user-defined generation profiles
 
     Plotter.close("all")
 
@@ -101,12 +103,12 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     grid             = ExtendableGrids.simplexgrid(coord)
 
     ## set different regions in grid
-    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor, tol = 1.0e-18)     # n-doped region   = 1
+    cellmask!(grid, [0.0 * μm],        [heightLayers[1]], regionDonor,     tol = 1.0e-18) # n-doped region   = 1
     cellmask!(grid, [heightLayers[1]], [heightLayers[2]], regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
-    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor, tol = 1.0e-18)  # p-doped region   = 3
+    cellmask!(grid, [heightLayers[2]], [heightLayers[3]], regionAcceptor,  tol = 1.0e-18) # p-doped region   = 3
 
-    bfacemask!(grid, [heightLayers[1]], [heightLayers[1]], bregionJ1, tol = 1.0e-18)
-    bfacemask!(grid, [heightLayers[2]], [heightLayers[2]], bregionJ2, tol = 1.0e-18)
+    bfacemask!(grid, [heightLayers[1]], [heightLayers[1]], bregionJ1,      tol = 1.0e-18)
+    bfacemask!(grid, [heightLayers[2]], [heightLayers[2]], bregionJ2,      tol = 1.0e-18)
 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
@@ -124,7 +126,30 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     ## Initialize Data instance and fill in predefined data
-    data                               = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunction)
+    if userdefinedGeneration
+
+        subg1          = subgrid(grid, [regionDonor]); subg2 = subgrid(grid, [regionIntrinsic]); subg3 = subgrid(grid, [regionAcceptor])
+
+        gen1           = zeros(length(subg1[Coordinates])-1); gen3 = zeros(length(subg3[Coordinates])-1)
+        gen2           = incidentPhotonFlux[regionIntrinsic] .* absorption[regionIntrinsic] .* exp.( - absorption[regionIntrinsic] .* (subg2[Coordinates] .- generationPeak))
+
+        weight1        = (subg2[Coordinates][1] - subg1[Coordinates][end-1]) / (subg2[Coordinates][2]-subg1[Coordinates][end-1])
+        weight2        = (subg2[Coordinates][end] - subg2[Coordinates][end-1]) / (subg3[Coordinates][2]-subg2[Coordinates][end-1])
+
+        gen2[1]        = weight1 * gen2[1]; gen2[end] = weight2 * gen2[end]
+
+        generationData = [gen1; gen2'; gen3]
+
+        data                          = Data(grid, numberOfCarriers,
+                                             contactVoltageFunction = contactVoltageFunction,
+                                             generationData = generationData)
+    else
+
+        data                          = Data(grid, numberOfCarriers,
+                                             contactVoltageFunction = contactVoltageFunction)
+
+    end
+
     data.modelType                     = Transient
     data.F                             = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
@@ -138,10 +163,10 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     enable_ionic_carrier!(data, ionicCarrier = iphia, regions = [regionIntrinsic])
 
-    if uniformGeneration
-        data.generationModel               = GenerationUniform
+    if userdefinedGeneration
+        data.generationModel           = GenerationUserDefined
     else
-        data.generationModel               = GenerationBeerLambert
+        data.generationModel           = GenerationBeerLambert
     end
 
     if test == false
@@ -452,8 +477,8 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -1.055694909603636; testvalUniform =-1.0619520059630208
-    main(test = true, uniformGeneration = false) ≈ testval && main(test = true, uniformGeneration = true) ≈ testvalUniform
+    testval = -1.055694909603636; testvalUserdefined =-1.0557806383822483
+    main(test = true, userdefinedGeneration = false) ≈ testval && main(test = true, userdefinedGeneration = true) ≈ testvalUserdefined
 end
 
 if test == false
