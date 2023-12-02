@@ -206,7 +206,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     control.verbose      = verbose
     control.maxiters     = 300
     control.max_round    = 5
-    control.damp_initial = 0.5
+    control.damp_initial = 0.1
     control.damp_growth  = 1.21 # >= 1
 
     if test == false
