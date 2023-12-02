@@ -21,7 +21,6 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
               parameter_file = "../parameter_files/Params_PSC_PCBM_MAPI_Pedot.jl", # choose the parameter file)
               )
 
-    Plotter.close("all")
 
     ################################################################################
     if test == false

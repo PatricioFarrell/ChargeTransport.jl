@@ -22,7 +22,9 @@ function main(;n = 6, Plotter = nothing, plotting = false,
                parameter_file = "../parameter_files/Params_PSC_PCBM_MAPI_Pedot.jl", # choose the parameter file
               )
 
-    Plotter.close("all")
+    if plotting
+        Plotter.close("all")
+    end
 
     ################################################################################
     if test == false

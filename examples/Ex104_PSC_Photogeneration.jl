@@ -24,8 +24,10 @@ function main(;n = 5, Plotter = nothing, plotting = false, verbose = false, test
               ########################
               userdefinedGeneration = false) # you can choose between predefined and user-defined generation profiles
 
-    Plotter.close("all")
 
+    if plotting
+        Plotter.close("all")
+    end
     ################################################################################
     if test == false
         println("Define physical parameters and model")

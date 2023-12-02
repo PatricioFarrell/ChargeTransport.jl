@@ -19,6 +19,10 @@ using ExtendableGrids
 # write here instead of "nothing" Pyplot
 function main(;Plotter = nothing, plotting = false, verbose = false, test = false, barrierLowering = true)
 
+    if plotting
+        Plotter.close("all")
+    end
+
     ################################################################################
     if test == false
         println("Set up grid, regions and time mesh")

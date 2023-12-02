@@ -25,8 +25,9 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
     parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl", # choose the parameter file
     otherScanProtocol = false) # you can choose between two scan protocols
 
-    Plotter.close("all")
-
+    if plotting
+        Plotter.close("all")
+    end
     ################################################################################
     if test == false
         println("Define physical parameters and model")

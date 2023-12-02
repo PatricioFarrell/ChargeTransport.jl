@@ -30,7 +30,9 @@ end
 # write here instead of "nothing" Pyplot
 function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
-    Plotter.close("all")
+    if plotting
+        Plotter.close("all")
+    end
     ################################################################################
     if test == false
         println("Set up grid and regions")
