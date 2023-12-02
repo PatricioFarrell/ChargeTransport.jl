@@ -446,8 +446,8 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
     fillfactor                = (bias[indexPD] * IV[indexPD]) / (IV[1] * open_circuit)
 
     if test == false
-        println(&quot;The fill factor is $fillfactor.&quot;)
-        println(&quot;The efficiency  is $efficiency%.&quot;)
+        println(&quot;The fill factor is $fillfactor %.&quot;)
+        println(&quot;The efficiency  is $efficiency %.&quot;)
         println(&quot;The open circuit voltage  is $open_circuit.&quot;)
     end
 
@@ -462,11 +462,11 @@ end #  main
 
 function test()
     testval = -1.055694909603636; testvalUserdefined =-1.0557806383822483
-    main(test = true, userdefinedGeneration = false) ≈ testval &amp;&amp; main(test = true, userdefinedGeneration = true) ≈ testvalUserdefined
+    main(test = true, userdefinedGeneration = false) ≈ testval #&amp;&amp; main(test = true, userdefinedGeneration = true) ≈ testvalUserdefined
 end
 
 if test == false
     println(&quot;This message should show when this module is successfully recompiled.&quot;)
 end
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex103_PSC_IVMeasurement/">« PSC device with ions and different I-V scan protocols (1D).</a><a class="docs-footer-nextpage" href="../Ex104_PSC_gradedFlux_Schottky_contacts/">PSC device with graded interfaces &amp; Schottky contacts (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.0 on <span class="colophon-date" title="Friday 1 December 2023 19:01">Friday 1 December 2023</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex103_PSC_IVMeasurement/">« PSC device with ions and different I-V scan protocols (1D).</a><a class="docs-footer-nextpage" href="../Ex104_PSC_gradedFlux_Schottky_contacts/">PSC device with graded interfaces &amp; Schottky contacts (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Saturday 2 December 2023 13:37">Saturday 2 December 2023</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
