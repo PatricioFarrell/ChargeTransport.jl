@@ -13,14 +13,15 @@ module Ex201_PSC_tensorGrid
 using ChargeTransport
 using ExtendableGrids
 
-# It seems to be the case that macos has problems with pyplot
+# It seems to be the case that macos has problems with Pyplot
 #using PyPlot
 
-function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false,
+# write here instead of "nothing" Pyplot
+function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test = false,
               parameter_file = "../parameter_files/Params_PSC_PCBM_MAPI_Pedot.jl", # choose the parameter file)
               )
 
-    PyPlot.close("all")
+    Plotter.close("all")
 
     ################################################################################
     if test == false
@@ -301,7 +302,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ################
         Plotter.figure()
         Plotter.plot(biasValues, IV.*(cm)^2/height, label = "",  linewidth= 3, marker = "o")
-        PyPlot.grid()
+        Plotter.grid()
         Plotter.ylabel("total current [A]") #
         Plotter.xlabel("Applied Voltage [V]")
     end

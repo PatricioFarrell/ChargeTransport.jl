@@ -13,10 +13,11 @@ module Ex106_PSC_SurfaceRecombination
 using ChargeTransport
 using ExtendableGrids
 
-# It seems to be the case that macos has problems with pyplot
+# It seems to be the case that macos has problems with Pyplot
 #using PyPlot
 
-function main(;n = 6, Plotter = PyPlot, plotting = false,
+# write here instead of "nothing" Pyplot
+function main(;n = 6, Plotter = nothing, plotting = false,
                verbose = false, test = false,
                parameter_file = "../parameter_files/Params_PSC_PCBM_MAPI_Pedot.jl", # choose the parameter file
               )
@@ -282,9 +283,9 @@ function main(;n = 6, Plotter = PyPlot, plotting = false,
             label_solution, label_density, label_energy = set_plotting_labels(data)
             label_solution[iphia]  = "\$ \\varphi_a\$"
 
-            PyPlot.clf()
+            Plotter.clf()
             plot_solution(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(Δu)", label_solution)
-            PyPlot.pause(0.5)
+            Plotter.pause(0.5)
         end
 
     end # time loop

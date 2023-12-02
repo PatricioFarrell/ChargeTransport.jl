@@ -10,7 +10,7 @@ module Ex109_Traps
 using ChargeTransport
 using ExtendableGrids
 
-# It seems to be the case that macos has problems with pyplot
+# It seems to be the case that macos has problems with Pyplot
 #using PyPlot
 
 ## function to initialize the grid for a possble extension to other p-i-n devices.
@@ -26,7 +26,8 @@ function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping
     return coord
 end
 
-function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+# write here instead of "nothing" Pyplot
+function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     ################################################################################
     if test == false
