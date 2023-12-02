@@ -139,7 +139,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     ## Initialize Data instance and fill in predefined data
     ## Currently, the way to go is to pass a contact voltage function exactly here.
-    data                               = Data(grid, numberOfCarriers, contactVoltageFunction = contactVoltageFunction)
+    data                               = Data(grid, numberOfCarriers)
 
     ## Possible choices: Stationary, Transient
     data.modelType                     = Transient
@@ -286,7 +286,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     for istep = 2:number_tsteps
 
         t  = tvalues[istep]                                    # Actual time
-        Δu = data.contactVoltageFunction[bregionAcceptor](t) # Applied voltage
+        Δu = contactVoltageFunction[bregionAcceptor](t) # Applied voltage
         Δt = t - tvalues[istep-1]                              # Time step size
 
         ## Apply new voltage by setting non equilibrium boundary conditions
@@ -324,7 +324,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         plot_solution(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage)", label_solution)
     end
 
-    biasValues = data.contactVoltageFunction[bregionAcceptor].(tvalues)
+    biasValues = contactVoltageFunction[bregionAcceptor].(tvalues)
 
     if plotting
         Plotter.figure()
