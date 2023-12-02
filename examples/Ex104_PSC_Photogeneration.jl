@@ -13,7 +13,9 @@ module Ex104_PSC_Photogeneration
 
 using ChargeTransport
 using ExtendableGrids
-using PyPlot
+
+# It seems to be the case that macos has problems with pyplot
+#using PyPlot
 
 function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test = false,
               ########################

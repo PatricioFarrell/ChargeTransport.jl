@@ -10,7 +10,9 @@ module Ex108_CIGS_WithTraps
 
 using ChargeTransport
 using ExtendableGrids
-using PyPlot
+
+# It seems to be the case that macos has problems with pyplot
+#using PyPlot
 
 ## function to initialize the grid for a possble extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_pdoping_left, h_pdoping_trap, h_pdoing_right)

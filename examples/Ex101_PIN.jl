@@ -12,7 +12,9 @@ module Ex101_PIN
 
 using ChargeTransport  # drift-diffusion solver
 using ExtendableGrids  # grid initializer
-using PyPlot           # solution visualizer
+
+# It seems to be the case that macos has problems with pyplot
+#using PyPlot           # solution visualizer
 
 ## This function is used to initialize the grid for a possible extension to other p-i-n devices.
 function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping)

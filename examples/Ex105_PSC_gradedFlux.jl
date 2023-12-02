@@ -17,7 +17,9 @@ module Ex105_PSC_gradedFlux
 
 using ChargeTransport
 using ExtendableGrids
-using PyPlot
+
+# It seems to be the case that macos has problems with pyplot
+#using PyPlot
 
 ## function for grading the physical parameters
 function grading_parameter!(physicalParameter, coord, regionTransportLayers, regionJunctions, h, heightLayers, lengthLayers, values)

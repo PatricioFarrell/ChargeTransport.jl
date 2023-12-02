@@ -12,7 +12,9 @@ module Ex106_PSC_SurfaceRecombination
 
 using ChargeTransport
 using ExtendableGrids
-using PyPlot
+
+# It seems to be the case that macos has problems with pyplot
+#using PyPlot
 
 function main(;n = 6, Plotter = PyPlot, plotting = false,
                verbose = false, test = false,
