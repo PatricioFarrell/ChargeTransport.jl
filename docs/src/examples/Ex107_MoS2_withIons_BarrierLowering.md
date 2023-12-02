@@ -1,10 +1,11 @@
-# MoS2 with moving ions and Schottky Barrier Lowering.
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx111_MoS2_withIons_BarrierLowering.jl))
+# MoS2 with moving defects and Schottky Barrier Lowering.
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examples/Ex107_MoS2_withIons_BarrierLowering.jl))
 
-Memristor simulation with additional moving ions and Schottky barrier lowering at the contacts.
+Memristor simulation with additional moving positively charged defects and
+Schottky barrier lowering at the contacts.
 
 ````julia
-module Ex111_MoS2_withIons_BarrierLowering
+module Ex107_MoS2_withIons_BarrierLowering
 
 using ChargeTransport
 using ExtendableGrids
@@ -44,7 +45,6 @@ non-uniform grid
     if plotting
         gridplot(grid, Plotter = Plotter)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -60,7 +60,6 @@ non-uniform grid
     iphin            = 1 # electron quasi Fermi potential
     iphip            = 2 # hole quasi Fermi potential
     iphix            = 3
-    ipsi             = 4
 
     numberOfCarriers = 3 # electrons, holes and ions
 ````
@@ -234,9 +233,9 @@ Apply zero voltage on left boundary and a linear scan protocol on right boundary
 
     control.Δu_opt       = Inf
     control.Δt           = 1.0e-4
-    control.Δt_min       = 1.0e-7
-    control.Δt_max       = 1.0e-2
-    control.Δt_grow      = 1.005
+    control.Δt_min       = 1.0e-5
+    control.Δt_max       = 5.0e-2
+    control.Δt_grow      = 1.05
 
     if test == false
         println("*** done\n")
@@ -257,13 +256,13 @@ Apply zero voltage on left boundary and a linear scan protocol on right boundary
         label_energy[1, iphix] = "\$E_x-q\\psi\$"; label_energy[2, iphix] = "\$ - q \\varphi_x\$"
         label_density[iphix]   = "\$ n_x\$";       label_solution[iphix]  = "\$ \\varphi_x\$"
 
+        Plotter.figure()
         plot_densities(Plotter, ctsys, solEQ,"Equilibrium", label_density)
         Plotter.legend()
         Plotter.figure()
         plot_solution(Plotter, ctsys, solEQ, "Equilibrium", label_solution)
     end
 
-    return
     if test == false
         println("*** done\n")
     end
@@ -325,13 +324,13 @@ Apply zero voltage on left boundary and a linear scan protocol on right boundary
     end
 
 
-    testval = sum(filter(!isnan, IV))/length(IV)
+    testval = sum(filter(!isnan, solEQ))/length(solEQ)
     return testval
 
 end #  main
 
 function test()
-   main(test = true, barrierLowering = true) ≈ 32350.210962204783 #  main(test = true, barrierLowering = false) ≈ 19877.638250681746
+   main(test = true, barrierLowering = true) ≈ -1692.2303837883194
 end
 
 

@@ -1,5 +1,5 @@
 # GaAs diode: transient with traps (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx109_Traps.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examples/Ex109_Traps.jl))
 
 Simulating transient charge transport in a GaAs p-i-n diode with an electron trap.
 
@@ -71,7 +71,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -255,6 +254,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         label_energy[1, iphit] = "\$E_{\\tau}-q\\psi\$"; label_energy[2, iphit] = "\$ - q \\varphi_{\\tau}\$"
         label_density[iphit]   = "\$n_{\\tau}\$";        label_solution[iphit]  = "\$ \\varphi_{\\tau}\$"
 
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution,"Equilibrium", label_density)
@@ -343,6 +343,7 @@ these values are needed for putting the generation slightly on
 
     # plot solution and IV curve
     if plotting
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution,"bias \$\\Delta u\$ = $(endVoltage), \$ t=$(tvalues[number_tsteps])\$", label_density)
@@ -362,7 +363,7 @@ these values are needed for putting the generation slightly on
 end #  main
 
 function test()
-    testval = 0.9699244984603224
+    testval = 0.9699245385329192
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

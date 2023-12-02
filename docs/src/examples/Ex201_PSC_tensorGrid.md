@@ -1,12 +1,9 @@
 # PSC device on 2D domain (Tensor grid).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx201_PSC_tensorGrid.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examples/Ex201_PSC_tensorGrid.jl))
 
-Simulating a three layer PSC device Pedot| MAPI | PCBM with mobile ions. The simulations are
+Simulating a three layer PSC device PCBM | MAPI | Pedot with mobile ions.
+The simulations are
 performed in 2D on a tensor grid, out of equilibrium and with abrupt interfaces.
-
-The paramters are from Calado et al.:
-https://github.com/barnesgroupICL/Driftfusion/blob/master/Input_files/pedotpss_mapi_pcbm.csv.
-(with adjustments on layer lengths)
 
 ````julia
 module Ex201_PSC_tensorGrid
@@ -15,100 +12,11 @@ using ChargeTransport
 using ExtendableGrids
 using PyPlot
 
-function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false,
+              parameter_file = "../parameter_files/Params_PSC_PCBM_MAPI_Pedot.jl", # choose the parameter file)
+              )
 
-    ################################################################################
-    if test == false
-        println("Set up grid and regions")
-    end
-    ################################################################################
-
-    # region numbers
-    regionAcceptor  = 1                           # p doped region
-    regionIntrinsic = 2                           # intrinsic region
-    regionDonor     = 3                           # n doped region
-    regions         = [regionAcceptor, regionIntrinsic, regionDonor]
-    numberOfRegions = length(regions)
-
-    # boundary region numbers
-````
-
-Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
-adding additional interior boundaries, continue with 3, 4, ...
-
-````julia
-    bregionAcceptor = 1
-    bregionDonor    = 2
-    bregionNoFlux   = 3
-
-    # grid
-    h_pdoping       = 3.00e-6 * cm + 1.0e-7 *cm
-    h_intrinsic     = 3.00e-5 * cm
-    h_ndoping       = 8.50e-6 * cm + 1.0e-7 *cm
-    height          = 5.00e-6 * cm
-
-    x0              = 0.0 * cm
-    δ               = 3*n        # the larger, the finer the mesh
-    t               = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
-    k               = 1.5        # the closer to 1, the closer to the boundary geomspace works
-
-    coord_p_u       = collect(range(x0, h_pdoping/2, step=h_pdoping/(0.3*δ)))
-    coord_p_g       = geomspace(h_pdoping/2,
-                                h_pdoping,
-                                h_pdoping/(0.4*δ),
-                                h_pdoping/(1.1*δ),
-                                tol=t)
-    coord_i_g1      = geomspace(h_pdoping,
-                                h_pdoping+h_intrinsic/k,
-                                h_intrinsic/(6.8*δ),
-                                h_intrinsic/(0.8*δ),
-                                tol=t)
-    coord_i_g2      = geomspace(h_pdoping+h_intrinsic/k,
-                                h_pdoping+h_intrinsic,
-                                h_intrinsic/(0.8*δ),
-                                h_intrinsic/(7.8*δ),
-                                tol=t)
-    coord_n_g       = geomspace(h_pdoping+h_intrinsic,
-                                h_pdoping+h_intrinsic+h_ndoping/2,
-                                h_ndoping/(2.8*δ),
-                                h_ndoping/(0.5*δ),
-                                tol=t)
-    coord_n_u       = collect(range(h_pdoping+h_intrinsic+h_ndoping/2, h_pdoping+h_intrinsic+h_ndoping, step=h_pdoping/(0.1*δ)))
-
-    coord           = glue(coord_p_u,coord_p_g,  tol=10*t)
-    coord           = glue(coord,    coord_i_g1, tol=10*t)
-    coord           = glue(coord,    coord_i_g2, tol=10*t)
-    coord           = glue(coord,    coord_n_g,  tol=10*t)
-    coord_length    = glue(coord,    coord_n_u,  tol=10*t)
-
-    height_L        = geomspace(0.0, height/2, height/(0.5*δ), height/(0.5*δ))
-    height_R        = geomspace(height/2, height, height/(0.5*δ), height/(0.5*δ))
-    coord_height    = glue(height_L, height_R, tol = 10*t)
-
-    grid            = simplexgrid(coord_length, coord_height)
-
-    # specify inner regions
-    cellmask!(grid, [0.0, 0.0],                     [h_pdoping, height],                           regionAcceptor, tol = 1.0e-18)  # p-doped region   = 1
-    cellmask!(grid, [h_pdoping, 0.0],               [h_pdoping + h_intrinsic, height],             regionIntrinsic, tol = 1.0e-18) # intrinsic region = 2
-    cellmask!(grid, [h_pdoping + h_intrinsic, 0.0], [h_pdoping + h_intrinsic + h_ndoping, height], regionDonor, tol = 1.0e-18)     # n-doped region   = 3
-
-    # specifiy outer regions
-    # metal interfaces
-    bfacemask!(grid, [0.0, 0.0], [0.0, height], bregionAcceptor) # BregionNumber = 1
-    bfacemask!(grid, [h_pdoping + h_intrinsic + h_ndoping, 0.0], [h_pdoping + h_intrinsic + h_ndoping, height], bregionDonor) # BregionNumber = 2
-
-    # no flux interfaces [xmin, ymin], [xmax, ymax]
-    bfacemask!(grid, [0.0, 0.0], [h_pdoping + h_intrinsic + h_ndoping, 0.0], bregionNoFlux) # BregionNumber = 3
-    bfacemask!(grid, [0.0, height], [h_pdoping + h_intrinsic + h_ndoping, height], bregionNoFlux) # # BregionNumber = 3
-
-    if plotting
-        gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.5, legend=:lt)
-        Plotter.title("Grid")
-    end
-
-    if test == false
-        println("*** done\n")
-    end
+    PyPlot.close("all")
 
     ################################################################################
     if test == false
@@ -116,109 +24,82 @@ adding additional interior boundaries, continue with 3, 4, ...
     end
     ################################################################################
 
-    # set indices of the quasi Fermi potentials
-    iphin            = 1 # electron quasi Fermi potential
-    iphip            = 2 # hole quasi Fermi potential
-    iphia            = 3 # anion vacancy quasi Fermi potential
-    numberOfCarriers = 3
+    include(parameter_file) # include the parameter file we specified
 
-    # temperature
-    T                = 300.0                 *  K
-
-    # band edge energies
-    Ec_a             = -3.0                  *  eV
-    Ev_a             = -5.1                  *  eV
-
-    Ec_i             = -3.8                  *  eV
-    Ev_i             = -5.4                  *  eV
-
-    Ec_d             = -3.8                  *  eV
-    Ev_d             = -6.2                  *  eV
-
-    EC               = [Ec_a, Ec_i, Ec_d]
-    EV               = [Ev_a, Ev_i, Ev_d]
-
-    # effective densities of state
-    Nc_a             = 1.0e20                / (cm^3)
-    Nv_a             = 1.0e20                / (cm^3)
-
-    Nc_i             = 1.0e19                / (cm^3)
-    Nv_i             = 1.0e19                / (cm^3)
-
-    # ############ adjust Na, Ea for anion vacancies here ###########
-    Nanion           = 1.0e18                / (cm^3)
-    Ea_i             = -4.4                  *  eV
-    # for the labels in the figures
-    textEa           = Ea_i./eV
-    textNa           = Nanion.*cm^3
-    # ############ adjust Na, Ea for anion vacancies here ###########
-    EA               = [0.0,  Ea_i,  0.0]
-
-    Nc_d             = 1.0e19                / (cm^3)
-    Nv_d             = 1.0e19                / (cm^3)
-
-    NC               = [Nc_a, Nc_i, Nc_d]
-    NV               = [Nv_a, Nv_i, Nv_d]
-    NAnion           = [0.0,  Nanion, 0.0]
-
-    # mobilities
-    μn_a             = 0.1                   * (cm^2) / (V * s)
-    μp_a             = 0.1                   * (cm^2) / (V * s)
-
-    μn_i             = 2.00e1                * (cm^2) / (V * s)
-    μp_i             = 2.00e1                * (cm^2) / (V * s)
-    μa_i             = 1.00e-10              * (cm^2) / (V * s)
-
-    μn_d             = 1.0e-3                * (cm^2) / (V * s)
-    μp_d             = 1.0e-3                * (cm^2) / (V * s)
-
-    μn               = [μn_a, μn_i, μn_d]
-    μp               = [μp_a, μp_i, μp_d]
-    μa               = [0.0,  μa_i, 0.0 ]
-
-    # relative dielectric permittivity
-    ε_a              = 4.0                   *  1.0
-    ε_i              = 23.0                  *  1.0
-    ε_d              = 3.0                   *  1.0
-
-    ε                = [ε_a, ε_i, ε_d]
-
-    # radiative recombination
-    r0_a             = 6.3e-11               * cm^3 / s
-    r0_i             = 3.6e-12               * cm^3 / s
-    r0_d             = 6.8e-11               * cm^3 / s
-
-    r0               = [r0_a, r0_i, r0_d]
-
-    # life times and trap densities
-    τn_a             = 1.0e-6                * s
-    τp_a             = 1.0e-6                * s
-
-    τn_i             = 1.0e-7                * s
-    τp_i             = 1.0e-7                * s
-    τn_d             = τn_a
-    τp_d             = τp_a
-
-    τn               = [τn_a, τn_i, τn_d]
-    τp               = [τp_a, τp_i, τp_d]
-
-    # SRH trap energies (needed for calculation of trap_density! (SRH))
-    Ei_a             = -4.05                * eV
-    Ei_i             = -4.60                * eV
-    Ei_d             = -5.00                * eV
-
-    EI               = [Ei_a, Ei_i, Ei_d]
-
-    # Auger recombination
-    Auger            = 0.0
-
-    # doping
-    Nd               = 2.089649130192123e17 / (cm^3)
-    Na               = 4.529587947185444e18 / (cm^3)
-    C0               = 1.0e18               / (cm^3)
+    bregionNoFlux   = 3
+    height          = 5.00e-6 * cm
 
     # contact voltage
-    voltageAcceptor  = 1.0                  * V
+    voltageAcceptor = 1.2 * V
+
+    # primary data for I-V scan protocol
+    scanrate        = 0.4 * V/s
+    number_tsteps   = 31
+    endVoltage      = voltageAcceptor # bias goes until the given voltage at acceptor boundary
+
+    # with fixed timestep sizes we can calculate the times a priori
+    tend            = endVoltage/scanrate
+    tvalues         = range(0, stop = tend, length = number_tsteps)
+
+    if test == false
+        println("*** done\n")
+    end
+
+    ################################################################################
+    if test == false
+        println("Set up grid and regions")
+    end
+    ################################################################################
+
+    δ            = 4*n        # the larger, the finer the mesh
+    t            = 0.5*(cm)/δ # tolerance for geomspace and glue (with factor 10)
+    k            = 1.5        # the closer to 1, the closer to the boundary geomspace
+
+    coord_n_u    = collect(range(0.0, h_ndoping/2, step=h_ndoping/(0.6*δ)))
+    coord_n_g    = geomspace(h_ndoping/2, h_ndoping,
+                             h_ndoping/(0.7*δ), h_ndoping/(1.1*δ),
+                             tol=t)
+    coord_i_g1   = geomspace(h_ndoping, h_ndoping+h_intrinsic/k,
+                             h_intrinsic/(5.1*δ), h_intrinsic/(1.0*δ),
+                             tol=t)
+    coord_i_g2   = geomspace(h_ndoping+h_intrinsic/k, h_ndoping+h_intrinsic,
+                             h_intrinsic/(1.0*δ), h_intrinsic/(5.1*δ),
+                             tol=t)
+    coord_p_g    = geomspace(h_ndoping+h_intrinsic, h_ndoping+h_intrinsic+h_pdoping/2,
+                             h_pdoping/(1.3*δ), h_pdoping/(0.3*δ),
+                             tol=t)
+    coord_p_u    = collect(range(h_ndoping+h_intrinsic+h_pdoping/2, h_ndoping+h_intrinsic+h_pdoping, step=h_pdoping/(0.6*δ)))
+
+    coord        = glue(coord_n_u, coord_n_g,  tol=10*t)
+    coord        = glue(coord,     coord_i_g1, tol=10*t)
+    coord        = glue(coord,     coord_i_g2, tol=10*t)
+    coord        = glue(coord,     coord_p_g,  tol=10*t)
+    coord_length = glue(coord,     coord_p_u,  tol=10*t)
+
+    height_L     = geomspace(0.0, height/2, height/(0.4*δ), height/(0.4*δ))
+    height_R     = geomspace(height/2, height, height/(0.4*δ), height/(0.4*δ))
+    coord_height = glue(height_L, height_R, tol = 10*t)
+
+    grid         = simplexgrid(coord_length, coord_height)
+
+    # specify inner regions
+    cellmask!(grid, [0.0, 0.0],                     [h_ndoping, height],               regionDonor, tol = 1.0e-18)
+    cellmask!(grid, [h_pdoping, 0.0],               [h_ndoping + h_intrinsic, height], regionIntrinsic, tol = 1.0e-18)
+    cellmask!(grid, [h_ndoping + h_intrinsic, 0.0], [h_total, height],                 regionAcceptor, tol = 1.0e-18)
+
+    # specifiy outer regions
+    # metal interfaces
+    bfacemask!(grid, [0.0, 0.0], [0.0, height], bregionDonor)            # BregionNumber = 1
+    bfacemask!(grid, [h_total, 0.0], [h_total, height], bregionAcceptor) # BregionNumber = 2
+
+    # no flux interfaces [xmin, ymin], [xmax, ymax]
+    bfacemask!(grid, [0.0, 0.0], [h_total, 0.0], bregionNoFlux)          # BregionNumber = 3
+    bfacemask!(grid, [0.0, height], [h_total, height], bregionNoFlux)    # BregionNumber = 3
+
+    if plotting
+        gridplot(grid, Plotter= Plotter, resolution=(600,400),linewidth=0.5, legend=:lt)
+        Plotter.title("Grid")
+    end
 
     if test == false
         println("*** done\n")
@@ -238,10 +119,10 @@ adding additional interior boundaries, continue with 3, 4, ...
 
     # Possible choices: Boltzmann, FermiDiracOneHalfBednarczyk, FermiDiracOneHalfTeSCA,
     # FermiDiracMinusOne, Blakemore
-    data.F                             = [Boltzmann, Boltzmann, FermiDiracMinusOne]
+    data.F                             = [FermiDiracOneHalfTeSCA, FermiDiracOneHalfTeSCA, FermiDiracMinusOne]
 
     data.bulkRecombination             = set_bulk_recombination(;iphin = iphin, iphip = iphip,
-                                                                 bulk_recomb_Auger = true,
+                                                                 bulk_recomb_Auger = false,
                                                                  bulk_recomb_radiative = true,
                                                                  bulk_recomb_SRH = true)
 
@@ -271,22 +152,22 @@ adding additional interior boundaries, continue with 3, 4, ...
 
     params.temperature                                  = T
     params.UT                                           = (kB * params.temperature) / q
-    params.chargeNumbers[iphin]                         = -1
-    params.chargeNumbers[iphip]                         =  1
-    params.chargeNumbers[iphia]                         =  1
+    params.chargeNumbers[iphin]                         = zn
+    params.chargeNumbers[iphip]                         = zp
+    params.chargeNumbers[iphia]                         = za
 
     for ireg in 1:numberOfRegions # region data
 
         params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
         # effective DOS, band edge energy and mobilities
-        params.densityOfStates[iphin, ireg]             = NC[ireg]
-        params.densityOfStates[iphip, ireg]             = NV[ireg]
-        params.densityOfStates[iphia, ireg]             = NAnion[ireg]
+        params.densityOfStates[iphin, ireg]             = Nn[ireg]
+        params.densityOfStates[iphip, ireg]             = Np[ireg]
+        params.densityOfStates[iphia, ireg]             = Na[ireg]
 
-        params.bandEdgeEnergy[iphin, ireg]              = EC[ireg]
-        params.bandEdgeEnergy[iphip, ireg]              = EV[ireg]
-        params.bandEdgeEnergy[iphia, ireg]              = EA[ireg]
+        params.bandEdgeEnergy[iphin, ireg]              = En[ireg]
+        params.bandEdgeEnergy[iphip, ireg]              = Ep[ireg]
+        params.bandEdgeEnergy[iphia, ireg]              = Ea[ireg]
 
         params.mobility[iphin, ireg]                    = μn[ireg]
         params.mobility[iphip, ireg]                    = μp[ireg]
@@ -296,20 +177,18 @@ adding additional interior boundaries, continue with 3, 4, ...
         params.recombinationRadiative[ireg]             = r0[ireg]
         params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
         params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
-        params.recombinationSRHTrapDensity[iphin, ireg] = trap_density!(iphin, ireg, data, EI[ireg])
-        params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, data, EI[ireg])
-        params.recombinationAuger[iphin, ireg]          = Auger
-        params.recombinationAuger[iphip, ireg]          = Auger
+        params.recombinationSRHTrapDensity[iphin, ireg] = trap_density!(iphin, ireg, params, EI[ireg])
+        params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, params, EI[ireg])
 
     end
 
     # interior doping
-    params.doping[iphin, regionDonor]                   = Nd
-    params.doping[iphia, regionIntrinsic]               = C0
-    params.doping[iphip, regionAcceptor]                = Na
+    params.doping[iphin, regionDonor]                   = Cn
+    params.doping[iphia, regionIntrinsic]               = Ca
+    params.doping[iphip, regionAcceptor]                = Cp
 
     data.params                                         = params
-    ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
+    ctsys                                               = System(grid, data, unknown_storage=:sparse)
 
     if test == false
         show_params(ctsys)
@@ -348,7 +227,7 @@ adding additional interior boundaries, continue with 3, 4, ...
 
         Plotter.figure()
         Plotter.surf(X[:], Y[:], solution[ipsi, :])
-        Plotter.title("Electrostatic potential \$ \\psi \$ in Equilibrium")
+        Plotter.title("Electrostatic potential \$ \\psi \$ (Equilibrium)")
         Plotter.xlabel("length [m]")
         Plotter.ylabel("height [m]")
         Plotter.zlabel("potential [V]")
@@ -356,7 +235,7 @@ adding additional interior boundaries, continue with 3, 4, ...
         ################
         Plotter.figure()
         Plotter.surf(X[:], Y[:], solution[iphin,:] )
-        Plotter.title("quasi Fermi potential \$ \\varphi_n \$ in Equilibrium")
+        Plotter.title("quasi Fermi potential \$ \\varphi_n \$ (Equilibrium)")
         Plotter.xlabel("length [m]")
         Plotter.ylabel("height [m]")
         Plotter.zlabel("potential [V]")
@@ -372,16 +251,6 @@ adding additional interior boundaries, continue with 3, 4, ...
         println("I-V Measurement Loop")
     end
     ################################################################################
-
-    # primary data for I-V scan protocol
-    scanrate      = 0.04 * V/s
-    number_tsteps = 16
-    endVoltage    = voltageAcceptor # bias goes until the given voltage at acceptor boundary
-
-
-    # with fixed timestep sizes we can calculate the times a priori
-    tend          = endVoltage/scanrate
-    tvalues       = range(0, stop = tend, length = number_tsteps)
 
     # for saving I-V data
     IV            = zeros(0) # for IV values
@@ -418,17 +287,17 @@ adding additional interior boundaries, continue with 3, 4, ...
         Plotter.xlabel("length [m]")
         Plotter.ylabel("height [m]")
         Plotter.zlabel("potential [V]")
-        # ################
+        ################
         Plotter.figure()
         Plotter.surf(X[:], Y[:], solution[iphin,:] )
         Plotter.title("quasi Fermi potential \$ \\varphi_n \$ at end time")
         Plotter.xlabel("length [m]")
         Plotter.ylabel("height [m]")
         Plotter.zlabel("potential [V]")
-        # ################
+        ################
         Plotter.figure()
-        Plotter.plot(biasValues, IV.*(cm)^2/height, label = "\$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ (without internal BC)",  linewidth= 3, linestyle="--", color="red")
-        Plotter.title("Forward; \$ E_a =\$$(textEa)eV;  \$ N_a =\$ $textNa\$\\mathrm{cm}^{⁻3}\$ ")
+        Plotter.plot(biasValues, IV.*(cm)^2/height, label = "",  linewidth= 3, marker = "o")
+        PyPlot.grid()
         Plotter.ylabel("total current [A]") #
         Plotter.xlabel("Applied Voltage [V]")
     end
@@ -437,14 +306,14 @@ adding additional interior boundaries, continue with 3, 4, ...
         println("*** done\n")
     end
 
-    testval = solution[4, 42]
+    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
     return testval
 
 end #  main
 
 function test()
-    testval = -4.067614136332431
-    main(test = true, unknown_storage=:sparse) ≈ testval
+    testval = -0.5818799192233242
+    main(test = true) ≈ testval
 end
 
 if test == false

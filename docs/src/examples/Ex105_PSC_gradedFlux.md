@@ -1,13 +1,14 @@
-# PSC device with graded interfaces & Ohmic contacts (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx105_PSC_gradedFlux.jl))
+# Three-layer PSC device with graded interfaces & Ohmic contacts (1D).
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examples/Ex105_PSC_gradedFlux.jl))
 
-Simulating a three layer PSC device SiO2| MAPI | SiO2 without mobile ions. The simulations are
+Simulating a three layer PSC device Ti02| MAPI | spiro-OMeTAD without mobile ions. The simulations are
 performed out of equilibrium, stationary and with two junctions between perovskite layer and
 transport layers, to which we refer as graded interfaces. Hence, a graded flux discretization
 with space dependent band-edge energies and density of states is tested here.
 The difference here is that we adjusted the order of indexing the quasi Fermi potentials.
 
-The parameters can be found in Table S.13, https://arxiv.org/abs/2009.04384. Or here:
+The parameters are based on the default parameter set of Ionmonger (with minor adjustments),
+such that we can likewise compare with the software Driftfusion, see
 https://github.com/barnesgroupICL/Driftfusion/blob/Methods-IonMonger-Comparison/Input_files/IonMonger_default_bulk.csv
 
 ````julia
@@ -46,6 +47,7 @@ end
 
 function main(;n = 2, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
+    PyPlot.close("all")
     ################################################################################
     if test == false
         println("Set up grid and regions")
@@ -132,7 +134,6 @@ inner interfaces
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -236,13 +237,31 @@ inner interfaces
     τp               = [τp_d, τp_j1, τp_i, τp_j2, τp_a]
 
     # SRH trap energies (needed for calculation of trap_density! (SRH))
-    Ei_d             = -5.0                 * eV
-    Ei_i             = -4.55                * eV
-    Ei_a             = -4.1                 * eV
+````
 
-    Ei_j1            = Ei_i;      Ei_j2     = Ei_a
+Ei_d             = -5.0                 * eV
+Ei_i             = -4.55                * eV
+Ei_a             = -4.1                 * eV
 
-    EI               = [Ei_d, Ei_j1, Ei_i, Ei_j2, Ei_a]
+Ei_j1            = Ei_d;      Ei_j2     = Ei_i
+
+EI               = [Ei_d, Ei_j1, Ei_i, Ei_j2, Ei_a]
+
+````julia
+    # reference densities
+    nτ_d             = 7.94e8             /m^3
+    pτ_d             = 7.94e8             /m^3
+
+    nτ_i             = 4.26e10            /m^3
+    pτ_i             = 3.05e10            /m^3
+    nτ_a             = nτ_d
+    pτ_a             = pτ_d
+
+    nτ_j1            = nτ_i;     nτ_j2      = nτ_a
+    pτ_j1            = pτ_i;     pτ_j2      = pτ_a
+
+    nτ               = [nτ_d, nτ_j1, nτ_i, nτ_j2, nτ_a]
+    pτ               = [pτ_d, pτ_j1, pτ_i, pτ_j2, pτ_a]
 
     # Auger recombination
     Auger            = 0.0
@@ -331,8 +350,8 @@ inner interfaces
         params.recombinationRadiative[ireg]             = r0[ireg]
         params.recombinationSRHLifetime[iphin, ireg]    = τn[ireg]
         params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
-        params.recombinationSRHTrapDensity[iphin, ireg] = trap_density!(iphin, ireg, data, EI[ireg])
-        params.recombinationSRHTrapDensity[iphip, ireg] = trap_density!(iphip, ireg, data, EI[ireg])
+        params.recombinationSRHTrapDensity[iphin, ireg] = nτ[ireg]
+        params.recombinationSRHTrapDensity[iphip, ireg] = pτ[ireg]
         params.recombinationAuger[iphin, ireg]          = Auger
         params.recombinationAuger[iphip, ireg]          = Auger
 
@@ -386,12 +405,12 @@ inner interfaces
     if plotting
         label_solution, label_density, label_energy = set_plotting_labels(data)
 
+        Plotter.figure()
         plot_energies(Plotter,  ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution, "Equilibrium", label_density)
         Plotter.figure()
         plot_solution(Plotter,  ctsys, solution, "Equilibrium", label_solution)
-        Plotter.figure()
     end
 
     if test == false
@@ -421,6 +440,7 @@ inner interfaces
 
     # plotting
     if plotting
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "Applied voltage Δu = $maxBias", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution, "Applied voltage Δu = $maxBias", label_density)
@@ -438,7 +458,7 @@ inner interfaces
 end #  main
 
 function test()
-    testval=-3.9827484795022645
+    testval = -3.982748467515117
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

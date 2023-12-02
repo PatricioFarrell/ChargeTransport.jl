@@ -1,5 +1,5 @@
 # GaAs diode (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx101_PIN.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examples/Ex101_PIN.jl))
 
 We simulate charge transport in a GaAs pin diode, where we use the van Roosbroeck
 system of equations as charge transport model. The unknowns are given by the quasi Fermi
@@ -27,6 +27,7 @@ end
 
 function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
+    Plotter.close("all")
     ################################################################################
     if test == false
         println("Set up grid and regions")
@@ -41,12 +42,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     numberOfRegions  = length(regions)
 
     # boundary region numbers
-````
-
-Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
-adding additional interior boundaries, continue with 3, 4, ...
-
-````julia
+    # Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
+    # adding additional interior boundaries, continue with 3, 4, ...
     bregionAcceptor  = 1
     bregionDonor     = 2
     bregionJunction1 = 3
@@ -83,7 +80,6 @@ adding additional interior boundaries, continue with 3, 4, ...
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -259,12 +255,12 @@ VoronoiFVMSys is not dependent on the data we initialized but rather on default 
         label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
 
         psi0 = electroNeutralSolution!(ctsys)
+        PyPlot.figure()
         plot_energies(Plotter, ctsys, label_BEE)
         Plotter.figure()
         plot_doping(Plotter, ctsys, label_density)
         Plotter.figure()
         plot_electroNeutralSolutionBoltzmann(Plotter, grid, psi0, ;plotGridpoints=true)
-        Plotter.figure()
         println("*** done\n")
     end
     ################################################################################
@@ -341,6 +337,7 @@ inival .= solution
 
     # plot solution and IV curve
     if plotting
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution,  "Applied voltage Δu = $(biasValues[end])", label_energy,   plotGridpoints = false)
         Plotter.figure()
         plot_solution(Plotter, ctsys, solution,  "Applied voltage Δu = $(biasValues[end])", label_solution, plotGridpoints = true)
@@ -360,7 +357,7 @@ inival .= solution
 end #  main
 
 function test()
-    testval = 1.5068426773059806
+    testval = 1.5068426833371802
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 

@@ -1,10 +1,11 @@
 # CIGS: stationary with traps and Schottky contacts.
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx112_CIGS_WithTraps.jl))
-Simulating stationary charge transport for CIGS with hole traps and mixed Schottky/Ohmic contact conditions.
-Assume that SRH recombination is only happening within a small regime.
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examples/Ex108_CIGS_WithTraps.jl))
+
+Simulating stationary charge transport for CIGS with hole traps and mixed Schottky/Ohmic
+contact conditions. Assume that SRH recombination only happens within a small regime.
 
 ````julia
-module Ex112_CIGS_WithTraps
+module Ex108_CIGS_WithTraps
 
 using ChargeTransport
 using ExtendableGrids
@@ -36,36 +37,36 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     ################################################################################
 
     # region numbers
-    regionDonor             = 1                           # n doped region
-    regionAcceptorLeft      = 2                           # p doped region
-    regionAcceptorTrap      = 3                           # p doped region with trap
-    regionAcceptorRight     = 4                           # p doped region
-    regions                 = [regionDonor, regionAcceptorLeft, regionAcceptorTrap, regionAcceptorRight]
-    numberOfRegions         = length(regions)
+    regionDonor          = 1                           # n doped region
+    regionAcceptorLeft   = 2                           # p doped region
+    regionAcceptorTrap   = 3                           # p doped region with trap
+    regionAcceptorRight  = 4                           # p doped region
+    regions              = [regionDonor, regionAcceptorLeft, regionAcceptorTrap, regionAcceptorRight]
+    numberOfRegions      = length(regions)
 
     # boundary region numbers
-    bregionDonor            = 1
-    bregionAcceptor         = 2
-    bregionDALeft           = 3
-    bregionALeftATrap       = 4
-    bregionATrapARight      = 5
+    bregionDonor         = 1
+    bregionAcceptor      = 2
+    bregionDALeft        = 3
+    bregionALeftATrap    = 4
+    bregionATrapARight   = 5
 
     # grid
-    refinementfactor        = 2^(n-1)
-    h_ndoping               = 0.5    * μm
-    h_pdoping_left          = 1.0    * μm
-    h_pdoping_trap          = 0.1    * μm
-    h_pdoing_right          = 1.0    * μm
-    w_device                = 0.5    * μm  # width of device
-    z_device                = 1.0e-4 * cm  # depth of device
-    h_total                 = h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right
-    coord                   = initialize_pin_grid(refinementfactor,
-                                                  h_ndoping,
-                                                  h_pdoping_left,
-                                                  h_pdoping_trap,
-                                                  h_pdoing_right)
+    refinementfactor     = 2^(n-1)
+    h_ndoping            = 0.5    * μm
+    h_pdoping_left       = 1.0    * μm
+    h_pdoping_trap       = 0.1    * μm
+    h_pdoing_right       = 1.0    * μm
+    w_device             = 0.5    * μm  # width of device
+    z_device             = 1.0e-4 * cm  # depth of device
+    h_total              = h_ndoping + h_pdoping_left + h_pdoping_trap + h_pdoing_right
+    coord                = initialize_pin_grid(refinementfactor,
+                                               h_ndoping,
+                                               h_pdoping_left,
+                                               h_pdoping_trap,
+                                               h_pdoing_right)
 
-    grid                    = simplexgrid(coord)
+    grid                 = simplexgrid(coord)
 
     # set different regions in grid
     cellmask!(grid, [0.0 * μm], [h_ndoping], regionDonor) # n doped
@@ -80,7 +81,6 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     if plotting
         gridplot(grid, Plotter = Plotter, legend=:lt)
         Plotter.title("Grid")
-        Plotter.figure()
     end
 
     if test == false
@@ -322,12 +322,12 @@ set the lifetime value high in all other regions, such that SRH recombination ca
         end
 
         # ##### set legend for plotting routines #####
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "Equilibrium", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution,"Equilibrium", label_density)
         Plotter.figure()
         plot_solution(Plotter, ctsys, solution, "Equilibrium", label_solution)
-        Plotter.figure()
     end
 
     if test == false
@@ -376,6 +376,7 @@ set the lifetime value high in all other regions, such that SRH recombination ca
 
     # plot solution and IV curve
     if plotting
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "bias \$\\Delta u\$ = $(endVoltage) V", label_energy)
         Plotter.figure()
         plot_densities(Plotter, ctsys, solution,"bias \$\\Delta u\$ = $(endVoltage) V", label_density)
@@ -404,8 +405,8 @@ set the lifetime value high in all other regions, such that SRH recombination ca
 end #  main
 
 function test()
-    testval                  = 1.484831267714751
-    testvalAdditionalSpecies = 1.1334257666192746
+    testval                  = 1.484831264268335
+    testvalAdditionalSpecies = 1.1334257649339574
 
     main(test = true, AdditionalTrapSpecies = false) ≈ testval && main(test = true, AdditionalTrapSpecies = true) ≈ testvalAdditionalSpecies
 end

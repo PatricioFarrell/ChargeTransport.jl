@@ -1,5 +1,5 @@
 # GaAs diode with spatially varying doping (1D).
-([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examplesEx102_PIN_nodal_doping.jl))
+([source code](https://github.com/PatricioFarrell/ChargeTransport.jl/tree/master/examples/Ex102_PIN_nodal_doping.jl))
 
 Simulating charge transport in a GaAs pin diode. This means the PDE problem corresponds to the
 van Roosbroeck system of equations. The simulations are performed out of equilibrium and for
@@ -14,6 +14,7 @@ using PyPlot
 
 function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
+    Plotter.close("all")
     ################################################################################
     if test == false
         println("Set up grid and regions")
@@ -28,12 +29,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     numberOfRegions  = length(regions)
 
     # boundary region numbers
-````
-
-Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
-adding additional interior boundaries, continue with 3, 4, ...
-
-````julia
+    # Note that by convention we have 1 for the left boundary and 2 for the right boundary. If
+    # adding additional interior boundaries, continue with 3, 4, ...
     bregionAcceptor  = 1
     bregionDonor     = 2
     bregionJunction1 = 3
@@ -217,7 +214,7 @@ Define the Params and ParamsNodal struct.
     control.verbose   = verbose
     control.abstol    = 1.0e-14
     control.reltol    = 1.0e-14
-    control.tol_round = 1.0e-14
+    control.max_round = 5
 
     if test == false
         println("*** done\n")
@@ -243,7 +240,6 @@ Define the Params and ParamsNodal struct.
         plot_densities(Plotter, ctsys, solution, "Equilibrium", label_density)
         Plotter.figure()
         plot_solution(Plotter,  ctsys, solution, "Equilibrium", label_solution)
-        Plotter.figure()
     end
 
     if test == false
@@ -291,6 +287,7 @@ inival .= solution
 
 
     if plotting # plot solution and IV curve
+        Plotter.figure()
         plot_energies(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])",  label_energy)
         Plotter.figure()
         plot_solution(Plotter, ctsys, solution, "Applied voltage Δu = $(biasValues[end])",  label_solution, plotGridpoints = true)
@@ -306,7 +303,7 @@ inival .= solution
 end #  main
 
 function test()
-    testval = 1.4676876302354516
+    testval = 1.4676876548796856
     main(test = true, unknown_storage=:dense) ≈ testval && main(test = true, unknown_storage=:sparse) ≈ testval
 end
 
