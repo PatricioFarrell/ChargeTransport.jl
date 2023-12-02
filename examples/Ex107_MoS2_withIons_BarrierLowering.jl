@@ -315,13 +315,13 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     end
 
 
-    testval = sum(filter(!isnan, IV))/length(IV)
+    testval = sum(filter(!isnan, solEQ))/length(solEQ)
     return testval
 
 end #  main
 
 function test()
-   main(test = true, barrierLowering = true) ≈ 3025.4497810975327
+   main(test = true, barrierLowering = true) ≈ -1692.2303837883194
 end
 
 
