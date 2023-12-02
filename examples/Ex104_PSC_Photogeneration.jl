@@ -298,6 +298,8 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 
     end # generation loop
 
+    solutionEQ = inival
+
     if plotting
         label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
 
@@ -416,26 +418,25 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.plot(biasValues[2:end], -IV, linewidth = 5, label = "forward")
         Plotter.plot(biasValuesReverse[2:end], -IVReverse, linewidth = 5, label = "reverse")
         Plotter.grid()
-        PyPlot.legend()
+        Plotter.legend()
         Plotter.xlabel("applied bias [V]")
         Plotter.ylabel("total current [A]")
 
         Plotter.figure()
-        for ireg = 1:numberOfRegions
-            subg = subgrid(grid, [ireg])
-
-            if uniformGeneration
-                PyPlot.plot(subg[Coordinates]', (params.generationUniform[ireg].*ones(length(subg[Coordinates])))', label = "region $ireg")
-            else
-                PyPlot.plot(subg[Coordinates]', BeerLambert(ctsys, ireg, subg[Coordinates])', label = "region $ireg")
+        if userdefinedGeneration
+            Plotter.plot(coord, data.generationData)
+        else
+            for ireg = 1:numberOfRegions
+                subg = subgrid(grid, [ireg])
+                Plotter.plot(subg[Coordinates]', BeerLambert(ctsys, ireg, subg[Coordinates])', label = "region $ireg")
             end
 
         end
-        PyPlot.legend()
-        PyPlot.grid()
-        PyPlot.xlabel("space [\$m\$]")
-        PyPlot.ylabel("photogeneration [\$\\frac{1}{cm^3s}\$]")
-        PyPlot.tight_layout()
+        Plotter.legend()
+        Plotter.grid()
+        Plotter.xlabel("space [\$m\$]")
+        Plotter.ylabel("photogeneration [\$\\frac{1}{cm^3s}\$]")
+        Plotter.tight_layout()
     end
 
     if test == false
@@ -471,14 +472,14 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
         println("*** done\n")
     end
 
-    testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
+    testval = sum(filter(!isnan, solutionEQ))/length(solutionEQ) # when using sparse storage, we get NaN values in solution
     return testval
 
 end #  main
 
 function test()
-    testval = -1.055694909603636; testvalUserdefined =-1.0557806383822483
-    main(test = true, userdefinedGeneration = false) ≈ testval #&& main(test = true, userdefinedGeneration = true) ≈ testvalUserdefined
+    testval = -1.052813874410313; testvalUserdefined = -1.0557806383822483
+    main(test = true, userdefinedGeneration = false) ≈ testval && main(test = true, userdefinedGeneration = true) ≈ testvalUserdefined
 end
 
 if test == false
