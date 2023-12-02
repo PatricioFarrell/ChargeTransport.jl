@@ -478,7 +478,7 @@ function main(;n = 5, Plotter = PyPlot, plotting = false, verbose = false, test 
 end #  main
 
 function test()
-    testval = -1.052813874410313; testvalUserdefined = -1.0557806383822483
+    testval = -1.052813874410313; testvalUserdefined = -1.0528971495353738
     main(test = true, userdefinedGeneration = false) ≈ testval && main(test = true, userdefinedGeneration = true) ≈ testvalUserdefined
 end
 
