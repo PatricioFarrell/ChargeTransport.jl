@@ -29,6 +29,8 @@ begin
 	using PyPlot
 	using PlutoUI
 	#Pkg.resolve()
+	include("../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl")
+	nothing;
 end
 
 # ╔═╡ 39e1f60f-cd7a-49b5-b569-b3321f68c2ac
@@ -156,110 +158,33 @@ md"""
 We consider the device at a constant temperature T = 298 K with the following parameters for electrons, holes and anion vacancies. We assume that the device has an area of 0.1m x 0.1m.
 """
 
-# ╔═╡ c72f9732-4fb3-485f-93e2-14999307d513
-begin
-
-	# solar cell area
-	area             = 0.1 * m * 0.1 *m
-
-	 ## set indices of the quasi Fermi potentials
-    iphin            = 1 # electron quasi Fermi potential
-    iphip            = 2 # hole quasi Fermi potential
-    iphia            = 3 # anion vacancy quasi Fermi potential
-
-    numberOfCarriers = 3 # electrons, holes and anion vacancies
-
-	## charge numbers
-	zn               = -1
-	zp               =  1
-	za               =  1
-
-    ## temperature
-    T                = 298.0                 *  K
-
-    ## band edge energies
-    Ec_d             = -4.0                  *  eV
-    Ev_d             = -5.8                  *  eV
-
-	Ec_i             = -3.7                  *  eV
-    Eg               =  1.7                  *  eV
-    Ev_i             =  Ec_i - Eg
-	Ea_i             = -4.45                 *  eV
-
-    Ec_a             = -3.4                  *  eV
-    Ev_a             = -5.1                  *  eV
-
-    EC               = [Ec_d, Ec_i, Ec_a]
-    EV               = [Ev_d, Ev_i, Ev_a]
-    EA               = [0.0,  Ea_i,  0.0]
-
-    ## effective densities of state
-    Nc_d             = 5.0e19                / (cm^3)
-    Nv_d             = 5.0e19                / (cm^3)
-
-    Nc_i             = 8.1e18                / (cm^3)
-    Nv_i             = 5.8e18                / (cm^3)
-	Nanion           = 1.0e21                / (cm^3)
-
-    Nc_a             = 5.0e19                / (cm^3)
-    Nv_a             = 5.0e19                / (cm^3)
-
-    NC               = [Nc_d, Nc_i,  Nc_a]
-    NV               = [Nv_d, Nv_i,  Nv_a]
-    NAnion           = [0.0,  Nanion, 0.0]
-
-    ## mobilities
-    μn_d             = 3.89                    * (cm^2) / (V * s)
-    μp_d             = 3.89                    * (cm^2) / (V * s)
-
-    μn_i             = 6.62e1                  * (cm^2) / (V * s)
-    μp_i             = 6.62e1                  * (cm^2) / (V * s)
-
-    μa_i             = 3.93e-12                * (cm^2) / (V * s)
-
-    μn_a             = 3.89e-1                 * (cm^2) / (V * s)
-    μp_a             = 3.89e-1                 * (cm^2) / (V * s)
-
-    μn               = [μn_d, μn_i, μn_a]
-    μp               = [μp_d, μp_i, μp_a]
-    μa               = [0.0,  μa_i, 0.0 ]
-
-    ## relative dielectric permittivity
-    ε_d              = 10.0                  *  1.0
-    ε_i              = 24.1                  *  1.0
-    ε_a              = 3.0                   *  1.0
-
-    ε                = [ε_d, ε_i, ε_a]
-
-    ## doping
-    Nd               = 1.00e18               / (cm^3)
-    Na               = 1.00e18               / (cm^3)
-    C0               = 1.6e19                / (cm^3)
-	C                = [Nd, C0, Na]
-
-	UT               = kB * T / q
-	nothing;
-end
-
 # ╔═╡ 3685ff11-b2f1-4fc1-bde6-723bf59ca57f
 md"""
 | physical quantity |   $\quad$symbol$\quad$   |    $\quad$ETL$\quad$    | $\quad$intrinsic$\quad$ |    $\quad$HTL$\quad$    |   $\quad$unit$\quad$   |
 |-------------------|--------------------------|-------------------------|------------------------------------|-------------------------|------------------------|
 |  layer thickness  |                 | $((h_ndoping)/nm) | $((h_intrinsic)/nm) |  $((h_pdoping)/nm) |  nm  |
-|  conduction band-edge energy| $E_c$ | $(EC[1]/q)     | $(EC[2]/q)   | $(EC[3]/q)     | eV  |
-|  valence band-edge energy|    $E_v$ | $(EV[1]/q)     | $(EV[2]/q)   | $(EV[3]/q)      | eV  |
-|  conduction band-edge DOS|  $N_c$   | $(NC[1]*cm^3)   | $(NC[2]*cm^3)   | $(NC[3]*cm^3)  | $1/\text{cm}^3$  |
-|  valence band-edge DOS|    $N_v$    | $(NV[1]*cm^3)   | $(NV[2]*cm^3) | $(NV[3]*cm^3)  | $1/\text{cm}^3$  |
-|  max vacancy concentration|    $N_x$    | --  | $(Nanion*cm^3)  | --  | $1/\text{cm}^3$  |
+|  conduction band-edge energy| $E_c$ | $(round(En[1]/q, sigdigits=3))     | $(round(En[2]/q, sigdigits=3))   | $(round(En[3]/q, sigdigits=3))     | eV  |
+|  valence band-edge energy|    $E_v$ | $(round(Ep[1]/q, sigdigits=3))     | $(round(Ep[2]/q, sigdigits=3))   | $(round(Ep[3]/q, sigdigits=3))      | eV  |
+|  conduction band-edge DOS|  $N_c$   | $(round(Nn[1]*cm^3, sigdigits=3))   | $(round(Nn[2]*cm^3, sigdigits=3))   | $(round(Nn[3]*cm^3, sigdigits=3))  | $1/\text{cm}^3$  |
+|  valence band-edge DOS|    $N_v$    | $(round(Np[1]*cm^3, sigdigits=3))   | $(round(Np[2]*cm^3, sigdigits=3)) | $(round(Np[3]*cm^3, sigdigits=3))  | $1/\text{cm}^3$  |
+|  max vacancy concentration|    $N_x$    | --  | $(round(Na_i*cm^3, sigdigits=3))  | --  | $1/\text{cm}^3$  |
 |  electron mobility|  $\mu_n$   | $(μn[1]/cm^2)   | $(μn[2]/cm^2)  | $(μn[3]/cm^2)  | $\text{cm}^2/(Vs)$  |
 |  hole mobility|    $\mu_p$    | $(μp[1]/cm^2)   | $(μp[2]/cm^2)   | $(μp[3]/cm^2)   | $\text{cm}^2/(Vs)$  |
 |  vacancy mobility|    $\mu_a$    | --  | $(μa[2]/cm^2)  | --  | $\text{cm}^2/(Vs)$  |
 |  electric permittivity|    $\varepsilon_r$ | $(ε[1])  | $(ε[2])  |$(ε[3])   |  |
-| donor doping density|    $C_n$    | $(C[1]*cm^3)  | --  | --  | $1/\text{cm}^3$ |
-| acceptor doping density|    $C_p$    | --  | --  | $(C[3]*cm^3)  | $1/\text{cm}^3$ |
-| average vacancy density|    $C_a$    | --  | $(C[2]*cm^3)  | --  | $1/\text{cm}^3$ |
+| donor doping density|    $C_n$    | $(round(Cn*cm^3, sigdigits=3))  | --  | --  | $1/\text{cm}^3$ |
+| acceptor doping density|    $C_p$    | --  | --  | $(round(Cp*cm^3, sigdigits=3))  | $1/\text{cm}^3$ |
+| average vacancy density|    $C_a$    | --  | $(round(Ca*cm^3, sigdigits=3))  | --  | $1/\text{cm}^3$ |
 """
 
+
+# ╔═╡ c72f9732-4fb3-485f-93e2-14999307d513
+begin
+
+	# solar cell area
+	area             = 0.1 * m * 0.1 *m
+	nothing;
+end
 
 # ╔═╡ c19b9329-1c9e-4ab3-8216-ff50dcb89e19
 md"""
@@ -284,32 +209,10 @@ If turned on, we use the following predefined parameters.
 # ╔═╡ b0df6373-8d11-4581-9e42-62e3aee6c869
 begin
 
-    ## radiative recombination
-	r0_d  = 6.8e-11               * cm^3 / s
-	r0_i  = 3.6e-12               * cm^3 / s
-    r0_a  = 6.3e-11               * cm^3 / s
-    
-    r0    = [r0_d, r0_i, r0_a]
-
-    ## life times and trap densities
-    τn_d  = 1.0e-6                * s
-    τp_d  = 1.0e-6                * s
-
-    τn_i  = 1.0e-7                * s
-    τp_i  = 1.0e-7                * s
-    τn_a  = τn_d
-    τp_a  = τp_d
-
-    τn    = [τn_d, τn_i, τn_a]
-    τp    = [τp_d, τp_i, τp_a]
-
 	## reference densities
 	nτ    = [7.93786e8, 6.15383e9, 6.01793e14] ./ (m^3)
 	pτ    = [1.81784e12  2.1087e11 1.14747e8] ./ (m^3)
 	
-    ## Auger recombination
-    Auger = 0.0
-
 	nothing;
 
 end
@@ -318,7 +221,7 @@ end
 md"""
 | physical quantity |   $\quad$symbol$\quad$   |    $\quad$ETL$\quad$    | $\quad$intrinsic$\quad$ |    $\quad$HTL$\quad$    |   $\quad$unit$\quad$   |
 |-------------------|--------------------------|-------------------------|------------------------------------|-------------------------|------------------------|
-| radiative recomb | $r_0$   | $(r0[1]/cm^3) | $(r0[2]/cm^3) |  $(r0[3]/cm^3) |  $\text{cm}^3/s$  |
+| radiative recomb | $r_0$   | $(round(r0[1]/cm^3, sigdigits=3)) | $(round(r0[2]/cm^3, sigdigits=3)) |  $(round(r0[3]/cm^3, sigdigits=3)) |  $\text{cm}^3/s$  |
 | lifetime, electron | $\tau_n$   | $(τn[1]) | $(τn[2])|  $(τn[3]) | s  |
 | lifetime, hole | $\tau_p$   | $(τp[1]) | $(τp[2])|  $(τp[3]) | s  |
 | reference dens, electron | $n_{\tau,n}$   | $(nτ[1]) | $(nτ[2])|  $(nτ[3]) | $1/\text{m}^3$   |
@@ -479,13 +382,13 @@ begin
         params.dielectricConstant[ireg]                 = ε[ireg] * ε0
 
         ## effective DOS, band edge energy and mobilities
-        params.densityOfStates[iphin, ireg]             = NC[ireg]
-        params.densityOfStates[iphip, ireg]             = NV[ireg]
-        params.densityOfStates[iphia, ireg]             = NAnion[ireg]
+        params.densityOfStates[iphin, ireg]             = Nn[ireg]
+        params.densityOfStates[iphip, ireg]             = Np[ireg]
+        params.densityOfStates[iphia, ireg]             = Na[ireg]
 
-        params.bandEdgeEnergy[iphin, ireg]              = EC[ireg]
-        params.bandEdgeEnergy[iphip, ireg]              = EV[ireg]
-        params.bandEdgeEnergy[iphia, ireg]              = EA[ireg]
+        params.bandEdgeEnergy[iphin, ireg]              = En[ireg]
+        params.bandEdgeEnergy[iphip, ireg]              = Ep[ireg]
+        params.bandEdgeEnergy[iphia, ireg]              = Ea[ireg]
 
         params.mobility[iphin, ireg]                    = μn[ireg]
         params.mobility[iphip, ireg]                    = μp[ireg]
@@ -497,8 +400,6 @@ begin
         params.recombinationSRHLifetime[iphip, ireg]    = τp[ireg]
         params.recombinationSRHTrapDensity[iphin, ireg] = nτ[ireg]
         params.recombinationSRHTrapDensity[iphip, ireg] = pτ[ireg]
-        params.recombinationAuger[iphin, ireg]          = Auger
-        params.recombinationAuger[iphip, ireg]          = Auger
 
         ## generation parameters
 		params.generationUniform[ireg]                  = generation_uniform[ireg]
@@ -511,9 +412,9 @@ begin
     params.generationPeak                 = generationPeak
 
     ## interior doping
-    params.doping[iphin, regionDonor]     = Nd
-    params.doping[iphia, regionIntrinsic] = C0
-    params.doping[iphip, regionAcceptor]  = Na
+    params.doping[iphin, regionDonor]     = Cn
+    params.doping[iphia, regionIntrinsic] = Ca
+    params.doping[iphip, regionAcceptor]  = Cp
 
 	#########################################################################
 
@@ -957,7 +858,7 @@ begin
 
     for Eg in EgTest
 
-        Ev_iNew = Ec_i - Eg * eV
+        Ev_iNew = En[regionIntrinsic] - Eg * eV
         ctsys.fvmsys.physics.data.params.bandEdgeEnergy[iphip, regionIntrinsic] = Ev_iNew
 
 		## calculate equilibrium solution and as initial guess
@@ -1197,16 +1098,6 @@ git-tree-sha1 = "c6d890a52d2c4d55d326439580c3b8d0875a77d9"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 version = "1.15.7"
 
-[[deps.ChangesOfVariables]]
-deps = ["LinearAlgebra", "Test"]
-git-tree-sha1 = "485193efd2176b88e6622a39a246f8c5b600e74e"
-uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
-version = "0.1.6"
-weakdeps = ["ChainRulesCore"]
-
-    [deps.ChangesOfVariables.extensions]
-    ChangesOfVariablesChainRulesCoreExt = "ChainRulesCore"
-
 [[deps.ChargeTransport]]
 deps = ["DocStringExtensions", "ExtendableGrids", "ForwardDiff", "GridVisualize", "Interpolations", "Printf", "PyPlot", "Roots", "SparseArrays", "Test", "VoronoiFVM"]
 git-tree-sha1 = "91da0a6f756a4e3f22ab27cb1726622fba4a6fe9"
@@ -1328,12 +1219,6 @@ version = "1.0.0"
 deps = ["Printf"]
 uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 
-[[deps.DensityInterface]]
-deps = ["InverseFunctions", "Test"]
-git-tree-sha1 = "80c3e8639e3353e5d2912fb3a1916b8455e2494b"
-uuid = "b429d917-457f-4dbc-8f4c-0cc954292b1d"
-version = "0.4.0"
-
 [[deps.DiffResults]]
 deps = ["StaticArraysCore"]
 git-tree-sha1 = "782dd5f4561f5d267313f23853baaaa4c52ea621"
@@ -1355,11 +1240,14 @@ deps = ["FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "
 git-tree-sha1 = "13027f188d26206b9e7b863036f87d2f2e7d013a"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
 version = "0.25.87"
-weakdeps = ["ChainRulesCore", "DensityInterface"]
 
     [deps.Distributions.extensions]
     DistributionsChainRulesCoreExt = "ChainRulesCore"
     DistributionsDensityInterfaceExt = "DensityInterface"
+
+    [deps.Distributions.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    DensityInterface = "b429d917-457f-4dbc-8f4c-0cc954292b1d"
 
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
@@ -1608,12 +1496,6 @@ git-tree-sha1 = "16c0cc91853084cb5f58a78bd209513900206ce6"
 uuid = "8197267c-284f-5f27-9208-e0e47529a953"
 version = "0.7.4"
 
-[[deps.InverseFunctions]]
-deps = ["Test"]
-git-tree-sha1 = "49510dfcb407e572524ba94aeae2fced1f3feb0f"
-uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
-version = "0.1.8"
-
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "630b497eafcc20001bba38a4651b327dcfc491d2"
 uuid = "92d709cd-6900-40b7-9082-c6be49f344b6"
@@ -1760,12 +1642,16 @@ deps = ["DocStringExtensions", "IrrationalConstants", "LinearAlgebra"]
 git-tree-sha1 = "0a1b7c2863e44523180fdb3146534e265a91870b"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
 version = "0.3.23"
-weakdeps = ["ChainRulesCore", "ChangesOfVariables", "InverseFunctions"]
 
     [deps.LogExpFunctions.extensions]
     LogExpFunctionsChainRulesCoreExt = "ChainRulesCore"
     LogExpFunctionsChangesOfVariablesExt = "ChangesOfVariables"
     LogExpFunctionsInverseFunctionsExt = "InverseFunctions"
+
+    [deps.LogExpFunctions.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    ChangesOfVariables = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
+    InverseFunctions = "3587e190-3f89-42d0-90ee-14403ec27112"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -2190,11 +2076,14 @@ deps = ["HypergeometricFunctions", "IrrationalConstants", "LogExpFunctions", "Re
 git-tree-sha1 = "f625d686d5a88bcd2b15cd81f18f98186fdc0c9a"
 uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 version = "1.3.0"
-weakdeps = ["ChainRulesCore", "InverseFunctions"]
 
     [deps.StatsFuns.extensions]
     StatsFunsChainRulesCoreExt = "ChainRulesCore"
     StatsFunsInverseFunctionsExt = "InverseFunctions"
+
+    [deps.StatsFuns.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    InverseFunctions = "3587e190-3f89-42d0-90ee-14403ec27112"
 
 [[deps.StrideArraysCore]]
 deps = ["ArrayInterface", "CloseOpenIntervals", "IfElse", "LayoutPointers", "ManualMemory", "SIMDTypes", "Static", "StaticArrayInterface", "ThreadingUtilities"]
@@ -2404,14 +2293,14 @@ version = "17.4.0+0"
 # ╟─18823ee0-988d-459c-b340-7dfed6092b22
 # ╟─febcc48f-82ae-408a-b6a8-74cf3c76f61a
 # ╟─2d0bfda7-c23d-45b0-b3db-2000f1a291c3
-# ╠═3685ff11-b2f1-4fc1-bde6-723bf59ca57f
-# ╠═c72f9732-4fb3-485f-93e2-14999307d513
+# ╟─3685ff11-b2f1-4fc1-bde6-723bf59ca57f
+# ╟─c72f9732-4fb3-485f-93e2-14999307d513
 # ╟─c19b9329-1c9e-4ab3-8216-ff50dcb89e19
 # ╟─2a43a7a8-b930-4fca-bf50-90220a3bb431
 # ╟─5f0c398c-f389-4355-9f0e-6710c2b819a0
 # ╟─004e4101-dbf3-4527-bfb8-47da01c70182
-# ╠═66de390b-d0fd-48c4-93d4-50cb7bfc50cd
-# ╠═b0df6373-8d11-4581-9e42-62e3aee6c869
+# ╟─66de390b-d0fd-48c4-93d4-50cb7bfc50cd
+# ╟─b0df6373-8d11-4581-9e42-62e3aee6c869
 # ╠═61155934-83a1-40ea-805e-2607fd8f9cd2
 # ╟─380c5124-bd09-421f-9590-416400624374
 # ╟─c0177ece-44e4-4431-abd6-4f28a8037d26
@@ -2425,7 +2314,7 @@ version = "17.4.0+0"
 # ╠═29d920d6-ac56-4cb1-83a3-741ee6c876ae
 # ╟─850bfa1a-4326-4aa3-97d2-c21d4ac2ba11
 # ╟─2b785f7b-4a96-4785-993b-ee7bbf6b0533
-# ╠═c00b33f1-8722-49e9-93b3-3703c5d0efb7
+# ╟─c00b33f1-8722-49e9-93b3-3703c5d0efb7
 # ╠═ab8d4426-9eda-4bab-a68c-1475042321db
 # ╠═d6e4a543-d2e5-42a2-91af-1cf8b4d4632d
 # ╠═9fa7dc02-4913-4b6e-a96d-0d73ccfee302
@@ -2444,7 +2333,7 @@ version = "17.4.0+0"
 # ╟─f80b1946-73cb-448e-80a8-9e4770b50c79
 # ╟─633ed076-9123-4989-b7e0-3ee078d1a7e0
 # ╟─a6e14180-7eeb-48e7-afd2-8a147b32d870
-# ╟─ccf30353-f057-47ad-8e69-e12ef4e01c00
+# ╠═ccf30353-f057-47ad-8e69-e12ef4e01c00
 # ╟─d03cb3b7-2d90-4ee3-842d-54d55e32db07
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
