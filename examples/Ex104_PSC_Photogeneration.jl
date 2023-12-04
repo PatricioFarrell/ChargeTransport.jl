@@ -17,8 +17,9 @@ using ExtendableGrids
 # It seems to be the case that macos has problems with Pyplot
 #using PyPlot
 
-# write here instead of "nothing" Pyplot
-function main(;n = 5, Plotter = nothing, plotting = false, verbose = false, test = false,
+function main(;n = 5,
+              Plotter = nothing, # write here instead of "nothing" Pyplot
+              plotting = false, verbose = false, test = false,
               ########################
               parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl", # choose the parameter file
               ########################
@@ -138,8 +139,19 @@ function main(;n = 5, Plotter = nothing, plotting = false, verbose = false, test
         gen1           = zeros(length(subg1[Coordinates])-1); gen3 = zeros(length(subg3[Coordinates])-1)
         gen2           = incidentPhotonFlux[regionIntrinsic] .* absorption[regionIntrinsic] .* exp.( - absorption[regionIntrinsic] .* (subg2[Coordinates] .- generationPeak))
 
-        weight1        = (subg2[Coordinates][1] - subg1[Coordinates][end-1]) / (subg2[Coordinates][2]-subg1[Coordinates][end-1])
-        weight2        = (subg2[Coordinates][end] - subg2[Coordinates][end-1]) / (subg3[Coordinates][2]-subg2[Coordinates][end-1])
+        ## we want to get agreement with the region-wise defined photogeneration
+        X1    = subg1[Coordinates]; X2 = subg2[Coordinates]; X3 = subg3[Coordinates]
+
+        h1end = X1[end] - X1[end - 1]; h2beg = X2[2] - X2[1]
+        h2end = X2[end] - X2[end - 1]; h3beg = X3[2] - X3[1]
+
+        # region reaction multiplies with h2beg/2 ( = | ω_k ∩ region2|) it visits the node only from region2
+        # node reaction multiplies with (h1end+h2beg)/2 ( = | ω_k|)  as it visits the node from region 1 and region 2
+        # therefore, we need the following weights
+        # However, note that | ω_k ∩ region2| is not calculate explicitly but via the simplex
+        # components (if we have cellwise loops)
+        weight1 = h2beg / (h1end + h2beg) # ( = | ω_k ∩ region2| / | ω_k| )
+        weight2 = h2end / (h2end + h3beg)
 
         gen2[1]        = weight1 * gen2[1]; gen2[end] = weight2 * gen2[end]
 
@@ -483,8 +495,8 @@ function main(;n = 5, Plotter = nothing, plotting = false, verbose = false, test
 end #  main
 
 function test()
-    testval = -1.052813874410313; testvalUserdefined = -1.0528971495353738
-    main(test = true, userdefinedGeneration = false) ≈ testval && main(test = true, userdefinedGeneration = true) ≈ testvalUserdefined
+    testval = -1.052813874410313
+    main(test = true, userdefinedGeneration = false) ≈ testval && main(test = true, userdefinedGeneration = true) ≈ testval
 end
 
 if test == false
