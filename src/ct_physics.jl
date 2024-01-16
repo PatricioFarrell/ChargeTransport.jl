@@ -29,7 +29,7 @@ function get_DOS!(icc::QType, edge::VoronoiFVM.Edge, data)
 end
 
 # Calculate the DOS on a given interior region.
-function get_DOS(icc::QType, ireg::Int64, ctsys)
+function get_DOS(icc::QType, ireg::Int, ctsys)
 
     grid = ctsys.fvmsys.grid
     data = ctsys.fvmsys.physics.data
@@ -69,7 +69,7 @@ function get_BEE!(icc::QType, edge::VoronoiFVM.Edge, data)
 end
 
 # Calculate the band-edge energy on a given interior region.
-function get_BEE(icc::QType, ireg::Int64, ctsys)
+function get_BEE(icc::QType, ireg::Int, ctsys)
 
     grid = ctsys.fvmsys.grid
     data = ctsys.fvmsys.physics.data
@@ -148,7 +148,7 @@ $(TYPEDSIGNATURES)
 
 The argument of the statistics function for a given solution on a given interior region.
 """
-function etaFunction(sol, ireg::Int64, ctsys, icc::QType)
+function etaFunction(sol, ireg::Int, ctsys, icc::QType)
 
     grid   = ctsys.fvmsys.grid
     data   = ctsys.fvmsys.physics.data
@@ -247,7 +247,7 @@ For given potentials, compute corresponding densities for given interior region 
 to a homogeneous set of parameters.
 
 """
-function get_density(sol, ireg::Int64, ctsys, icc::QType)
+function get_density(sol, ireg::Int, ctsys, icc::QType)
 
     data = ctsys.fvmsys.physics.data
 
