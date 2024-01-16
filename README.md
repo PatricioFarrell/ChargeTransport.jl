@@ -37,4 +37,4 @@ the semiconductor drift-diffusion equations via the Voronoi finite volume method
 
 [4.] D. Abdel, N. E. Courtier and P. Farrell. [Volume exclusion effects in perovskite charge transport modeling.](https://doi.org/10.1007/s11082-023-05125-9) Optical and Quantum Electronics **55**, 884 (2023).
 
-[5.] B. Spetzler, D. Abdel, F. Schwierz, M. Ziegler and P. Farrell. [The role of mobile point defects in two-dimensional memristive devices.](https://doi.org/10.48550/arXiv.2304.06527) preprint (2023).
+[5.] B. Spetzler, D. Abdel, F. Schwierz, M. Ziegler and P. Farrell. [The Role of Vacancy Dynamics in Two-Dimensional Memristive Devices.](https://doi.org/10.1002/aelm.202300635) Advanced Electronic Materials (2023).
