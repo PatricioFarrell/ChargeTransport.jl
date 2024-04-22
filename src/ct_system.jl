@@ -929,7 +929,7 @@ including the physical parameters, but also some numerical information
 are located.
 
 """
-function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage, zeroVoltage], generationData = [0.0], statfunctions::Type{TFuncs}=StandardFuncSet) where TFuncs
+function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage for i=1:grid[NumBFaceRegions]], generationData = [0.0], statfunctions::Type{TFuncs}=StandardFuncSet) where TFuncs
 
     numberOfBoundaryRegions                    = grid[NumBFaceRegions]
 
