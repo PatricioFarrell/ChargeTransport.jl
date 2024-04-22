@@ -244,7 +244,7 @@ function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test
         ## set legend for plotting routines. Either you can use the predefined labels or write your own.
         label_solution, label_density, label_energy, label_BEE = set_plotting_labels(data)
 
-        psi0 = electroNeutralSolution!(ctsys)
+        psi0 = electroNeutralSolution(ctsys)
         Plotter.figure()
         plot_energies(Plotter, ctsys, label_BEE)
         Plotter.figure()

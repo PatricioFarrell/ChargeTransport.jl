@@ -981,7 +981,7 @@ function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage for 
     ####                 Numerics information                  ####
     ###############################################################
     data.fluxApproximation                     = FluxApproximationType[ScharfetterGummel for i = 1:numberOfCarriers]
-    data.calculationType                       = InEquilibrium     # do performances InEquilibrium or OutOfEquilibrium
+    data.calculationType                       = OutOfEquilibrium     # do performances InEquilibrium or OutOfEquilibrium
     data.modelType                             = Stationary        # indicates if we need additional time dependent part
     data.generationModel                       = GenerationNone    # generation model
     data.λ1                                    = 1.0               # λ1: embedding parameter for NLP
@@ -1566,7 +1566,7 @@ the Poisson equation equal to zero and solving for ``\\psi``.
 The charge carriers may obey different statitics functions.
 Currently, this one is not well tested for the case of charge carriers beyond electrons and holes.
 """
-function electroNeutralSolution!(ctsys; Newton=false)
+function electroNeutralSolution(ctsys)
 
     grid            = ctsys.fvmsys.grid
     data            = ctsys.fvmsys.physics.data
@@ -1578,52 +1578,35 @@ function electroNeutralSolution!(ctsys; Newton=false)
         error("this method is currently only working for electrons and holes")
     end
 
-    solution        = zeros(length(grid[Coordinates]))
-    iccVector       = collect(1:params.numberOfCarriers)
-    zVector         = params.chargeNumbers[iccVector]
-    FVector         = data.F[iccVector]
-    regionsAllCells = copy(grid[CellRegions])
-    regionsAllCells = push!(regionsAllCells, grid[CellRegions][end]) # enlarge region by final cell
-    phi             = 0.0                                            # in equilibrium set to 0
-    psi0_initial    = 0.5
+    iphin           = data.bulkRecombination.iphin # integer index of φ_n
+    iphip           = data.bulkRecombination.iphip # integer index of φ_p
 
-    for index = 1:length(regionsAllCells) - 1
+    psi0Vector      = zeros(num_nodes(grid))
+    psi0Values      = zeros(num_cellregions(grid))
+    cellnodes       = grid[CellNodes]
+    cellregions     = grid[CellRegions]
 
-        ireg          = regionsAllCells[index]
-        zVector       = params.chargeNumbers[iccVector]
-        FVector       = data.F[iccVector]
-        # all regions of nodes belonging to cell for given index
-        regionsOfCell = regionsAllCells[grid[CellNodes][:,index]]
+    for ireg = 1:num_cellregions(grid)
 
-        # average following quantities if needed among all regions
-        EVector = Float64[]; CVector = Float64[]; NVector = Float64[]
+        Ec    = params.bandEdgeEnergy[iphin, ireg]
+        Ev    = params.bandEdgeEnergy[iphip, ireg]
+        T     = params.temperature
+        Nc    = params.densityOfStates[iphin, ireg]
+        Nv    = params.densityOfStates[iphip, ireg]
+        C     = params.doping[iphin, ireg] - params.doping[iphip, ireg]       # N_D - N_A
+        Nintr = sqrt( Nc*Nv * exp((Ec-Ev)/(-kB*T)) )
 
-        for icc = 1:params.numberOfCarriers
-            push!(EVector, sum(params.bandEdgeEnergy[icc, regionsOfCell])  / length(regionsOfCell) + paramsnodal.bandEdgeEnergy[icc,index])
-            push!(CVector, sum(params.doping[icc, regionsOfCell])          / length(regionsOfCell) + paramsnodal.doping[index])
-            push!(NVector, sum(params.densityOfStates[icc, regionsOfCell]) / length(regionsOfCell) + paramsnodal.densityOfStates[icc, index])
-        end
-        # rhs of Poisson's equation as anonymous function depending on psi0
-        f = psi0 -> charge_density(psi0, phi, params.UT, EVector, zVector, CVector, NVector, FVector)
+        psi0Values[ireg] = (Ec + Ev)/(2*q) - 0.5*(kB*T/q) * log(Nc/Nv) + (kB*T/q) * asinh(C/(2*Nintr))
 
-        if !Newton
-            try
-                solution[index + 1] = fzero(f, psi0_initial)
-            catch
-                psi0_initial        = 2.0
-                solution[index + 1] = fzero(f, psi0_initial)
-                psi0_initial        = 0.25
-            end
-        else
-            D(f)                    = psi0 -> ForwardDiff.derivative(f, float(psi0))
-            solution[index + 1]     = find_zero((f, D(f)), psi0_initial)
+    end
+
+    for icell = 1:size(cellnodes,2)
+        for inode = 1:size(cellnodes,1)
+            psi0Vector[cellnodes[inode,icell]] = psi0Values[cellregions[icell]]
         end
     end
 
-    # fill in last values, same as second to last
-    solution[1] = solution[2]
-
-    return solution
+    return psi0Vector
 
 end
 
