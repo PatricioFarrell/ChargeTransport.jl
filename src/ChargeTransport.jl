@@ -38,6 +38,8 @@ export OuterBoundaryModelType, OuterBoundaryModelType, InterfaceModelType
 export OhmicContact, SchottkyContact, SchottkyBarrierLowering, MixedOhmicSchottkyContact
 export InterfaceNone, InterfaceRecombination
 
+export OhmicContactModelType, OhmicContactDirichlet, OhmicContactRobin
+
 export ModelType, Transient, Stationary
 
 export FluxApproximationType

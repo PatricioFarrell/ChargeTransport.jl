@@ -299,6 +299,13 @@ breaction!(f, u, bnode, data) = breaction!(f, u, bnode, data, data.boundaryType[
 
 #################################################################################################
 
+breaction!(f, u, bnode, data, ::Type{OhmicContact}) = breaction!(f, u, bnode, data, data.calculationType)
+
+# in case of equilibrium conditions, we choose the initial ohmic contact boundary model
+breaction!(f, u, bnode, data, ::Type{InEquilibrium}) = breaction!(f, u, bnode, data, OhmicContactRobin)
+
+breaction!(f, u, bnode, data, ::Type{OutOfEquilibrium}) = breaction!(f, u, bnode, data, data.ohmicContactModel)
+
 """
 $(TYPEDSIGNATURES)
 
@@ -319,7 +326,7 @@ The boundary conditions for electrons and holes are dirichlet conditions, where
 
 with ``U`` as an applied voltage.
 """
-function breaction!(f, u, bnode, data, ::Type{OhmicContact})
+function breaction!(f, u, bnode, data, ::Type{OhmicContactRobin})
 
     params      = data.params
     paramsnodal = data.paramsnodal
@@ -386,6 +393,44 @@ function breaction!(f, u, bnode, data, ::Type{OhmicContact})
 
     boundary_dirichlet!(f, u, bnode, species = iphin, region=bnode.region, value=Δu)
     boundary_dirichlet!(f, u, bnode, species = iphip, region=bnode.region, value=Δu)
+
+end
+
+
+"""
+$(TYPEDSIGNATURES)
+
+Creates ohmic boundary conditions via Dirichlet BC for the electrostatic potential ``\\psi``
+
+``\\psi  = \\psi_0 + U``,
+
+where ``\\psi_0`` contains some given value and ``U`` is an applied voltage.
+
+``f[\\psi] =  -q/\\delta  \\sum_\\alpha{ z_\\alpha  (n_\\alpha - C_\\alpha) },``
+
+where ``C_\\alpha`` corresponds to some doping w.r.t. the species ``\\alpha``.
+
+The boundary conditions for electrons and holes are dirichlet conditions, where
+
+`` \\varphi_{\\alpha} = U.```
+
+"""
+function breaction!(f, u, bnode, data, ::Type{OhmicContactDirichlet})
+
+    params = data.params
+
+    # DA: we get here an issue with the allocation, if we pass into boundary_dirichlet! something which is not of type Int,
+    # as e.g. an AbstractQuantity
+    ipsi   = params.numberOfCarriers + 1 # data.index_psi
+    iphin  = data.bulkRecombination.iphin # integer index of φ_n
+    iphip  = data.bulkRecombination.iphip # integer index of φ_p
+
+    Δu     = params.contactVoltage[bnode.region] + data.contactVoltageFunction[bnode.region](bnode.time)
+    ψ0     = params.bψEQ[bnode.region]
+    
+    boundary_dirichlet!(f, u, bnode, species = iphin, region=bnode.region, value=Δu)
+    boundary_dirichlet!(f, u, bnode, species = iphip, region=bnode.region, value=Δu)
+    boundary_dirichlet!(f, u, bnode, species = ipsi,  region=bnode.region, value=ψ0+Δu)
 
 end
 

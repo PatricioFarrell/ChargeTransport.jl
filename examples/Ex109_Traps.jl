@@ -159,6 +159,8 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     data.boundaryType[bregionAcceptor] = OhmicContact
     data.boundaryType[bregionDonor]    = OhmicContact
 
+    data.ohmicContactModel             = OhmicContactRobin
+
     ## Choose flux discretization scheme: ScharfetterGummel, ScharfetterGummelGraded,
     ## ExcessChemicalPotential, ExcessChemicalPotentialGraded, DiffusionEnhanced, GeneralizedSG
     data.fluxApproximation            .= ExcessChemicalPotential

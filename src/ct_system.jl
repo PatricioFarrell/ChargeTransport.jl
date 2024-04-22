@@ -358,9 +358,16 @@ mutable struct Params
     SchottkyBarrier              ::  Array{Float64,1}
 
     """
-    An array containing a contant value for the applied voltage.
+    An array containing a constant value for the applied voltage.
     """
     contactVoltage               ::  Array{Float64, 1}
+
+
+    """
+    An array containing a constant value for the electric potential
+    in case of Dirichlet boundary conditions.
+    """
+    bψEQ                         ::  Array{Float64, 1}
 
     ###############################################################
     ####                  number of carriers                   ####
@@ -715,6 +722,12 @@ mutable struct Data{TFuncs<:Function, TVoltageFunc<:Function, TGenerationData<:U
     """
     λ3                           ::  Float64
 
+    """
+    Possibility to change the implementation of the ohmic contact boundary model
+    for the electric potential (Dirichlet or Robin)
+    """
+    ohmicContactModel            :: OhmicContactModelType
+
     ###############################################################
     ####             Templates for DOS and BEE                 ####
     ###############################################################
@@ -832,6 +845,7 @@ function Params(grid, numberOfCarriers)
     ###############################################################
     params.SchottkyBarrier              = spzeros(Float64, numberOfBoundaryRegions)
     params.contactVoltage               = spzeros(Float64, numberOfBoundaryRegions)
+    params.bψEQ                         = spzeros(Float64, numberOfBoundaryRegions)
 
     ###############################################################
     ####                  number of carriers                   ####
@@ -855,6 +869,7 @@ function Params(grid, numberOfCarriers)
     params.bRecombinationSRHTrapDensity = spzeros(Float64, 2, numberOfBoundaryRegions)
     params.bRecombinationSRHLifetime    = spzeros(Float64, 2, numberOfBoundaryRegions)
     params.bDensityEQ                   = spzeros(Float64, 2, numberOfBoundaryRegions)
+    
     ###############################################################
     ####        number of carriers x number of regions         ####
     ###############################################################
@@ -981,12 +996,13 @@ function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage for 
     ####                 Numerics information                  ####
     ###############################################################
     data.fluxApproximation                     = FluxApproximationType[ScharfetterGummel for i = 1:numberOfCarriers]
-    data.calculationType                       = OutOfEquilibrium     # do performances InEquilibrium or OutOfEquilibrium
-    data.modelType                             = Stationary        # indicates if we need additional time dependent part
-    data.generationModel                       = GenerationNone    # generation model
-    data.λ1                                    = 1.0               # λ1: embedding parameter for NLP
-    data.λ2                                    = 1.0               # λ2: embedding parameter for G
-    data.λ3                                    = 1.0               # λ3: embedding parameter for electro chemical reaction
+    data.calculationType                       = OutOfEquilibrium      # do performances InEquilibrium or OutOfEquilibrium
+    data.modelType                             = Stationary            # indicates if we need additional time dependent part
+    data.generationModel                       = GenerationNone        # generation model
+    data.λ1                                    = 1.0                   # λ1: embedding parameter for NLP
+    data.λ2                                    = 1.0                   # λ2: embedding parameter for G
+    data.λ3                                    = 1.0                   # λ3: embedding parameter for electro chemical reaction
+    data.ohmicContactModel                     = OhmicContactDirichlet # OhmicContactRobin also possible
 
     ###############################################################
     ####             Templates for DOS and BEE                 ####
@@ -1417,8 +1433,7 @@ gridplot(grid::ExtendableGrid; Plotter, kwargs...)                   = GridVisua
 """
 $(TYPEDSIGNATURES)
 
-Functions which sets for given charge carrier at a given boundary
-a given value.
+Functions which calculates the equilibrium solution in case of non-present fluxes and zero bias.
 
 """
 
@@ -1427,13 +1442,19 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
     ctsys.fvmsys.physics.data.calculationType = InEquilibrium
     grid                                      = ctsys.fvmsys.grid
 
+    data        = ctsys.fvmsys.physics.data
+    params      = ctsys.fvmsys.physics.data.params
+    paramsnodal = ctsys.fvmsys.physics.data.paramsnodal
+    bnode       = grid[BFaceNodes]
+    ipsi        = data.index_psi
+    
     # We set zero voltage for each charge carrier at all outer boundaries for equilibrium calculations.
     for ibreg ∈ grid[BFaceRegions]
         set_contact!(ctsys, ibreg, Δu = 0.0)
     end
 
     # initialize solution and starting vectors
-    if inival==nothing
+    if inival===nothing
         inival               = unknowns(ctsys)
         inival              .= 0.0
     end
@@ -1463,11 +1484,12 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
 
     end
 
-    data        = ctsys.fvmsys.physics.data
-    params      = ctsys.fvmsys.physics.data.params
-    paramsnodal = ctsys.fvmsys.physics.data.paramsnodal
-    bnode       = grid[BFaceNodes]
-    ipsi        = data.index_psi
+    for ibreg ∈ grid[BFaceRegions]
+        # here we assume that in multidimensions, we receive a constant value of the electric potential at the boundary
+        # check for applications, where this is not the case
+        bψVal                   = view(sol[ipsi, :], subgrid(grid, [ibreg], boundary = true))[1]
+        params.bψEQ[ibreg] = bψVal
+    end
 
     # calculate equilibrium densities (especially needed for Schottky boundary conditions)
     for icc ∈ data.electricCarrierList

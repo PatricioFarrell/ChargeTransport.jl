@@ -83,6 +83,18 @@ const BoundaryModelType  = Union{OuterBoundaryModelType, InterfaceModelType}
 
 ##########################################################
 ##########################################################
+
+abstract type OhmicContactDirichlet end
+
+abstract type OhmicContactRobin  end
+
+"""
+Possible mathematical types of ohmic contact boundary model.
+"""
+const OhmicContactModelType = Union{Type{OhmicContactDirichlet}, Type{OhmicContactRobin}}
+
+##########################################################
+##########################################################
 """
 $(TYPEDEF)
 Abstract type for transient simulations.
