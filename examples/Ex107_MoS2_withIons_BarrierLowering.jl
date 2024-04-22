@@ -12,12 +12,10 @@ module Ex107_MoS2_withIons_BarrierLowering
 
 using ChargeTransport
 using ExtendableGrids
+using PyPlot
 
-# It seems to be the case that macos has problems with Pyplot
-#using PyPlot
-
-# write here instead of "nothing" Pyplot
-function main(;Plotter = nothing, plotting = false, verbose = false, test = false, barrierLowering = true)
+# you can also use other Plotters, if you add them to the example file
+function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, barrierLowering = true)
 
     if plotting
         Plotter.close("all")

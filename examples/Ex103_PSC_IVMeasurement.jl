@@ -16,12 +16,10 @@ module Ex103_PSC_IVMeasurement
 
 using ChargeTransport
 using ExtendableGrids
+using PyPlot
 
-# It seems to be the case that macos has problems with Pyplot
-#using PyPlot
-
-# write here instead of "nothing" Pyplot
-function main(;n = 3, Plotter = nothing, plotting = false, verbose = false, test = false,
+# # you can also use other Plotters, if you add them to the example file
+function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test = false,
     parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl", # choose the parameter file
     otherScanProtocol = false) # you can choose between two scan protocols
 

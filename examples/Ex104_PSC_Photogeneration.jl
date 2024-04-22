@@ -13,12 +13,10 @@ module Ex104_PSC_Photogeneration
 
 using ChargeTransport
 using ExtendableGrids
-
-# It seems to be the case that macos has problems with Pyplot
-#using PyPlot
+using PyPlot
 
 function main(;n = 5,
-              Plotter = nothing, # write here instead of "nothing" Pyplot
+              Plotter = PyPlot, # you can also use other Plotters, if you add them to the example file
               plotting = false, verbose = false, test = false,
               ########################
               parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl", # choose the parameter file

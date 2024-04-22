@@ -12,12 +12,10 @@ module Ex106_PSC_SurfaceRecombination
 
 using ChargeTransport
 using ExtendableGrids
+using PyPlot
 
-# It seems to be the case that macos has problems with Pyplot
-#using PyPlot
-
-# write here instead of "nothing" Pyplot
-function main(;n = 6, Plotter = nothing, plotting = false,
+# you can also use other Plotters, if you add them to the example file
+function main(;n = 6, Plotter = PyPlot, plotting = false,
                verbose = false, test = false,
                parameter_file = "../parameter_files/Params_PSC_PCBM_MAPI_Pedot.jl", # choose the parameter file
               )

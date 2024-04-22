@@ -11,11 +11,10 @@ module Ex102_PIN_nodal_doping
 
 using ChargeTransport
 using ExtendableGrids
-# It seems to be the case that macos has problems with Pyplot
-#using PyPlot
+using PyPlot
 
-# write here instead of "nothing" Pyplot
-function main(;Plotter = nothing, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
+# you can also use other Plotters, if you add them to the example file
+function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false, unknown_storage=:sparse)
 
     if plotting
         Plotter.close("all")
