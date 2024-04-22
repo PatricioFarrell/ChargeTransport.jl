@@ -1020,7 +1020,7 @@ with special regard to the quasi Fermi potential model. This is the main struct 
 information on the input data, but also on the solving system, are stored.
 
 """
-function System(grid, data ;unknown_storage)
+function System(grid, data ; kwargs...)
 
     # We have currently two cases, where we use the discontinuous qF framework:
     # 1. interface charge carriers are defined
@@ -1031,7 +1031,7 @@ function System(grid, data ;unknown_storage)
     end
 
     # At this point, we choose a system based on usual integer indexing or quantity indexing.
-    ctsys = build_system(grid, data, unknown_storage, data.qFModel)
+    ctsys = build_system(grid, data, data.qFModel; kwargs...)
 
     return ctsys
 
@@ -1044,7 +1044,7 @@ $(TYPEDSIGNATURES)
 The core of the system constructor. Here, the system for continuous quasi Fermi potentials is build.
 
 """
-function build_system(grid, data, unknown_storage, ::Type{ContQF})
+function build_system(grid, data, ::Type{ContQF}; kwargs...)
 
     #################################################################################
     ##### Set the recombinations parameters correctly based on user information #####
@@ -1112,7 +1112,7 @@ function build_system(grid, data, unknown_storage, ::Type{ContQF})
                                       )
     end
 
-    ctsys.fvmsys = VoronoiFVM.System(grid, physics, unknown_storage = unknown_storage)
+    ctsys.fvmsys = VoronoiFVM.System(grid, physics; kwargs...)
 
     data         = ctsys.fvmsys.physics.data
 
@@ -1203,7 +1203,7 @@ $(TYPEDSIGNATURES)
 The core of the system constructor. Here, the system for discontinuous quasi Fermi potentials is build.
 
 """
-function build_system(grid, data, unknown_storage, ::Type{DiscontQF})
+function build_system(grid, data, ::Type{DiscontQF}; kwargs...)
 
     #################################################################################
     ##### Set the recombinations parameters correctly based on user information #####
@@ -1229,7 +1229,7 @@ function build_system(grid, data, unknown_storage, ::Type{DiscontQF})
     #################################################################################
     ##### Set carrier lists correctly based on user information #####
 
-    fvmsys                        = VoronoiFVM.System(grid, unknown_storage=unknown_storage)
+    fvmsys                        = VoronoiFVM.System(grid; kwargs...)
 
     #########################################
     # electrons and holes
@@ -1422,7 +1422,7 @@ a given value.
 
 """
 
-function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0)
+function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0, inival=nothing)
 
     ctsys.fvmsys.physics.data.calculationType = InEquilibrium
     grid                                      = ctsys.fvmsys.grid
@@ -1433,9 +1433,12 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
     end
 
     # initialize solution and starting vectors
-    inival               = unknowns(ctsys)
+    if inival==nothing
+        inival               = unknowns(ctsys)
+        inival              .= 0.0
+    end
+
     sol                  = unknowns(ctsys)
-    inival              .= 0.0
 
     # we slightly turn a linear Poisson problem to a nonlinear one with these variables.
     I      = collect(nonlinear_steps:-1:0.0)
