@@ -236,7 +236,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # VoronoiFVMSys is not dependent on the data we initialized but rather on default data.
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
-    add_physical_model!(ctsys, SpontRecombination(Radiative))
+    add_physical_model!(ctsys, RadiativeRecombination(Radiative))
 
     if test == false
         ## Here we can show region dependent physical parameters. show_params() only supports

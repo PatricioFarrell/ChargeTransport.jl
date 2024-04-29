@@ -751,7 +751,6 @@ function addRecombination!(f, u, node, data, ::SRHWithoutTrapsType)
     model_recombination_total = 0.0
     for m in data.models 
         model_recombination_total += model_recombination(m, node, data, u[iphin], u[iphip], u[ipsi], n, p)
-        @show model_recombination_total
     end
 
 
