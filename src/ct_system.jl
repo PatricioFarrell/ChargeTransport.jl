@@ -771,6 +771,11 @@ mutable struct Data{TFuncs<:Function, TVoltageFunc<:Function, TGenerationData<:U
     """
     paramsnodal                  :: ParamsNodal
 
+    """
+    List of additional physical models   
+    """
+    models                       :: Vector{PhysicalModelType}
+
     ###############################################################
     Data{TFuncs, TVoltageFunc, TGenerationData}() where {TFuncs, TVoltageFunc, TGenerationData} = new()
 
@@ -1018,6 +1023,7 @@ function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage for 
     ###############################################################
     data.params                                = Params(grid, numberOfCarriers)
     data.paramsnodal                           = ParamsNodal(grid, numberOfCarriers)
+    data.models                                = PhysicalModelType[]
 
     ###############################################################
 
@@ -1334,6 +1340,19 @@ function Base.show(io::IO, this::ParamsNodal)
         println(io,getfield(this,name))
     end
 end
+
+###########################################################
+###########################################################
+
+"""
+$(SIGNATURES)
+
+Add a user defined model to the system.
+"""
+function add_physical_model!(ctsys::System, model::PhysicalModelType)
+    push!(ctsys.data.models, model)
+end
+
 
 ###########################################################
 ###########################################################

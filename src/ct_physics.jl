@@ -727,6 +727,7 @@ function addRecombination!(f, u, node, data, ::SRHWithoutTrapsType)
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin  = data.chargeCarrierList[iphin]
     iphip  = data.chargeCarrierList[iphip]
+    ipsi   = data.index_psi
 
     n      = get_density!(u, node, data, iphin)
     p      = get_density!(u, node, data, iphip)
@@ -745,12 +746,22 @@ function addRecombination!(f, u, node, data, ::SRHWithoutTrapsType)
     kernelAuger = (params.recombinationAuger[iphin, ireg] * n + params.recombinationAuger[iphip, ireg] * p)
     kernelSRH   = params.prefactor_SRH / ( taup * (n + n0) + taun * (p + p0) )
     kernel      = kernelRad + kernelAuger + kernelSRH
+
+    # calculate recombination from other models
+    model_recombination_total = 0.0
+    for m in data.models 
+        model_recombination_total += model_recombination(m, node, data, u[iphin], u[iphip], u[ipsi], n, p)
+        @show model_recombination_total
+    end
+
+
+
     ###########################################################
     ####       right-hand side of continuity equations     ####
     ####       for φ_n and φ_p (bipolar reaction)          ####
     ###########################################################
-    f[iphin] = q * params.chargeNumbers[iphin] * kernel * excessDensTerm
-    f[iphip] = q * params.chargeNumbers[iphip] * kernel * excessDensTerm
+    f[iphin] = q * params.chargeNumbers[iphin] * kernel * excessDensTerm + q * params.chargeNumbers[iphin] * model_recombination_total
+    f[iphip] = q * params.chargeNumbers[iphip] * kernel * excessDensTerm + q * params.chargeNumbers[iphip] * model_recombination_total
 
 end
 
@@ -867,6 +878,16 @@ function RHSPoisson!(f, u, node, data, ipsi)
             f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * ncc   # add charge carrier
         end
     end
+
+    # add charges from user-defined models
+    iphin  = data.bulkRecombination.iphin
+    iphip  = data.bulkRecombination.iphip
+    n = get_density!(u, node, data, iphin)
+    p = get_density!(u, node, data, iphip)
+    for m ∈ data.models
+        f[ipsi] += model_charges(m, node, data, u[iphin], u[iphip], u[ipsi], n, p)
+    end
+
 
     f[ipsi] = f[ipsi] - data.paramsnodal.doping[node.index]
 
