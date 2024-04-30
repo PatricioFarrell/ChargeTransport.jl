@@ -295,10 +295,9 @@ Type for user defined models
 """
 abstract type PhysicalModelType end
 
-function model_recombination(model::PhysicalModelType, node, data, phi_n, phi_p, psi, n, p)
-    return 0.0
+function model_recombination!(model::PhysicalModelType, f, u, node, data, densities)
 end
 
-function model_charges(model::PhysicalModelType, node, data, phi_n, phi_p, psi, n, p)
+function model_charges(model::PhysicalModelType, u, node, data, densities)
     return 0.0
 end

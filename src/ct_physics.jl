@@ -747,20 +747,13 @@ function addRecombination!(f, u, node, data, ::SRHWithoutTrapsType)
     kernelSRH   = params.prefactor_SRH / ( taup * (n + n0) + taun * (p + p0) )
     kernel      = kernelRad + kernelAuger + kernelSRH
 
-    # calculate recombination from other models
-    model_recombination_total = 0.0
-    for m in data.models 
-        model_recombination_total += model_recombination(m, node, data, u[iphin], u[iphip], u[ipsi], n, p)
-    end
-
-
 
     ###########################################################
     ####       right-hand side of continuity equations     ####
     ####       for φ_n and φ_p (bipolar reaction)          ####
     ###########################################################
-    f[iphin] = q * params.chargeNumbers[iphin] * kernel * excessDensTerm + q * params.chargeNumbers[iphin] * model_recombination_total
-    f[iphip] = q * params.chargeNumbers[iphip] * kernel * excessDensTerm + q * params.chargeNumbers[iphip] * model_recombination_total
+    f[iphin] = q * params.chargeNumbers[iphin] * kernel * excessDensTerm
+    f[iphip] = q * params.chargeNumbers[iphip] * kernel * excessDensTerm
 
 end
 
@@ -879,12 +872,14 @@ function RHSPoisson!(f, u, node, data, ipsi)
     end
 
     # add charges from user-defined models
-    iphin  = data.bulkRecombination.iphin
-    iphip  = data.bulkRecombination.iphip
-    n = get_density!(u, node, data, iphin)
-    p = get_density!(u, node, data, iphip)
-    for m ∈ data.models
-        f[ipsi] += model_charges(m, node, data, u[iphin], u[iphip], u[ipsi], n, p)
+    if length(data.models) > 0
+        densities = zeros(data.params.numberOfCarriers)
+        for i in 1:data.params.numberOfCarriers
+            densities[i] = get_density!(u, node, data, i)
+        end    
+        for m ∈ data.models
+            f[ipsi] += model_charges(m, u, node, data, densities)
+        end
     end
 
 
@@ -895,6 +890,24 @@ function RHSPoisson!(f, u, node, data, ipsi)
     ## This is the trap density for the stationary case without traps as own charge carrier
     addTrapDensity!(f, u, node, data)
 
+end
+
+
+"""
+$(TYPEDSIGNATURES)   
+Add recombination from user defined models to the RHS
+"""
+function addModelRecombination!(f, u, node, data)
+    # calculate recombination from other models
+    if length(data.models) > 0
+        densities = zeros(data.params.numberOfCarriers)
+        for i in 1:data.params.numberOfCarriers
+            densities[i] = get_density!(u, node, data, i)
+        end
+        for m in data.models 
+            model_recombination!(m, f, u, node, data, densities)
+        end
+    end
 end
 
 """
@@ -908,6 +921,7 @@ function RHSContinuityEquations!(f, u, node, data)
     # dependent on user information concerncing generation
     addGeneration!(f, u, node, data)
 
+    addModelRecombination!(f, u, node, data)
 end
 
 

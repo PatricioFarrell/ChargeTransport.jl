@@ -30,9 +30,13 @@ struct RadiativeRecombination <: PhysicalModelType
     radiative::Float64
 end
 
-function ChargeTransport.model_recombination(model::RadiativeRecombination, node, data, phin, phip, psi, n, p)
-    exponentialTerm = exp((q * phin - q * phip) / (kB * data.params.temperature))
-    return model.radiative * n * p * (1.0 - exponentialTerm)
+function ChargeTransport.model_recombination!(model::RadiativeRecombination, f, u, node, data, densities)
+    iphin  = data.bulkRecombination.iphin
+    iphip  = data.bulkRecombination.iphip
+    exponentialTerm = exp((q * u[iphin] - q * u[iphip]) / (kB * data.params.temperature))
+    recombination = model.radiative * densities[iphin] * densities[iphip] * (1.0 - exponentialTerm)
+    f[iphin] += q * data.params.chargeNumbers[iphin] * recombination
+    f[iphip] += q * data.params.chargeNumbers[iphip] * recombination
 end
 
 
