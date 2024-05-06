@@ -8,6 +8,7 @@ using DocStringExtensions # for documentation
 using SparseArrays        # for generating sparse arrays
 using Interpolations      # for interpolation of data
 using Roots               # for finding zeros
+using PreallocationTools  # for avoiding allocations when using ForwardDiff
 
 
 include("ct_constants.jl")
@@ -58,7 +59,7 @@ export GenerationNone, GenerationBeerLambert, GenerationUniform, GenerationUserD
 export BarrierLoweringType
 export BarrierLoweringOn, BarrierLoweringOff
 
-export PhysicalModelType, model_recombination, model_charges
+export PhysicalModelType, model_recombination!, model_charges
 ##################################################################
 
 include("ct_physics.jl")

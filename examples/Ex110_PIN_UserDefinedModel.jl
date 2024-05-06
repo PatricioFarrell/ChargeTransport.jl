@@ -6,6 +6,9 @@ We simulate charge transport in a GaAs pin diode, where we use the van Roosbroec
 system of equations as charge transport model. The unknowns are given by the quasi Fermi
 potentials of electrons and holes $\varphi_n$, $\varphi_p$ and the electric potential $\psi$.
 The simulations are performed out of equilibrium and for the stationary problem.
+
+Same as Ex101, except that the radiative recombination term is replaced
+with a user defined model.
 =#
 
 module Ex110_PIN_UserDefinedModel

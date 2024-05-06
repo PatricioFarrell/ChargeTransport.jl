@@ -775,6 +775,7 @@ mutable struct Data{TFuncs<:Function, TVoltageFunc<:Function, TGenerationData<:U
     List of additional physical models   
     """
     models                       :: Vector{PhysicalModelType}
+    density_cache                :: DiffCache{Array{Float64, 1}, Array{Float64, 1}}
 
     ###############################################################
     Data{TFuncs, TVoltageFunc, TGenerationData}() where {TFuncs, TVoltageFunc, TGenerationData} = new()
@@ -1024,7 +1025,7 @@ function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage for 
     data.params                                = Params(grid, numberOfCarriers)
     data.paramsnodal                           = ParamsNodal(grid, numberOfCarriers)
     data.models                                = PhysicalModelType[]
-
+    data.density_cache                         = DiffCache(zeros(numberOfCarriers + 1))
     ###############################################################
 
     return data

@@ -873,7 +873,7 @@ function RHSPoisson!(f, u, node, data, ipsi)
 
     # add charges from user-defined models
     if length(data.models) > 0
-        densities = zeros(data.params.numberOfCarriers)
+        densities = get_tmp(data.density_cache, u)
         for i in 1:data.params.numberOfCarriers
             densities[i] = get_density!(u, node, data, i)
         end    
@@ -881,7 +881,6 @@ function RHSPoisson!(f, u, node, data, ipsi)
             f[ipsi] += model_charges(m, u, node, data, densities)
         end
     end
-
 
     f[ipsi] = f[ipsi] - data.paramsnodal.doping[node.index]
 
@@ -900,7 +899,7 @@ Add recombination from user defined models to the RHS
 function addModelRecombination!(f, u, node, data)
     # calculate recombination from other models
     if length(data.models) > 0
-        densities = zeros(data.params.numberOfCarriers)
+        densities = get_tmp(data.density_cache, u)
         for i in 1:data.params.numberOfCarriers
             densities[i] = get_density!(u, node, data, i)
         end
