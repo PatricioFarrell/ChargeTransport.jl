@@ -771,6 +771,12 @@ mutable struct Data{TFuncs<:Function, TVoltageFunc<:Function, TGenerationData<:U
     """
     paramsnodal                  :: ParamsNodal
 
+    """
+    List of additional physical models   
+    """
+    user_defined_models          :: Vector{UserDefinedModelType}
+    density_cache                :: DiffCache{Array{Float64, 1}, Array{Float64, 1}}
+
     ###############################################################
     Data{TFuncs, TVoltageFunc, TGenerationData}() where {TFuncs, TVoltageFunc, TGenerationData} = new()
 
@@ -1018,7 +1024,8 @@ function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage for 
     ###############################################################
     data.params                                = Params(grid, numberOfCarriers)
     data.paramsnodal                           = ParamsNodal(grid, numberOfCarriers)
-
+    data.user_defined_models                   = UserDefinedModelType[]
+    data.density_cache                         = DiffCache(zeros(numberOfCarriers + 1))
     ###############################################################
 
     return data
@@ -1334,6 +1341,19 @@ function Base.show(io::IO, this::ParamsNodal)
         println(io,getfield(this,name))
     end
 end
+
+###########################################################
+###########################################################
+
+"""
+$(SIGNATURES)
+
+Add a user defined model to the system.
+"""
+function add_user_defined_model!(ctsys::System, model::UserDefinedModelType)
+    push!(ctsys.data.user_defined_models, model)
+end
+
 
 ###########################################################
 ###########################################################
