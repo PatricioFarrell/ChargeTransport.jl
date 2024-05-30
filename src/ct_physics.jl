@@ -872,13 +872,13 @@ function RHSPoisson!(f, u, node, data, ipsi)
     end
 
     # add charges from user-defined models
-    if length(data.models) > 0
+    if length(data.user_defined_models) > 0
         densities = get_tmp(data.density_cache, u)
         for i in 1:data.params.numberOfCarriers
             densities[i] = get_density!(u, node, data, i)
         end    
-        for m ∈ data.models
-            f[ipsi] += model_charges(m, u, node, data, densities)
+        for m ∈ data.user_defined_models
+            f[ipsi] += user_defined_model_charges(m, u, node, data, densities)
         end
     end
 
@@ -896,15 +896,15 @@ end
 $(TYPEDSIGNATURES)   
 Add recombination from user defined models to the RHS
 """
-function addModelRecombination!(f, u, node, data)
+function addUserDefinedModelRecombination!(f, u, node, data)
     # calculate recombination from other models
-    if length(data.models) > 0
+    if length(data.user_defined_models) > 0
         densities = get_tmp(data.density_cache, u)
         for i in 1:data.params.numberOfCarriers
             densities[i] = get_density!(u, node, data, i)
         end
-        for m in data.models 
-            model_recombination!(m, f, u, node, data, densities)
+        for m in data.user_defined_models 
+            user_defined_model_recombination!(m, f, u, node, data, densities)
         end
     end
 end
@@ -920,7 +920,7 @@ function RHSContinuityEquations!(f, u, node, data)
     # dependent on user information concerncing generation
     addGeneration!(f, u, node, data)
 
-    addModelRecombination!(f, u, node, data)
+    addUserDefinedModelRecombination!(f, u, node, data)
 end
 
 

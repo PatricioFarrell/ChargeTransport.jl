@@ -774,7 +774,7 @@ mutable struct Data{TFuncs<:Function, TVoltageFunc<:Function, TGenerationData<:U
     """
     List of additional physical models   
     """
-    models                       :: Vector{PhysicalModelType}
+    user_defined_models          :: Vector{UserDefinedModelType}
     density_cache                :: DiffCache{Array{Float64, 1}, Array{Float64, 1}}
 
     ###############################################################
@@ -1024,7 +1024,7 @@ function Data(grid, numberOfCarriers; contactVoltageFunction = [zeroVoltage for 
     ###############################################################
     data.params                                = Params(grid, numberOfCarriers)
     data.paramsnodal                           = ParamsNodal(grid, numberOfCarriers)
-    data.models                                = PhysicalModelType[]
+    data.user_defined_models                   = UserDefinedModelType[]
     data.density_cache                         = DiffCache(zeros(numberOfCarriers + 1))
     ###############################################################
 
@@ -1350,8 +1350,8 @@ $(SIGNATURES)
 
 Add a user defined model to the system.
 """
-function add_physical_model!(ctsys::System, model::PhysicalModelType)
-    push!(ctsys.data.models, model)
+function add_user_defined_model!(ctsys::System, model::UserDefinedModelType)
+    push!(ctsys.data.user_defined_models, model)
 end
 
 

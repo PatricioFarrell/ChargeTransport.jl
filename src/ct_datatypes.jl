@@ -293,11 +293,11 @@ const BarrierLoweringType = Union{Type{BarrierLoweringOn}, Type{BarrierLoweringO
 """
 Type for user defined models
 """
-abstract type PhysicalModelType end
+abstract type UserDefinedModelType end
 
-function model_recombination!(model::PhysicalModelType, f, u, node, data, densities)
+function user_defined_model_recombination!(model::UserDefinedModelType, f, u, node, data, densities)
 end
 
-function model_charges(model::PhysicalModelType, u, node, data, densities)
+function user_defined_model_charges(model::UserDefinedModelType, u, node, data, densities)
     return 0.0
 end

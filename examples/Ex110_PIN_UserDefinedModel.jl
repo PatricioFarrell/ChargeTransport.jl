@@ -29,11 +29,11 @@ function initialize_pin_grid(refinementfactor, h_ndoping, h_intrinsic, h_pdoping
 end
 
 ## Separate implementation of the radiative model 
-struct RadiativeRecombination <: PhysicalModelType
+struct RadiativeRecombination <: UserDefinedModelType
     radiative::Float64
 end
 
-function ChargeTransport.model_recombination!(model::RadiativeRecombination, f, u, node, data, densities)
+function ChargeTransport.user_defined_model_recombination!(model::RadiativeRecombination, f, u, node, data, densities)
     iphin  = data.bulkRecombination.iphin
     iphip  = data.bulkRecombination.iphip
     exponentialTerm = exp((q * u[iphin] - q * u[iphip]) / (kB * data.params.temperature))
@@ -243,7 +243,7 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     # VoronoiFVMSys is not dependent on the data we initialized but rather on default data.
     ctsys                                               = System(grid, data, unknown_storage=unknown_storage)
 
-    add_physical_model!(ctsys, RadiativeRecombination(Radiative))
+    add_user_defined_model!(ctsys, RadiativeRecombination(Radiative))
 
     if test == false
         ## Here we can show region dependent physical parameters. show_params() only supports

@@ -59,7 +59,7 @@ export GenerationNone, GenerationBeerLambert, GenerationUniform, GenerationUserD
 export BarrierLoweringType
 export BarrierLoweringOn, BarrierLoweringOff
 
-export PhysicalModelType, model_recombination!, model_charges
+export UserDefinedModelType, user_defined_model_recombination!, user_defined_model_charges
 ##################################################################
 
 include("ct_physics.jl")
@@ -74,7 +74,7 @@ include("ct_system.jl")
 
 export Params, ParamsNodal, Data, System
 export BulkRecombination, set_bulk_recombination
-export add_physical_model!
+export add_user_defined_model!
 
 export enable_ionic_carrier!
 export enable_trap_carrier!, add_trap_density_Poisson!
