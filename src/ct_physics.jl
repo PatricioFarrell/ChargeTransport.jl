@@ -427,7 +427,7 @@ function breaction!(f, u, bnode, data, ::Type{OhmicContactDirichlet})
 
     Δu     = params.contactVoltage[bnode.region] + data.contactVoltageFunction[bnode.region](bnode.time)
     ψ0     = params.bψEQ[bnode.region]
-    
+
     boundary_dirichlet!(f, u, bnode, species = iphin, region=bnode.region, value=Δu)
     boundary_dirichlet!(f, u, bnode, species = iphip, region=bnode.region, value=Δu)
     boundary_dirichlet!(f, u, bnode, species = ipsi,  region=bnode.region, value=ψ0+Δu)
@@ -588,7 +588,19 @@ function breaction!(f, u, bnode, data, ::Type{InterfaceRecombination})
     exponentialTerm = exp((q * u[iphin] - q  * u[iphip] ) / (kB * params.temperature))
     excessDensTerm  = n * p * (1.0 - exponentialTerm)
 
-    kernelSRH = 1.0 / ( 1.0/params.recombinationSRHvelocity[iphip, bnode.region] * (n + params.bRecombinationSRHTrapDensity[iphin, bnode.region]) + 1.0/params.recombinationSRHvelocity[iphin, bnode.region] * (p + params.bRecombinationSRHTrapDensity[iphip, bnode.region] ) )
+    if params.recombinationSRHvelocity[iphip, bnode.region] ≈ 0.0
+        vp =  1.0e30
+    else
+        vp = 1.0/params.recombinationSRHvelocity[iphip, bnode.region]
+    end
+
+    if params.recombinationSRHvelocity[iphin, bnode.region] ≈ 0.0
+        vn = 1.0e30
+    else
+        vn = 1.0/params.recombinationSRHvelocity[iphin, bnode.region]
+    end
+
+    kernelSRH = 1.0 / ( vp * (n + params.bRecombinationSRHTrapDensity[iphin, bnode.region]) + vn * (p + params.bRecombinationSRHTrapDensity[iphip, bnode.region] ) )
 
     for icc ∈ data.electricCarrierList
         icc = data.chargeCarrierList[icc]
