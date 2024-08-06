@@ -288,3 +288,16 @@ abstract type BarrierLoweringOff end
 Possible types for barrier lowering model.
 """
 const BarrierLoweringType = Union{Type{BarrierLoweringOn}, Type{BarrierLoweringOff}}
+
+
+"""
+Type for user defined models
+"""
+abstract type UserDefinedModelType end
+
+function user_defined_model_recombination!(model::UserDefinedModelType, f, u, node, data, densities)
+end
+
+function user_defined_model_charges(model::UserDefinedModelType, u, node, data, densities)
+    return 0.0
+end

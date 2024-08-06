@@ -739,6 +739,7 @@ function addRecombination!(f, u, node, data, ::SRHWithoutTrapsType)
     # based on user index and regularity of solution quantities or integers are used and depicted here
     iphin  = data.chargeCarrierList[iphin]
     iphip  = data.chargeCarrierList[iphip]
+    ipsi   = data.index_psi
 
     n      = get_density!(u, node, data, iphin)
     p      = get_density!(u, node, data, iphip)
@@ -757,6 +758,8 @@ function addRecombination!(f, u, node, data, ::SRHWithoutTrapsType)
     kernelAuger = (params.recombinationAuger[iphin, ireg] * n + params.recombinationAuger[iphip, ireg] * p)
     kernelSRH   = params.prefactor_SRH / ( taup * (n + n0) + taun * (p + p0) )
     kernel      = kernelRad + kernelAuger + kernelSRH
+
+
     ###########################################################
     ####       right-hand side of continuity equations     ####
     ####       for φ_n and φ_p (bipolar reaction)          ####
@@ -880,6 +883,17 @@ function RHSPoisson!(f, u, node, data, ipsi)
         end
     end
 
+    # add charges from user-defined models
+    if length(data.user_defined_models) > 0
+        densities = get_tmp(data.density_cache, u)
+        for i in 1:data.params.numberOfCarriers
+            densities[i] = get_density!(u, node, data, i)
+        end    
+        for m ∈ data.user_defined_models
+            f[ipsi] += user_defined_model_charges(m, u, node, data, densities)
+        end
+    end
+
     f[ipsi] = f[ipsi] - data.paramsnodal.doping[node.index]
 
     f[ipsi] = - q * data.λ1 * f[ipsi]
@@ -887,6 +901,24 @@ function RHSPoisson!(f, u, node, data, ipsi)
     ## This is the trap density for the stationary case without traps as own charge carrier
     addTrapDensity!(f, u, node, data)
 
+end
+
+
+"""
+$(TYPEDSIGNATURES)   
+Add recombination from user defined models to the RHS
+"""
+function addUserDefinedModelRecombination!(f, u, node, data)
+    # calculate recombination from other models
+    if length(data.user_defined_models) > 0
+        densities = get_tmp(data.density_cache, u)
+        for i in 1:data.params.numberOfCarriers
+            densities[i] = get_density!(u, node, data, i)
+        end
+        for m in data.user_defined_models 
+            user_defined_model_recombination!(m, f, u, node, data, densities)
+        end
+    end
 end
 
 """
@@ -900,6 +932,7 @@ function RHSContinuityEquations!(f, u, node, data)
     # dependent on user information concerncing generation
     addGeneration!(f, u, node, data)
 
+    addUserDefinedModelRecombination!(f, u, node, data)
 end
 
 
