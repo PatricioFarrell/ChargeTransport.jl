@@ -869,7 +869,7 @@ function Params(grid, numberOfCarriers)
     params.bRecombinationSRHTrapDensity = spzeros(Float64, 2, numberOfBoundaryRegions)
     params.bRecombinationSRHLifetime    = spzeros(Float64, 2, numberOfBoundaryRegions)
     params.bDensityEQ                   = spzeros(Float64, 2, numberOfBoundaryRegions)
-    
+
     ###############################################################
     ####        number of carriers x number of regions         ####
     ###############################################################
@@ -1401,6 +1401,7 @@ solve!(solution, initialGuess, ctsys, ;control=control, tstep=tstep) = VoronoiFV
 TestFunctionFactory(ctsys::System)                                   = VoronoiFVM.TestFunctionFactory(ctsys.fvmsys)
 integrate(ctsys::System, tf, solution, inival, Δt)                   = VoronoiFVM.integrate(ctsys.fvmsys, tf, solution, inival, Δt)
 integrate(ctsys::System, tf, solution)                               = VoronoiFVM.integrate(ctsys.fvmsys, tf, solution)
+integrate(ctsys::System, F::Function, U; kwarges...)                 = VoronoiFVM.integrate(ctsys.fvmsys, F, U; kwarges...)
 testfunction(factory::VoronoiFVM.TestFunctionFactory, bc0, bc1)      = VoronoiFVM.testfunction(factory::VoronoiFVM.TestFunctionFactory, bc0, bc1)
 
 
@@ -1447,7 +1448,7 @@ function equilibrium_solve!(ctsys::System; control = VoronoiFVM.NewtonControl(),
     paramsnodal = ctsys.fvmsys.physics.data.paramsnodal
     bnode       = grid[BFaceNodes]
     ipsi        = data.index_psi
-    
+
     # We set zero voltage for each charge carrier at all outer boundaries for equilibrium calculations.
     for ibreg ∈ grid[BFaceRegions]
         set_contact!(ctsys, ibreg, Δu = 0.0)
