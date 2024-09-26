@@ -38,3 +38,5 @@ the semiconductor drift-diffusion equations via the Voronoi finite volume method
 [4.] D. Abdel, N. E. Courtier and P. Farrell. [Volume exclusion effects in perovskite charge transport modeling.](https://doi.org/10.1007/s11082-023-05125-9) Optical and Quantum Electronics **55**, 884 (2023).
 
 [5.] B. Spetzler, D. Abdel, F. Schwierz, M. Ziegler and P. Farrell. [The Role of Vacancy Dynamics in Two-Dimensional Memristive Devices.](https://doi.org/10.1002/aelm.202300635) Advanced Electronic Materials (2023).
+
+[6.] D. Abdel, A. Glitzky and M. Liero. [Analysis of a drift-diffusion model for perovskite solar cells.](https://doi.org/10.3934/dcdsb.2024081) Discrete and Continuous Dynamical Systems - Series B (2024).
