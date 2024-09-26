@@ -267,7 +267,9 @@ using PyPlot</code></pre><h1 id="you-can-also-use-other-Plotters,-if-you-add-the
     tvalues    = range(0, stop = tend, length = number_tsteps)
 
     # for saving I-V data
-    IV         = zeros(0) # for IV values
+    IV         = zeros(0)                   # for IV values
+    ISRHn      = zeros(0); ISRHp = zeros(0) # for SRH recombination current
+    IRadn      = zeros(0); IRadp = zeros(0) # for radiative recombination current
 
     for istep = 2:number_tsteps
 
@@ -286,9 +288,24 @@ using PyPlot</code></pre><h1 id="you-can-also-use-other-Plotters,-if-you-add-the
         # from last timestep
         solution = solve(ctsys; inival = inival, control = control, tstep = Δt)
         # get I-V data
-        current  = get_current_val(ctsys, solution, inival, Δt)
+        current    = get_current_val(ctsys, solution, inival, Δt)
+        IntSRH     = integrate(ctsys, SRHRecombination!, solution)
+        IntRad     = integrate(ctsys, RadiativeRecombination!, solution)
+
+        IntSRHnSum = 0.0; IntRadnSum = 0.0
+        IntSRHpSum = 0.0; IntRadpSum = 0.0
+
+        for ii = 1:numberOfRegions
+            IntSRHnSum = IntSRHnSum - IntSRH[iphin, ii]
+            IntRadnSum = IntRadnSum - IntRad[iphin, ii]
+
+            IntSRHpSum = IntSRHpSum + IntSRH[iphip, ii]
+            IntRadpSum = IntRadpSum + IntRad[iphip, ii]
+        end
 
         push!(IV, current)
+        push!(ISRHn, IntSRHnSum); push!(ISRHp, IntSRHpSum)
+        push!(IRadn, IntRadnSum); push!(IRadp, IntRadpSum)
 
         inival = solution
 
@@ -319,6 +336,17 @@ using PyPlot</code></pre><h1 id="you-can-also-use-other-Plotters,-if-you-add-the
         Plotter.ylabel(&quot;bias [V]&quot;)
         Plotter.figure()
         plot_IV(Plotter, biasValues[2:end], IV, &quot;bias \$\\Delta u\$ = $(endVoltage)&quot;)
+        ###############
+        Plotter.figure()
+        semilogy(biasValues[2:end], ISRHn.*(cm^2).*1.0e3, linewidth = 5, color = &quot;darkblue&quot;,  label =&quot;SRH recombination&quot;)
+        semilogy(biasValues[2:end], ISRHp.*(cm^2).*1.0e3, linewidth = 5, color = &quot;lightblue&quot;, linestyle = &quot;:&quot;)
+        semilogy(biasValues[2:end], IRadn.*(cm^2).*1.0e3, linewidth = 5, color = &quot;darkgreen&quot;, label =&quot;Radiative recombination&quot;)
+        semilogy(biasValues[2:end], IRadp.*(cm^2).*1.0e3, linewidth = 5, color = &quot;lightgreen&quot;, linestyle = &quot;:&quot;)
+
+        PyPlot.grid()
+        PyPlot.legend()
+        PyPlot.xlabel(&quot;bias [V]&quot;)
+        PyPlot.ylabel(&quot;current density [mAcm\$^{-2} \$]&quot;)
     end
 
     testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution
@@ -336,4 +364,4 @@ if test == false
     println(&quot;This message should show when this module is successfully recompiled.&quot;)
 end
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex102_PIN_nodal_doping/">« GaAs diode with spatially varying doping (1D).</a><a class="docs-footer-nextpage" href="../Ex104_PSC_Photogeneration/">PSC device with photogeneration rate (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Friday 2 August 2024 15:53">Friday 2 August 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex102_PIN_nodal_doping/">« GaAs diode with spatially varying doping (1D).</a><a class="docs-footer-nextpage" href="../Ex104_PSC_Photogeneration/">PSC device with photogeneration rate (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Thursday 26 September 2024 12:42">Thursday 26 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
