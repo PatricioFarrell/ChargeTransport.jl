@@ -1419,4 +1419,120 @@ function chargeCarrierFlux!(f, u, edge, data, icc, ::Type{GeneralizedSG})
 end
 
 # ##########################################################
+# recombination kernels for calculating recombination currents
 # ##########################################################
+
+
+function SRRecombination!(f, u, bnode, data)
+
+    params          = data.params
+
+    # indices (∈ IN) of electron and hole quasi Fermi potentials specified by user (passed through recombination)
+    iphin           = data.bulkRecombination.iphin # integer index of φ_n
+    iphip           = data.bulkRecombination.iphip # integer index of φ_p
+
+    n               = get_density!(u, bnode, data, iphin)
+    p               = get_density!(u, bnode, data, iphip)
+
+    exponentialTerm = exp((q * u[iphin] - q  * u[iphip] ) / (kB * params.temperature))
+    excessDensTerm  = n * p * (1.0 - exponentialTerm)
+
+    if params.recombinationSRHvelocity[iphip, bnode.region] ≈ 0.0
+        vp =  1.0e30
+    else
+        vp = 1.0/params.recombinationSRHvelocity[iphip, bnode.region]
+    end
+
+    if params.recombinationSRHvelocity[iphin, bnode.region] ≈ 0.0
+        vn = 1.0e30
+    else
+        vn = 1.0/params.recombinationSRHvelocity[iphin, bnode.region]
+    end
+
+    kernelSRH = 1.0 / ( vp * (n + params.bRecombinationSRHTrapDensity[iphin, bnode.region]) + vn * (p + params.bRecombinationSRHTrapDensity[iphip, bnode.region] ) )
+
+    for icc ∈ data.electricCarrierList
+        icc = data.chargeCarrierList[icc]
+        f[icc] =  q * params.chargeNumbers[icc] * kernelSRH *  excessDensTerm
+    end
+
+
+end
+
+function SRHRecombination!(f, u, node, data)
+
+  params = data.params
+  ireg   = node.region
+
+  # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
+  iphin  = data.bulkRecombination.iphin
+  iphip  = data.bulkRecombination.iphip
+
+  # based on user index and regularity of solution quantities or integers are used and depicted here
+  iphin  = data.chargeCarrierList[iphin]
+  iphip  = data.chargeCarrierList[iphip]
+
+  n      = get_density!(u, node, data, iphin)
+  p      = get_density!(u, node, data, iphip)
+
+  taun   = params.recombinationSRHLifetime[iphin, ireg]
+  n0     = params.recombinationSRHTrapDensity[iphin, ireg]
+  taup   = params.recombinationSRHLifetime[iphip, ireg]
+  p0     = params.recombinationSRHTrapDensity[iphip, ireg]
+
+  exponentialTerm = exp((q * u[iphin] - q * u[iphip]) / (kB * data.params.temperature))
+  excessDensTerm  = n * p * (1.0 - exponentialTerm)
+
+  kernelSRH   = params.prefactor_SRH / ( taup * (n + n0) + taun * (p + p0) )
+  ###########################################################
+  ####       right-hand side of continuity equations     ####
+  ####       for φ_n and φ_p (bipolar reaction)          ####
+  ###########################################################
+  f[iphin] = q * params.chargeNumbers[iphin] * kernelSRH * excessDensTerm
+  f[iphip] = q * params.chargeNumbers[iphip] * kernelSRH * excessDensTerm
+
+end
+
+
+function RadiativeRecombination!(f, u, node, data)
+
+  params = data.params
+  ireg   = node.region
+
+  # indices (∈ IN) of electron and hole quasi Fermi potentials used by user (passed through recombination)
+  iphin  = data.bulkRecombination.iphin
+  iphip  = data.bulkRecombination.iphip
+
+  # based on user index and regularity of solution quantities or integers are used and depicted here
+  iphin  = data.chargeCarrierList[iphin]
+  iphip  = data.chargeCarrierList[iphip]
+
+  n      = get_density!(u, node, data, iphin)
+  p      = get_density!(u, node, data, iphip)
+
+  exponentialTerm = exp((q * u[iphin] - q * u[iphip]) / (kB * data.params.temperature))
+  excessDensTerm  = n * p * (1.0 - exponentialTerm)
+
+  # calculate recombination kernel. If user adjusted Auger, radiative or SRH recombination,
+  # they are set to 0. Hence, adding them here, has no influence since we simply add by 0.0.
+  kernelRad   = params.recombinationRadiative[ireg]
+  ###########################################################
+  ####       right-hand side of continuity equations     ####
+  ####       for φ_n and φ_p (bipolar reaction)          ####
+  ###########################################################
+  f[iphin] = q * params.chargeNumbers[iphin] * kernelRad * excessDensTerm
+  f[iphip] = q * params.chargeNumbers[iphip] * kernelRad * excessDensTerm
+
+end
+
+function Photogeneration!(f, u, node, data)
+
+    generationTerm = generation(data, node, data.generationModel)
+
+    for icc ∈ data.electricCarrierList
+        icc    = data.chargeCarrierList[icc] # based on user index and regularity of solution quantities or integers are used and depicted here
+        f[icc] = q * data.params.chargeNumbers[icc] * generationTerm
+    end
+
+
+end

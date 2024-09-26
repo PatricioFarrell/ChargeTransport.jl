@@ -283,7 +283,9 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
     tvalues    = range(0, stop = tend, length = number_tsteps)
 
     ## for saving I-V data
-    IV         = zeros(0) # for IV values
+    IV         = zeros(0)                   # for IV values
+    ISRHn      = zeros(0); ISRHp = zeros(0) # for SRH recombination current
+    IRadn      = zeros(0); IRadp = zeros(0) # for radiative recombination current
 
     for istep = 2:number_tsteps
 
@@ -302,9 +304,24 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         ## from last timestep
         solution = solve(ctsys; inival = inival, control = control, tstep = Δt)
         ## get I-V data
-        current  = get_current_val(ctsys, solution, inival, Δt)
+        current    = get_current_val(ctsys, solution, inival, Δt)
+        IntSRH     = integrate(ctsys, SRHRecombination!, solution)
+        IntRad     = integrate(ctsys, RadiativeRecombination!, solution)
+
+        IntSRHnSum = 0.0; IntRadnSum = 0.0
+        IntSRHpSum = 0.0; IntRadpSum = 0.0
+
+        for ii = 1:numberOfRegions
+            IntSRHnSum = IntSRHnSum - IntSRH[iphin, ii]
+            IntRadnSum = IntRadnSum - IntRad[iphin, ii]
+
+            IntSRHpSum = IntSRHpSum + IntSRH[iphip, ii]
+            IntRadpSum = IntRadpSum + IntRad[iphip, ii]
+        end
 
         push!(IV, current)
+        push!(ISRHn, IntSRHnSum); push!(ISRHp, IntSRHpSum)
+        push!(IRadn, IntRadnSum); push!(IRadp, IntRadpSum)
 
         inival = solution
 
@@ -335,6 +352,17 @@ function main(;n = 3, Plotter = PyPlot, plotting = false, verbose = false, test 
         Plotter.ylabel("bias [V]")
         Plotter.figure()
         plot_IV(Plotter, biasValues[2:end], IV, "bias \$\\Delta u\$ = $(endVoltage)")
+        ###############
+        Plotter.figure()
+        semilogy(biasValues[2:end], ISRHn.*(cm^2).*1.0e3, linewidth = 5, color = "darkblue",  label ="SRH recombination")
+        semilogy(biasValues[2:end], ISRHp.*(cm^2).*1.0e3, linewidth = 5, color = "lightblue", linestyle = ":")
+        semilogy(biasValues[2:end], IRadn.*(cm^2).*1.0e3, linewidth = 5, color = "darkgreen", label ="Radiative recombination")
+        semilogy(biasValues[2:end], IRadp.*(cm^2).*1.0e3, linewidth = 5, color = "lightgreen", linestyle = ":")
+
+        PyPlot.grid()
+        PyPlot.legend()
+        PyPlot.xlabel("bias [V]")
+        PyPlot.ylabel("current density [mAcm\$^{-2} \$]")
     end
 
     testval = sum(filter(!isnan, solution))/length(solution) # when using sparse storage, we get NaN values in solution

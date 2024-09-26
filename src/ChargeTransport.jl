@@ -66,6 +66,7 @@ export breaction!, bstorage!, reaction!, storage!, flux!
 export zeroVoltage
 export BeerLambert
 export storage!
+export reaction!, SRHRecombination!, RadiativeRecombination!, SRRecombination!, Photogeneration!
 ##################################################################
 
 include("ct_system.jl")
