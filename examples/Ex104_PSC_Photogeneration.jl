@@ -19,7 +19,7 @@ function main(;n = 5,
               Plotter = PyPlot, # you can also use other Plotters, if you add them to the example file
               plotting = false, verbose = false, test = false,
               ########################
-              parameter_file = "../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl", # choose the parameter file
+              parameter_file = joinpath(@__DIR__,"..","parameter_files","Params_PSC_TiO2_MAPI_spiro.jl"), # choose the parameter file
               ########################
               userdefinedGeneration = false) # you can choose between predefined and user-defined generation profiles
 
@@ -363,7 +363,6 @@ function main(;n = 5,
         println("Reverse scan protocol")
     end
     ################################################################################
-
     inivalReverse = sol(tend)
     solReverse    = solve(ctsys, inival = inivalReverse, times=(tend, 2 * tend), control = control)
 
@@ -387,8 +386,8 @@ function main(;n = 5,
 
     for istep = 2:number_tsteps
         Δt       = tvalues[istep] - tvalues[istep-1] # Time step size
-        inival   = sol[istep-1]
-        solution = sol[istep]
+        inival   = sol.u[istep-1]
+        solution = sol.u[istep]
 
         I        = integrate(ctsys, tf, solution, inival, Δt)
 
@@ -408,8 +407,8 @@ function main(;n = 5,
 
     for istep = 2:number_tstepsReverse
         Δt       = tvaluesReverse[istep] - tvaluesReverse[istep-1] # Time step size
-        inival   = solReverse[istep-1]
-        solution = solReverse[istep]
+        inival   = solReverse.u[istep-1]
+        solution = solReverse.u[istep]
 
         I        = integrate(ctsys, tf, solution, inival, Δt)
 
