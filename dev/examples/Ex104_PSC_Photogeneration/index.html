@@ -9,7 +9,7 @@ function main(;n = 5,
               Plotter = PyPlot, # you can also use other Plotters, if you add them to the example file
               plotting = false, verbose = false, test = false,
               ########################
-              parameter_file = &quot;../parameter_files/Params_PSC_TiO2_MAPI_spiro.jl&quot;, # choose the parameter file
+              parameter_file = joinpath(@__DIR__,&quot;..&quot;,&quot;parameter_files&quot;,&quot;Params_PSC_TiO2_MAPI_spiro.jl&quot;), # choose the parameter file
               ########################
               userdefinedGeneration = false) # you can choose between predefined and user-defined generation profiles
 
@@ -340,7 +340,6 @@ function main(;n = 5,
         println(&quot;Reverse scan protocol&quot;)
     end
     ################################################################################
-
     inivalReverse = sol(tend)
     solReverse    = solve(ctsys, inival = inivalReverse, times=(tend, 2 * tend), control = control)
 
@@ -364,8 +363,8 @@ function main(;n = 5,
 
     for istep = 2:number_tsteps
         Δt       = tvalues[istep] - tvalues[istep-1] # Time step size
-        inival   = sol[istep-1]
-        solution = sol[istep]
+        inival   = sol.u[istep-1]
+        solution = sol.u[istep]
 
         I        = integrate(ctsys, tf, solution, inival, Δt)
 
@@ -385,8 +384,8 @@ function main(;n = 5,
 
     for istep = 2:number_tstepsReverse
         Δt       = tvaluesReverse[istep] - tvaluesReverse[istep-1] # Time step size
-        inival   = solReverse[istep-1]
-        solution = solReverse[istep]
+        inival   = solReverse.u[istep-1]
+        solution = solReverse.u[istep]
 
         I        = integrate(ctsys, tf, solution, inival, Δt)
 
@@ -478,4 +477,4 @@ if test == false
     println(&quot;This message should show when this module is successfully recompiled.&quot;)
 end
 
-end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex103_PSC_IVMeasurement/">« PSC device with ions and different I-V scan protocols (1D).</a><a class="docs-footer-nextpage" href="../Ex105_PSC_gradedFlux/">Three-layer PSC device with graded interfaces &amp; Ohmic contacts (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Thursday 26 September 2024 12:42">Thursday 26 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end # module</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Ex103_PSC_IVMeasurement/">« PSC device with ions and different I-V scan protocols (1D).</a><a class="docs-footer-nextpage" href="../Ex105_PSC_gradedFlux/">Three-layer PSC device with graded interfaces &amp; Ohmic contacts (1D). »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Monday 7 October 2024 11:10">Monday 7 October 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
