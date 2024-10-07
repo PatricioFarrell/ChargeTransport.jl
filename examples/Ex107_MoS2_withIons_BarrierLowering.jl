@@ -291,8 +291,8 @@ function main(;Plotter = PyPlot, plotting = false, verbose = false, test = false
     push!(IV, 0.0)
     for istep = 2:number_tsteps
         Δt       = tvalues[istep] - tvalues[istep-1] # Time step size
-        inival   = sol[istep-1]
-        solution = sol[istep]
+        inival   = sol.u[istep-1]
+        solution = sol.u[istep]
 
         I        = integrate(ctsys, tf, solution, inival, Δt)
 
