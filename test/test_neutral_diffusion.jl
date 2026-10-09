@@ -4,7 +4,7 @@ function test()
     grid = simplexgrid(collect(range(0.0, 1.0; length = 51)))
     data = Data(grid, 3)
     data.params.chargeNumbers .= [-1, 1, 0]
-    enable_immobile_carrier!(data; immobileCarrier = 3, regions = [1],
+    enable_iodine_species!(data; iodineSpecies = 3, regions = [1],
         referenceDensity = 1.0e18, diffusionCoefficient = 0.1)
     ct = ChargeTransport.System(grid, data)
     # Exercise the CT callbacks, solving only the neutral continuity equation.

@@ -150,17 +150,18 @@ end
 """
 $(TYPEDEF)
 
-An immobile charge carrier with unknown `log(n/C0)`, where `C0` is the
-reference density in m^-3. It uses no statistics function; neutral species
-may optionally diffuse.
+An iodine species of the degradation reactions: interstitial iodide I_i^-
+(charged, immobile) or neutral iodine I^0 (may diffuse). Its unknown is
+`log(n/C0)`, where `C0` is the reference density in m^-3. It uses no
+statistics function.
 
 $(TYPEDFIELDS)
 """
-mutable struct ImmobileCarrier
+mutable struct IodineSpecies
     """
-    Species index of the immobile charge carrier.
+    Species index of the iodine species.
     """
-    immobileCarrier::Int64
+    iodineSpecies::Int64
 
     """
     Regions in which the species is present.
@@ -179,7 +180,7 @@ end
 """
 $(SIGNATURES)
 
-Enable an immobile carrier only in `regions`. Its unknown is `log(n/C0)`;
+Enable an iodine species only in `regions`. Its unknown is `log(n/C0)`;
 `referenceDensity = C0` must be finite and positive (in m^-3).
 With `diffusionCoefficient > 0` (m^2/s), the species must be neutral and
 uses pure diffusion with natural no-flux boundaries. It uses no statistics function. Register before building
@@ -187,22 +188,23 @@ uses pure diffusion with natural no-flux boundaries. It uses no statistics funct
 Set a finite charge number before building `System`. Neutral species use particle-density storage.
 The species may enter the reaction network like any other carrier.
 """
-function enable_immobile_carrier!(data; immobileCarrier::Int64, regions::Vector{Int64}, referenceDensity::Real, diffusionCoefficient::Real = 0.0)
+function enable_iodine_species!(data; iodineSpecies::Int64, regions::Vector{Int64}, referenceDensity::Real, diffusionCoefficient::Real = 0.0)
 
     D = Float64(diffusionCoefficient)
     isfinite(D) && D >= 0 || throw(ArgumentError("diffusionCoefficient must be finite and nonnegative"))
     C0 = Float64(referenceDensity)
     isfinite(C0) && C0 > 0 || throw(ArgumentError("referenceDensity must be finite and positive"))
-    1 <= immobileCarrier <= data.params.numberOfCarriers || throw(ArgumentError("invalid immobile carrier index"))
-    !isempty(regions) && all(ireg -> 1 <= ireg <= data.params.numberOfRegions, regions) || throw(ArgumentError("invalid immobile carrier regions"))
-    immobileCarrier ∉ data.electricCarrierList &&
-        all(icc -> icc.ionicCarrier != immobileCarrier, data.ionicCarrierList) &&
-        all(icc -> icc.trapCarrier != immobileCarrier, data.trapCarrierList) &&
-        iszero(data.immobileReferenceDensity[immobileCarrier]) || throw(ArgumentError("carrier index is already registered"))
+    1 <= iodineSpecies <= data.params.numberOfCarriers || throw(ArgumentError("invalid iodine species index"))
+    !isempty(regions) && all(ireg -> 1 <= ireg <= data.params.numberOfRegions, regions) || throw(ArgumentError("invalid iodine species regions"))
+    iodineSpecies ∉ data.electricCarrierList &&
+        all(icc -> icc.ionicCarrier != iodineSpecies, data.ionicCarrierList) &&
+        all(icc -> icc.trapCarrier != iodineSpecies, data.trapCarrierList) &&
+        !data.isIodineSpecies[iodineSpecies] || throw(ArgumentError("carrier index is already registered"))
 
-    D > 0 && !iszero(data.params.chargeNumbers[immobileCarrier]) && throw(ArgumentError("diffusion requires a neutral carrier"))
-    push!(data.immobileCarrierList, ImmobileCarrier(immobileCarrier, unique(regions), C0, D))
-    data.immobileReferenceDensity[immobileCarrier] = C0
+    D > 0 && !iszero(data.params.chargeNumbers[iodineSpecies]) && throw(ArgumentError("diffusion requires a neutral carrier"))
+    push!(data.iodineSpeciesList, IodineSpecies(iodineSpecies, unique(regions), C0, D))
+    data.iodineReferenceDensity[iodineSpecies] = C0
+    data.isIodineSpecies[iodineSpecies] = true
     return
 
 end
@@ -215,7 +217,7 @@ builds a struct of Type IonicCarrier and add this struct to the ionicCarrierList
 """
 function enable_ionic_carrier!(data; ionicCarrier::Int64, regions::Array{Int64, 1})
 
-    iszero(data.immobileReferenceDensity[ionicCarrier]) || throw(ArgumentError("carrier index is already registered as immobile"))
+    !data.isIodineSpecies[ionicCarrier] || throw(ArgumentError("carrier index is already registered as an iodine species"))
 
     enableIons = IonicCarrier()
 
@@ -240,7 +242,7 @@ builds a struct of Type TrapCarrier and add this struct to the trapCarrierList.
 """
 function enable_trap_carrier!(data; trapCarrier::Int64, regions::Array{Int64, 1})
 
-    iszero(data.immobileReferenceDensity[trapCarrier]) || throw(ArgumentError("carrier index is already registered as immobile"))
+    !data.isIodineSpecies[trapCarrier] || throw(ArgumentError("carrier index is already registered as an iodine species"))
 
     enableTraps = TrapCarrier()
 
@@ -1013,14 +1015,19 @@ mutable struct Data{TFuncs <: Function, TVoltageFunc <: Function, TGenerationDat
     trapCarrierList::Array{TrapCarrier, 1}
 
     """
-    Immobile carriers with log-density unknowns, enabled only in their regions.
+    Iodine species with log-density unknowns, enabled only in their regions.
     """
-    immobileCarrierList::Vector{ImmobileCarrier}
+    iodineSpeciesList::Vector{IodineSpecies}
 
     """
-    Species-indexed reference densities (m^-3); zero denotes a non-immobile carrier.
+    Species-indexed reference densities (m^-3); zero for all other carriers.
     """
-    immobileReferenceDensity::Vector{Float64}
+    iodineReferenceDensity::Vector{Float64}
+
+    """
+    Species-indexed flags; true for species registered with `enable_iodine_species!`.
+    """
+    isIodineSpecies::Vector{Bool}
 
 
     """
@@ -1104,9 +1111,12 @@ mutable struct Data{TFuncs <: Function, TVoltageFunc <: Function, TGenerationDat
     generationComplete::Bool
 
     """
-    Hold immobile densities at C0 during equilibrium_solve!'s stationary light ramp.
+    True during equilibrium_solve!'s stationary light ramp. Reactions are off in the
+    ramp (`generationComplete == false`), which leaves reaction species without a
+    solvable equation (0 = 0, or pure diffusion with no-flux boundaries). The flag
+    replaces their equation with u = 0, i.e. c = C0.
     """
-    immobileGenerationRamp::Bool
+    iodineGenerationRamp::Bool
 
     """
     Possibility to change the implementation of the ohmic contact boundary model
@@ -1240,8 +1250,9 @@ function Data(grid, numberOfCarriers; constants = ChargeTransport.constants, con
     data.electricCarrierList = Int64[ii for ii in 1:2]                       # electrons and holes
     data.ionicCarrierList = IonicCarrier[]
     data.trapCarrierList = TrapCarrier[]
-    data.immobileCarrierList = ImmobileCarrier[]
-    data.immobileReferenceDensity = zeros(Float64, numberOfCarriers)
+    data.iodineSpeciesList = IodineSpecies[]
+    data.iodineReferenceDensity = zeros(Float64, numberOfCarriers)
+    data.isIodineSpecies = zeros(Bool, numberOfCarriers)
     data.index_psi = numberOfCarriers + 1
     data.barrierLoweringInfo = BarrierLoweringSpecies()
     data.barrierLoweringInfo.BarrierLoweringOn = BarrierLoweringOff # set in general case barrier lowering off
@@ -1264,7 +1275,7 @@ function Data(grid, numberOfCarriers; constants = ChargeTransport.constants, con
     data.λ2 = 1.0                   # λ2: embedding parameter for G
     data.λ3 = 1.0                   # λ3: embedding parameter for electro chemical reaction
     data.generationComplete = false # set this by default to false
-    data.immobileGenerationRamp = false
+    data.iodineGenerationRamp = false
     data.ohmicContactModel = OhmicContactDirichlet # OhmicContactRobin also possible
 
     ###############################################################
@@ -1331,8 +1342,8 @@ information on the input data, but also on the solving system, are stored.
 """
 function System(grid, data; kwargs...)
 
-    for iicc in data.immobileCarrierList
-        z = data.params.chargeNumbers[iicc.immobileCarrier]
+    for iicc in data.iodineSpeciesList
+        z = data.params.chargeNumbers[iicc.iodineSpecies]
         isfinite(z) || throw(ArgumentError("Log-density carriers require a finite charge number"))
         iicc.diffusionCoefficient > 0 && !iszero(z) && throw(ArgumentError("diffusion requires a neutral carrier"))
     end
@@ -1452,7 +1463,7 @@ function build_system(grid, data, ::Type{ContQF}; kwargs...)
 
     # put all mobile electronic carriers present everywhere
     for icc in data.chargeCarrierList
-        if (icc ∉ ionicCarrierListHelp) && (icc ∉ trapCarrierListHelp) && iszero(data.immobileReferenceDensity[icc])
+        if (icc ∉ ionicCarrierListHelp) && (icc ∉ trapCarrierListHelp) && !data.isIodineSpecies[icc]
             enable_species!(ctsys, icc, 1:data.params.numberOfRegions)
         end
     end
@@ -1512,9 +1523,9 @@ function build_system(grid, data, ::Type{ContQF}; kwargs...)
         enable_species!(ctsys, iicc.trapCarrier, iicc.regions)
     end
 
-    # if immobile carriers are present
-    for iicc in data.immobileCarrierList
-        enable_species!(ctsys, iicc.immobileCarrier, iicc.regions)
+    # if iodine species are present
+    for iicc in data.iodineSpeciesList
+        enable_species!(ctsys, iicc.iodineSpecies, iicc.regions)
     end
 
     # we need no loop for interface carriers, since in this case there are not present.
@@ -1584,7 +1595,7 @@ The core of the system constructor. Here, the system for discontinuous quasi Fer
 """
 function build_system(grid, data, ::Type{DiscontQF}; kwargs...)
 
-    isempty(data.immobileCarrierList) || throw(ArgumentError("Immobile carriers currently require ContQF; DiscontQF species indexing is not supported"))
+    isempty(data.iodineSpeciesList) || throw(ArgumentError("Iodine species currently require ContQF; DiscontQF species indexing is not supported"))
 
     #################################################################################
     ##### Set the recombinations parameters correctly based on user information #####
@@ -1946,11 +1957,11 @@ function _equilibrium_solve!(::Val{false}, ctsys::System; inival, control, nonli
                 println("increase generation with λ2 = $(ctsys.data.λ2)")
             end
 
-            data.immobileGenerationRamp = true
+            data.iodineGenerationRamp = true
             try
                 sol = VoronoiFVM.solve(ctsys.fvmsys, inival = inival, control = control)
             finally
-                data.immobileGenerationRamp = false
+                data.iodineGenerationRamp = false
             end
             inival = sol
 
