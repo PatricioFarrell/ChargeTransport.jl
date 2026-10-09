@@ -148,12 +148,74 @@ mutable struct TrapCarrier
 end
 
 """
+$(TYPEDEF)
+
+An immobile charge carrier with unknown `log(n/C0)`, where `C0` is the
+reference density in m^-3. It uses no statistics function; neutral species
+may optionally diffuse.
+
+$(TYPEDFIELDS)
+"""
+mutable struct ImmobileCarrier
+    """
+    Species index of the immobile charge carrier.
+    """
+    immobileCarrier::Int64
+
+    """
+    Regions in which the species is present.
+    """
+    regions::Vector{Int64}
+
+    """
+    Reference density C0 in m^-3, finite and positive.
+    """
+    referenceDensity::Float64
+
+    """Pure diffusion coefficient in m^2/s; positive only for neutral species."""
+    diffusionCoefficient::Float64
+end
+
+"""
+$(SIGNATURES)
+
+Enable an immobile carrier only in `regions`. Its unknown is `log(n/C0)`;
+`referenceDensity = C0` must be finite and positive (in m^-3).
+With `diffusionCoefficient > 0` (m^2/s), the species must be neutral and
+uses pure diffusion with natural no-flux boundaries. It uses no statistics function. Register before building
+`System`, using an index distinct from electric, ionic and trap carriers.
+Set a finite charge number before building `System`. Neutral species use particle-density storage.
+The species may enter the reaction network like any other carrier.
+"""
+function enable_immobile_carrier!(data; immobileCarrier::Int64, regions::Vector{Int64}, referenceDensity::Real, diffusionCoefficient::Real = 0.0)
+
+    D = Float64(diffusionCoefficient)
+    isfinite(D) && D >= 0 || throw(ArgumentError("diffusionCoefficient must be finite and nonnegative"))
+    C0 = Float64(referenceDensity)
+    isfinite(C0) && C0 > 0 || throw(ArgumentError("referenceDensity must be finite and positive"))
+    1 <= immobileCarrier <= data.params.numberOfCarriers || throw(ArgumentError("invalid immobile carrier index"))
+    !isempty(regions) && all(ireg -> 1 <= ireg <= data.params.numberOfRegions, regions) || throw(ArgumentError("invalid immobile carrier regions"))
+    immobileCarrier ∉ data.electricCarrierList &&
+        all(icc -> icc.ionicCarrier != immobileCarrier, data.ionicCarrierList) &&
+        all(icc -> icc.trapCarrier != immobileCarrier, data.trapCarrierList) &&
+        iszero(data.immobileReferenceDensity[immobileCarrier]) || throw(ArgumentError("carrier index is already registered"))
+
+    D > 0 && !iszero(data.params.chargeNumbers[immobileCarrier]) && throw(ArgumentError("diffusion requires a neutral carrier"))
+    push!(data.immobileCarrierList, ImmobileCarrier(immobileCarrier, unique(regions), C0, D))
+    data.immobileReferenceDensity[immobileCarrier] = C0
+    return
+
+end
+
+"""
 $(SIGNATURES)
 
 This method takes the user information concerning present ionic charge carriers,
 builds a struct of Type IonicCarrier and add this struct to the ionicCarrierList.
 """
 function enable_ionic_carrier!(data; ionicCarrier::Int64, regions::Array{Int64, 1})
+
+    iszero(data.immobileReferenceDensity[ionicCarrier]) || throw(ArgumentError("carrier index is already registered as immobile"))
 
     enableIons = IonicCarrier()
 
@@ -177,6 +239,8 @@ This method takes the user information concerning present trap charge carriers,
 builds a struct of Type TrapCarrier and add this struct to the trapCarrierList.
 """
 function enable_trap_carrier!(data; trapCarrier::Int64, regions::Array{Int64, 1})
+
+    iszero(data.immobileReferenceDensity[trapCarrier]) || throw(ArgumentError("carrier index is already registered as immobile"))
 
     enableTraps = TrapCarrier()
 
@@ -948,6 +1012,16 @@ mutable struct Data{TFuncs <: Function, TVoltageFunc <: Function, TGenerationDat
     """
     trapCarrierList::Array{TrapCarrier, 1}
 
+    """
+    Immobile carriers with log-density unknowns, enabled only in their regions.
+    """
+    immobileCarrierList::Vector{ImmobileCarrier}
+
+    """
+    Species-indexed reference densities (m^-3); zero denotes a non-immobile carrier.
+    """
+    immobileReferenceDensity::Vector{Float64}
+
 
     """
     This variable stores the index of the electric potential. Based on the user choice we have
@@ -1028,6 +1102,11 @@ mutable struct Data{TFuncs <: Function, TVoltageFunc <: Function, TGenerationDat
     A boolean which helps to influence the applied scan protocol by the user.
     """
     generationComplete::Bool
+
+    """
+    Hold immobile densities at C0 during equilibrium_solve!'s stationary light ramp.
+    """
+    immobileGenerationRamp::Bool
 
     """
     Possibility to change the implementation of the ohmic contact boundary model
@@ -1161,6 +1240,8 @@ function Data(grid, numberOfCarriers; constants = ChargeTransport.constants, con
     data.electricCarrierList = Int64[ii for ii in 1:2]                       # electrons and holes
     data.ionicCarrierList = IonicCarrier[]
     data.trapCarrierList = TrapCarrier[]
+    data.immobileCarrierList = ImmobileCarrier[]
+    data.immobileReferenceDensity = zeros(Float64, numberOfCarriers)
     data.index_psi = numberOfCarriers + 1
     data.barrierLoweringInfo = BarrierLoweringSpecies()
     data.barrierLoweringInfo.BarrierLoweringOn = BarrierLoweringOff # set in general case barrier lowering off
@@ -1183,6 +1264,7 @@ function Data(grid, numberOfCarriers; constants = ChargeTransport.constants, con
     data.λ2 = 1.0                   # λ2: embedding parameter for G
     data.λ3 = 1.0                   # λ3: embedding parameter for electro chemical reaction
     data.generationComplete = false # set this by default to false
+    data.immobileGenerationRamp = false
     data.ohmicContactModel = OhmicContactDirichlet # OhmicContactRobin also possible
 
     ###############################################################
@@ -1248,6 +1330,12 @@ information on the input data, but also on the solving system, are stored.
 
 """
 function System(grid, data; kwargs...)
+
+    for iicc in data.immobileCarrierList
+        z = data.params.chargeNumbers[iicc.immobileCarrier]
+        isfinite(z) || throw(ArgumentError("Log-density carriers require a finite charge number"))
+        iicc.diffusionCoefficient > 0 && !iszero(z) && throw(ArgumentError("diffusion requires a neutral carrier"))
+    end
 
     # We have currently two cases, where we use the discontinuous qF framework:
     # 1. interface charge carriers are defined
@@ -1362,9 +1450,9 @@ function build_system(grid, data, ::Type{ContQF}; kwargs...)
         push!(trapCarrierListHelp, iicc.trapCarrier)
     end
 
-    # put all non-ionic and non-trap carriers present everywhere
+    # put all mobile electronic carriers present everywhere
     for icc in data.chargeCarrierList
-        if (icc ∉ ionicCarrierListHelp) && (icc ∉ trapCarrierListHelp)
+        if (icc ∉ ionicCarrierListHelp) && (icc ∉ trapCarrierListHelp) && iszero(data.immobileReferenceDensity[icc])
             enable_species!(ctsys, icc, 1:data.params.numberOfRegions)
         end
     end
@@ -1422,6 +1510,11 @@ function build_system(grid, data, ::Type{ContQF}; kwargs...)
     # if traps are present
     for iicc in data.trapCarrierList
         enable_species!(ctsys, iicc.trapCarrier, iicc.regions)
+    end
+
+    # if immobile carriers are present
+    for iicc in data.immobileCarrierList
+        enable_species!(ctsys, iicc.immobileCarrier, iicc.regions)
     end
 
     # we need no loop for interface carriers, since in this case there are not present.
@@ -1490,6 +1583,8 @@ The core of the system constructor. Here, the system for discontinuous quasi Fer
 
 """
 function build_system(grid, data, ::Type{DiscontQF}; kwargs...)
+
+    isempty(data.immobileCarrierList) || throw(ArgumentError("Immobile carriers currently require ContQF; DiscontQF species indexing is not supported"))
 
     #################################################################################
     ##### Set the recombinations parameters correctly based on user information #####
@@ -1851,7 +1946,12 @@ function _equilibrium_solve!(::Val{false}, ctsys::System; inival, control, nonli
                 println("increase generation with λ2 = $(ctsys.data.λ2)")
             end
 
-            sol = VoronoiFVM.solve(ctsys.fvmsys, inival = inival, control = control)
+            data.immobileGenerationRamp = true
+            try
+                sol = VoronoiFVM.solve(ctsys.fvmsys, inival = inival, control = control)
+            finally
+                data.immobileGenerationRamp = false
+            end
             inival = sol
 
         end # generation loop
@@ -2052,6 +2152,9 @@ function get_current_val(ctsys, U, Uold, Δt)
 
     current = 0.0
     for ii in 1:(length(IEdge) - 1)
+        # Neutral log-density fluxes have particle units, not electrical units.
+        ii <= ctsys.data.params.numberOfCarriers &&
+            iszero(ctsys.data.params.chargeNumbers[ii]) && continue
         current = current + IEdge[ii]
     end
 
@@ -2077,6 +2180,9 @@ function get_current_val(ctsys, U)
     current = 0.0
     # no displacement as we have steady state, this way last one is taken out as it corresponds to electric potential
     for ii in 1:(length(IEdge) - 1)
+        # Neutral log-density fluxes have particle units, not electrical units.
+        ii <= ctsys.data.params.numberOfCarriers &&
+            iszero(ctsys.data.params.chargeNumbers[ii]) && continue
         current = current + IEdge[ii]
     end
 
@@ -2092,7 +2198,9 @@ function integrated_density(ctsys; sol, icc, ireg)
     saveType = deepcopy(ctsys.data.modelType)
     ctsys.data.modelType = Transient
 
-    integral = ctsys.data.params.chargeNumbers[icc] * ChargeTransport.integrate(ctsys, storage!, sol)[icc, ireg] / ctsys.data.constants.q
+    z = ctsys.data.params.chargeNumbers[icc]
+    stored = ChargeTransport.integrate(ctsys, storage!, sol)[icc, ireg]
+    integral = iszero(z) ? stored : z * stored / ctsys.data.constants.q
 
     ctsys.data.modelType = saveType
 

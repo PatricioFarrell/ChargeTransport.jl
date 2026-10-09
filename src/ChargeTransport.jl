@@ -100,6 +100,7 @@ export BulkRecombination, set_bulk_recombination
 
 export enable_ionic_carrier!
 export enable_trap_carrier!
+export ImmobileCarrier, enable_immobile_carrier!
 
 export equilibrium_solve!
 export enable_species!, enable_boundary_species!

@@ -25,6 +25,12 @@ function set_plotting_labels(data)
     label_energy[1, iphip] = L"E_v-q\psi"; label_energy[2, iphip] = L"- q \varphi_p"; label_BEE[iphip] = L"E_v"
     label_density[iphip] = L"n_p";              label_solution[iphip] = L"\varphi_p"
 
+    for iicc in data.immobileCarrierList
+        icc = iicc.immobileCarrier
+        label_density[icc] = LaTeXString("n_{$icc}")
+        label_solution[icc] = LaTeXString("\\log(n_{$icc}/C_0)")
+    end
+
     return label_solution, label_density, label_energy, label_BEE
 end
 
@@ -66,6 +72,10 @@ function plot_densities!(visualizer, ctsys, solution, title, label_density, ; pl
         label_is_plotted = false
 
         for ireg in 1:numberOfRegions
+            if data.immobileReferenceDensity[icc] > 0 &&
+                    !any(iicc -> iicc.immobileCarrier == icc && ireg ∈ iicc.regions, data.immobileCarrierList)
+                continue
+            end
             subg = subgrid(grid, [ireg])
             ncc = get_density(solution, ireg, ctsys, icc)
 
@@ -107,6 +117,7 @@ function video_densities!(visualizer, ctsys, solution, title, label_density, ; p
 
     grid = ctsys.fvmsys.grid
     data = ctsys.fvmsys.physics.data
+    isempty(data.immobileCarrierList) || throw(ArgumentError("video_densities! does not support immobile carriers; use plot_densities!"))
     numberOfRegions = grid[NumCellRegions]
 
     if dim_space(grid) > 1
@@ -389,6 +400,7 @@ function plot_energies!(visualizer, ctsys, label_BEE)
 
     #plot different band-edge energies values in interior
     for icc in 1:params.numberOfCarriers
+        data.immobileReferenceDensity[icc] > 0 && continue
 
         label_is_plotted = false
 
@@ -424,6 +436,7 @@ function plot_energies!(visualizer, ctsys, label_BEE)
     bfacenodes = grid[BFaceNodes]
 
     for icc in 1:params.numberOfCarriers
+        data.immobileReferenceDensity[icc] > 0 && continue
         for i in eachindex(bfaceregions)
             # determine band-edge energy value in cell and number of cell nodes
             cellValue = (params.bBandEdgeEnergy[icc, bfaceregions[i]] + paramsnodal.bandEdgeEnergy[icc, bfacenodes[i]]) / q
@@ -642,6 +655,9 @@ function plot_solution!(visualizer, ctsys, solution, title, label_solution; plot
 
     grid = ctsys.fvmsys.grid
     data = ctsys.fvmsys.physics.data
+
+    # Log-density unknowns are dimensionless, so use a separate axis.
+    isempty(data.immobileCarrierList) || throw(ArgumentError("plot_solution! uses a voltage axis; plot immobile u = log(n/C0) separately, or use plot_densities!"))
 
     if dim_space(grid) > 1
         error("plot_solution is so far only tested in 1D")

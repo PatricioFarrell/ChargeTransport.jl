@@ -46,9 +46,9 @@ end
 
 function run_all_tests()
     return @time begin
-        # @testset "Basictest" begin
-        #     run_tests_from_directory(@__DIR__,"test_")
-        # end
+        @testset "Log-density carriers" begin
+            run_tests_from_directory(@__DIR__, "test_")
+        end
         @testset "Examples" begin
             run_tests_from_directory(joinpath(@__DIR__, "..", "examples"), "Ex")
         end

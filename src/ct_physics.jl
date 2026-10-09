@@ -93,6 +93,8 @@ The argument of the statistics function for interior nodes.
 """
 function etaFunction!(u, node::VoronoiFVM.Node, data, icc)
 
+    iszero(data.immobileReferenceDensity[icc]) || throw(ArgumentError("Immobile carriers have no statistics argument; use get_density!"))
+
     get_BEE!(icc, node::VoronoiFVM.Node, data)
 
     E = data.tempBEE1[icc]
@@ -107,6 +109,8 @@ $(TYPEDSIGNATURES)
 The argument of the statistics function for boundary nodes.
 """
 function etaFunction!(u, bnode::VoronoiFVM.BNode, data, icc) # bnode.index refers to index in overall mesh
+
+    iszero(data.immobileReferenceDensity[icc]) || throw(ArgumentError("Immobile carriers have no statistics argument; use get_density!"))
 
 
     get_BEE!(icc, bnode::VoronoiFVM.BNode, data)
@@ -123,6 +127,8 @@ The argument of the statistics function for edges.
 """
 
 function etaFunction!(u, edge::VoronoiFVM.Edge, data, icc)
+
+    iszero(data.immobileReferenceDensity[icc]) || throw(ArgumentError("Immobile carriers have no statistics argument; use get_density!"))
 
     get_BEE!(icc, edge::VoronoiFVM.Edge, data)
 
@@ -141,6 +147,8 @@ function etaFunction(sol, ireg::Int, ctsys, icc::QType)
 
     grid = ctsys.fvmsys.grid
     data = ctsys.fvmsys.physics.data
+
+    iszero(data.immobileReferenceDensity[icc]) || throw(ArgumentError("Immobile carriers have no statistics argument; use get_density"))
 
     Ecc = get_BEE(icc, ireg, ctsys)
     # view solution on respective grid
@@ -174,10 +182,15 @@ end
 
 $(TYPEDSIGNATURES)
 
-For given potentials, compute corresponding densities for interior nodes.
+For given carrier unknowns, compute corresponding densities for interior nodes.
 
 """
 function get_density!(u, node::VoronoiFVM.Node, data, icc)
+
+    C0 = data.immobileReferenceDensity[icc]
+    if C0 > 0
+        return C0 * exp(u[icc])
+    end
 
     get_DOS!(icc, node, data)
 
@@ -192,10 +205,15 @@ end
 
 $(TYPEDSIGNATURES)
 
-For given potentials, compute corresponding densities for interior nodes.
+For given carrier unknowns, compute corresponding densities for interior nodes.
 
 """
 function get_density!(u, bnode::VoronoiFVM.BNode, data, icc)
+
+    C0 = data.immobileReferenceDensity[icc]
+    if C0 > 0
+        return C0 * exp(u[icc])
+    end
 
     get_DOS!(icc, bnode, data)
 
@@ -211,10 +229,15 @@ end
 
 $(TYPEDSIGNATURES)
 
-For given potentials, compute corresponding densities for edges.
+For given carrier unknowns, compute corresponding densities for edges.
 
 """
 function get_density!(u, edge::VoronoiFVM.Edge, data, icc)
+
+    C0 = data.immobileReferenceDensity[icc]
+    if C0 > 0
+        return C0 * exp(u[icc, 1]), C0 * exp(u[icc, 2])
+    end
 
     get_DOS!(icc, edge, data)
 
@@ -232,13 +255,19 @@ end
 
 $(TYPEDSIGNATURES)
 
-For given potentials, compute corresponding densities for given interior region corresponding
+For given carrier unknowns, compute corresponding densities for given interior region corresponding
 to a homogeneous set of parameters.
 
 """
 function get_density(sol, ireg::Int, ctsys, icc::QType)
 
     data = ctsys.fvmsys.physics.data
+
+    C0 = data.immobileReferenceDensity[icc]
+    if C0 > 0
+        solcc = view(sol[icc, :], subgrid(ctsys.fvmsys.grid, [ireg]))
+        return C0 .* exp.(solcc)
+    end
 
     Ncc = get_DOS(icc, ireg, ctsys)
     eta = etaFunction(sol, ireg, ctsys, icc)
@@ -256,6 +285,11 @@ and ``\\psi``
 
 """
 function get_density(sol, data, icc, ireg, ; inode)
+
+    C0 = data.immobileReferenceDensity[icc]
+    if C0 > 0
+        return C0 .* exp.(sol[icc, inode])
+    end
 
     N = data.params.densityOfStates[icc, ireg]
     E = data.params.bandEdgeEnergy[icc, ireg]
@@ -357,6 +391,23 @@ function breaction!(f, u, bnode, data, ::Type{OhmicContactRobin})
         # add trap carriers only in defined regions (otherwise get NaN error)
         if bnode.cellregions[1] ∈ iicc.regions    # bnode.cellregions = [bnode.region, 0] for outer boundary.
             icc = iicc.trapCarrier           # species number chosen by user
+            icc = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+
+            ncc = get_density!(u, bnode, data, icc)
+
+            # subtract doping
+            f[ipsi] = f[ipsi] - params.chargeNumbers[icc] * (params.bDoping[icc, bnode.region])
+            # add charge carrier
+            f[ipsi] = f[ipsi] + params.chargeNumbers[icc] * ncc
+
+        end
+    end
+
+    # if immobile carriers are present
+    for iicc in data.immobileCarrierList
+        # add immobile carriers only in defined regions (otherwise get NaN error)
+        if bnode.cellregions[1] ∈ iicc.regions    # bnode.cellregions = [bnode.region, 0] for outer boundary.
+            icc = iicc.immobileCarrier           # species number chosen by user
             icc = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
 
             ncc = get_density!(u, bnode, data, icc)
@@ -720,6 +771,16 @@ function reaction!(f, u, node, data, ::Type{InEquilibrium})
         end
     end
 
+    for iicc in data.immobileCarrierList
+        # add immobile carriers only in defined regions (otherwise get NaN error)
+        if node.region ∈ iicc.regions
+            icc = iicc.immobileCarrier            # species number chosen by user
+            icc = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+
+            f[icc] = u[icc]
+        end
+    end
+
     return
 end
 
@@ -862,6 +923,22 @@ function addReaction!(f, u, node, data)
     return nothing
 end
 
+# reactionTerm > 0 consumes the reactants and produces the products.
+function _add_reaction_term!(f, data, reaction, reactionTerm)
+    for ireactant in reaction.Reactants
+        f[ireactant] = f[ireactant] + _reaction_scale(data, ireactant) * reactionTerm
+    end
+    for iproduct in reaction.Products
+        f[iproduct] = f[iproduct] - _reaction_scale(data, iproduct) * reactionTerm
+    end
+    return nothing
+end
+
+function _reaction_scale(data, icc)
+    z = data.params.chargeNumbers[icc]
+    return iszero(z) ? 1.0 : data.constants.q * z
+end
+
 function _add_constant_reaction!(f, u, node, data)
     reactions = data.params.Reactions
     for reaction in reactions
@@ -870,16 +947,7 @@ function _add_constant_reaction!(f, u, node, data)
             d_reactants *= get_density!(u, node, data, ireactant)
         end
         reactionTerm = reaction.k * d_reactants
-        for ireactant in reaction.Reactants
-            z = data.params.chargeNumbers[ireactant]
-            scale = iszero(z) ? 1.0 : data.constants.q * z
-            f[ireactant] = f[ireactant] + scale * reactionTerm
-        end
-        for iproduct in reaction.Products
-            z = data.params.chargeNumbers[iproduct]
-            scale = iszero(z) ? 1.0 : data.constants.q * z
-            f[iproduct] = f[iproduct] - scale * reactionTerm
-        end
+        _add_reaction_term!(f, data, reaction, reactionTerm)
     end
     return nothing
 end
@@ -900,16 +968,7 @@ function _add_dependent_reaction!(f, u, node, data)
         d_reactants = prod(carrier_densities[reaction.Reactants])
         reactionTerm = k_eff * d_reactants
 
-        for ireactant in reaction.Reactants
-            z = data.params.chargeNumbers[ireactant]
-            scale = iszero(z) ? 1.0 : data.constants.q * z
-            f[ireactant] = f[ireactant] + scale * reactionTerm
-        end
-        for iproduct in reaction.Products
-            z = data.params.chargeNumbers[iproduct]
-            scale = iszero(z) ? 1.0 : data.constants.q * z
-            f[iproduct] = f[iproduct] - scale * reactionTerm
-        end
+        _add_reaction_term!(f, data, reaction, reactionTerm)
     end
     return nothing
 end
@@ -954,6 +1013,20 @@ function RHSPoisson!(f, u, node, data, ipsi)
         if node.region ∈ iicc.regions
 
             icc = iicc.trapCarrier           # species number chosen by user
+            icc = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+
+            ncc = get_density!(u, node, data, icc)
+
+            f[ipsi] = f[ipsi] - data.params.chargeNumbers[icc] * (data.params.doping[icc, node.region])  # subtract doping
+            f[ipsi] = f[ipsi] + data.params.chargeNumbers[icc] * ncc   # add charge carrier
+        end
+    end
+
+    for iicc in data.immobileCarrierList
+        # add immobile carriers only in defined regions (otherwise get NaN error)
+        if node.region ∈ iicc.regions
+
+            icc = iicc.immobileCarrier           # species number chosen by user
             icc = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
 
             ncc = get_density!(u, node, data, icc)
@@ -1025,6 +1098,17 @@ function reaction!(f, u, node, data, ::Type{OutOfEquilibrium})
 
     # Then, add RHS of continuity equations based on user information
     RHSContinuityEquations!(f, u, node, data) # RHS of Charge Carriers with special treatment of recombination
+
+    # Reactions are disabled during the stationary generation ramp. Keep the
+    # equilibrium background density until transient reaction dynamics start.
+    if data.immobileGenerationRamp
+        for iicc in data.immobileCarrierList
+            if node.region ∈ iicc.regions
+                icc = iicc.immobileCarrier
+                f[icc] = u[icc]
+            end
+        end
+    end
 
     return
 
@@ -1204,6 +1288,14 @@ function storage!(f, u, node, data, ::Type{OutOfEquilibrium})
         f[icc] = q * params.chargeNumbers[icc] * ncc
     end
 
+    for iicc in data.immobileCarrierList
+        icc = iicc.immobileCarrier            # species number chosen by user
+        icc = data.chargeCarrierList[icc] # find correct index within chargeCarrierList (Array{QType, 1})
+
+        ncc = get_density!(u, node, data, icc)
+        f[icc] = _reaction_scale(data, icc) * ncc
+    end
+
     f[ipsi] = 0.0
 
     return
@@ -1281,6 +1373,15 @@ function flux!(f, u, edge, data, ::Type{OutOfEquilibrium})
     for icc in data.ionicCarrierList
         icc = icc.ionicCarrier       # correct index number chosen by user of Type Int64
         chargeCarrierFlux!(f, u, edge, data, icc, data.fluxApproximation[icc])
+    end
+
+    for carrier in data.immobileCarrierList
+        if edge.region ∈ carrier.regions && carrier.diffusionCoefficient > 0
+            icc = carrier.immobileCarrier
+            # VoronoiFVM supplies the edge geometry (including inverse length).
+            nk, nl = get_density!(u, edge, data, icc)
+            f[icc] = carrier.diffusionCoefficient * (nk - nl)
+        end
     end
 
     return
@@ -1409,6 +1510,11 @@ function ExcessChemicalPotentialDiffusive(f, u, edge, data)
     paramsnodal = data.paramsnodal
 
     for icc in data.chargeCarrierList
+
+        if data.immobileReferenceDensity[icc] > 0
+            f[icc] = zero(u[icc, 1])
+            continue
+        end
 
         nodek = edge.node[1]   # left node
         nodel = edge.node[2]   # right node
@@ -1766,6 +1872,10 @@ function addTrapCaptureEscape!(f, u, node, data, ::Type{SingleStateTrap})
     T = data.params.temperature
 
     for icc in data.chargeCarrierList
+        if data.immobileReferenceDensity[icc] > 0
+            any(>(0), @view capture[:, icc, node.region]) && throw(ArgumentError("Trap capture/escape requires statistics and cannot use an immobile carrier; use Reactions"))
+            continue
+        end
         ncc = get_density!(u, node, data, icc)
         Nc = data.params.densityOfStates[icc]
 
