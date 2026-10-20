@@ -1676,6 +1676,28 @@ function build_system(grid, data, ::Type{DiscontQF}; kwargs...)
 
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+System constructor for the poisson system. This system is used within the alternative base implementation of equilibrium_solve, where poissonOnly = true.
+
+"""
+function poisson_system(ctsys; kwargs...)
+
+    grid = ctsys.fvmsys.grid
+    data = ctsys.fvmsys.physics.data
+
+    sys = VoronoiFVM.System(
+        grid;
+        flux = poisson_flux!, reaction = poisson_reaction!, breaction = poisson_breaction!,
+        data = data,
+        species = [1],
+        kwargs...
+    )
+
+    return sys
+end
+
 ###########################################################
 ###########################################################
 
@@ -1822,11 +1844,90 @@ Function which calculates the equilibrium solution in case of non-present fluxes
 
 """
 
-function equilibrium_solve!(ctsys::System; inival = VoronoiFVM.unknowns(ctsys.fvmsys, inival = 0.0), control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0, vacancyEnergyCalculation::Bool = false, verbose::Bool = false, yabstol::Float64 = 1.0e-2, ytol::Float64 = 1.0e-4, maxiter::Int64 = 15) # last three are extended-only keywords for vacancyEnergyCalculation = true
+function equilibrium_solve!(ctsys::System; inival = VoronoiFVM.unknowns(ctsys.fvmsys, inival = 0.0), control = VoronoiFVM.NewtonControl(), nonlinear_steps = 20.0, vacancyEnergyCalculation::Bool = false, verbose::Bool = false, poissonOnly::Bool = false, yabstol::Float64 = 1.0e-2, ytol::Float64 = 1.0e-4, maxiter::Int64 = 15) # last three are extended-only keywords for vacancyEnergyCalculation = true
+
+    if poissonOnly
+        return _equilibrium_solve_poisson!(ctsys; control = control, verbose = verbose)
+    end
 
     ## by default vacancyEnergyCalculation is false.
     return _equilibrium_solve!(Val(vacancyEnergyCalculation), ctsys; inival = inival, control = control, nonlinear_steps = nonlinear_steps, verbose = verbose, yabstol = yabstol, ytol = ytol, maxiter = maxiter)
 
+end
+
+
+"""
+$(TYPEDSIGNATURES)
+
+Alternative base implementation of equilibrium_solve: poissonOnly = true
+
+"""
+
+function _equilibrium_solve_poisson!(ctsys::System; control = control, verbose = verbose)
+
+    grid = ctsys.fvmsys.grid
+    data = ctsys.fvmsys.physics.data
+    params = ctsys.fvmsys.physics.data.params
+    paramsnodal = ctsys.fvmsys.physics.data.paramsnodal
+    bnode = grid[BFaceNodes]
+    ipsi = data.index_psi
+    (; k_B, q) = data.constants
+
+    # We set zero voltage for each charge carrier at all outer boundaries for equilibrium calculations.
+    for ibreg in grid[BFaceRegions]
+        set_contact!(ctsys, ibreg, Δu = 0.0)
+    end
+
+    #---------------------------------------------------------------------------------------
+    # This part is different to the other approach
+    #---------------------------------------------------------------------------------------
+    # Calculate psi0 via Bisection method
+    psi0 = electroNeutralSolutionBisection(ctsys) # new function
+
+    # Store psi0 for all boundary faces in params.bψEQ
+    bfaceregions = grid[BFaceRegions]
+    for ibface in 1:ExtendableGrids.num_bfaces(grid)
+        ibreg = bfaceregions[ibface]
+        params.bψEQ[ibreg] = psi0[bnode[1, ibface]]
+    end
+
+    # We use a smaller system with N unknowns for the equilibrium solution
+    eqsys = poisson_system(ctsys)  # new function
+
+    inival = VoronoiFVM.unknowns(eqsys)
+    inival[1, :] .= psi0
+
+    # Solution for the small system
+    eqsol = VoronoiFVM.solve(eqsys; inival = inival, control = control)
+
+    # Extend the solution to the full 3N system
+    sol = VoronoiFVM.unknowns(ctsys.fvmsys, inival = 0.0)   # φn = φp = 0
+    sol[ipsi, :] .= eqsol[1, :]
+    #---------------------------------------------------------------------------------------
+
+    # calculate equilibrium densities (especially needed for Schottky boundary conditions)
+    for icc in data.electricCarrierList
+        for ibreg in grid[BFaceRegions]
+            Ncc = params.bDensityOfStates[icc, ibreg] + paramsnodal.densityOfStates[icc, bnode[ibreg]]
+            Ecc = params.bBandEdgeEnergy[icc, ibreg] + paramsnodal.bandEdgeEnergy[icc, bnode[ibreg]]
+
+            eta = params.chargeNumbers[icc] / (k_B * params.temperature / q) * ((sol[icc, bnode[ibreg]] - sol[ipsi, bnode[ibreg]]) + Ecc / q)
+            params.bDensityEQ[icc, ibreg] = Ncc * data.F[icc](eta)
+        end
+    end
+
+    # ...
+
+    # set now calculationType to outOfEquilibrium for further calculations
+    data.calculationType = OutOfEquilibrium
+
+    ## this flag is needed, when the user e.g. defines customized contactVoltageFunctions
+    data.generationComplete = true
+
+    # save changes on fvmsys of VoronoiFVM likewise in ctsys.data
+    ctsys.data = ctsys.fvmsys.physics.data
+
+    return sol
 end
 
 
@@ -2262,6 +2363,102 @@ function electroNeutralSolution(ctsys)
     return psi0Vector
 
 end
+
+###########################################################
+###########################################################
+"""
+
+$(TYPEDSIGNATURES)
+
+Compute the electro-neutral solution ``\\psi_0`` for electrons and holes with a bisection approach.
+In each cell region, the root of [`rhs_poisson_region`](@ref) (space charge density as a function of ``\\psi``)
+is determined by bisection on the interval ``[-2E_c^{\\max}/q, \\, 2E_c^{\\max}/q]``.
+In contrast to [`electroNeutralSolution`](@ref), which uses an analytic expression, this works for
+arbitrary statistics functions `data.F`.
+
+Returns a vector with one value per grid node. Nodes shared by several cell regions (interfaces)
+receive the value of the more strongly doped region.
+"""
+function electroNeutralSolutionBisection(ctsys)
+
+    grid = ctsys.fvmsys.grid
+    data = ctsys.fvmsys.physics.data
+    (; q) = data.constants
+
+    params = data.params
+    iphin = data.bulkRecombination.iphin # integer index of φ_n
+    iphip = data.bulkRecombination.iphip # integer index of φ_p
+
+    a = -(2 * maximum(params.bandEdgeEnergy)) / q
+    b = (2 * maximum(params.bandEdgeEnergy)) / q
+
+    # storage for psi0
+    psi0Vector = zeros(num_nodes(grid))
+    psi0Values = zeros(num_cellregions(grid))
+    cellnodes = grid[CellNodes]
+    cellregions = grid[CellRegions]
+
+    dopingAbs = zeros(num_cellregions(grid))
+
+    # solve roots problem for every region separated
+    for ireg in 1:num_cellregions(grid)
+        psi0Values[ireg] = find_zero(ψ -> rhs_poisson_region(ctsys, ireg, ψ), (a, b), Roots.Bisection())
+        dopingAbs[ireg] = abs(params.doping[iphin, ireg] - params.doping[iphip, ireg]) # doping strength
+    end
+
+    # one grid node should get one value; at nodes shared by several regions
+    # (interfaces) the more strongly doped region wins (default was just the last value -> problem at the first junction)
+    best = fill(-1.0, num_nodes(grid))   # vector with n times -1
+    for icell in eachindex(cellregions)
+        for inode in axes(cellnodes, 1) # points to the rows, size 2 for 1D grid
+            node = cellnodes[inode, icell]
+            ireg = cellregions[icell]
+            if dopingAbs[ireg] > best[node] # tests weather there is doping
+                best[node] = dopingAbs[ireg]
+                psi0Vector[node] = psi0Values[ireg]
+            end
+        end
+    end
+
+    return psi0Vector
+end
+
+"""
+
+$(TYPEDSIGNATURES)
+
+Right-hand side of the Poisson equation, i.e. the space charge density, in the cell region `ireg`
+as a function of the electrostatic potential `ψ` under **equilibrium conditions**, i.e. for vanishing
+quasi Fermi potentials ``\\varphi_n = \\varphi_p = 0``:
+```math
+q \\Big(N_v \\, \\mathcal{F}_p\\Big(\\frac{E_v - q \\psi}{k_B T}\\Big) - N_c \\, \\mathcal{F}_n\\Big(\\frac{q \\psi - E_c}{k_B T}\\Big) + N_D - N_A\\Big).
+```
+Here, the statistics functions ``\\mathcal{F}_n`` and ``\\mathcal{F}_p`` are taken from `data.F`.
+The root of this function in ``\\psi`` is the electro-neutral potential of the region, which is
+used in [`electroNeutralSolutionBisection`](@ref) and for the Dirichlet values of the equilibrium
+Poisson problem.
+"""
+function rhs_poisson_region(ctsys, ireg, ψ)
+
+    data = ctsys.fvmsys.physics.data
+    (; k_B, q) = data.constants
+    params = data.params
+
+    iphin = data.bulkRecombination.iphin # integer index of φ_n
+    iphip = data.bulkRecombination.iphip # integer index of φ_p
+
+    T = params.temperature
+    Ec = params.bandEdgeEnergy[iphin, ireg]
+    Ev = params.bandEdgeEnergy[iphip, ireg]
+    Nc = params.densityOfStates[iphin, ireg]
+    Nv = params.densityOfStates[iphip, ireg]
+    C = params.doping[iphin, ireg] - params.doping[iphip, ireg]   # N_D - N_A
+
+    return q * (Nv * data.F[iphip]((Ev - q * ψ) / (k_B * T)) - Nc * data.F[iphin]((q * ψ - Ec) / (k_B * T)) + C)
+end
+
+###########################################################
+###########################################################
 
 """
 

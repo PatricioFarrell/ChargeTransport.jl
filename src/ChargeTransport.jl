@@ -92,6 +92,7 @@ export zeroVoltage
 export BeerLambert
 export storage!
 export reaction!, SRHRecombination!, RadiativeRecombination!, SRRecombination!, Photogeneration!
+export poisson_flux!, poisson_reaction!, poisson_breaction!
 ##################################################################
 
 include("ct_system.jl")
