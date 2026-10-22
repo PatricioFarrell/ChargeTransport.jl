@@ -2386,16 +2386,17 @@ function electroNeutralSolutionBisection(ctsys)
     (; q) = data.constants
 
     params = data.params
-    iphin = data.bulkRecombination.iphin # integer index of φ_n
-    iphip = data.bulkRecombination.iphip # integer index of φ_p
+    iphin = data.bulkRecombination.iphin # integer index of φ_n for doping
+    iphip = data.bulkRecombination.iphip # integer index of φ_p for doping
 
+    # ! What would be a better guess here?
     a = -(2 * maximum(params.bandEdgeEnergy)) / q
     b = (2 * maximum(params.bandEdgeEnergy)) / q
 
     # storage for psi0
     psi0Vector = zeros(num_nodes(grid))
     psi0Values = zeros(num_cellregions(grid))
-    cellnodes = grid[CellNodes]
+    cellnodes = grid[CellNodes] # matrix: each column describes one cell
     cellregions = grid[CellRegions]
 
     dopingAbs = zeros(num_cellregions(grid))
@@ -2406,13 +2407,13 @@ function electroNeutralSolutionBisection(ctsys)
         dopingAbs[ireg] = abs(params.doping[iphin, ireg] - params.doping[iphip, ireg]) # doping strength
     end
 
-    # one grid node should get one value; at nodes shared by several regions
-    # (interfaces) the more strongly doped region wins (default was just the last value -> problem at the first junction)
-    best = fill(-1.0, num_nodes(grid))   # vector with n times -1
+    # one grid node should get one value; at nodes shared by several regions the more strongly doped region wins
+    best = fill(-1.0, num_nodes(grid)) # vector with n times -1
     for icell in eachindex(cellregions)
-        for inode in axes(cellnodes, 1) # points to the rows, size 2 for 1D grid
+        for inode in axes(cellnodes, 1) # all local node numbers of the cell (rows), node visited once per cell (so several times and update if doping is higher)
             node = cellnodes[inode, icell]
             ireg = cellregions[icell]
+            # ! This needs to be adjusted for nodal doping, so far just region-wise doping
             if dopingAbs[ireg] > best[node] # tests weather there is doping
                 best[node] = dopingAbs[ireg]
                 psi0Vector[node] = psi0Values[ireg]
@@ -2444,8 +2445,8 @@ function rhs_poisson_region(ctsys, ireg, ψ)
     (; k_B, q) = data.constants
     params = data.params
 
-    iphin = data.bulkRecombination.iphin # integer index of φ_n
-    iphip = data.bulkRecombination.iphip # integer index of φ_p
+    iphin = data.bulkRecombination.iphin # integer index of φ_n for doping
+    iphip = data.bulkRecombination.iphip # integer index of φ_p for doping
 
     T = params.temperature
     Ec = params.bandEdgeEnergy[iphin, ireg]
